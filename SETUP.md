@@ -148,12 +148,15 @@ cd automodz-app
 # 2. Install dependencies
 npm install
 
-# 3. Copy environment file
+# 3. Create your environment file from the example
 cp .env.local.example .env.local
 
-# 4. Fill in your Firebase values in .env.local
-# Edit the file in VS Code:
-code .env.local
+#    ⚠️ ensure you never commit `.env.local` to git, it is already listed in
+#    `.gitignore` and contains secrets (Firebase keys, admin email, etc.)
+
+# 4. Fill in your Firebase values and other settings in `.env.local` using
+#    the placeholders in the example as a guide. Edit with VS Code if you like:
+#    code .env.local
 
 # 5. Run the development server
 npm run dev
