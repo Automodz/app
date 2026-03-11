@@ -1,0 +1,24 @@
+{
+  "name": "AutoModz — Premium Car Detailing",
+  "short_name": "AutoModz",
+  "description": "Book premium car detailing services in Ahmedabad",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait",
+  "categories": ["lifestyle", "utilities"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Book Service",
+      "short_name": "Book",
+      "description": "Quick book a detailing service",
+      "url": "/dashboard/booking",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
