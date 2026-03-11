@@ -93,7 +93,6 @@ service cloud.firestore {
     }
     
     // Referrals
-    match /referrals/{refId} {
       allow read, write: if request.auth != null;
     }
     
@@ -270,7 +269,6 @@ Or click the auto-generated link that appears in your browser console the first 
 | `/dashboard/booking` | Book a service |
 | `/dashboard/vehicles` | Manage vehicles |
 | `/dashboard/history` | Service history |
-| `/dashboard/profile` | Profile + referrals |
 | `/dashboard/subscriptions` | Membership plans |
 | `/admin` | Admin dashboard |
 | `/admin/bookings` | Manage bookings |

@@ -61,7 +61,6 @@ export default function AdminCustomersPage() {
                   <div className="text-muted/60 text-xs font-body">{c.phone}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono text-xs text-orange-500/70 tracking-widest">{c.referralCode}</div>
                   <div className="text-muted/40 text-xs font-body mt-1">
                     {c.createdAt?.toDate?.().toLocaleDateString('en-IN') || 'N/A'}
                   </div>

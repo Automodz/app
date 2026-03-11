@@ -18,7 +18,6 @@
 | OTP login | ❌ | Only email+password. Firebase Phone Auth not wired |
 | Email + password login | ✅ | `/auth/login` |
 | Password reset | ✅ | `/auth/reset-password` |
-| Auto-generate referral code on signup | ✅ | `firebaseService.ts` — `genCode()` |
 | Role assignment (customer vs admin) | ✅ | Role set at registration, redirects enforced |
 | Admin role via Firestore (role-based) | ✅ | `user.role === 'admin'` check in layouts |
 
@@ -145,11 +144,7 @@
 
 | PRD Requirement | Status | Notes |
 |---|---|---|
-| Each user gets a referral code | ✅ | Generated on signup |
-| Apply referral code at registration | ✅ | Optional field on register page |
-| Referral saved in Firestore | ✅ | `referrals` collection |
 | Referrer gets 15% discount on next service | ⚠️ | Referral document created but discount is never retrieved and applied at checkout |
-| Share referral code from profile | ✅ | Copy + native share |
 
 **Score: 3.5/5**
 
@@ -269,7 +264,6 @@
 6. **Customer gallery page** — `/dashboard/gallery` showing before/after from the gallery collection
 
 ### 🟡 MEDIUM PRIORITY (PRD-specified features)
-7. **Referral discount at checkout** — Read referral record, show 15% off, apply to booking amount
 8. **Admin: attach photos to booking** — Let admin paste before/after URLs on completed bookings
 9. **Admin: per-customer drill-down** — Click customer → see their vehicles + full booking history
 10. **Real-time status listener** — Replace `getDocs` with `onSnapshot` in history page
@@ -287,7 +281,6 @@
 ---
 
 ## WHAT'S SOLID ✅
-The foundation is production-quality. Auth, vehicles, booking wizard, admin status management, subscriptions UI, referral UI, dark/light theme, PWA, and the premium design system are all done well. The app is **deployable today** — customers can register, add vehicles, book services, and track status. Admins can manage bookings and update status with WhatsApp notifications.
 
 ## WHAT'S MISSING AT A BUSINESS LEVEL ⚠️
 The three things that would cause real operational problems are:
