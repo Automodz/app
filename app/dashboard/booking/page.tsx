@@ -872,8 +872,10 @@ function BookingInner() {
               </button>
             </motion.div>
           )}
+        </AnimatePresence>
+      </div>
 
-      <div className="px-4 py-5 pb-36">
+      {/* ── Bottom CTA ──────────────────────────────────────────────────────── */}
       {step < 5 && (
         <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-4 glass-nav"
           style={{ borderTop: '1px solid var(--border)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
