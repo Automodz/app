@@ -137,26 +137,29 @@ function BookingInner() {
   // ── submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!user || !data.vehicle || !data.service || !data.date || !data.time) return;
-    // payment method required unless fully covered by membership
-    if (!membershipCoversWash || total > 0) {
-      if (!data.paymentMethod) return;
-    }
 
     setSubmitting(true);
+
     try {
+
       let bookingId = 'DEMO-' + Math.random().toString(36).slice(2, 8).toUpperCase();
       let membershipId: string | undefined;
+      let membershipWashApplied = false;
 
       if (!isDemo) {
-        // deduct membership wash BEFORE creating booking so state is consistent
+
+        // Apply membership wash only if selected
         if (membershipCoversWash && membership) {
+
           const result = await deductMembershipWash(user.uid);
-          if (!result.success) {
-            toast.error('Membership wash could not be applied. Proceeding at full price.');
-            setUsedMembershipWash(false);
-          } else {
+
+          if (result.success) {
             membershipId = result.subscriptionId;
+            membershipWashApplied = true;
+          } else {
+            toast.error("Membership wash unavailable. Charging normal price.");
           }
+
         }
 
         bookingId = await createBooking({
@@ -164,70 +167,126 @@ function BookingInner() {
           userName: user.name,
           userPhone: user.phone || '',
           userEmail: user.email,
+
           vehicleId: data.vehicle.id,
           vehicleName: data.vehicle.name,
           vehicleRegNo: data.vehicle.registrationNumber,
+
           serviceId: data.service.id,
           serviceName: data.service.name,
           serviceCategory: data.service.category,
-          serviceBasePrice: data.service.price,   // always store original price
+          serviceBasePrice: data.service.price,
+
           pickupDropRequired: !!data.pickupDrop,
           pickupDropFee: pickupFee,
           pickupAddress: data.pickupAddress || '',
-          totalAmount: total,                      // 0 if membership-covered + no pickup
+
+          totalAmount: total,
+
           scheduledDate: data.date,
           scheduledTime: data.time,
-          paymentMethod: membershipCoversWash && total === 0
-            ? 'cash'  // placeholder — no payment needed
-            : data.paymentMethod!,
-          paymentStatus: membershipCoversWash && total === 0 ? 'verified' : 'pending',
+
+          paymentMethod:
+            membershipWashApplied && total === pickupFee
+              ? 'cash'
+              : data.paymentMethod || 'cash',
+
+          paymentStatus:
+            membershipWashApplied && total === pickupFee
+              ? 'verified'
+              : 'pending',
+
           transactionId: data.transactionId || '',
+
           status: 'pending',
-          usedMembershipWash: membershipCoversWash,
-          membershipId,
+
+          usedMembershipWash: membershipWashApplied,
+          membershipId
         });
 
-        const nb: Booking = {
-          id: bookingId, userId: user.uid, userName: user.name,
-          userPhone: user.phone || '', userEmail: user.email,
-          vehicleId: data.vehicle.id, vehicleName: data.vehicle.name,
+        const newBooking: Booking = {
+          id: bookingId,
+          userId: user.uid,
+          userName: user.name,
+          userPhone: user.phone || '',
+          userEmail: user.email,
+
+          vehicleId: data.vehicle.id,
+          vehicleName: data.vehicle.name,
           vehicleRegNo: data.vehicle.registrationNumber,
-          serviceId: data.service.id, serviceName: data.service.name,
+
+          serviceId: data.service.id,
+          serviceName: data.service.name,
           serviceCategory: data.service.category,
           serviceBasePrice: data.service.price,
-          pickupDropRequired: !!data.pickupDrop,
-          pickupDropFee: pickupFee, pickupAddress: data.pickupAddress,
-          totalAmount: total, scheduledDate: data.date, scheduledTime: data.time,
-          status: 'pending',
-          paymentMethod: membershipCoversWash && total === 0 ? 'cash' : data.paymentMethod!,
-          paymentStatus: membershipCoversWash && total === 0 ? 'verified' : 'pending',
-          transactionId: data.transactionId,
-          usedMembershipWash: membershipCoversWash,
-          membershipId,
-          createdAt: null as any, updatedAt: null as any,
-        };
-        addBookingToStore(nb);
 
+          pickupDropRequired: !!data.pickupDrop,
+          pickupDropFee: pickupFee,
+          pickupAddress: data.pickupAddress,
+
+          totalAmount: total,
+
+          scheduledDate: data.date,
+          scheduledTime: data.time,
+
+          status: 'pending',
+
+          paymentMethod:
+            membershipWashApplied && total === pickupFee
+              ? 'cash'
+              : data.paymentMethod || 'cash',
+
+          paymentStatus:
+            membershipWashApplied && total === pickupFee
+              ? 'verified'
+              : 'pending',
+
+          transactionId: data.transactionId,
+
+          usedMembershipWash: membershipWashApplied,
+          membershipId,
+
+          createdAt: null as any,
+          updatedAt: null as any
+        };
+
+        addBookingToStore(newBooking);
+
+        // WhatsApp confirmation
         const msg = getBookingWhatsAppMsg({
-          userName: user.name, vehicleName: data.vehicle.name,
-          serviceName: data.service.name, scheduledDate: data.date,
-          scheduledTime: data.time, totalAmount: total, id: bookingId,
+          userName: user.name,
+          vehicleName: data.vehicle.name,
+          serviceName: data.service.name,
+          scheduledDate: data.date,
+          scheduledTime: data.time,
+          totalAmount: total,
+          id: bookingId,
           pickupDropRequired: !!data.pickupDrop,
           paymentMethod: data.paymentMethod,
-          transactionId: data.transactionId,
+          transactionId: data.transactionId
         });
-        setTimeout(() => window.open(
-          `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}?text=${encodeURIComponent(msg)}`,
-          '_blank',
-        ), 500);
+
+        setTimeout(() => {
+          window.open(
+            `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,
+            "_blank"
+          );
+        }, 400);
+
       }
 
       setConfirmedId(bookingId);
       setStep(5);
-    } catch {
-      toast.error('Booking failed. Try again.');
+
+    } catch (err) {
+
+      console.error(err);
+      toast.error("Booking failed. Please try again.");
+
     } finally {
+
       setSubmitting(false);
+
     }
   };
 

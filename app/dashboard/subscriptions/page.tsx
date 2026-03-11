@@ -159,17 +159,28 @@ export default function SubscriptionsPage() {
 
   // load current subscription
   useEffect(() => {
-    if (!user) return;
-    if (isDemo) {
-      setSub(DEMO_SUBSCRIPTION);
+  if (!user) return;
+
+  async function loadSubscription() {
+    try {
+      const s = await getUserSubscription(user.uid);
+
+      if (s) {
+        await checkAndExpireSubscription(user.uid);
+      }
+
+      const fresh = await getUserSubscription(user.uid);
+      setSub(fresh);
+    } catch {
+      const fallback = await getUserSubscription(user.uid);
+      setSub(fallback);
+    } finally {
       setLoading(false);
-      return;
     }
-    checkAndExpireSubscription(user.uid)
-      .then(updated => getUserSubscription(user.uid).then(s => setSub(updated ?? s)))
-      .catch(() => getUserSubscription(user.uid).then(setSub))
-      .finally(() => setLoading(false));
-  }, [user?.uid]);
+  }
+
+  loadSubscription();
+}, [user?.uid]);
 
   const plan  = sub ? MEMBERSHIP_PLANS.find(p => p.id === sub.plan) ?? null : null;
   const days  = sub ? daysLeft(sub.endDate) : 0;
