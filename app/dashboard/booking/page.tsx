@@ -383,9 +383,9 @@ function BookingInner() {
                       onClick={() => setData(p => ({ ...p, vehicle: v }))}
                       className={`w-full rounded-2xl p-4 text-left transition-all ${data.vehicle?.id === v.id ? 'ember-ring card-ember' : 'card'}`}>
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl"
-                          style={{ background: data.vehicle?.id === v.id ? 'rgba(255,69,0,0.15)' : 'var(--cavern)' }}>
-                          🚗
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-lg font-bold"
+                          style={{ background: data.vehicle?.id === v.id ? 'rgba(255,69,0,0.15)' : 'var(--cavern)', color: 'var(--ember)' }}>
+                          {v.category.charAt(0)}
                         </div>
                         <div className="flex-1">
                           <p style={syne14}>{v.name}</p>
@@ -470,8 +470,8 @@ function BookingInner() {
                           <p style={{ ...grotesk12, lineHeight: 1.4, marginBottom: '8px' }}>{svc.description}</p>
                           <div className="flex items-center gap-3" style={{ ...mono10, opacity: 0.6 }}>
                             <span>⏱ {getDurationLabel(svc.duration)}</span>
-                            {svc.warranty && <span>🛡 {svc.warranty}</span>}
-                            {svc.brand && <span>🏷 {svc.brand}</span>}
+                            {svc.warranty && <span>✓ {svc.warranty}</span>}
+                            {svc.brand && <span>◆ {svc.brand}</span>}
                           </div>
                         </div>
                         <div className="text-right shrink-0">

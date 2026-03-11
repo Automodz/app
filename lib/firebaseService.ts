@@ -141,13 +141,13 @@ export const updateBookingStatusWithNotification = async (
   if (booking.userId === 'demo-user') return;
 
   const MESSAGES: Partial<Record<Booking['status'], { title: string; body: string }>> = {
-    confirmed:          { title: '✅ Booking Confirmed', body: `Your ${booking.serviceName} for ${booking.vehicleName} on ${booking.scheduledDate} is confirmed.` },
-    vehicle_received:   { title: '🚗 Vehicle Received', body: `We have received your ${booking.vehicleName}. Work will begin shortly.` },
-    in_progress:        { title: '🔧 Service In Progress', body: `Our team is now working on your ${booking.vehicleName} — ${booking.serviceName}.` },
-    quality_check:      { title: '🔍 Quality Check', body: `Your ${booking.vehicleName} is in final quality inspection. Almost done!` },
-    ready_for_delivery: { title: '🎉 Ready for Pickup', body: `Your ${booking.vehicleName} is ready! Come collect it at AutoModz, Maninagar.` },
-    completed:          { title: '⭐ Service Completed', body: `${booking.serviceName} on your ${booking.vehicleName} is complete. Thank you for choosing AutoModz!` },
-    cancelled:          { title: '❌ Booking Cancelled', body: `Your booking for ${booking.serviceName} (${booking.vehicleName}) has been cancelled.` },
+    confirmed:          { title: 'Booking Confirmed', body: `Your ${booking.serviceName} for ${booking.vehicleName} on ${booking.scheduledDate} is confirmed.` },
+    vehicle_received:   { title: 'Vehicle Received', body: `We have received your ${booking.vehicleName}. Work will begin shortly.` },
+    in_progress:        { title: 'Service In Progress', body: `Our team is now working on your ${booking.vehicleName} — ${booking.serviceName}.` },
+    quality_check:      { title: 'Quality Check', body: `Your ${booking.vehicleName} is in final quality inspection. Almost done!` },
+    ready_for_delivery: { title: 'Ready for Pickup', body: `Your ${booking.vehicleName} is ready! Come collect it at AutoModz, Maninagar.` },
+    completed:          { title: 'Service Completed', body: `${booking.serviceName} on your ${booking.vehicleName} is complete. Thank you for choosing AutoModz!` },
+    cancelled:          { title: 'Booking Cancelled', body: `Your booking for ${booking.serviceName} (${booking.vehicleName}) has been cancelled.` },
   };
 
   const msg = MESSAGES[status];
@@ -309,11 +309,11 @@ export const DEMO_BOOKINGS: Booking[] = [
 ];
 
 export const DEMO_NOTIFICATIONS: Notification[] = [
-  { id: 'dn1', userId: 'demo-user', title: '🚗 Mercedes GLC Ready for Pickup', body: 'Your Llumar Platinum PPF installation is complete. Vehicle ready at 6 PM.', type: 'booking_update', read: false, bookingId: 'db1', createdAt: ts(0) },
-  { id: 'dn2', userId: 'demo-user', title: '✅ Booking Confirmed', body: 'Your Kovalent Graphene Ceramic booking for Hyundai Creta on ' + future(5) + ' is confirmed.', type: 'booking_update', read: false, bookingId: 'db2', createdAt: ts(1) },
-  { id: 'dn3', userId: 'demo-user', title: '🔥 Honda City Detail SPA In Progress', body: 'Our team has started working on your Honda City. Estimated completion: 4 hours.', type: 'booking_update', read: true, bookingId: 'db3', createdAt: ts(1) },
-  { id: 'dn4', userId: 'demo-user', title: '⭐ How was your Premium Wash?', body: 'Your Maruti Swift Premium Wash is complete. We hope you loved the results!', type: 'reminder', read: true, bookingId: 'db4', createdAt: ts(3) },
-  { id: 'dn5', userId: 'demo-user', title: '🎉 Special Offer: 15% off PPF', body: 'Exclusive offer for loyal customers. Book any PPF service this month and save ₹15,000+', type: 'promotion', read: true, createdAt: ts(7) },
+  { id: 'dn1', userId: 'demo-user', title: 'Mercedes GLC Ready for Pickup', body: 'Your Llumar Platinum PPF installation is complete. Vehicle ready at 6 PM.', type: 'booking_update', read: false, bookingId: 'db1', createdAt: ts(0) },
+  { id: 'dn2', userId: 'demo-user', title: 'Booking Confirmed', body: 'Your Kovalent Graphene Ceramic booking for Hyundai Creta on ' + future(5) + ' is confirmed.', type: 'booking_update', read: false, bookingId: 'db2', createdAt: ts(1) },
+  { id: 'dn3', userId: 'demo-user', title: 'Honda City Detail SPA In Progress', body: 'Our team has started working on your Honda City. Estimated completion: 4 hours.', type: 'booking_update', read: true, bookingId: 'db3', createdAt: ts(1) },
+  { id: 'dn4', userId: 'demo-user', title: 'How was your Premium Wash?', body: 'Your Maruti Swift Premium Wash is complete. We hope you loved the results!', type: 'reminder', read: true, bookingId: 'db4', createdAt: ts(3) },
+  { id: 'dn5', userId: 'demo-user', title: 'Special Offer: 15% off PPF', body: 'Exclusive offer for loyal customers. Book any PPF service this month and save ₹15,000+', type: 'promotion', read: true, createdAt: ts(7) },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════

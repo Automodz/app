@@ -17,10 +17,10 @@ const daysLeft = (endDate: string) => {
 };
 
 const SERVICES = [
-  { cat: 'PPF',     icon: '🛡️', label: 'Paint Protection Film',  sub: 'from ₹1,45,000', accent: '#FF4500', href: '/dashboard/booking?cat=PPF' },
-  { cat: 'Ceramic', icon: '💎', label: 'Ceramic Coating',         sub: 'from ₹10,000',   accent: '#60A5FA', href: '/dashboard/booking?cat=Ceramic' },
-  { cat: 'Washing', icon: '🚿', label: 'Wash & Detail',           sub: 'from ₹500',      accent: '#34D399', href: '/dashboard/booking?cat=Washing' },
-  { cat: 'Coating', icon: '✨', label: 'Teflon & Glass',          sub: 'from ₹1,200',    accent: '#A78BFA', href: '/dashboard/booking?cat=Coating' },
+  { cat: 'PPF',     icon: '🛡', label: 'Paint Protection Film',  sub: 'from ₹1,45,000', accent: '#FF4500', href: '/dashboard/booking?cat=PPF' },
+  { cat: 'Ceramic', icon: '✱', label: 'Ceramic Coating',         sub: 'from ₹10,000',   accent: '#60A5FA', href: '/dashboard/booking?cat=Ceramic' },
+  { cat: 'Washing', icon: '💧', label: 'Wash & Detail',           sub: 'from ₹500',      accent: '#34D399', href: '/dashboard/booking?cat=Washing' },
+  { cat: 'Coating', icon: '◆', label: 'Teflon & Glass',          sub: 'from ₹1,200',    accent: '#A78BFA', href: '/dashboard/booking?cat=Coating' },
 ];
 
 const stagger = (i: number) => ({
@@ -321,7 +321,7 @@ export default function DashboardPage() {
               {vehicles.map(v => (
                 <button key={v.id} onClick={() => router.push('/dashboard/vehicles')}
                   className="flex-shrink-0 card rounded-2xl p-3 flex flex-col items-center gap-2 w-28 text-center">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: 'var(--cavern)' }}>🚗</div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold" style={{ background: 'var(--cavern)', color: 'var(--ember)' }}>{v.category.charAt(0)}</div>
                   <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '11px', color: 'var(--chrome)', lineHeight: 1.2 }}>{v.name}</p>
                   <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '9px', color: 'var(--faint)', letterSpacing: '0.08em' }}>{v.registrationNumber}</p>
                 </button>

@@ -24,18 +24,18 @@ const STATUSES: BookingStatus[] = [
 // WhatsApp message for status updates
 const statusWhatsApp = (b: Booking, status: BookingStatus) => {
   const msgs: Partial<Record<BookingStatus, string>> = {
-    confirmed:          `✅ Booking confirmed for ${b.serviceName} on ${formatDate(b.scheduledDate)} at ${formatTime(b.scheduledTime)}.`,
-    vehicle_received:   `🚗 We've received your ${b.vehicleName}. Work begins shortly.`,
-    in_progress:        `🔧 Your ${b.vehicleName} is now being serviced — ${b.serviceName}.`,
-    quality_check:      `🔍 Final quality check underway. Almost ready!`,
-    ready_for_delivery: `🎉 Your ${b.vehicleName} is ready for pickup at AutoModz, Maninagar!`,
-    completed:          `⭐ ${b.serviceName} completed on your ${b.vehicleName}. Thank you!`,
-    cancelled:          `❌ Your booking for ${b.serviceName} has been cancelled. Contact us for rescheduling.`,
+    confirmed:          `Booking confirmed for ${b.serviceName} on ${formatDate(b.scheduledDate)} at ${formatTime(b.scheduledTime)}.`,
+    vehicle_received:   `We've received your ${b.vehicleName}. Work begins shortly.`,
+    in_progress:        `Your ${b.vehicleName} is now being serviced — ${b.serviceName}.`,
+    quality_check:      `Final quality check underway. Almost ready!`,
+    ready_for_delivery: `Your ${b.vehicleName} is ready for pickup at AutoModz, Maninagar!`,
+    completed:          `${b.serviceName} completed on your ${b.vehicleName}. Thank you!`,
+    cancelled:          `Your booking for ${b.serviceName} has been cancelled. Contact us for rescheduling.`,
   };
   const body = msgs[status];
   if (!body) return null;
   const phone = b.userPhone.startsWith('91') ? b.userPhone : '91' + b.userPhone;
-  return `https://wa.me/${phone}?text=${encodeURIComponent(`🚗 *AutoModz Update*\n\nDear ${b.userName},\n\n${body}\n\n📍 AutoModz, Bhairavnath Rd, Maninagar, Ahmedabad`)}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(`*AutoModz Update*\n\nDear ${b.userName},\n\n${body}\n\nAutoModz, Bhairavnath Rd, Maninagar, Ahmedabad`)}`;
 };
 
 export default function AdminBookingsPage() {

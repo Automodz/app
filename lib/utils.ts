@@ -86,7 +86,7 @@ export const getStatusStep = (status: string): number =>
   ['pending','confirmed','vehicle_received','in_progress','quality_check','ready_for_delivery','completed'].indexOf(status);
 
 export const getCategoryIcon = (category: string): string =>
-  ({ PPF: '🛡️', Washing: '🚿', Ceramic: '💎', Coating: '✨' }[category] || '🔧');
+  ({ PPF: '🛡', Washing: '💧', Ceramic: '✱', Coating: '◆' }[category] || '⚙');
 
 export const getDurationLabel = (minutes: number): string => {
   if (minutes < 60) return `${minutes} min`;
@@ -99,7 +99,7 @@ export const getBookingWhatsAppMsg = (b: {
   scheduledDate: string; scheduledTime: string; totalAmount: number;
   id: string; pickupDropRequired?: boolean; paymentMethod?: string; transactionId?: string;
 }) =>
-`🚗 *AutoModz Booking*
+`*AutoModz Booking*
 
 Customer: ${b.userName}
 Vehicle: ${b.vehicleName}
@@ -107,5 +107,5 @@ Service: ${b.serviceName}
 Date: ${formatDate(b.scheduledDate)} at ${formatTime(b.scheduledTime)}
 Amount: ${formatCurrency(b.totalAmount)}
 Payment: ${b.paymentMethod === 'upi' ? `UPI${b.transactionId ? ` (Txn: ${b.transactionId})` : ' (pending)'}` : 'Cash at shop'}
-${b.pickupDropRequired ? '🚙 Pickup & Drop required' : ''}
+${b.pickupDropRequired ? 'Pickup & Drop required' : ''}
 Booking ID: ${b.id.slice(0, 8).toUpperCase()}`;
