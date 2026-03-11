@@ -4,17 +4,11 @@
 
 /* ═══════════════════════════════════════════════════════════════════════
    AUTOMODZ v4 — CHROME NOIR DESIGN SYSTEM
-   Vision: 2050 automotive luxury meets deep-space technology
-   Typography: Syne (display) + Space Grotesk (body) + Space Mono (code)
-   Palette: Void Black → Plasma Ember → Chrome White
-   Animation: Framer Motion + React Spring + CSS keyframes
    ═══════════════════════════════════════════════════════════════════════ */
-
-/* ─── Google Fonts already loaded in layout.tsx ─── */
 
 /* ─── Design Tokens ─────────────────────────────────────────────────── */
 :root {
-  /* ── Plasma Ember — the fire at the core ── */
+  /* ── Plasma Ember ── */
   --ember:         #FF4500;
   --ember-hot:     #FF6622;
   --ember-cool:    #CC3300;
@@ -78,6 +72,19 @@
   --font-display:  'Syne', sans-serif;
   --font-body:     'Space Grotesk', sans-serif;
   --font-mono:     'Space Mono', monospace;
+
+  /* ══════════════════════════════════════════════════════════════════
+     LEGACY ALIASES — fixes all undefined CSS variable references
+     across login, vehicles, profile, admin, and booking pages
+     ══════════════════════════════════════════════════════════════════ */
+  --plasma:        var(--ember);
+  --plasma-hi:     var(--ember-hot);
+  --plasma-lo:     var(--ember-cool);
+  --signal-red:    #FF3B5C;
+  --dust:          var(--steel);
+  --bg-hero:       var(--void);
+  --card:          var(--dark);
+  --glass-bg:      rgba(8,8,11,0.80);
 }
 
 /* ── Light theme ── */
@@ -97,12 +104,17 @@
   --glass-2:       rgba(255,255,255,0.92);
   --glass-border:  rgba(0,0,0,0.08);
   --glass-sheen:   rgba(255,255,255,0.6);
+  --glass-bg:      rgba(242,241,238,0.90);
   --smoke:         rgba(0,0,0,0.10);
   --ash:           rgba(0,0,0,0.06);
   --phantom:       rgba(0,0,0,0.02);
   --chrome:        #0A0A0D;
   --silver:        rgba(10,10,13,0.75);
   --pewter:        rgba(10,10,13,0.52);
+  --steel:         rgba(10,10,13,0.35);
+  --dust:          rgba(10,10,13,0.32);
+  --card:          #FFFFFF;
+  --bg-hero:       #F2F1EE;
   --shadow:        0 8px 32px rgba(0,0,0,0.12);
   --shadow-lg:     0 16px 56px rgba(0,0,0,0.16);
   --shadow-xl:     0 24px 80px rgba(0,0,0,0.20);
@@ -134,7 +146,7 @@ body {
 ::selection { background: rgba(255,69,0,0.28); color: white; }
 :focus-visible { outline: 1.5px solid var(--ember); outline-offset: 3px; border-radius: 4px; }
 
-/* ─── Scrollbar ── */
+/* ─── Scrollbar ─────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 2px; height: 2px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--ember-haze); border-radius: 99px; }
@@ -148,15 +160,13 @@ body {
 .font-body    { font-family: var(--font-body); }
 .font-mono    { font-family: var(--font-mono); }
 
-/* Weight utilities */
 .font-400 { font-weight: 400; }
 .font-500 { font-weight: 500; }
 .font-600 { font-weight: 600; }
 .font-700 { font-weight: 700; }
 .font-800 { font-weight: 800; }
-.font-900 { font-weight: 800; } /* Syne max */
+.font-900 { font-weight: 800; }
 
-/* Gradient text variants */
 .text-ember {
   background: linear-gradient(135deg, #FF4500 0%, #FF7733 60%, #FF4500 100%);
   background-size: 200% auto;
@@ -170,16 +180,21 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-/* Legacy alias */
-.gradient-text { 
+.gradient-text {
   background: linear-gradient(135deg, #FF4500, #FF7733);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-plasma {
+  background: linear-gradient(135deg, #FF4500, #FF6622);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   GLASSMORPHISM — multi-layer depth system
+   GLASSMORPHISM
    ═══════════════════════════════════════════════════════════════════════ */
 .glass {
   background: var(--glass);
@@ -203,7 +218,7 @@ body {
 .glass-dark { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   CARD SYSTEM — holographic surfaces
+   CARD SYSTEM
    ═══════════════════════════════════════════════════════════════════════ */
 .card {
   background: linear-gradient(160deg, var(--cavern) 0%, var(--dark) 100%);
@@ -243,12 +258,12 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-/* Legacy compat */
+/* Legacy aliases */
 .card-dark    { background: linear-gradient(160deg, var(--cavern), var(--dark)); border: 1px solid var(--border); border-radius: 20px; }
 .card-orange  { background: linear-gradient(160deg, rgba(255,69,0,0.09), rgba(255,69,0,0.04)); border: 1px solid rgba(255,69,0,0.20); border-radius: 20px; }
-.glass-orange { background: rgba(255,69,0,0.07); border: 1px solid rgba(255,69,0,0.16); }
 .card-plasma  { background: linear-gradient(160deg, rgba(255,69,0,0.09), rgba(255,69,0,0.04)); border: 1px solid rgba(255,69,0,0.20); border-radius: 20px; }
 .card-glow    { background: linear-gradient(160deg, var(--cavern), var(--dark)); border: 1px solid var(--ember-haze); border-radius: 20px; box-shadow: var(--ember-glow-sm); }
+.glass-orange { background: rgba(255,69,0,0.07); border: 1px solid rgba(255,69,0,0.16); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    SELECTED / ACTIVE STATES
@@ -261,14 +276,13 @@ body {
   border: 1px solid rgba(255,69,0,0.40) !important;
   box-shadow: inset 0 0 24px rgba(255,69,0,0.05), var(--ember-glow-sm);
 }
-/* Legacy */
 .orange-border-glow { border: 1.5px solid var(--ember) !important; box-shadow: 0 0 0 3px var(--ember-haze), var(--ember-glow-sm); }
 .plasma-ring        { border: 1.5px solid var(--ember) !important; box-shadow: 0 0 0 3px var(--ember-haze), var(--ember-glow-sm); }
 .plasma-border      { border: 1px solid rgba(255,69,0,0.40) !important; box-shadow: inset 0 0 24px rgba(255,69,0,0.05), var(--ember-glow-sm); }
 .ring-orange        { box-shadow: 0 0 0 2px var(--ember); }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   BUTTONS — magnetic tactile feel
+   BUTTONS
    ═══════════════════════════════════════════════════════════════════════ */
 .btn-ember, .btn-primary, .btn-plasma {
   background: linear-gradient(135deg, #FF4500 0%, #FF6622 50%, #FF4500 100%);
@@ -321,7 +335,7 @@ body {
 .btn-ghost:hover { background: var(--smoke); border-color: var(--border-2); }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   INPUTS — dark precision fields
+   INPUTS
    ═══════════════════════════════════════════════════════════════════════ */
 .input, .input-dark {
   width: 100%;
@@ -347,7 +361,6 @@ body {
 .bg-main   { background-color: var(--void); }
 .bg-main-2 { background-color: var(--abyss); }
 
-/* Ember nebula background */
 .bg-nebula {
   background:
     radial-gradient(ellipse 90% 60% at 15% 0%,   rgba(255,69,0,0.09) 0%, transparent 65%),
@@ -357,12 +370,10 @@ body {
 }
 .bg-mesh { background: var(--void); }
 
-/* Hex grid pattern */
 .bg-hex {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zM28 100L0 84V66l28 16 28-16v18L28 100z' fill='none' stroke='rgba(255,255,255,0.025)' stroke-width='1'/%3E%3C/svg%3E");
 }
 
-/* Diagonal lines */
 .bg-lines {
   background-image: repeating-linear-gradient(
     -45deg,
@@ -373,13 +384,11 @@ body {
   );
 }
 
-/* Fine dot matrix */
 .bg-dots {
   background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-/* Grid */
 .bg-grid {
   background-image:
     linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
@@ -387,7 +396,6 @@ body {
   background-size: 40px 40px;
 }
 
-/* Plasma orb blob */
 .plasma-orb {
   position: absolute;
   border-radius: 50%;
@@ -396,7 +404,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   SCAN LINE FX — cinematic CRT aesthetic
+   SCAN LINE FX
    ═══════════════════════════════════════════════════════════════════════ */
 @keyframes scan-travel {
   0%   { top: -2px; opacity: 0; }
@@ -463,7 +471,7 @@ body {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50%       { opacity: 1;   transform: scale(1.04); }
 }
-@keyframes spin-cw { to { transform: rotate(360deg); } }
+@keyframes spin-cw  { to { transform: rotate(360deg); } }
 @keyframes spin-ccw { to { transform: rotate(-360deg); } }
 @keyframes data-load {
   0%   { width: 0%; }
@@ -478,13 +486,13 @@ body {
   98%       { opacity: 1; }
 }
 
-.animate-ember-pulse    { animation: ember-pulse 2.5s ease-in-out infinite; }
-.animate-float          { animation: float-y 3s ease-in-out infinite; }
-.animate-float-sm       { animation: float-y-sm 2.5s ease-in-out infinite; }
-.animate-breathe        { animation: breathe 3s ease-in-out infinite; }
-.animate-spin-cw        { animation: spin-cw 12s linear infinite; }
-.animate-spin-ccw       { animation: spin-ccw 8s linear infinite; }
-.animate-flicker        { animation: flicker 6s linear infinite; }
+.animate-ember-pulse { animation: ember-pulse 2.5s ease-in-out infinite; }
+.animate-float       { animation: float-y 3s ease-in-out infinite; }
+.animate-float-sm    { animation: float-y-sm 2.5s ease-in-out infinite; }
+.animate-breathe     { animation: breathe 3s ease-in-out infinite; }
+.animate-spin-cw     { animation: spin-cw 12s linear infinite; }
+.animate-spin-ccw    { animation: spin-ccw 8s linear infinite; }
+.animate-flicker     { animation: flicker 6s linear infinite; }
 
 .shimmer {
   background: linear-gradient(90deg,
@@ -520,7 +528,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   TOGGLE SWITCH — futuristic
+   TOGGLE SWITCH
    ═══════════════════════════════════════════════════════════════════════ */
 .toggle-track {
   width: 44px; height: 24px;
@@ -528,6 +536,8 @@ body {
   position: relative;
   transition: background 0.25s ease;
   border: 1px solid var(--border-2);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 .toggle-track.on  { background: var(--ember); border-color: var(--ember); box-shadow: var(--ember-glow-sm); }
 .toggle-track.off { background: var(--dim); }
@@ -539,6 +549,7 @@ body {
   border-radius: 50%;
   box-shadow: var(--shadow-xs);
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
 }
 .toggle-track.on .toggle-knob { transform: translateX(20px); }
 
@@ -562,7 +573,7 @@ body {
   mix-blend-mode: overlay;
 }
 
-/* ── Holographic tilt shimmer layer ── */
+/* Holographic shimmer */
 .holo-surface {
   position: relative;
   overflow: hidden;
@@ -581,7 +592,7 @@ body {
   pointer-events: none;
 }
 
-/* ── Data display ── */
+/* Data display */
 .data-label {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -595,11 +606,5 @@ body {
   color: var(--ember);
 }
 
-/* ── Separator line ── */
+/* Separator */
 .sep { height: 1px; background: linear-gradient(90deg, transparent, var(--border-2), transparent); }
-
-/* ─── Back-compat ────────────────── */
-.text-plasma { background: linear-gradient(135deg, #FF4500, #FF6622); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.btn-primary { background: linear-gradient(135deg, #FF4500, #FF6622); color: white; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; border-radius: 14px; padding: 14px 24px; border: none; cursor: pointer; box-shadow: 0 4px 24px rgba(255,69,0,0.38); display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; }
-.btn-primary:active { transform: scale(0.97); }
-.btn-primary:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }

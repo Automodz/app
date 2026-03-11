@@ -1,231 +1,300 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Loader2, Eye, EyeOff, Shield, Zap } from 'lucide-react';
+import { Eye, EyeOff, Shield, Zap, ChevronRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { signInWithGoogle, adminLogin, signInDemo } from '@/lib/firebaseService';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { getUserProfile, createUserProfile } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
 
-const Particle = ({ delay, x, size }: { delay: number; x: string; size: number }) => (
-  <motion.div
-    className="absolute rounded-full pointer-events-none"
-    style={{ width: size, height: size, left: x, bottom: '-10px',
-      background: `radial-gradient(circle, rgba(255,107,0,0.7) 0%, rgba(255,69,0,0.2) 60%, transparent 100%)` }}
-    animate={{ y: [0, -700], opacity: [0, 0.8, 0.6, 0], scale: [0.3, 1, 0.8, 0] }}
-    transition={{ duration: 6 + Math.random() * 4, delay, repeat: Infinity, ease: 'easeOut' }}
-  />
-);
+const DEMO_USER = {
+  uid:         'demo-user-001',
+  name:        'Demo Driver',
+  email:       'demo@automodz.com',
+  phone:       '+91 98765 43210',
+  role:        'demo' as const,
+  photoURL:    null,
+  createdAt:   new Date().toISOString(),
+  memberSince: new Date().toISOString(),
+};
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { setUser } = useAppStore();
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [demoLoading, setDemoLoading]     = useState(false);
-  const [showAdmin, setShowAdmin]         = useState(false);
-  const [adminEmail, setAdminEmail]       = useState('hello.automodz@gmail.com');
-  const [adminPwd, setAdminPwd]           = useState('');
-  const [showPwd, setShowPwd]             = useState(false);
-  const [adminLoading, setAdminLoading]   = useState(false);
-  const [mounted, setMounted]             = useState(false);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
-  const rotateY = useTransform(mouseX, [-300, 300], [-5, 5]);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const router   = useRouter();
+  const setUser  = useAppStore(s => s.setUser);
 
-  useEffect(() => { setMounted(true); }, []);
+  const [mode, setMode]           = useState<'user' | 'admin'>('user');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [showPass, setShowPass]   = useState(false);
+  const [loading, setLoading]     = useState(false);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const rect = cardRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    mouseX.set(e.clientX - rect.left - rect.width / 2);
-    mouseY.set(e.clientY - rect.top - rect.height / 2);
-  };
-
+  // ── Google sign-in (regular users) ───────────────────────────────────
   const handleGoogle = async () => {
-    setGoogleLoading(true);
+    setLoading(true);
     try {
-      await signInWithGoogle();
-      toast.success('Welcome to AutoModz!');
-      router.push('/dashboard');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '';
-      if (!msg.includes('popup-closed') && !msg.includes('cancelled-popup-request'))
-        toast.error('Sign in failed. Try again.');
-    } finally { setGoogleLoading(false); }
+      const result  = await signInWithPopup(auth, new GoogleAuthProvider());
+      const fbUser  = result.user;
+      let profile   = await getUserProfile(fbUser.uid);
+
+      if (!profile) {
+        profile = await createUserProfile({
+          uid:      fbUser.uid,
+          name:     fbUser.displayName || 'Driver',
+          email:    fbUser.email || '',
+          phone:    fbUser.phoneNumber || '',
+          photoURL: fbUser.photoURL || null,
+          role:     fbUser.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL ? 'admin' : 'user',
+        });
+      }
+
+      setUser(profile);
+      router.replace(profile.role === 'admin' ? '/dashboard/admin' : '/dashboard');
+    } catch (err: any) {
+      toast.error(err?.message || 'Google sign-in failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDemo = async () => {
-    setDemoLoading(true);
+  // ── Admin email/password login ────────────────────────────────────────
+  const handleAdminLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      toast.error('Enter email and password');
+      return;
+    }
+    setLoading(true);
     try {
-      const demoUser = await signInDemo();
-      sessionStorage.setItem('demo-user', JSON.stringify(demoUser));
-      setUser(demoUser);
-      toast.success('Demo loaded — explore freely!');
-      router.push('/dashboard');
-    } catch { toast.error('Demo failed'); }
-    finally { setDemoLoading(false); }
+      const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const fbUser = result.user;
+
+      // Verify Firestore role BEFORE granting access
+      const profile = await getUserProfile(fbUser.uid);
+
+      if (!profile || profile.role !== 'admin') {
+        // Not an admin — sign out immediately and reject
+        await signOut(auth);
+        toast.error('Access denied. Admin credentials required.');
+        return;
+      }
+
+      setUser(profile);
+      toast.success('Welcome back, Admin');
+      router.replace('/dashboard/admin');
+    } catch (err: any) {
+      // Map Firebase error codes to readable messages
+      const code = err?.code || '';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        toast.error('Invalid email or password');
+      } else if (code === 'auth/too-many-requests') {
+        toast.error('Too many attempts. Try again later.');
+      } else {
+        toast.error(err?.message || 'Login failed');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!adminEmail || !adminPwd) return;
-    setAdminLoading(true);
-    try {
-      await adminLogin(adminEmail, adminPwd);
-      toast.success('Admin access granted');
-      router.push('/admin');
-    } catch { toast.error('Invalid credentials'); }
-    finally { setAdminLoading(false); }
+  // ── Demo mode ─────────────────────────────────────────────────────────
+  const handleDemo = () => {
+    sessionStorage.setItem('demo-user', JSON.stringify(DEMO_USER));
+    setUser(DEMO_USER);
+    router.replace('/dashboard');
   };
-
-  const particles = mounted ? [
-    { delay: 0, x: '10%', size: 4 }, { delay: 1.5, x: '25%', size: 3 },
-    { delay: 0.8, x: '40%', size: 5 }, { delay: 2.2, x: '55%', size: 3 },
-    { delay: 0.4, x: '70%', size: 4 }, { delay: 1.8, x: '85%', size: 3 },
-    { delay: 3.0, x: '15%', size: 6 }, { delay: 2.6, x: '60%', size: 4 },
-    { delay: 1.2, x: '90%', size: 3 }, { delay: 0.2, x: '45%', size: 5 },
-  ] : [];
 
   return (
-    <div className="min-h-screen bg-hero overflow-hidden relative flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-grid opacity-[0.03]" />
-      {mounted && (
-        <motion.div
-          className="absolute inset-x-0 h-px pointer-events-none"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,107,0,0.45), transparent)' }}
-          animate={{ y: ['-100vh', '100vh'] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
-        />
-      )}
-      {particles.map((p, i) => <Particle key={i} {...p} />)}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(255,69,0,0.12) 0%, transparent 70%)', filter: 'blur(48px)' }} />
-      <div className="absolute bottom-1/3 right-1/4 w-56 h-56 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-nebula bg-hex">
+
+      {/* Ambient glow */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="plasma-orb w-96 h-96 -top-32 -left-32 animate-breathe"
+          style={{ background: 'rgba(255,69,0,0.06)' }} />
+        <div className="plasma-orb w-80 h-80 -bottom-24 -right-24 animate-breathe"
+          style={{ background: 'rgba(255,69,0,0.04)', animationDelay: '1.5s' }} />
+      </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-sm"
-        ref={cardRef} onMouseMove={handleMouseMove}
-        onMouseLeave={() => { mouseX.set(0); mouseY.set(0); }}
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-sm relative z-10"
       >
         {/* Logo */}
-        <motion.div className="text-center mb-8" initial={{ opacity:0, y:-16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.15 }}>
+        <div className="text-center mb-8">
           <motion.div
-            className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-5"
-            style={{ background: 'linear-gradient(135deg, #FF4500, #FF7A35)', boxShadow: '0 8px 48px rgba(255,69,0,0.50), inset 0 1px 0 rgba(255,255,255,0.20)' }}
-            whileHover={{ scale:1.07, rotate:3 }} transition={{ type:'spring', stiffness:300 }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-4 animate-ember-pulse"
+            style={{ background: 'linear-gradient(135deg, rgba(255,69,0,0.15), rgba(255,69,0,0.05))', border: '1px solid rgba(255,69,0,0.25)' }}
           >
-            <span className="font-display font-800 text-4xl text-white">A</span>
+            <span style={{ fontSize: '36px' }}>🔥</span>
           </motion.div>
-          <h1 className="font-display font-800 text-4xl text-white tracking-wide">AUTOMODZ</h1>
-          <p className="font-body text-sm mt-1.5" style={{ color:'var(--muted)' }}>Premium Car Detailing · Maninagar, Ahmedabad</p>
-        </motion.div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', color: 'var(--chrome)', letterSpacing: '0.08em' }}>
+            AUTOMODZ
+          </h1>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.18em', color: 'var(--faint)', marginTop: '4px' }}>
+            PREMIUM DETAILING STUDIO
+          </p>
+        </div>
 
-        <AnimatePresence mode="wait">
-          {!showAdmin ? (
-            <motion.div key="customer"
-              initial={{ opacity:0, x:24 }} animate={{ opacity:1, x:0 }}
-              exit={{ opacity:0, x:-24 }} transition={{ duration:0.25 }}
-              style={{ perspective: 1200 }}
-            >
-              <motion.div
-                className="rounded-3xl overflow-hidden"
-                style={{
-                  background: 'var(--glass-bg)',
-                  backdropFilter: 'blur(48px) saturate(200%)',
-                  WebkitBackdropFilter: 'blur(48px) saturate(200%)',
-                  border: '1px solid var(--border-2)',
-                  boxShadow: '0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
-                  rotateX, rotateY,
-                }}
-              >
-                <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,107,0,0.6), transparent)' }} />
-                <div className="p-7">
-                  <h2 className="font-display font-800 text-2xl text-white tracking-wide mb-1">SIGN IN</h2>
-                  <p className="font-body text-sm mb-7" style={{ color:'var(--muted)' }}>Book, track and manage your services</p>
+        {/* Mode toggle */}
+        <div className="flex gap-2 mb-5 p-1 rounded-2xl" style={{ background: 'var(--cavern)', border: '1px solid var(--border)' }}>
+          {(['user', 'admin'] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)}
+              className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all"
+              style={{
+                background:    mode === m ? 'var(--ember)' : 'transparent',
+                boxShadow:     mode === m ? '0 2px 12px rgba(255,69,0,0.35)' : 'none',
+                fontFamily:    'var(--font-mono)',
+                fontSize:      '10px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color:         mode === m ? 'white' : 'var(--steel)',
+              }}>
+              {m === 'admin' ? <Shield size={11} /> : <Zap size={11} />}
+              {m}
+            </button>
+          ))}
+        </div>
 
-                  <motion.button onClick={handleGoogle} disabled={googleLoading||demoLoading} whileTap={{ scale:0.97 }}
-                    className="w-full flex items-center justify-center gap-3 rounded-2xl py-4 mb-3 font-body font-600 text-sm transition-all"
-                    style={{ background:'var(--bg-4)', border:'1px solid var(--border-2)', color:'var(--fg)', boxShadow:'0 2px 16px rgba(0,0,0,0.3)' }}>
-                    {googleLoading
-                      ? <Loader2 size={18} className="animate-spin" style={{ color:'var(--plasma-hi)' }}/>
-                      : <svg width="18" height="18" viewBox="0 0 24 24">
-                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                        </svg>}
-                    {googleLoading ? 'Signing in...' : 'Continue with Google'}
-                  </motion.button>
+        {/* Card */}
+        <div className="rounded-3xl p-6" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-2)', backdropFilter: 'blur(24px)' }}>
+          <AnimatePresence mode="wait">
 
-                  <motion.button onClick={handleDemo} disabled={googleLoading||demoLoading} whileTap={{ scale:0.97 }}
-                    className="w-full flex items-center justify-center gap-3 rounded-2xl py-4 font-body font-600 text-sm relative overflow-hidden"
-                    style={{ background:'rgba(255,69,0,0.08)', border:'1px solid rgba(255,107,0,0.25)', color:'var(--plasma-hi)' }}>
-                    {demoLoading ? <Loader2 size={18} className="animate-spin"/> : <Zap size={16} fill="currentColor"/>}
-                    {demoLoading ? 'Loading demo...' : 'Try Demo Account'}
-                  </motion.button>
-
-                  <p className="text-center font-body text-xs mt-4" style={{ color:'var(--muted)', opacity:0.55 }}>
-                    Demo · No sign-up · 4 vehicles · 8 bookings pre-loaded
+            {/* User mode — Google */}
+            {mode === 'user' && (
+              <motion.div key="user"
+                initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
+                className="space-y-3">
+                <div className="text-center mb-4">
+                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', color: 'var(--chrome)' }}>
+                    Welcome Back
                   </p>
-                  <div className="mt-6 pt-5" style={{ borderTop:'1px solid var(--border)' }}>
-                    <button onClick={() => setShowAdmin(true)}
-                      className="w-full flex items-center justify-center gap-2 font-body text-xs"
-                      style={{ color:'var(--muted)' }}>
-                      <Shield size={11}/> Staff / Admin portal
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>
+                    Sign in to manage your bookings
+                  </p>
+                </div>
+
+                <button onClick={handleGoogle} disabled={loading}
+                  className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 transition-all"
+                  style={{
+                    background: 'var(--dark)',
+                    border:     '1px solid var(--border-2)',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize:   '13px',
+                    letterSpacing: '0.06em',
+                    color:      loading ? 'var(--faint)' : 'var(--chrome)',
+                  }}>
+                  {loading
+                    ? <Loader2 size={16} className="animate-spin" style={{ color: 'var(--ember)' }} />
+                    : <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>}
+                  {loading ? 'SIGNING IN...' : 'CONTINUE WITH GOOGLE'}
+                </button>
+
+                <div className="relative flex items-center gap-3 py-1">
+                  <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--faint)', letterSpacing: '0.12em' }}>OR</span>
+                  <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                </div>
+
+                <button onClick={handleDemo} disabled={loading}
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all"
+                  style={{
+                    background:    'rgba(255,69,0,0.07)',
+                    border:        '1px solid rgba(255,69,0,0.18)',
+                    fontFamily:    'var(--font-mono)',
+                    fontSize:      '10px',
+                    letterSpacing: '0.14em',
+                    color:         'var(--ember)',
+                  }}>
+                  <Zap size={12} />
+                  TRY DEMO MODE
+                </button>
+              </motion.div>
+            )}
+
+            {/* Admin mode — email/password */}
+            {mode === 'admin' && (
+              <motion.div key="admin"
+                initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
+                className="space-y-3">
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl mb-3"
+                    style={{ background: 'rgba(255,69,0,0.10)', border: '1px solid rgba(255,69,0,0.20)' }}>
+                    <Shield size={18} style={{ color: 'var(--ember)' }} />
+                  </div>
+                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '17px', color: 'var(--chrome)' }}>
+                    Admin Access
+                  </p>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>
+                    Restricted to authorised personnel
+                  </p>
+                </div>
+
+                <div>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', marginBottom: '6px' }}>
+                    EMAIL
+                  </p>
+                  <input
+                    type="email"
+                    placeholder="admin@automodz.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+                    className="input"
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div>
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', marginBottom: '6px' }}>
+                    PASSWORD
+                  </p>
+                  <div className="relative">
+                    <input
+                      type={showPass ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+                      className="input pr-12"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(p => !p)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2"
+                      style={{ color: 'var(--steel)' }}>
+                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
-                <div className="h-px" style={{ background:'linear-gradient(90deg, transparent, rgba(255,107,0,0.3), transparent)' }} />
+
+                <button onClick={handleAdminLogin} disabled={loading || !email || !password}
+                  className="btn-ember w-full rounded-xl py-4 flex items-center justify-center gap-2 mt-2">
+                  {loading
+                    ? <><Loader2 size={16} className="animate-spin" /> VERIFYING...</>
+                    : <><span>ACCESS PANEL</span><ChevronRight size={16} /></>}
+                </button>
               </motion.div>
-            </motion.div>
-          ) : (
-            <motion.div key="admin"
-              initial={{ opacity:0, x:24 }} animate={{ opacity:1, x:0 }}
-              exit={{ opacity:0, x:-24 }} transition={{ duration:0.25 }}>
-              <div className="rounded-3xl overflow-hidden"
-                style={{ background:'var(--glass-bg)', backdropFilter:'blur(48px)', WebkitBackdropFilter:'blur(48px)', border:'1px solid var(--border-2)', boxShadow:'0 24px 80px rgba(0,0,0,0.6)' }}>
-                <div className="h-px" style={{ background:'linear-gradient(90deg, transparent, rgba(255,69,0,0.5), transparent)' }} />
-                <div className="p-7">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-                      style={{ background:'rgba(255,69,0,0.12)', border:'1px solid rgba(255,107,0,0.25)' }}>
-                      <Shield size={18} style={{ color:'var(--plasma-hi)' }}/>
-                    </div>
-                    <div>
-                      <h2 className="font-display font-800 text-lg text-white tracking-wide">ADMIN PORTAL</h2>
-                      <p className="font-body text-xs" style={{ color:'var(--muted)' }}>hello.automodz@gmail.com</p>
-                    </div>
-                  </div>
-                  <form onSubmit={handleAdminLogin} className="space-y-3">
-                    <input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)}
-                      placeholder="Admin email" className="input" required/>
-                    <div className="relative">
-                      <input type={showPwd ? 'text' : 'password'} value={adminPwd}
-                        onChange={e => setAdminPwd(e.target.value)} placeholder="Password" className="input pr-12" required/>
-                      <button type="button" onClick={() => setShowPwd(!showPwd)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color:'var(--muted)' }}>
-                        {showPwd ? <EyeOff size={15}/> : <Eye size={15}/>}
-                      </button>
-                    </div>
-                    <motion.button type="submit" disabled={adminLoading} whileTap={{ scale:0.97 }}
-                      className="btn btn-primary w-full py-3.5 text-sm rounded-2xl">
-                      {adminLoading ? <Loader2 size={16} className="animate-spin"/> : 'ACCESS ADMIN'}
-                    </motion.button>
-                  </form>
-                  <button onClick={() => setShowAdmin(false)}
-                    className="w-full text-center font-body text-xs mt-5" style={{ color:'var(--muted)' }}>
-                    ← Back to customer sign in
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+
+          </AnimatePresence>
+        </div>
+
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--faint)', textAlign: 'center', marginTop: '20px', lineHeight: 1.6 }}>
+          By signing in you agree to our terms of service.
+          <br />Your data is stored securely with Firebase.
+        </p>
       </motion.div>
     </div>
   );

@@ -19,8 +19,9 @@ import {
 } from '@/lib/utils';
 import type { Service, StepData, Booking, Subscription } from '@/lib/types';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
+import { Timestamp } from 'firebase/firestore';
 
-const STEPS = ['Vehicle', 'Service', 'Schedule', 'Details', 'Payment', 'Done'];
+const STEPS = ['Vehicle', 'Service', 'Schedule', 'Review', 'Payment', 'Done'];
 const CATS  = ['Washing', 'Ceramic', 'Coating', 'PPF'];
 
 export default function BookingPage() {
@@ -40,40 +41,40 @@ function BookingInner() {
   const params  = useSearchParams();
   const { user, vehicles, addBookingToStore } = useAppStore();
 
-  const [step, setStep]               = useState(0);
-  const [services, setServices]       = useState<Service[]>(STATIC_SERVICES);
-  const [submitting, setSubmitting]   = useState(false);
-  const [data, setData]               = useState<StepData>({});
-  const [cat, setCat]                 = useState(params.get('cat') || 'Washing');
-  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
-  const [copiedUpi, setCopiedUpi]     = useState(false);
-  const [confirmedId, setConfirmedId] = useState('');
-
-  // membership state
-  const [membership, setMembership]         = useState<Subscription | null>(null);
+  const [step, setStep]                         = useState(0);
+  const [services, setServices]                 = useState<Service[]>(STATIC_SERVICES);
+  const [submitting, setSubmitting]             = useState(false);
+  const [data, setData]                         = useState<StepData>({});
+  const [cat, setCat]                           = useState(params.get('cat') || 'Washing');
+  const [bookedSlots, setBookedSlots]           = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading]         = useState(false);
+  const [copiedUpi, setCopiedUpi]               = useState(false);
+  const [confirmedId, setConfirmedId]           = useState('');
+  const [membership, setMembership]             = useState<Subscription | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [usedMembershipWash, setUsedMembershipWash] = useState(false);
 
   const isDemo = user?.role === 'demo';
   const upiId  = process.env.NEXT_PUBLIC_UPI_ID || 'automodz@upi';
 
-  // ── load services ──────────────────────────────────────────────────────────
+  // Load services
   useEffect(() => {
     getServices()
       .then(s => setServices(s.filter(x => x.active).sort((a, b) => a.order - b.order)))
       .catch(() => {});
   }, []);
 
-  // ── deep-link: pre-fill vehicle + service from URL params ─────────────────
+  // Deep-link pre-fill from URL params
   useEffect(() => {
-    const vId = params.get('vehicleId'), sId = params.get('serviceId');
+    const vId = params.get('vehicleId');
+    const sId = params.get('serviceId');
     if (!vId || !sId || !vehicles.length || !services.length) return;
-    const v = vehicles.find(x => x.id === vId), s = services.find(x => x.id === sId);
+    const v = vehicles.find(x => x.id === vId);
+    const s = services.find(x => x.id === sId);
     if (v && s) { setData({ vehicle: v, service: s }); setCat(s.category); setStep(2); }
   }, [services, vehicles]);
 
-  // ── load booked slots when date changes ───────────────────────────────────
+  // Load booked slots when date/service changes
   useEffect(() => {
     if (!data.date || !data.service) return;
     setSlotsLoading(true);
@@ -82,10 +83,9 @@ function BookingInner() {
       .finally(() => setSlotsLoading(false));
   }, [data.date, data.service?.category]);
 
-  // ── load membership when user lands on service step (step 1) ──────────────
+  // Load membership when on service step
   useEffect(() => {
-    if (step !== 1 || !user || isDemo) return;
-    if (membership !== null) return; // already loaded
+    if (step !== 1 || !user || isDemo || membership !== null) return;
     setMembershipLoading(true);
     getUserSubscription(user.uid)
       .then(sub => {
@@ -100,32 +100,25 @@ function BookingInner() {
       .finally(() => setMembershipLoading(false));
   }, [step, user?.uid]);
 
-  // ── derived values ─────────────────────────────────────────────────────────
-  const pickupFee     = data.pickupDrop ? PICKUP_FEE * 2 : 0;
-  const isWashService = data.service?.category === 'Washing';
-  const membershipPlan = membership
-    ? MEMBERSHIP_PLANS.find(p => p.id === membership.plan) ?? null
-    : null;
-  const washesRemaining = membership
-    ? membership.washesTotal - membership.washesUsed
-    : 0;
-  // If member has washes remaining and service is a wash → cover by membership → total = pickup only
+  // Derived values
+  const pickupFee          = data.pickupDrop ? PICKUP_FEE * 2 : 0;
+  const isWashService      = data.service?.category === 'Washing';
+  const membershipPlan     = membership ? MEMBERSHIP_PLANS.find(p => p.id === membership.plan) ?? null : null;
+  const washesRemaining    = membership ? membership.washesTotal - membership.washesUsed : 0;
   const membershipCoversWash = isWashService && !!membership && washesRemaining > 0 && usedMembershipWash;
-  const servicePrice = membershipCoversWash ? 0 : (data.service?.price || 0);
-  const total        = servicePrice + pickupFee;
+  const servicePrice       = membershipCoversWash ? 0 : (data.service?.price || 0);
+  const total              = servicePrice + pickupFee;
+  const filtered           = services.filter(s => s.category === cat);
+  const timeSlots          = data.service ? generateTimeSlots(data.service.duration) : [];
+  const availDates         = getAvailableDates();
 
-  const filtered   = services.filter(s => s.category === cat);
-  const timeSlots  = data.service ? generateTimeSlots(data.service.duration) : [];
-  const availDates = getAvailableDates();
-
-  // ── step validation ────────────────────────────────────────────────────────
+  // Step validation
   const canProceed = () => {
     if (step === 0) return !!data.vehicle;
     if (step === 1) return !!data.service;
     if (step === 2) return !!data.date && !!data.time;
     if (step === 3) return true;
     if (step === 4) {
-      // if membership covers it fully and no pickup fee → no payment step needed
       if (membershipCoversWash && total === 0) return true;
       if (!data.paymentMethod) return false;
       if (data.paymentMethod === 'upi') return !!(data.transactionId?.trim());
@@ -134,179 +127,143 @@ function BookingInner() {
     return false;
   };
 
-  // ── submit ─────────────────────────────────────────────────────────────────
+  // Submit — WhatsApp only fires AFTER Firestore write succeeds
   const handleSubmit = async () => {
     if (!user || !data.vehicle || !data.service || !data.date || !data.time) return;
-
     setSubmitting(true);
 
     try {
-
       let bookingId = 'DEMO-' + Math.random().toString(36).slice(2, 8).toUpperCase();
       let membershipId: string | undefined;
       let membershipWashApplied = false;
 
       if (!isDemo) {
-
-        // Apply membership wash only if selected
+        // Apply membership wash deduction if selected
         if (membershipCoversWash && membership) {
-
           const result = await deductMembershipWash(user.uid);
-
           if (result.success) {
             membershipId = result.subscriptionId;
             membershipWashApplied = true;
           } else {
-            toast.error("Membership wash unavailable. Charging normal price.");
+            toast.error('Membership wash unavailable. Charging normal price.');
           }
-
         }
 
+        const paymentMethod = membershipWashApplied && total === pickupFee
+          ? 'cash'
+          : data.paymentMethod || 'cash';
+
+        const paymentStatus = membershipWashApplied && total === pickupFee
+          ? 'verified'
+          : 'pending';
+
+        // Write to Firestore first — WhatsApp fires inside .then()
         bookingId = await createBooking({
-          userId: user.uid,
-          userName: user.name,
-          userPhone: user.phone || '',
-          userEmail: user.email,
-
-          vehicleId: data.vehicle.id,
-          vehicleName: data.vehicle.name,
-          vehicleRegNo: data.vehicle.registrationNumber,
-
-          serviceId: data.service.id,
-          serviceName: data.service.name,
-          serviceCategory: data.service.category,
+          userId:           user.uid,
+          userName:         user.name,
+          userPhone:        user.phone || '',
+          userEmail:        user.email,
+          vehicleId:        data.vehicle.id,
+          vehicleName:      data.vehicle.name,
+          vehicleRegNo:     data.vehicle.registrationNumber,
+          serviceId:        data.service.id,
+          serviceName:      data.service.name,
+          serviceCategory:  data.service.category,
           serviceBasePrice: data.service.price,
-
           pickupDropRequired: !!data.pickupDrop,
-          pickupDropFee: pickupFee,
-          pickupAddress: data.pickupAddress || '',
-
-          totalAmount: total,
-
-          scheduledDate: data.date,
-          scheduledTime: data.time,
-
-          paymentMethod:
-            membershipWashApplied && total === pickupFee
-              ? 'cash'
-              : data.paymentMethod || 'cash',
-
-          paymentStatus:
-            membershipWashApplied && total === pickupFee
-              ? 'verified'
-              : 'pending',
-
-          transactionId: data.transactionId || '',
-
-          status: 'pending',
-
-          usedMembershipWash: membershipWashApplied,
-          membershipId
-        });
-
-        const newBooking: Booking = {
-          id: bookingId,
-          userId: user.uid,
-          userName: user.name,
-          userPhone: user.phone || '',
-          userEmail: user.email,
-
-          vehicleId: data.vehicle.id,
-          vehicleName: data.vehicle.name,
-          vehicleRegNo: data.vehicle.registrationNumber,
-
-          serviceId: data.service.id,
-          serviceName: data.service.name,
-          serviceCategory: data.service.category,
-          serviceBasePrice: data.service.price,
-
-          pickupDropRequired: !!data.pickupDrop,
-          pickupDropFee: pickupFee,
-          pickupAddress: data.pickupAddress,
-
-          totalAmount: total,
-
-          scheduledDate: data.date,
-          scheduledTime: data.time,
-
-          status: 'pending',
-
-          paymentMethod:
-            membershipWashApplied && total === pickupFee
-              ? 'cash'
-              : data.paymentMethod || 'cash',
-
-          paymentStatus:
-            membershipWashApplied && total === pickupFee
-              ? 'verified'
-              : 'pending',
-
-          transactionId: data.transactionId,
-
+          pickupDropFee:    pickupFee,
+          pickupAddress:    data.pickupAddress || '',
+          totalAmount:      total,
+          scheduledDate:    data.date,
+          scheduledTime:    data.time,
+          paymentMethod,
+          paymentStatus,
+          transactionId:    data.transactionId || '',
+          status:           'pending',
           usedMembershipWash: membershipWashApplied,
           membershipId,
-
-          createdAt: null as any,
-          updatedAt: null as any
-        };
-
-        addBookingToStore(newBooking);
-
-        // WhatsApp confirmation
-        const msg = getBookingWhatsAppMsg({
-          userName: user.name,
-          vehicleName: data.vehicle.name,
-          serviceName: data.service.name,
-          scheduledDate: data.date,
-          scheduledTime: data.time,
-          totalAmount: total,
-          id: bookingId,
-          pickupDropRequired: !!data.pickupDrop,
-          paymentMethod: data.paymentMethod,
-          transactionId: data.transactionId
         });
 
+        // Optimistic store update
+        const now = Timestamp.now();
+        const newBooking: Booking = {
+          id:               bookingId,
+          userId:           user.uid,
+          userName:         user.name,
+          userPhone:        user.phone || '',
+          userEmail:        user.email,
+          vehicleId:        data.vehicle.id,
+          vehicleName:      data.vehicle.name,
+          vehicleRegNo:     data.vehicle.registrationNumber,
+          serviceId:        data.service.id,
+          serviceName:      data.service.name,
+          serviceCategory:  data.service.category,
+          serviceBasePrice: data.service.price,
+          pickupDropRequired: !!data.pickupDrop,
+          pickupDropFee:    pickupFee,
+          pickupAddress:    data.pickupAddress,
+          totalAmount:      total,
+          scheduledDate:    data.date,
+          scheduledTime:    data.time,
+          status:           'pending',
+          paymentMethod,
+          paymentStatus,
+          transactionId:    data.transactionId,
+          usedMembershipWash: membershipWashApplied,
+          membershipId,
+          createdAt:        now,
+          updatedAt:        now,
+        };
+        addBookingToStore(newBooking);
+
+        // WhatsApp fires ONLY after successful Firestore write
+        const msg = getBookingWhatsAppMsg({
+          userName:          user.name,
+          vehicleName:       data.vehicle.name,
+          serviceName:       data.service.name,
+          scheduledDate:     data.date,
+          scheduledTime:     data.time,
+          totalAmount:       total,
+          id:                bookingId,
+          pickupDropRequired: !!data.pickupDrop,
+          paymentMethod:     data.paymentMethod,
+          transactionId:     data.transactionId,
+        });
         setTimeout(() => {
           window.open(
             `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,
-            "_blank"
+            '_blank'
           );
         }, 400);
-
       }
 
       setConfirmedId(bookingId);
       setStep(5);
 
     } catch (err) {
-
       console.error(err);
-      toast.error("Booking failed. Please try again.");
-
+      toast.error('Booking failed. Please try again.');
     } finally {
-
       setSubmitting(false);
-
     }
   };
 
   const progress = (step / (STEPS.length - 1)) * 100;
 
-  // ── shared style helpers ───────────────────────────────────────────────────
-  const mono10    = { fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
-  const syne14    = { fontFamily: "'Syne', sans-serif", fontWeight: 700 as const, fontSize: '14px', color: 'var(--chrome)' };
-  const grotesk12 = { fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'var(--steel)' };
+  // Shared style helpers
+  const mono10    = { fontFamily: "var(--font-mono)", fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
+  const syne14    = { fontFamily: "var(--font-display)", fontWeight: 700 as const, fontSize: '14px', color: 'var(--chrome)' };
+  const grotesk12 = { fontFamily: "var(--font-body)", fontSize: '12px', color: 'var(--steel)' };
 
-  // ── membership banner shown on service step ────────────────────────────────
+  // Membership banner (service step)
   const MembershipBanner = () => {
     if (!membership || !isWashService) return null;
     if (washesRemaining <= 0) return (
       <div className="rounded-xl p-3 mb-4 flex items-center gap-2"
         style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
         <Shield size={14} style={{ color: '#EF4444', flexShrink: 0 }} />
-        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: '#EF4444' }}>
-          {membership.plan} membership — all {membership.washesTotal} washes used this month.
-          This booking will be charged at full price.
+        <p style={{ ...grotesk12, color: '#EF4444' }}>
+          {membership.plan} membership — all {membership.washesTotal} washes used this month. Full price applies.
         </p>
       </div>
     );
@@ -315,34 +272,31 @@ function BookingInner() {
         style={{ background: `${membershipPlan?.color ?? 'var(--ember)'}14`, border: `1px solid ${membershipPlan?.color ?? 'var(--ember)'}40` }}>
         <Zap size={14} style={{ color: membershipPlan?.color ?? 'var(--ember)', flexShrink: 0, marginTop: '1px' }} />
         <div>
-          <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '13px', color: membershipPlan?.color ?? 'var(--ember)' }}>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: membershipPlan?.color ?? 'var(--ember)' }}>
             {membership.plan} Membership Active
           </p>
-          <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'var(--steel)', marginTop: '2px' }}>
-            {washesRemaining} wash{washesRemaining !== 1 ? 'es' : ''} remaining.
-            {' '}Select any Washing service to use 1 wash from your plan.
+          <p style={{ ...grotesk12, marginTop: '2px' }}>
+            {washesRemaining} wash{washesRemaining !== 1 ? 'es' : ''} remaining. Select any Washing service to use 1 wash.
           </p>
         </div>
       </div>
     );
   };
 
-  // ── membership wash toggle shown on review + payment steps ────────────────
+  // Membership wash toggle (review + payment steps)
   const MembershipWashToggle = () => {
     if (!membership || !isWashService || washesRemaining <= 0) return null;
     return (
       <div className="rounded-2xl p-4 mb-4"
         style={{
-          background: usedMembershipWash
-            ? `${membershipPlan?.color ?? 'var(--ember)'}12`
-            : 'var(--card)',
+          background: usedMembershipWash ? `${membershipPlan?.color ?? 'var(--ember)'}12` : 'var(--card)',
           border: `1.5px solid ${usedMembershipWash ? (membershipPlan?.color ?? 'var(--ember)') + '60' : 'var(--border-2)'}`,
         }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap size={15} style={{ color: membershipPlan?.color ?? 'var(--ember)', flexShrink: 0 }} />
             <div>
-              <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 600, color: 'var(--chrome)' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: 'var(--chrome)' }}>
                 Use Membership Wash
               </p>
               <p style={grotesk12}>
@@ -362,13 +316,13 @@ function BookingInner() {
             style={{ borderTop: `1px solid ${membershipPlan?.color ?? 'var(--ember)'}30` }}>
             <div className="flex items-center justify-between">
               <p style={grotesk12}>Service (membership)</p>
-              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '12px', color: '#22C55E', textDecoration: 'line-through', marginRight: '8px' }}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#22C55E', textDecoration: 'line-through', marginRight: '8px' }}>
                 {formatCurrency(data.service?.price || 0)}
               </p>
             </div>
             <div className="flex items-center justify-between mt-1">
               <p style={grotesk12}>You pay</p>
-              <p className="gradient-text" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px' }}>
+              <p className="gradient-text" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px' }}>
                 {total === 0 ? 'FREE' : formatCurrency(total)}
               </p>
             </div>
@@ -381,7 +335,7 @@ function BookingInner() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--void)' }}>
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="sticky top-0 z-20 glass-nav px-4 pt-4 pb-3">
         <div className="flex items-center gap-3 mb-3">
           <button
@@ -390,17 +344,17 @@ function BookingInner() {
             <ChevronLeft size={15} style={{ color: 'var(--pewter)' }} />
           </button>
           <div className="flex-1">
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '15px', color: 'var(--chrome)', letterSpacing: '0.09em', lineHeight: 1 }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--chrome)', letterSpacing: '0.09em', lineHeight: 1 }}>
               BOOK SERVICE
             </h1>
             <p style={{ ...mono10, marginTop: '2px' }}>{STEPS[step]} — {step + 1}/{STEPS.length}</p>
           </div>
           {data.service && step > 1 && step < 5 && (
             <div className="text-right">
-              <p className="gradient-text" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '16px', lineHeight: 1 }}>
-                {membershipCoversWash && total === 0 ? (
-                  <span style={{ color: '#22C55E' }}>FREE</span>
-                ) : formatCurrency(total)}
+              <p className="gradient-text" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', lineHeight: 1 }}>
+                {membershipCoversWash && total === 0
+                  ? <span style={{ color: '#22C55E' }}>FREE</span>
+                  : formatCurrency(total)}
               </p>
               {pickupFee > 0 && <p style={{ ...mono10, marginTop: '2px' }}>INCL. PICKUP</p>}
               {membershipCoversWash && <p style={{ ...mono10, marginTop: '2px', color: membershipPlan?.color }}>MEMBERSHIP</p>}
@@ -415,10 +369,10 @@ function BookingInner() {
       <div className="px-4 py-5 pb-32">
         <AnimatePresence mode="wait">
 
-          {/* ── Step 0: Vehicle ─────────────────────────────────────────────── */}
+          {/* Step 0 — Vehicle */}
           {step === 0 && (
             <motion.div key="s0" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
                 SELECT VEHICLE
               </h2>
               <p style={{ ...grotesk12, marginBottom: '20px' }}>Which car are we detailing?</p>
@@ -464,15 +418,14 @@ function BookingInner() {
             </motion.div>
           )}
 
-          {/* ── Step 1: Service ─────────────────────────────────────────────── */}
+          {/* Step 1 — Service */}
           {step === 1 && (
             <motion.div key="s1" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
                 CHOOSE SERVICE
               </h2>
               <p style={{ ...grotesk12, marginBottom: '16px' }}>For {data.vehicle?.name}</p>
 
-              {/* membership loading indicator */}
               {membershipLoading && (
                 <div className="flex items-center gap-2 mb-3" style={{ ...grotesk12, color: 'var(--faint)' }}>
                   <Loader2 size={12} className="animate-spin" />
@@ -480,7 +433,6 @@ function BookingInner() {
                 </div>
               )}
 
-              {/* membership banner — shown when Washing tab is active */}
               {cat === 'Washing' && !membershipLoading && <MembershipBanner />}
 
               <div className="flex gap-2 mb-5 overflow-x-auto no-scroll pb-1">
@@ -490,7 +442,7 @@ function BookingInner() {
                     style={{
                       background: cat === c ? 'var(--ember)' : 'var(--dark)',
                       border: '1px solid ' + (cat === c ? 'var(--ember)' : 'var(--border-2)'),
-                      fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.12em',
+                      fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em',
                       textTransform: 'uppercase', color: cat === c ? 'white' : 'var(--steel)',
                       boxShadow: cat === c ? '0 2px 12px rgba(255,69,0,0.3)' : 'none',
                     }}>
@@ -506,9 +458,7 @@ function BookingInner() {
                     <motion.button key={svc.id} whileTap={{ scale: 0.97 }}
                       onClick={() => {
                         setData(p => ({ ...p, service: svc }));
-                        // auto-enable membership wash when a wash service is selected
-                        if (isMemberWash) setUsedMembershipWash(true);
-                        else setUsedMembershipWash(false);
+                        setUsedMembershipWash(isMemberWash);
                       }}
                       className={`w-full rounded-2xl p-4 text-left transition-all holo-surface ${data.service?.id === svc.id ? 'ember-ring card-ember' : 'card'}`}>
                       <div className="flex items-start justify-between">
@@ -516,12 +466,12 @@ function BookingInner() {
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p style={syne14}>{svc.name}</p>
                             {svc.popular && (
-                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,69,0,0.15)', color: 'var(--ember)', border: '1px solid rgba(255,69,0,0.25)' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '99px', background: 'rgba(255,69,0,0.15)', color: 'var(--ember)', border: '1px solid rgba(255,69,0,0.25)' }}>
                                 HOT
                               </span>
                             )}
                             {isMemberWash && (
-                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '8px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '99px', background: `${membershipPlan?.color ?? '#EAB308'}20`, color: membershipPlan?.color ?? '#EAB308', border: `1px solid ${membershipPlan?.color ?? '#EAB308'}40` }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '99px', background: `${membershipPlan?.color ?? '#EAB308'}20`, color: membershipPlan?.color ?? '#EAB308', border: `1px solid ${membershipPlan?.color ?? '#EAB308'}40` }}>
                                 MEMBER
                               </span>
                             )}
@@ -536,15 +486,13 @@ function BookingInner() {
                         <div className="text-right shrink-0">
                           {isMemberWash ? (
                             <div>
-                              <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '12px', color: 'var(--faint)', textDecoration: 'line-through' }}>
+                              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--faint)', textDecoration: 'line-through' }}>
                                 {formatCurrency(svc.price)}
                               </p>
-                              <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '14px', color: '#22C55E' }}>
-                                FREE
-                              </p>
+                              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: '#22C55E' }}>FREE</p>
                             </div>
                           ) : (
-                            <p className="gradient-text" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '16px' }}>
+                            <p className="gradient-text" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px' }}>
                               {formatCurrency(svc.price)}
                             </p>
                           )}
@@ -562,10 +510,10 @@ function BookingInner() {
             </motion.div>
           )}
 
-          {/* ── Step 2: Schedule ────────────────────────────────────────────── */}
+          {/* Step 2 — Schedule */}
           {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
                 SCHEDULE
               </h2>
               <p style={{ ...grotesk12, marginBottom: '20px' }}>
@@ -587,13 +535,13 @@ function BookingInner() {
                           border: '1px solid ' + (sel ? 'var(--ember)' : 'var(--border-2)'),
                           boxShadow: sel ? '0 4px 16px rgba(255,69,0,0.35)' : 'none',
                         }}>
-                        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '9px', color: sel ? 'rgba(255,255,255,0.7)' : 'var(--faint)', letterSpacing: '0.08em' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: sel ? 'rgba(255,255,255,0.7)' : 'var(--faint)', letterSpacing: '0.08em' }}>
                           {dt.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase()}
                         </span>
-                        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '20px', color: sel ? 'white' : 'var(--chrome)', lineHeight: 1 }}>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: sel ? 'white' : 'var(--chrome)', lineHeight: 1 }}>
                           {dt.getDate()}
                         </span>
-                        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '9px', color: sel ? 'rgba(255,255,255,0.7)' : 'var(--faint)', letterSpacing: '0.06em' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: sel ? 'rgba(255,255,255,0.7)' : 'var(--faint)', letterSpacing: '0.06em' }}>
                           {dt.toLocaleDateString('en-IN', { month: 'short' }).toUpperCase()}
                         </span>
                       </button>
@@ -620,7 +568,7 @@ function BookingInner() {
                           style={{
                             background: sel ? 'var(--ember)' : taken ? 'var(--cavern)' : 'var(--dark)',
                             border: '1px solid ' + (sel ? 'var(--ember)' : taken ? 'var(--border)' : 'var(--border-2)'),
-                            fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', fontWeight: 500,
+                            fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500,
                             color: sel ? 'white' : taken ? 'var(--faint)' : 'var(--pewter)',
                             opacity: taken ? 0.4 : 1,
                             cursor: taken ? 'not-allowed' : 'pointer',
@@ -630,7 +578,7 @@ function BookingInner() {
                           {formatTime(t)}
                           {taken && (
                             <span className="absolute -top-1.5 -right-1.5 text-[8px] px-1 rounded-full"
-                              style={{ background: '#ef4444', color: 'white', fontFamily: "'Space Mono', monospace", letterSpacing: '0.08em' }}>
+                              style={{ background: '#ef4444', color: 'white', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
                               FULL
                             </span>
                           )}
@@ -643,59 +591,54 @@ function BookingInner() {
             </motion.div>
           )}
 
-          {/* ── Step 3: Review ──────────────────────────────────────────────── */}
+          {/* Step 3 — Review */}
           {step === 3 && (
             <motion.div key="s3" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
                 REVIEW
               </h2>
-              <p style={{ ...grotesk12, marginBottom: '20px' }}>Confirm booking details</p>
+              <p style={{ ...grotesk12, marginBottom: '20px' }}>Confirm your booking details</p>
 
-              {/* membership wash toggle */}
               <MembershipWashToggle />
 
               <div className="card-ember rounded-2xl p-4 mb-4">
                 <div className="grid grid-cols-2 gap-4 mb-3">
-                  {[
+                  {([
                     ['Vehicle', data.vehicle?.name],
                     ['Service', data.service?.name],
-                    ['Date', data.date && formatDate(data.date)],
-                    ['Time', data.time && formatTime(data.time)],
-                  ].map(([l, v]) => (
-                    <div key={l as string}>
+                    ['Date',    data.date && formatDate(data.date)],
+                    ['Time',    data.time && formatTime(data.time)],
+                  ] as [string, string | undefined][]).map(([l, v]) => (
+                    <div key={l}>
                       <p style={mono10}>{l}</p>
-                      <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'var(--fg-dim)', fontWeight: 500, marginTop: '2px' }}>{v}</p>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--fg-dim)', fontWeight: 500, marginTop: '2px' }}>{v}</p>
                     </div>
                   ))}
                 </div>
                 <div className="pt-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,69,0,0.15)' }}>
-                  <p style={grotesk12}>
-                    {membershipCoversWash ? 'Service (membership covered)' : 'Service Price'}
-                  </p>
+                  <p style={grotesk12}>{membershipCoversWash ? 'Service (membership covered)' : 'Service Price'}</p>
                   {membershipCoversWash ? (
                     <div className="flex items-center gap-2">
-                      <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '12px', color: 'var(--faint)', textDecoration: 'line-through' }}>
+                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--faint)', textDecoration: 'line-through' }}>
                         {formatCurrency(data.service?.price || 0)}
                       </p>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '16px', color: '#22C55E' }}>
-                        FREE
-                      </p>
+                      <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: '#22C55E' }}>FREE</p>
                     </div>
                   ) : (
-                    <p className="gradient-text" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px' }}>
+                    <p className="gradient-text" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px' }}>
                       {formatCurrency(data.service?.price || 0)}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Pickup toggle */}
+              {/* Pickup & Drop toggle */}
               <div className="card rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Truck size={15} style={{ color: 'var(--ember)', flexShrink: 0 }} />
                     <div>
-                      <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 500, color: 'var(--fg-dim)' }}>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 500, color: 'var(--fg-dim)' }}>
                         Pickup &amp; Drop
                       </p>
                       <p style={grotesk12}>+{formatCurrency(PICKUP_FEE)} pickup + {formatCurrency(PICKUP_FEE)} drop</p>
@@ -707,7 +650,7 @@ function BookingInner() {
                     <div className="toggle-knob" />
                   </button>
                 </div>
-                <p style={grotesk12}>We collect your car from your address and return it after service.</p>
+                <p style={grotesk12}>We collect your car and return it after service.</p>
                 <AnimatePresence>
                   {data.pickupDrop && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
@@ -722,7 +665,7 @@ function BookingInner() {
                 {data.pickupDrop && (
                   <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--border)' }}>
                     <p style={grotesk12}>Total (with pickup)</p>
-                    <p className="gradient-text" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px' }}>
+                    <p className="gradient-text" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px' }}>
                       {formatCurrency(total)}
                     </p>
                   </div>
@@ -731,10 +674,10 @@ function BookingInner() {
             </motion.div>
           )}
 
-          {/* ── Step 4: Payment ─────────────────────────────────────────────── */}
+          {/* Step 4 — Payment */}
           {step === 4 && (
             <motion.div key="s4" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--chrome)', letterSpacing: '0.03em', marginBottom: '4px' }}>
                 PAYMENT
               </h2>
               <p style={{ ...grotesk12, marginBottom: '20px' }}>
@@ -744,25 +687,21 @@ function BookingInner() {
                 </strong>
               </p>
 
-              {/* membership covers it fully — skip payment */}
               {membershipCoversWash && total === 0 ? (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="rounded-2xl p-6 text-center"
                   style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)' }}>
                   <div className="text-4xl mb-3">🎉</div>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px', color: '#22C55E', marginBottom: '6px' }}>
+                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: '#22C55E', marginBottom: '6px' }}>
                     Covered by Membership
                   </p>
                   <p style={{ ...grotesk12, lineHeight: 1.6 }}>
                     This wash is fully covered by your {membership?.plan} plan.
-                    No payment required — 1 wash will be deducted from your allowance.
+                    No payment required — 1 wash will be deducted.
                   </p>
-                  <div className="mt-4 rounded-xl p-3"
-                    style={{ background: 'var(--cavern)', border: '1px solid var(--border-2)' }}>
-                    <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', color: 'var(--faint)', letterSpacing: '0.1em' }}>
-                      AFTER THIS BOOKING
-                    </p>
-                    <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '16px', color: membershipPlan?.color, marginTop: '4px' }}>
+                  <div className="mt-4 rounded-xl p-3" style={{ background: 'var(--cavern)', border: '1px solid var(--border-2)' }}>
+                    <p style={{ ...mono10, color: 'var(--faint)' }}>AFTER THIS BOOKING</p>
+                    <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: membershipPlan?.color, marginTop: '4px' }}>
                       {washesRemaining - 1} wash{washesRemaining - 1 !== 1 ? 'es' : ''} remaining
                     </p>
                   </div>
@@ -788,8 +727,7 @@ function BookingInner() {
                             <p style={grotesk12}>{m.sub}</p>
                           </div>
                           {sel && (
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                              style={{ background: 'var(--ember)' }}>
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--ember)' }}>
                               <Check size={12} style={{ color: 'white' }} />
                             </div>
                           )}
@@ -804,31 +742,35 @@ function BookingInner() {
                         className="card-ember rounded-2xl p-5">
                         <div className="text-center mb-5">
                           <p style={mono10}>Amount to Pay</p>
-                          <p className="gradient-text" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '32px', marginTop: '4px', lineHeight: 1 }}>
+                          <p className="gradient-text" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '32px', marginTop: '4px', lineHeight: 1 }}>
                             {formatCurrency(total)}
                           </p>
                         </div>
                         <p style={{ ...mono10, marginBottom: '8px' }}>AutoModz UPI ID</p>
                         <div className="flex items-center gap-2 mb-4">
                           <div className="flex-1 rounded-xl px-4 py-3"
-                            style={{ background: 'var(--dark)', border: '1px solid var(--border-2)', fontFamily: "'Space Mono', monospace", fontSize: '13px', color: 'var(--chrome)', letterSpacing: '0.06em' }}>
+                            style={{ background: 'var(--dark)', border: '1px solid var(--border-2)', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--chrome)', letterSpacing: '0.06em' }}>
                             {upiId}
                           </div>
-                          <button onClick={() => { navigator.clipboard.writeText(upiId); setCopiedUpi(true); toast.success('Copied!'); setTimeout(() => setCopiedUpi(false), 2500); }}
+                          <button onClick={() => {
+                            navigator.clipboard.writeText(upiId);
+                            setCopiedUpi(true);
+                            toast.success('Copied!');
+                            setTimeout(() => setCopiedUpi(false), 2500);
+                          }}
                             className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all"
                             style={{ background: copiedUpi ? '#34d399' : 'var(--ember)' }}>
                             {copiedUpi ? <Check size={16} style={{ color: 'white' }} /> : <Copy size={16} style={{ color: 'white' }} />}
                           </button>
                         </div>
-                        <div className="rounded-xl p-3 mb-4 space-y-1.5"
-                          style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
+                        <div className="rounded-xl p-3 mb-4 space-y-1.5" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
                           {[
                             'Open any UPI app and send to the ID above',
                             `Send exactly ${formatCurrency(total)} as the payment`,
                             'Copy your transaction ID from the app receipt',
                             'Paste it in the field below to confirm booking',
                           ].map((s, i) => (
-                            <p key={i} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px', color: 'var(--steel)', display: 'flex', gap: '8px' }}>
+                            <p key={i} style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)', display: 'flex', gap: '8px' }}>
                               <span style={{ color: 'var(--ember)', flexShrink: 0 }}>{i + 1}.</span>{s}
                             </p>
                           ))}
@@ -839,14 +781,14 @@ function BookingInner() {
                         <input type="text" placeholder="e.g. 412345678901"
                           value={data.transactionId || ''}
                           onChange={e => setData(p => ({ ...p, transactionId: e.target.value.trim() }))}
-                          className="input font-mono"
-                          style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.06em', fontSize: '14px' }}
+                          className="input"
+                          style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontSize: '14px' }}
                         />
-                        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '11px', color: 'var(--faint)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--faint)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Info size={10} /> Found in your UPI app → Payment History
                         </p>
                         {isDemo && (
-                          <div className="mt-3 text-center" style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', color: 'var(--ember)', letterSpacing: '0.08em' }}>
+                          <div className="mt-3 text-center" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--ember)', letterSpacing: '0.08em' }}>
                             ✦ DEMO — ANY TEXT WORKS
                           </div>
                         )}
@@ -856,7 +798,7 @@ function BookingInner() {
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                         className="card rounded-2xl p-5 text-center">
                         <div className="text-4xl mb-3 animate-float">💵</div>
-                        <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '16px', color: 'var(--chrome)', marginBottom: '4px' }}>
+                        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--chrome)', marginBottom: '4px' }}>
                           Pay {formatCurrency(total)} at Studio
                         </p>
                         <p style={grotesk12}>Cash on arrival. Exact change preferred.</p>
@@ -871,7 +813,7 @@ function BookingInner() {
             </motion.div>
           )}
 
-          {/* ── Step 5: Confirmed ───────────────────────────────────────────── */}
+          {/* Step 5 — Confirmed */}
           {step === 5 && (
             <motion.div key="s5" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -883,36 +825,36 @@ function BookingInner() {
                 <Check size={44} style={{ color: 'var(--ember)' }} />
               </motion.div>
 
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '28px', color: 'var(--chrome)', letterSpacing: '0.04em', marginBottom: '8px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', color: 'var(--chrome)', letterSpacing: '0.04em', marginBottom: '8px' }}>
                 BOOKED ✦
               </h2>
-              <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'var(--steel)', marginBottom: '4px' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--steel)', marginBottom: '4px' }}>
                 {isDemo ? 'Demo booking — full flow tested' : 'WhatsApp confirmation sent to studio'}
               </p>
               {membershipCoversWash && (
-                <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '11px', color: membershipPlan?.color, marginBottom: '4px', letterSpacing: '0.08em' }}>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: membershipPlan?.color, marginBottom: '4px', letterSpacing: '0.08em' }}>
                   ✦ 1 {membership?.plan} WASH DEDUCTED
                 </p>
               )}
               {data.paymentMethod === 'upi' && data.transactionId && (
-                <p style={{ fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--faint)', marginBottom: '20px' }}>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--faint)', marginBottom: '20px' }}>
                   TXN: {data.transactionId}
                 </p>
               )}
 
               <div className="card-ember rounded-2xl p-4 text-left mb-6">
                 <div className="grid grid-cols-2 gap-4">
-                  {[
+                  {([
                     ['Vehicle', data.vehicle?.name],
                     ['Service', data.service?.name],
-                    ['Date', data.date && formatDate(data.date)],
-                    ['Time', data.time && formatTime(data.time)],
-                    ['Total', membershipCoversWash && total === 0 ? 'FREE' : formatCurrency(total)],
-                    ['ID', confirmedId.slice(0, 8).toUpperCase()],
-                  ].map(([l, v]) => (
-                    <div key={l as string}>
+                    ['Date',    data.date && formatDate(data.date)],
+                    ['Time',    data.time && formatTime(data.time)],
+                    ['Total',   membershipCoversWash && total === 0 ? 'FREE' : formatCurrency(total)],
+                    ['ID',      confirmedId.slice(0, 8).toUpperCase()],
+                  ] as [string, string | undefined][]).map(([l, v]) => (
+                    <div key={l}>
                       <p style={mono10}>{l}</p>
-                      <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '13px', color: 'var(--fg-dim)', fontWeight: 500, marginTop: '2px' }}>{v}</p>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--fg-dim)', fontWeight: 500, marginTop: '2px' }}>{v}</p>
                     </div>
                   ))}
                 </div>
@@ -931,10 +873,11 @@ function BookingInner() {
               </button>
             </motion.div>
           )}
+
         </AnimatePresence>
       </div>
 
-      {/* ── Bottom CTA ──────────────────────────────────────────────────────── */}
+      {/* Bottom CTA */}
       {step < 5 && (
         <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-4 glass-nav"
           style={{ borderTop: '1px solid var(--border)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
