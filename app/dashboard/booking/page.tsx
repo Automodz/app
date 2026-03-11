@@ -353,7 +353,7 @@ function BookingInner() {
         </div>
       </div>
 
-      <div className="px-4 py-5 pb-28">
+      <div className="px-4 py-5 pb-32">
         <AnimatePresence mode="wait">
 
           {/* ── Step 0: Vehicle ─────────────────────────────────────────────── */}
@@ -873,13 +873,10 @@ function BookingInner() {
             </motion.div>
           )}
 
-        </AnimatePresence>
-      </div>
-
-      {/* ── Bottom CTA ──────────────────────────────────────────────────────── */}
+      <div className="px-4 py-5 pb-36">
       {step < 5 && (
-        <div className="fixed bottom-0 inset-x-0 pb-safe px-4 py-4 glass-nav"
-          style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-4 glass-nav"
+          style={{ borderTop: '1px solid var(--border)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <motion.button whileTap={{ scale: 0.97 }}
             onClick={() => step === 4 ? handleSubmit() : canProceed() && setStep(step + 1)}
             disabled={!canProceed() || submitting}
