@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Vehicles subcollection
+      match /vehicles/{vehicleId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // Vehicle service history (written by admin, readable by owner/admin)
+        match /serviceHistory/{recordId} {
+          allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+          allow create, update, delete: if request.auth != null && isAdmin();
+        }
+      }
+    }
+    
+    // Bookings - users see their own, admins see all
+    match /bookings/{bookingId} {
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && isAdmin();
+    }
+    
+    // Services - anyone authenticated can read, only admin writes
+    match /services/{serviceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // Subscriptions
+    match /subscriptions/{subId} {
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && isAdmin();
+    }
+    
+    // Gallery - read for all auth, write for admin
+    match /gallery/{imageId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // Notifications
+    match /notifications/{notifId} {
+      allow read, update: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // Referrals
+    match /referrals/{refId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
