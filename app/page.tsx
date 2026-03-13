@@ -169,8 +169,8 @@ export default function HomePage() {
             color: '#fff',
             marginBottom: '20px',
           }}>
-          YOUR CAR.<br />
-          <span style={{ color: 'var(--ember, #FF4500)' }}>PERFECTED.</span>
+          YOUR CAR<br />
+          <span style={{ color: 'var(--ember, #FF4500)' }}>PERFECTED</span>
         </motion.h1>
 
         {/* Subline */}
@@ -180,10 +180,10 @@ export default function HomePage() {
             fontSize: '15px',
             lineHeight: 1.7,
             color: 'rgba(255,255,255,0.45)',
-            maxWidth: '300px',
+            maxWidth: '400px',
             marginBottom: '44px',
           }}>
-          Book detailing, track your garage, and manage memberships — all in one place.
+          Book Detailing | Track Garage | Manage Membership
         </motion.p>
 
         {/* CTAs */}
