@@ -1,0 +1,263 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ─────────────────────────────────────────────────────────
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    // The single owner account may bootstrap itself as admin on first login;
+    // everyone else must be a customer. Verified against the signed-in email.
+    function isOwnerEmail() {
+      return request.auth.token.email != null &&
+             request.auth.token.email.lower() == 'hello.automodz@gmail.com';
+    }
+    // Staff = admin or a linked employee account. The employee role is granted
+    // ONLY server-side (/api/employee/link, admin SDK) - rules still forbid
+    // self-escalation on the users collection.
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isStaff() {
+      return userDoc().role in ['admin', 'employee'];
+    }
+    function myEmployeeId() {
+      return userDoc().employeeId;
+    }
+
+    // ── Users ───────────────────────────────────────────────────────────
+    // Self-service profile, but `role` can never be self-escalated.
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == userId &&
+        (request.resource.data.role == 'customer' ||
+         (request.resource.data.role == 'admin' && isOwnerEmail()));
+      allow update: if request.auth != null &&
+        ((request.auth.uid == userId &&
+          request.resource.data.role == resource.data.role) ||
+         isAdmin());
+      allow delete: if request.auth != null && isAdmin();
+
+      // Saved cars (favourites on car listings)
+      match /savedCars/{listingId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Web-push device tokens - owner writes, admin reads (server uses admin SDK anyway)
+      match /fcmTokens/{token} {
+        allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      }
+
+      // Vehicles subcollection
+      match /vehicles/{vehicleId} {
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+
+        // Vehicle service history (written by admin, readable by owner/admin)
+        match /serviceHistory/{recordId} {
+          allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+          allow create, update, delete: if request.auth != null && isAdmin();
+        }
+      }
+    }
+
+    // ── Bookings - users create/see their own, admins manage all.
+    //    Owners may also cancel or reschedule while still pending/confirmed. ──
+    match /bookings/{bookingId} {
+      allow read: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null &&
+        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if request.auth != null &&
+        (isAdmin() ||
+         (resource.data.userId == request.auth.uid &&
+          resource.data.status in ['pending', 'confirmed'] &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['scheduledDate', 'scheduledTime', 'status', 'cancelledAt', 'updatedAt']) &&
+          (request.resource.data.status == resource.data.status ||
+           request.resource.data.status == 'cancelled')));
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // ── Services - anyone authenticated reads, only admin writes ────────
+    match /services/{serviceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // ── Subscriptions - owner may cancel their own; admin manages all ───
+    match /subscriptions/{subId} {
+      allow read: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      // Self-purchase always lands as 'pending' - only admin verifies payment
+      // and activates (audit S6 #1: no honor-system activation).
+      allow create: if request.auth != null &&
+        (isAdmin() ||
+         (request.resource.data.userId == request.auth.uid &&
+          request.resource.data.status == 'pending'));
+      allow update: if request.auth != null &&
+        (isAdmin() ||
+         (resource.data.userId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt']) &&
+          request.resource.data.status == 'cancelled'));
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // ── Gallery - PUBLIC read (logged-out landing page), admin write ────
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // ── Notifications - recipient reads/marks-read, admin writes ────────
+    match /notifications/{notifId} {
+      allow read, update: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // ── Referrals - created ONLY server-side via /api/referral/claim ────
+    // (admin SDK bypasses rules). Clients read their own records.
+    match /referrals/{refId} {
+      allow read: if request.auth != null &&
+        (resource.data.referrerUid == request.auth.uid ||
+         resource.data.referredUid == request.auth.uid ||
+         isAdmin());
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // ── Internal operations ─────────────────────────────────────────────
+    // Staff read the roster (kiosk PIN list, assignment pickers); admin writes.
+    // authUid backlink happens via the admin SDK route, not the client.
+    match /employees/{id}      { allow read: if request.auth != null && isStaff();
+                                 allow write: if request.auth != null && isAdmin(); }
+    // Employees manage their own attendance from their phones.
+    match /attendance/{id} {
+      allow read: if request.auth != null && isStaff();
+      allow create: if request.auth != null &&
+        (isAdmin() || (isStaff() && request.resource.data.employeeId == myEmployeeId()));
+      allow update: if request.auth != null &&
+        (isAdmin() || (isStaff() && resource.data.employeeId == myEmployeeId()));
+      allow delete: if request.auth != null && isAdmin();
+    }
+    match /payroll/{id}        { allow read, write: if request.auth != null && isAdmin(); }
+    match /expenses/{id}       { allow read, write: if request.auth != null && isAdmin(); }
+    // Phone-keyed CRM records for accountless walk-ins - staff maintain at intake
+    match /walkinCustomers/{id} { allow read, write: if request.auth != null && isStaff(); }
+
+    // Quotes - customers may file a REQUEST for themselves; staff run the pipeline
+    match /quotes/{id} {
+      allow create: if request.auth != null &&
+        (isStaff() ||
+         (request.resource.data.status == 'requested' &&
+          request.resource.data.customerId == request.auth.uid &&
+          request.resource.data.total == 0));
+      allow read: if request.auth != null &&
+        (isStaff() || resource.data.customerId == request.auth.uid);
+      allow update, delete: if request.auth != null && isStaff();
+    }
+
+    // Follow-up tasks - owner's queue
+    match /tasks/{id} { allow read, write: if request.auth != null && isStaff(); }
+
+    // Private feedback from the public invoice rating - anyone may create a
+    // shape-valid entry; only admin reads
+    match /feedback/{id} {
+      allow create: if request.resource.data.keys().hasOnly([
+          'rating', 'comment', 'invoiceId', 'customerName', 'customerPhone', 'createdAt'
+        ])
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && (!('comment' in request.resource.data) || request.resource.data.comment.size() <= 1000);
+      allow read, update, delete: if request.auth != null && isAdmin();
+    }
+    match /dailyClosings/{id}  { allow read, write: if request.auth != null && isAdmin(); }
+    // Jobs: staff see the whole board; only ASSIGNED employees may write, and
+    // only operational fields - amounts, discounts, assignments stay admin-only.
+    match /jobs/{id} {
+      allow read: if request.auth != null && isStaff();
+      // Employees may create jobs; any discount must be system-computed
+      // (membership/promo) - there is no manual discount path for staff.
+      allow create: if request.auth != null &&
+        (isAdmin() ||
+         (isStaff() &&
+          (!('discount' in request.resource.data) ||
+           request.resource.data.discount.source in ['membership', 'promo'])));
+      allow update: if request.auth != null &&
+        (isAdmin() ||
+         (isStaff() && resource.data.assignedIds.hasAny([myEmployeeId()]) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+            ['status', 'statusHistory', 'photos', 'notes', 'bay',
+             'paymentStatus', 'paymentMethod', 'transactionId', 'invoiceId',
+             'payments', 'amountPaid', 'completedAt', 'updatedAt'])));
+      allow delete: if request.auth != null && isAdmin();
+    }
+    match /inventoryItems/{id} { allow read: if request.auth != null && isStaff();
+                                 allow write: if request.auth != null && isAdmin(); }
+    // Consumption txns are written by staff on job completion.
+    match /inventoryTxns/{id}  { allow read: if request.auth != null && isStaff();
+                                 allow create: if request.auth != null && isStaff();
+                                 allow update, delete: if request.auth != null && isAdmin(); }
+    match /serviceRecipes/{id} { allow read: if request.auth != null && isStaff();
+                                 allow write: if request.auth != null && isAdmin(); }
+    // Invoice-number counter - bumped by staff when generating an invoice.
+    match /counters/{id}       { allow read, write: if request.auth != null && isStaff(); }
+
+    // ── Invoices - staff create at the kiosk; customer reads their own;
+    //    public link via admin-SDK route ──
+    match /invoices/{id} {
+      allow read: if request.auth != null &&
+        (isStaff() || resource.data.customerId == request.auth.uid);
+      allow create: if request.auth != null && isStaff();
+      allow update, delete: if request.auth != null && isAdmin();
+    }
+
+    // ── Promos - authenticated read; admin writes, EXCEPT customers may
+    //    bump usedCount by exactly 1 when redeeming a code at booking ────
+    match /promos/{id} {
+      allow read: if request.auth != null;
+      allow create, delete: if request.auth != null && isAdmin();
+      allow update: if request.auth != null &&
+        (isAdmin() ||
+         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount']) &&
+          request.resource.data.usedCount == resource.data.usedCount + 1));
+    }
+    match /promoRedemptions/{id} {
+      // Customers may read their OWN redemptions (per-customer usage limits are
+      // checked client-side at booking time); admin reads all.
+      allow read: if request.auth != null &&
+        (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null &&
+        (isAdmin() || request.resource.data.userId == request.auth.uid);
+    }
+
+    // ── Car listings - PUBLIC read of active listings (logged-out /cars) ──
+    match /carListings/{id} {
+      allow read: if resource.data.active == true ||
+        (request.auth != null && isAdmin());
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // ── Car leads - public inquiry form with field-shape validation ─────
+    match /carLeads/{id} {
+      allow create: if request.resource.data.keys().hasOnly([
+          'listingId', 'listingTitle', 'type', 'userId', 'name', 'phone',
+          'message', 'preferredDate', 'preferredTime', 'status', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 100
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 15
+        && request.resource.data.status == 'new';
+      allow read, update, delete: if request.auth != null && isAdmin();
+    }
+
+    // ── Sell requests - customer creates/reads own; admin manages ───────
+    match /sellRequests/{id} {
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null &&
+        (isAdmin() || resource.data.userId == request.auth.uid);
+      allow update, delete: if request.auth != null && isAdmin();
+    }
+  }
+}
