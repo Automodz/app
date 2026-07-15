@@ -1,43 +1,41 @@
 'use client';
 /**
- * AutoModz homepage — lean, mobile-first, centred. One continuous premium
- * background (`.lux-bg`) scrolls behind everything.
- * Flow: Home → Trust → Why → Services → Before/After → Google reviews →
- *       Find us → Slide to book.
+ * AutoModz homepage — a single-page scroll story. A persistent vanilla-three.js
+ * car stage lives fixed behind everything: it starts assembled, blows apart into
+ * floating panels through the middle of the scroll, and reassembles by the end.
+ * Content is told in chapters that fade + rise in over the car.
  *
- * The homepage is ALWAYS dark — the fixed luxury look. The light/dark toggle
- * only governs the admin + user app, not this marketing surface. We force
- * `data-theme="dark"` on <html> while mounted (an inline script does it before
- * first paint to avoid a flash), and restore the user's real app theme on
- * leave. Imagery + review data are scaffold (flagged in source).
+ * The stage is client-only (next/dynamic ssr:false → three.js never touches the
+ * server, dodging the r3f/Next-15 crash). Lenis gives inertial scroll; the whole
+ * page's scroll progress drives the car. Reduced-motion / no-WebGL fall back to a
+ * static studio backdrop with fully-visible content.
+ *
+ * The homepage is ALWAYS dark — an inline script forces data-theme="dark" before
+ * paint. Imagery + review data are scaffold (flagged in source).
  */
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useScroll, useSpring, useReducedMotion } from 'framer-motion';
 import {
   Star, MapPin, Phone, ShieldCheck, Smartphone, IndianRupee, Clock, Navigation,
   CalendarCheck, SprayCan, Sparkles, CarFront,
 } from 'lucide-react';
-import HeroWash from '@/components/home/HeroWash';
 import { getServices } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import SlideToAction from '@/components/ui/SlideToAction';
 import Wordmark from '@/components/ui/Wordmark';
 import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';
 import WhatsAppFloat from '@/components/ui/WhatsAppFloat';
+import SmoothScroll from '@/components/home/SmoothScroll';
+import ScrollChapter from '@/components/home/ScrollChapter';
 import { SERVICE_SHOWCASE, STOCK } from '@/lib/stockImages';
 import { REVIEWS, GOOGLE_RATING } from '@/lib/reviews';
 import type { Service } from '@/lib/types';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
-const reveal = {
-  initial: { opacity: 0, y: 22 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-60px' },
-  transition: { duration: 0.6, ease: EASE },
-};
+const CarStage = dynamic(() => import('@/components/home/CarStage'), { ssr: false });
 
 const COPY: Record<string, { title: string; line: string }> = {
   PPF:     { title: 'Paint Protection Film', line: 'A clear, self-healing skin. Stone chips and scratches hit the film — not your paint.' },
@@ -45,16 +43,6 @@ const COPY: Record<string, { title: string; line: string }> = {
   Coating: { title: 'Detailing & Polish',    line: 'We chase out the swirls and bring the depth back — the shine it had on day one.' },
   Washing: { title: 'Wash & Care',           line: 'pH-neutral foam, steam and patience. A proper wash that never leaves a swirl.' },
 };
-
-function PremiumBackground() {
-  return (
-    <div aria-hidden className="lux-bg">
-      {/* fine grain for a tactile, premium surface */}
-      <div className="absolute inset-0 noise-overlay" style={{ opacity: 'var(--lux-grain)' }} />
-      <div className="absolute inset-0 bg-grid" style={{ opacity: 0.35 }} />
-    </div>
-  );
-}
 
 function Stars({ n = 5, size = 14 }: { n?: number; size?: number }) {
   return (
@@ -66,24 +54,24 @@ function Stars({ n = 5, size = 14 }: { n?: number; size?: number }) {
   );
 }
 
-function SectionTitle({ kicker, title, sub }: { kicker?: string; title: string; sub?: string }) {
+/** Big chapter heading — Unbounded, with a soft glow so it reads over the car. */
+function ChapterTitle({ children, size = 'clamp(30px, 7vw, 56px)' }: { children: React.ReactNode; size?: string }) {
   return (
-    <div className="text-center max-w-2xl mx-auto mb-9">
-      {kicker && <motion.p {...reveal} className="font-mono mb-3" style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--fg-dim)' }}>{kicker}</motion.p>}
-      <motion.h2 {...reveal} transition={{ ...reveal.transition, delay: 0.05 }} className="font-display"
-        style={{ fontSize: 'clamp(26px, 6vw, 44px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.015em', color: 'var(--fg)' }}>
-        {title}
-      </motion.h2>
-      {sub && <motion.p {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="font-body mt-4"
-        style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{sub}</motion.p>}
-    </div>
+    <h2 className="font-hero" style={{ fontSize: size, fontWeight: 800, lineHeight: 1.02, letterSpacing: '-0.02em', color: 'var(--fg)', textShadow: '0 2px 40px rgba(0,0,0,0.55)' }}>
+      {children}
+    </h2>
   );
 }
 
 export default function HomePage() {
   const router = useRouter();
+  const reduce = useReducedMotion();
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [openNow, setOpenNow] = useState<boolean | null>(null);
+
+  // whole-page scroll progress → smoothed → drives the car assemble/explode rig
+  const { scrollYProgress } = useScroll();
+  const carProgress = useSpring(scrollYProgress, { stiffness: 90, damping: 26, mass: 0.4 });
 
   useEffect(() => {
     getServices()
@@ -103,9 +91,25 @@ export default function HomePage() {
 
   return (
     <div className="relative" style={{ overflowX: 'clip' }}>
-      <PremiumBackground />
+      <SmoothScroll />
 
-      {/* Header — glass; wordmark auto-adapts to theme */}
+      {/* ── fixed studio backdrop + car stage ── */}
+      <div aria-hidden className="fixed inset-0 z-0" style={{ background: 'radial-gradient(125% 85% at 50% 30%, #24272c 0%, #101216 55%, #08090b 100%)' }} />
+      {!reduce && (
+        <div className="fixed inset-0 z-0">
+          <CarStage progress={carProgress} />
+        </div>
+      )}
+      {reduce && (
+        <div aria-hidden className="fixed inset-0 z-0 opacity-40">
+          <Image src={STOCK.hero} alt="" fill priority sizes="100vw" className="object-cover" />
+        </div>
+      )}
+      {/* legibility veil — darker top & bottom, open in the middle where the car blooms */}
+      <div aria-hidden className="fixed inset-0 z-0" style={{ background: 'linear-gradient(180deg, rgba(8,9,11,0.72) 0%, rgba(8,9,11,0.28) 30%, rgba(8,9,11,0.28) 70%, rgba(8,9,11,0.78) 100%)' }} />
+      <div aria-hidden className="fixed inset-0 z-0 noise-overlay" style={{ opacity: 'var(--lux-grain)' }} />
+
+      {/* Header — glass */}
       <header className="fixed top-0 inset-x-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top,0px)' }}>
         <div className="mx-3 mt-3 flex items-center justify-between rounded-2xl px-4 py-2.5"
           style={{ background: 'var(--glass)', backdropFilter: 'blur(18px) saturate(1.3)', WebkitBackdropFilter: 'blur(18px) saturate(1.3)', border: '1px solid var(--glass-border)' }}>
@@ -116,61 +120,64 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ── HOME — scroll-driven car wash ── */}
-      <HeroWash onBook={book} />
-
-      {/* ── TRUST STRIP ── */}
-      <section className="relative px-6 py-6">
-        <motion.div {...reveal} className="max-w-3xl mx-auto rounded-3xl px-5 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-6 text-center"
-          style={{ background: 'var(--glass)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid var(--glass-border)' }}>
-          {[
-            { n: GOOGLE_RATING.score.toFixed(1), l: 'GOOGLE RATING', stars: true },
-            { n: '500+', l: 'CARS PROTECTED' },
-            { n: 'Since 2019', l: 'IN MANINAGAR' },
-            { n: '100%', l: 'PHOTOGRAPHED' },
-          ].map(x => (
-            <div key={x.l}>
-              <div className="flex items-center justify-center gap-1.5">
-                <span className="font-display font-800" style={{ fontSize: 22, color: 'var(--fg)' }}>{x.n}</span>
-                {x.stars && <Stars n={5} size={13} />}
-              </div>
-              <div className="font-mono mt-1" style={{ fontSize: 9.5, letterSpacing: '0.12em', color: 'var(--muted)' }}>{x.l}</div>
-            </div>
-          ))}
+      {/* ═══ CHAPTER 01 — HERO (car assembled) ═══ */}
+      <section className="relative z-10 min-h-[100svh] flex flex-col items-center justify-center text-center px-6">
+        <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="font-mono mb-5" style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--fg-dim)' }}>
+          DETAILING STUDIO · MANINAGAR, AHMEDABAD
+        </motion.p>
+        <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.06 }}
+          className="font-hero" style={{ fontSize: 'clamp(46px, 13vw, 112px)', fontWeight: 800, lineHeight: 0.92, letterSpacing: '-0.03em', color: 'var(--fg)', textShadow: '0 2px 50px rgba(0,0,0,0.6)' }}>
+          The art of<br /><span className="text-ember">the finish.</span>
+        </motion.h1>
+        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.12 }}
+          className="font-body mt-7 max-w-md mx-auto" style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--muted)' }}>
+          The studio in Maninagar that treats your car like it&rsquo;s the only one in the bay.
+        </motion.p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.18 }}
+          className="mt-10 w-full max-w-sm">
+          <SlideToAction label="Slide to book now" onComplete={book} />
         </motion.div>
+        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1, duration: 1 }}
+          className="font-mono absolute bottom-8" style={{ fontSize: 10, letterSpacing: '0.18em', color: 'var(--muted)' }}>
+          SCROLL TO BEGIN ↓
+        </motion.span>
       </section>
 
-      {/* ── WHY AUTOMODZ — 3 pillars ── */}
-      <section className="relative px-6 py-16">
-        <SectionTitle kicker="WHY AUTOMODZ" title="Detailing done properly." />
-        <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+      {/* ═══ CHAPTER 02 — WHY (car starts to come apart) ═══ */}
+      <ScrollChapter index="02" kicker="WHY AUTOMODZ">
+        <ChapterTitle>Detailing,<br />taken apart.</ChapterTitle>
+        <p className="font-body mt-5 max-w-lg mx-auto" style={{ fontSize: 15.5, lineHeight: 1.6, color: 'var(--muted)' }}>
+          We treat a car as a sum of panels — every one corrected, protected and photographed on its own.
+        </p>
+        <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto mt-10 w-full">
           {[
             { icon: ShieldCheck, t: 'Studio-grade correction', d: 'Dust-free bays, inspection lighting, no shortcuts. Flaws have nowhere to hide.' },
             { icon: Smartphone, t: 'Live stage tracking', d: 'Follow every stage of your car from your phone. Every panel photographed.' },
             { icon: IndianRupee, t: 'Honest pricing', d: 'Only what your car actually needs. No upselling, no surprises.' },
           ].map(p => (
-            <motion.div key={p.t} {...reveal} className="rounded-[22px] p-6 text-center flex flex-col items-center"
-              style={{ background: 'var(--glass)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--glass-border)' }}>
+            <div key={p.t} className="rounded-[22px] p-6 text-center flex flex-col items-center"
+              style={{ background: 'var(--glass)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid var(--glass-border)' }}>
               <span className="grid place-items-center rounded-2xl mb-4" style={{ width: 46, height: 46, background: 'var(--accent-mist)', border: '1px solid var(--border-strong)', color: 'var(--fg)' }}>
                 <p.icon size={20} />
               </span>
               <h3 className="font-display" style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--fg)' }}>{p.t}</h3>
               <p className="font-body mt-2" style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--muted)' }}>{p.d}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
-      </section>
+      </ScrollChapter>
 
-      {/* ── SERVICES ── */}
-      <section id="services" className="relative px-6 py-16">
-        <SectionTitle kicker="THE CRAFT" title="What we do." />
-        <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
-          {SERVICE_SHOWCASE.map((s, i) => {
+      {/* ═══ CHAPTER 03 — SERVICES (car mid-explode) ═══ */}
+      <ScrollChapter index="03" kicker="THE CRAFT" id="services">
+        <ChapterTitle>What we do.</ChapterTitle>
+        <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto mt-10 w-full">
+          {SERVICE_SHOWCASE.map((s) => {
             const from = prices[s.cat] ?? s.from;
             const c = COPY[s.cat];
             return (
-              <motion.article key={s.cat} {...reveal} transition={{ ...reveal.transition, delay: (i % 2) * 0.06 }} onClick={book}
-                className="group relative rounded-[24px] overflow-hidden cursor-pointer" style={{ minHeight: 250, border: '1px solid var(--glass-border)' }}>
+              <article key={s.cat} onClick={book}
+                className="group relative rounded-[24px] overflow-hidden cursor-pointer text-left" style={{ minHeight: 230, border: '1px solid var(--glass-border)' }}>
                 <Image src={s.img} alt={c.title} fill sizes="(max-width:640px) 100vw, 50vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.05]" />
                 <div className="absolute inset-x-0 bottom-0 p-4">
                   <div className="rounded-[18px] p-4" style={{ background: 'var(--glass-2)', backdropFilter: 'blur(20px) saturate(1.4)', WebkitBackdropFilter: 'blur(20px) saturate(1.4)', border: '1px solid var(--glass-border)' }}>
@@ -183,53 +190,58 @@ export default function HomePage() {
                     <p className="font-body mt-2" style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--fg-dim)' }}>{c.line}</p>
                   </div>
                 </div>
-              </motion.article>
+              </article>
             );
           })}
         </div>
-      </section>
+      </ScrollChapter>
 
-      {/* ── BEFORE / AFTER PROOF ── */}
-      <section className="relative px-6 py-16">
-        <SectionTitle kicker="THE DIFFERENCE" title="From grimy to gleaming." sub="Drag across. The same car — dusty and dull on the left, corrected and glossed on the right." />
-        <motion.div {...reveal} className="max-w-2xl mx-auto">
+      {/* ═══ CHAPTER 04 — THE DIFFERENCE (car reassembling) ═══ */}
+      <ScrollChapter index="04" kicker="THE DIFFERENCE">
+        <ChapterTitle>From grimy<br />to gleaming.</ChapterTitle>
+        <p className="font-body mt-5 max-w-lg mx-auto" style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>
+          Drag across. The same car — dusty and dull on the left, corrected and glossed on the right.
+        </p>
+        <div className="max-w-2xl mx-auto mt-9 w-full">
           <BeforeAfterSlider
             before={STOCK.ceramic}
             after={STOCK.ceramic}
             dirtBefore
             beforeFilter="saturate(0.4) brightness(0.72) contrast(0.95) blur(0.5px)"
             alt="The same car — dirty before, clean after" />
-        </motion.div>
-      </section>
+        </div>
+      </ScrollChapter>
 
-      {/* ── HOW TO BOOK — minimal steps ── */}
-      <section className="relative px-6 py-16">
-        <SectionTitle kicker="HOW IT WORKS" title="Booked in the app, in a minute." sub="No calls, no back-and-forth. Slide to book, pick your service, and track every stage from your phone." />
-        <div className="max-w-3xl mx-auto grid sm:grid-cols-4 gap-3">
+      {/* ═══ CHAPTER 05 — HOW IT WORKS ═══ */}
+      <ScrollChapter index="05" kicker="HOW IT WORKS">
+        <ChapterTitle>Booked in a minute.</ChapterTitle>
+        <p className="font-body mt-5 max-w-lg mx-auto" style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>
+          No calls, no back-and-forth. Slide to book, pick your service, track every stage from your phone.
+        </p>
+        <div className="max-w-3xl mx-auto grid sm:grid-cols-4 gap-3 mt-10 w-full">
           {[
             { icon: CalendarCheck, t: 'Book', d: 'Slide to book and pick a slot that suits you.' },
             { icon: CarFront,      t: 'Drop off', d: 'Bring it to the Maninagar studio — or we collect.' },
             { icon: SprayCan,      t: 'We detail', d: 'Every panel worked and photographed, live to your phone.' },
             { icon: Sparkles,      t: 'Glow', d: 'Pick it up gleaming. Pay in-app, done.' },
           ].map((s, i) => (
-            <motion.div key={s.t} {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }}
-              className="relative rounded-[20px] p-5 text-center flex flex-col items-center"
-              style={{ background: 'var(--glass)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--glass-border)' }}>
+            <div key={s.t} className="relative rounded-[20px] p-5 text-center flex flex-col items-center"
+              style={{ background: 'var(--glass)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid var(--glass-border)' }}>
               <span className="font-mono absolute top-3 right-4" style={{ fontSize: 10, color: 'var(--faint)' }}>0{i + 1}</span>
               <span className="grid place-items-center rounded-2xl mb-3" style={{ width: 44, height: 44, background: 'var(--accent-mist)', border: '1px solid var(--border-strong)', color: 'var(--fg)' }}>
                 <s.icon size={19} />
               </span>
               <h3 className="font-display" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--fg)' }}>{s.t}</h3>
               <p className="font-body mt-1.5" style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>{s.d}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
-      </section>
+      </ScrollChapter>
 
-      {/* ── FIND US ── */}
-      <section className="relative px-6 py-16">
-        <SectionTitle kicker="FIND US" title="Right here in Maninagar." />
-        <motion.div {...reveal} className="max-w-md mx-auto rounded-[26px] overflow-hidden text-center"
+      {/* ═══ CHAPTER 06 — FIND US (car whole again) ═══ */}
+      <ScrollChapter index="06" kicker="FIND US">
+        <ChapterTitle>Right here in<br />Maninagar.</ChapterTitle>
+        <div className="max-w-md mx-auto mt-9 w-full rounded-[26px] overflow-hidden text-center"
           style={{ background: 'var(--glass)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid var(--glass-border)' }}>
           <div className="relative h-48" style={{ background: 'var(--accent-mist)' }}>
             <iframe
@@ -263,38 +275,36 @@ export default function HomePage() {
               </a>
             </div>
           </div>
-        </motion.div>
-      </section>
+        </div>
+      </ScrollChapter>
 
-      {/* ── SLIDE TO BOOK ── */}
-      <section className="relative px-6 py-20 text-center">
-        <motion.h2 {...reveal} className="font-hero" style={{ fontSize: 'clamp(32px, 8vw, 60px)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-0.02em', color: 'var(--fg)' }}>
+      {/* ═══ CHAPTER 07 — SLIDE TO BOOK ═══ */}
+      <ScrollChapter index="07" kicker="YOUR TURN">
+        <h2 className="font-hero" style={{ fontSize: 'clamp(32px, 8vw, 64px)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-0.02em', color: 'var(--fg)', textShadow: '0 2px 40px rgba(0,0,0,0.55)' }}>
           Bring it by.<br /><span className="text-ember">We&rsquo;ll take it from here.</span>
-        </motion.h2>
-        <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="mt-10 w-full max-w-sm mx-auto">
+        </h2>
+        <div className="mt-10 w-full max-w-sm mx-auto">
           <SlideToAction label="Slide to book now" onComplete={book} />
-        </motion.div>
-      </section>
+        </div>
+      </ScrollChapter>
 
-      {/* ── GOOGLE REVIEWS — last section before footer ── */}
-      <section id="reviews" className="relative py-16">
+      {/* ═══ CHAPTER 08 — GOOGLE REVIEWS (last before footer) ═══ */}
+      <section id="reviews" className="relative z-10 py-24">
         <div className="text-center max-w-2xl mx-auto px-6 mb-8">
-          <motion.p {...reveal} className="font-mono mb-3" style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--fg-dim)' }}>WHAT AHMEDABAD SAYS</motion.p>
-          <motion.h2 {...reveal} transition={{ ...reveal.transition, delay: 0.05 }} className="font-display" style={{ fontSize: 'clamp(26px, 6vw, 44px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.015em', color: 'var(--fg)' }}>
-            Loved across the city.
-          </motion.h2>
-          <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="inline-flex items-center gap-2.5 mt-5 px-4 py-2 rounded-full"
+          <p className="font-mono mb-3" style={{ fontSize: 11, letterSpacing: '0.24em', color: 'var(--fg-dim)' }}>08 — WHAT AHMEDABAD SAYS</p>
+          <ChapterTitle>Loved across the city.</ChapterTitle>
+          <div className="inline-flex items-center gap-2.5 mt-6 px-4 py-2 rounded-full"
             style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)' }}>
             <GoogleG />
             <span className="font-display" style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)' }}>{GOOGLE_RATING.score.toFixed(1)}</span>
             <Stars n={5} />
             <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.06em', color: 'var(--muted)' }}>{GOOGLE_RATING.count}+ REVIEWS</span>
-          </motion.div>
+          </div>
         </div>
 
         <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar px-6 pb-3" style={{ scrollPaddingLeft: 24 }}>
           {REVIEWS.map(r => (
-            <motion.article key={r.name} {...reveal} className="snap-start shrink-0 w-[82vw] sm:w-[340px] rounded-[22px] p-5"
+            <article key={r.name} className="snap-start shrink-0 w-[82vw] sm:w-[340px] rounded-[22px] p-5"
               style={{ background: 'var(--glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-sm)' }}>
               <div className="flex items-center gap-3 mb-3">
                 <span className="grid place-items-center rounded-full font-display" style={{ width: 38, height: 38, fontSize: 15, fontWeight: 700, color: 'var(--on-accent)', background: 'var(--accent-grad)' }}>{r.name[0]}</span>
@@ -304,14 +314,14 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="font-body" style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--fg-dim)' }}>{r.text}</p>
-            </motion.article>
+            </article>
           ))}
           <div aria-hidden className="shrink-0 w-2" />
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="relative px-6 pb-10 pt-12 text-center" style={{ borderTop: '1px solid var(--border)' }}>
+      <footer className="relative z-10 px-6 pb-10 pt-12 text-center" style={{ borderTop: '1px solid var(--border)', background: 'rgba(8,9,11,0.6)', backdropFilter: 'blur(8px)' }}>
         <div className="flex flex-col items-center gap-3">
           <Wordmark height="clamp(18px, 5vw, 24px)" />
           <p className="font-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--faint)' }}>
