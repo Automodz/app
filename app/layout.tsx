@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Outfit:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap"
         />
         <script dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem('automodz-v5');if(t){var d=JSON.parse(t);if(d.state&&d.state.theme==='dark'){var r=document.documentElement;r.classList.replace('light','dark');r.setAttribute('data-theme','dark')}}}catch(e){}})()`,
+          __html: `(function(){try{var r=document.documentElement;var dark=false;if(location.pathname==='/'){dark=true;}else{var t=localStorage.getItem('automodz-v5');if(t){var d=JSON.parse(t);if(d.state&&d.state.theme==='dark')dark=true;}}if(dark){r.classList.replace('light','dark');r.setAttribute('data-theme','dark');}}catch(e){}})()`,
         }} />
       </head>
       <body>
