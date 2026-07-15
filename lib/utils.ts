@@ -85,8 +85,9 @@ export const getStatusColor = (status: string): string => ({
 export const getStatusStep = (status: string): number =>
   ['pending','confirmed','vehicle_received','in_progress','quality_check','ready_for_delivery','completed'].indexOf(status);
 
-export const getCategoryIcon = (category: string): string =>
-  ({ PPF: '🛡', Washing: '💧', Ceramic: '✱', Coating: '◆' }[category] || '⚙');
+// Service-category icons now come from the shared <ServiceIcon /> component
+// (components/ui/ServiceIcon.tsx) — a single Lucide source of truth. The old
+// emoji map was removed to keep the platform emoji-free and consistent.
 
 export const getDurationLabel = (minutes: number): string => {
   if (minutes < 60) return `${minutes} min`;

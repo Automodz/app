@@ -14,22 +14,15 @@ import {
   formatTime,
   getStatusColor,
   getStatusLabel,
-  getCategoryIcon,
   getStatusStep,
 } from '@/lib/utils';
+import ServiceIcon, { PlanIcon } from '@/components/ui/ServiceIcon';
 
 import { getUserSubscription, getServices } from '@/lib/firebaseService';
 import { MEMBERSHIP_PLANS, type Subscription } from '@/lib/types';
 import GaugeRing from '@/components/ui/GaugeRing';
 import HeroMedia from '@/components/ui/HeroMedia';
 import { STOCK } from '@/lib/stockImages';
-
-// Keys match MembershipPlan type: 'Silver' | 'Gold' | 'Platinum'
-const PLAN_ICONS: Record<string, string> = {
-  Silver:   '🥈',
-  Gold:     '🥇',
-  Platinum: '💎',
-};
 
 const SERVICES = [
   { cat: 'PPF',     img: STOCK.ppf,     label: 'Paint Protection',  sub: 'from ₹1,45,000', href: '/dashboard/booking?cat=PPF' },
@@ -213,7 +206,7 @@ export default function DashboardPage() {
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span style={{ fontSize: '18px' }}>{PLAN_ICONS[planConfig.id] ?? '⭐'}</span>
+                  <PlanIcon plan={planConfig.id} size={18} style={{ color: 'var(--chrome)' }} />
                   <span className="font-display font-700 text-sm text-ember">{planConfig.label} Membership</span>
                 </div>
                 <ChevronRight size={16} style={{ color: 'var(--ember)' }} />
@@ -288,7 +281,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                 style={{ background: 'var(--smoke)' }}>
-                <span style={{ fontSize: '16px' }}>{getCategoryIcon(inProgress[0].serviceCategory)}</span>
+                <ServiceIcon category={inProgress[0].serviceCategory} size={16} style={{ color: 'var(--chrome)' }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
@@ -337,7 +330,7 @@ export default function DashboardPage() {
                 <div key={b.id} className="card rounded-xl p-3.5 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: 'var(--cavern)' }}>
-                    <span style={{ fontSize: '15px' }}>{getCategoryIcon(b.serviceCategory)}</span>
+                    <ServiceIcon category={b.serviceCategory} size={15} style={{ color: 'var(--chrome)' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
@@ -452,7 +445,7 @@ export default function DashboardPage() {
                 <div key={b.id} className="card rounded-xl p-3.5 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: 'var(--cavern)' }}>
-                    <span style={{ fontSize: '15px' }}>{getCategoryIcon(b.serviceCategory)}</span>
+                    <ServiceIcon category={b.serviceCategory} size={15} style={{ color: 'var(--chrome)' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>

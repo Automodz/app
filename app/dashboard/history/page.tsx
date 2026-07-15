@@ -11,11 +11,12 @@ import { useAppStore } from '@/lib/store';
 import { cancelBooking, rescheduleBooking, getBookedSlotsForDate } from '@/lib/firebaseService';
 import {
   formatCurrency, getStatusColor, getStatusLabel,
-  formatDate, formatTime, getCategoryIcon,
+  formatDate, formatTime,
   getStatusStep, canCancelBooking,
   generateTimeSlots, getAvailableDates,
 } from '@/lib/utils';
 import type { Booking } from '@/lib/types';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 
 const FILTERS  = ['All', 'Upcoming', 'Active', 'Completed', 'Cancelled'];
 const TIMELINE = ['pending', 'confirmed', 'vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery', 'completed'];
@@ -168,9 +169,9 @@ export default function HistoryPage() {
                 whileTap={{ scale: 0.98 }}
                 className="w-full card rounded-2xl p-4 text-left">
                 <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"
-                    style={{ background: 'var(--smoke)' }}>
-                    {getCategoryIcon(b.serviceCategory)}
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'var(--smoke)', color: 'var(--chrome)' }}>
+                    <ServiceIcon category={b.serviceCategory} size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -199,7 +200,7 @@ export default function HistoryPage() {
                       {formatCurrency(b.totalAmount)}
                     </p>
                     <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', marginTop: '2px', color: b.paymentStatus === 'verified' ? 'var(--success)' : 'var(--warning)' }}>
-                      {b.paymentStatus === 'verified' ? '✓ Paid' : '⏳ Pending'}
+                      <span className="inline-flex items-center gap-1">{b.paymentStatus === 'verified' ? <CheckCircle2 size={12} /> : <Clock size={12} />} {b.paymentStatus === 'verified' ? 'Paid' : 'Pending'}</span>
                     </p>
                   </div>
                 </div>

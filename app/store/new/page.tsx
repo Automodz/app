@@ -8,7 +8,8 @@ import {
   findCustomerByPhone, createWalkInJob, getServices, listEmployees, deductMembershipWash,
   getEligiblePromos, getUserSubscription, computeBestDiscount, recordPromoRedemption,
 } from '@/lib/firebaseService';
-import { formatCurrency, getCategoryIcon } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 import { useAppStore } from '@/lib/store';
 import type { Service, User, JobServiceItem, BookingDiscount, Employee , Subscription } from '@/lib/types';
 
@@ -258,7 +259,7 @@ export default function StoreNewJobPage() {
                       background: cat === c ? 'var(--accent-mist)' : 'var(--dark)',
                       border: cat === c ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
                       color: cat === c ? 'var(--ember)' : 'var(--steel)',
-                    }}>{getCategoryIcon(c)} {c}</button>
+                    }}><span className="inline-flex items-center gap-1.5"><ServiceIcon category={c} size={13} /> {c}</span></button>
                 ))}
               </div>
               <div className="space-y-2 mb-4">

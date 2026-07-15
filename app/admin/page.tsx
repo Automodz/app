@@ -12,7 +12,8 @@ import {
   getPresentTodayCount, getLowStockItems, getCarLeads, getSellRequests,
   getDueTasks, completeTask, addTask,
 } from '@/lib/firebaseService';
-import { formatCurrency, getStatusColor, getStatusLabel, formatDate, getCategoryIcon } from '@/lib/utils';
+import { formatCurrency, getStatusColor, getStatusLabel, formatDate } from '@/lib/utils';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 import { useAppStore } from '@/lib/store';
 import StatCard from '@/components/ui/StatCard';
 import GlassCard from '@/components/ui/GlassCard';
@@ -251,7 +252,7 @@ export default function AdminDashboard() {
                     style={{ borderColor: 'transparent' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--fog)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}>
-                    <span className="text-lg">{getCategoryIcon(b.serviceCategory)}</span>
+                    <ServiceIcon category={b.serviceCategory} size={16} style={{ color: 'var(--chrome)' }} />
                     <div className="flex-1 min-w-0">
                       <div className="font-body text-sm font-500 truncate" style={{ color: 'var(--fg)' }}>{b.userName}</div>
                       <div className="text-xs font-body" style={{ color: 'var(--muted)' }}>

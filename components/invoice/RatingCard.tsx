@@ -44,8 +44,8 @@ export default function RatingCard({ invoiceId, customerName, customerPhone }: {
   if (state === 'done') {
     return (
       <div className="rounded-2xl p-5 text-center" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--chrome)' }}>
-          Thank you! ✦ Your feedback keeps us sharp.
+        <p className="inline-flex items-center justify-center gap-1.5 w-full" style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--chrome)' }}>
+          <Star size={14} style={{ color: 'var(--ember)' }} fill="var(--ember)" /> Thank you! Your feedback keeps us sharp.
         </p>
       </div>
     );

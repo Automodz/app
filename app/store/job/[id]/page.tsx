@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Car, Phone, CheckCircle2, XCircle, IndianRupee,
-  FileText, MessageCircle, ChevronRight, X, Camera, Users,
+  FileText, MessageCircle, ChevronRight, X, Camera, Users, Star,
 } from 'lucide-react';
 import {
   getJob, updateJobStatus, addJobPayment, addJobPhoto, saveJobNotes,
@@ -300,7 +300,7 @@ export default function StoreJobPage() {
           <a href={buildReviewAskLink(job.customerName, job.customerPhone)} target="_blank" rel="noreferrer"
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl data-label"
             style={{ color: 'var(--warning)', background: 'color-mix(in srgb, var(--warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 20%, transparent)' }}>
-            ★ Ask for a Google Review
+            <Star size={14} /> Ask for a Google Review
           </a>
         )}
         {job.status !== 'completed' && job.status !== 'cancelled' && (

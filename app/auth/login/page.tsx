@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import Wordmark from '@/components/ui/Wordmark';
 import toast from 'react-hot-toast';
@@ -137,8 +137,8 @@ export default function LoginPage() {
           </motion.button>
         </div>
 
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--faint)', textAlign: 'center', marginTop: '20px' }}>
-          📍 Bhairavnath Rd, Maninagar, Ahmedabad
+        <p className="inline-flex items-center justify-center gap-1.5 w-full" style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--faint)', textAlign: 'center', marginTop: '20px' }}>
+          <MapPin size={12} /> Bhairavnath Rd, Maninagar, Ahmedabad
         </p>
       </motion.div>
     </div>

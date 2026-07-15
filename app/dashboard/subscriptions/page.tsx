@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import {
   ChevronLeft, Check, Loader2, Copy, Shield,
   Droplets, Zap, Clock, AlertTriangle, ChevronRight,
+  Calendar, CalendarClock, Smartphone, Banknote,
 } from 'lucide-react';
+import { PlanIcon } from '@/components/ui/ServiceIcon';
 import toast from 'react-hot-toast';
 import { useAppStore } from '@/lib/store';
 import {
@@ -31,9 +33,6 @@ const daysLeft = (endDate: string) => {
   return Math.max(0, Math.ceil(diff / 86400000));
 };
 
-const PLAN_ICONS: Record<MembershipPlan, string> = {
-  Silver: '🥈', Gold: '🥇', Platinum: '🤍',
-};
 
 // Law 1 (Liquid Chrome): tier identity is a chrome ramp, never a colored
 // accent - plan.color from lib stays unused on UI surfaces.
@@ -100,7 +99,7 @@ function PlanCard({
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span style={{ fontSize: '22px' }}>{PLAN_ICONS[plan.id]}</span>
+            <PlanIcon plan={plan.id} size={20} style={{ color: 'var(--chrome)' }} />
             <div>
               <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: TIER_TONE[plan.id], letterSpacing: '0.04em' }}>
                 {plan.label.toUpperCase()}
@@ -273,7 +272,7 @@ export default function SubscriptionsPage() {
           transition={{ type: 'spring', stiffness: 220, damping: 20 }}>
           <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6"
             style={{ background: tone(TIER_TONE[cfg.id], 12), border: `2px solid ${TIER_TONE[cfg.id]}` }}>
-            <span style={{ fontSize: '44px' }}>{PLAN_ICONS[cfg.id]}</span>
+            <PlanIcon plan={cfg.id} size={38} style={{ color: 'var(--chrome)' }} />
           </div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', color: 'var(--chrome)', letterSpacing: '-0.01em', marginBottom: '8px' }}>
             Welcome to {cfg.label}!
@@ -318,7 +317,7 @@ export default function SubscriptionsPage() {
           {/* summary card */}
           <div className="rounded-2xl p-4" style={{ background: tone(TIER_TONE[cfg.id], 6), border: `1.5px solid ${tone(TIER_TONE[cfg.id], 25)}` }}>
             <div className="flex items-center gap-3">
-              <span style={{ fontSize: '28px' }}>{PLAN_ICONS[cfg.id]}</span>
+              <PlanIcon plan={cfg.id} size={24} style={{ color: 'var(--chrome)' }} />
               <div className="flex-1">
                 <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: TIER_TONE[cfg.id] }}>
                   {cfg.label.toUpperCase()} MEMBERSHIP
@@ -346,7 +345,7 @@ export default function SubscriptionsPage() {
                     background: payMethod === m ? 'var(--accent-mist)' : 'var(--cavern)',
                     border: `1.5px solid ${payMethod === m ? 'var(--ember)' : 'transparent'}`,
                   }}>
-                  <span style={{ fontSize: '20px' }}>{m === 'upi' ? '📲' : '💵'}</span>
+                  {m === 'upi' ? <Smartphone size={18} style={{ color: payMethod === m ? 'var(--ember)' : 'var(--steel)' }} /> : <Banknote size={18} style={{ color: payMethod === m ? 'var(--ember)' : 'var(--steel)' }} />}
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.1em', color: payMethod === m ? 'var(--ember)' : 'var(--steel)' }}>
                     {m === 'upi' ? 'UPI' : 'CASH AT SHOP'}
                   </span>
@@ -507,7 +506,7 @@ export default function SubscriptionsPage() {
             <div key={p.id} className="rounded-2xl p-4 flex items-center justify-between"
               style={{ background: 'var(--card)', border: '1px solid var(--border-2)' }}>
               <div className="flex items-center gap-3">
-                <span style={{ fontSize: '22px' }}>{PLAN_ICONS[p.id]}</span>
+                <PlanIcon plan={p.id} size={20} style={{ color: 'var(--chrome)' }} />
                 <div>
                   <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: TIER_TONE[p.id] }}>
                     {p.label}
@@ -566,7 +565,7 @@ export default function SubscriptionsPage() {
           <div className="relative z-10">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <span style={{ fontSize: '32px' }}>{PLAN_ICONS[sub.plan]}</span>
+                <PlanIcon plan={sub.plan} size={28} style={{ color: 'var(--chrome)' }} />
                 <div>
                   <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: TIER_TONE[sub.plan], letterSpacing: '0.04em' }}>
                     {sub.plan.toUpperCase()}
@@ -625,15 +624,15 @@ export default function SubscriptionsPage() {
           className="rounded-2xl p-4 grid grid-cols-2 gap-3"
           style={{ background: 'var(--card)', border: '1px solid var(--border-2)' }}>
           {[
-            { label: 'START DATE', value: formatDate(sub.startDate), icon: '📅' },
-            { label: 'END DATE',   value: formatDate(sub.endDate),   icon: '⏳' },
+            { label: 'START DATE', value: formatDate(sub.startDate), Icon: Calendar },
+            { label: 'END DATE',   value: formatDate(sub.endDate),   Icon: CalendarClock },
           ].map(item => (
             <div key={item.label}>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--faint)', letterSpacing: '0.1em', marginBottom: '4px' }}>
                 {item.label}
               </p>
-              <p style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '13px', color: 'var(--chrome)' }}>
-                {item.icon} {item.value}
+              <p className="inline-flex items-center gap-1.5" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '13px', color: 'var(--chrome)' }}>
+                <item.Icon size={13} style={{ color: 'var(--steel)' }} /> {item.value}
               </p>
             </div>
           ))}

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChevronLeft, ChevronRight, Car, Check, Loader2,
   Copy, Truck, CreditCard, Banknote, Info, Zap, Shield,
+  MapPin, CheckCircle2, Droplets,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppStore } from '@/lib/store';
@@ -21,12 +22,12 @@ import {
   formatDate,
   formatTime,
   getDurationLabel,
-  getCategoryIcon,
   getBookingWhatsAppMsg,
   PICKUP_FEE,
 } from '@/lib/utils';
 import type { Service, StepData, Booking, Subscription, BookingDiscount } from '@/lib/types';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 import { Timestamp } from 'firebase/firestore';
 
 const STEPS = ['Vehicle', 'Service', 'Schedule', 'Review', 'Payment', 'Done'];
@@ -550,7 +551,7 @@ function BookingInner() {
                       textTransform: 'uppercase', color: cat === c ? 'var(--on-accent)' : 'var(--steel)',
                       boxShadow: cat === c ? '0 2px 12px var(--accent-glow)' : 'none',
                     }}>
-                    {getCategoryIcon(c)} {c}
+                    <span className="inline-flex items-center gap-1.5"><ServiceIcon category={c} size={13} /> {c}</span>
                   </button>
                 ))}
               </div>
@@ -560,7 +561,7 @@ function BookingInner() {
                   {!quoteOpen ? (
                     <button onClick={() => setQuoteOpen(true)} className="w-full text-left">
                       <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>
-                        Want an exact price for your car? ✦
+                        Want an exact price for your car?
                       </p>
                       <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
                         {cat} pricing depends on your car's size and condition - request a personal quote.
@@ -610,7 +611,7 @@ function BookingInner() {
                           <p style={{ ...grotesk12, lineHeight: 1.4, marginBottom: '8px' }}>{svc.description}</p>
                           <div className="flex items-center gap-3" style={{ ...mono10, opacity: 0.6 }}>
                             <span>⏱ {getDurationLabel(svc.duration)}</span>
-                            {svc.warranty && <span>✓ {svc.warranty}</span>}
+                            {svc.warranty && <span className="inline-flex items-center gap-1"><Check size={12} /> {svc.warranty}</span>}
                             {svc.brand && <span>◆ {svc.brand}</span>}
                           </div>
                         </div>
@@ -870,7 +871,7 @@ function BookingInner() {
                 <motion.div initial={false} animate={{ opacity: 1, y: 0 }}
                   className="rounded-2xl p-6 text-center"
                   style={{ background: 'color-mix(in srgb, var(--success) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--success) 25%, transparent)' }}>
-                  <div className="text-4xl mb-3">🎉</div>
+                  <div className="mb-3 flex justify-center"><CheckCircle2 size={40} style={{ color: 'var(--success)' }} /></div>
                   <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: 'var(--success)', marginBottom: '6px' }}>
                     Covered by Membership
                   </p>
@@ -971,13 +972,13 @@ function BookingInner() {
                     {data.paymentMethod === 'cash' && (
                       <motion.div initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                         className="card rounded-2xl p-5 text-center">
-                        <div className="text-4xl mb-3 animate-float">💵</div>
+                        <div className="mb-3 flex justify-center animate-float"><Banknote size={38} style={{ color: 'var(--chrome)' }} /></div>
                         <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--chrome)', marginBottom: '4px' }}>
                           Pay {formatCurrency(total)} at Studio
                         </p>
                         <p style={grotesk12}>Cash on arrival. Exact change preferred.</p>
-                        <p style={{ ...mono10, marginTop: '12px', color: 'var(--ember)' }}>
-                          📍 BHAIRAVNATH RD, MANINAGAR
+                        <p className="inline-flex items-center gap-1.5" style={{ ...mono10, marginTop: '12px', color: 'var(--ember)' }}>
+                          <MapPin size={11} /> BHAIRAVNATH RD, MANINAGAR
                         </p>
                       </motion.div>
                     )}
@@ -1000,14 +1001,14 @@ function BookingInner() {
               </motion.div>
 
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', color: 'var(--chrome)', letterSpacing: '0.04em', marginBottom: '8px' }}>
-                BOOKED ✦
+                BOOKED
               </h2>
               <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--steel)', marginBottom: '4px' }}>
                 WhatsApp confirmation sent to studio
               </p>
               {membershipCoversWash && (
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: mpTone, marginBottom: '4px', letterSpacing: '0.08em' }}>
-                  ✦ 1 {membership?.plan} WASH DEDUCTED
+                <p className="inline-flex items-center justify-center gap-1.5 w-full" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: mpTone, marginBottom: '4px', letterSpacing: '0.08em' }}>
+                  <Droplets size={11} /> 1 {membership?.plan} WASH DEDUCTED
                 </p>
               )}
               {data.paymentMethod === 'upi' && data.transactionId && (

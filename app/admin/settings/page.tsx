@@ -6,7 +6,8 @@ import toast from 'react-hot-toast';
 import { getServices, seedServices } from '@/lib/firebaseService';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { formatCurrency, getCategoryIcon } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 import type { Service } from '@/lib/types';
 import ErrorState from '@/components/ui/ErrorState';
 
@@ -90,7 +91,7 @@ export default function AdminSettingsPage() {
           {cats.map(cat => (
             <div key={cat} className="card-dark">
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">{getCategoryIcon(cat)}</span>
+                <ServiceIcon category={cat} size={18} style={{ color: 'var(--chrome)' }} />
                 <h2 className="font-display font-800 text-sm text-foreground tracking-widest uppercase">{cat}</h2>
               </div>
               <div className="space-y-3">

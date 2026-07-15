@@ -154,7 +154,7 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
         </div>
         <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noreferrer"
           style={{ display: 'inline-block', marginTop: 10, fontSize: 12, fontWeight: 600, color: '#17181A', borderBottom: '1px solid #17181A', textDecoration: 'none' }}>
-          ★ Happy with the work? Leave us a Google review →
+          Happy with the work? Leave us a Google review
         </a>
       </div>
     </div>

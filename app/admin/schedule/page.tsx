@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { Clock, Phone, Car, CalendarDays } from 'lucide-react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { formatTime, getStatusColor, getStatusLabel, getCategoryIcon } from '@/lib/utils';
+import { formatTime, getStatusColor, getStatusLabel } from '@/lib/utils';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 import type { Booking } from '@/lib/types';
 import ErrorState from '@/components/ui/ErrorState';
 
@@ -117,7 +118,7 @@ export default function AdminSchedulePage() {
                             transition={{ delay: i * 0.04 }}
                             className="card rounded-2xl p-3 flex items-center gap-3"
                             style={{ borderLeft: `3px solid ${accent}` }}>
-                            <div className="text-lg w-8 text-center shrink-0">{getCategoryIcon(b.serviceCategory)}</div>
+                            <div className="w-8 flex justify-center shrink-0"><ServiceIcon category={b.serviceCategory} size={16} style={{ color: 'var(--chrome)' }} /></div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-body text-sm font-600 text-foreground">{b.userName}</span>

@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, Trash2, BookOpen } from 'lucide-react';
 import {
   getServices, listInventoryItems, listServiceRecipes, saveServiceRecipe,
 } from '@/lib/firebaseService';
-import { getCategoryIcon } from '@/lib/utils';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 import type { Service, InventoryItem, ServiceRecipe } from '@/lib/types';
 
 export default function AdminRecipesPage() {
@@ -86,7 +86,7 @@ export default function AdminRecipesPage() {
               <motion.div key={s.id} initial={false} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.02 }} className="card-dark">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{getCategoryIcon(s.category)}</span>
+                  <ServiceIcon category={s.category} size={18} style={{ color: 'var(--chrome)' }} />
                   <div className="flex-1 min-w-0">
                     <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{s.name}</p>
                     <p className="text-xs font-body mt-0.5" style={{ color: recipe?.items.length ? 'var(--success)' : 'var(--steel)' }}>

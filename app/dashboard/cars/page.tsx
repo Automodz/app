@@ -71,8 +71,10 @@ export default function DashboardCarsPage() {
       ) : shown.length === 0 ? (
         <div className="card text-center py-16">
           <Car size={28} className="mx-auto mb-3" style={{ color: 'var(--steel)' }} />
-          <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>
-            {tab === 'saved' ? 'No saved cars yet - tap the ♥ on a car you like.' : 'New stock arriving soon!'}
+          <p className="font-body text-sm inline-flex items-center justify-center flex-wrap gap-1" style={{ color: 'var(--steel)' }}>
+            {tab === 'saved'
+              ? <>No saved cars yet — tap the <Heart size={13} className="inline" /> on a car you like.</>
+              : 'New stock arriving soon.'}
           </p>
         </div>
       ) : (

@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, X, Phone, MessageCircle, Loader2,
-  CheckCircle2, Shield, Zap, FileText,
+  CheckCircle2, Shield, Zap, FileText, Clock,
 } from 'lucide-react';
+import ServiceIcon from '@/components/ui/ServiceIcon';
 import toast from 'react-hot-toast';
 import {
   getAllBookings, updateBookingStatusWithNotification, verifyPayment,
@@ -13,7 +14,7 @@ import {
 } from '@/lib/firebaseService';
 import {
   formatCurrency, getStatusColor, getStatusLabel,
-  formatDate, formatTime, getCategoryIcon,
+  formatDate, formatTime,
 } from '@/lib/utils';
 import type { Booking, BookingStatus } from '@/lib/types';
 import ErrorState from '@/components/ui/ErrorState';
@@ -241,7 +242,10 @@ export default function AdminBookingsPage() {
               transition={{ delay: i * 0.03 }} whileTap={{ scale: 0.99 }}
               className="w-full card-dark text-left hover:border-white/10 transition-all">
               <div className="flex items-start gap-3">
-                <span className="text-2xl">{getCategoryIcon(b.serviceCategory)}</span>
+                <span className="grid place-items-center rounded-xl shrink-0"
+                  style={{ width: 40, height: 40, background: 'var(--smoke)', border: '1px solid var(--border-strong)', color: 'var(--chrome)' }}>
+                  <ServiceIcon category={b.serviceCategory} size={18} />
+                </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -255,11 +259,12 @@ export default function AdminBookingsPage() {
                   <div className="flex items-center gap-4 mt-2 text-xs font-body" style={{ color: 'var(--muted)' }}>
                     <span>{formatDate(b.scheduledDate)} {formatTime(b.scheduledTime)}</span>
                     <span>{formatCurrency(b.totalAmount)}</span>
-                    <span className={b.paymentStatus === 'verified' ? 'text-emerald-400' : 'text-muted'}>
-                      {b.paymentStatus === 'verified' ? '✓ Paid' : '⏳ Unpaid'}
+                    <span className={`inline-flex items-center gap-1 ${b.paymentStatus === 'verified' ? 'text-emerald-400' : 'text-muted'}`}>
+                      {b.paymentStatus === 'verified' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                      {b.paymentStatus === 'verified' ? 'Paid' : 'Unpaid'}
                     </span>
                     {b.usedMembershipWash && (
-                      <span style={{ color: 'var(--steel)', fontSize: '10px' }}>⚡ Membership</span>
+                      <span className="inline-flex items-center gap-1" style={{ color: 'var(--steel)', fontSize: '10px' }}><Zap size={11} /> Membership</span>
                     )}
                   </div>
                 </div>
@@ -380,8 +385,9 @@ export default function AdminBookingsPage() {
                     <div>
                       <p className="text-muted text-xs font-body tracking-widest uppercase mb-1">Payment Status</p>
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-body font-600 ${selected.paymentStatus === 'verified' ? 'text-emerald-400' : 'text-yellow-400'}`}>
-                          {selected.paymentStatus === 'verified' ? '✓ Verified' : '⏳ Pending'}
+                        <span className={`inline-flex items-center gap-1.5 text-sm font-body font-600 ${selected.paymentStatus === 'verified' ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                          {selected.paymentStatus === 'verified' ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                          {selected.paymentStatus === 'verified' ? 'Verified' : 'Pending'}
                         </span>
                         {selected.paymentMethod === 'upi' && selected.transactionId && (
                           <span className="text-xs text-muted font-body">UPI</span>

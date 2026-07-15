@@ -118,8 +118,8 @@ export default function DailyClosePage() {
               <input className="input font-mono text-xl mb-3" inputMode="numeric" value={counted}
                 onChange={e => setCounted(e.target.value.replace(/\D/g, ''))} placeholder="0" />
               {variance !== null && (
-                <p className="font-mono text-sm mb-3" style={{ color: variance === 0 ? 'var(--success)' : 'var(--danger)' }}>
-                  {variance === 0 ? '✓ Drawer matches' :
+                <p className="font-mono text-sm mb-3 inline-flex items-center gap-1.5" style={{ color: variance === 0 ? 'var(--success)' : 'var(--danger)' }}>
+                  {variance === 0 ? <><CheckCircle2 size={14} /> Drawer matches</> :
                    variance > 0 ? `+${formatCurrency(variance)} over` : `${formatCurrency(variance)} SHORT`}
                 </p>
               )}

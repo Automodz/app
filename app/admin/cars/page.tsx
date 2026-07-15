@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Car, Plus, X, Inbox } from 'lucide-react';
+import { Car, Plus, X, Inbox, Star } from 'lucide-react';
 import {
   createCarListing, updateCarListing, getAllCarListings,
   uploadListingPhotos, deleteListingPhoto,
@@ -150,7 +150,7 @@ export default function AdminCarsPage() {
                       <Car size={18} style={{ color: 'var(--steel)' }} /></div>}
                 <div className="flex-1 min-w-0">
                   <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>
-                    {l.title} {l.featured && <span className="data-label" style={{ color: 'var(--ember)' }}>★</span>}
+                    {l.title} {l.featured && <Star size={12} className="inline" style={{ color: 'var(--ember)' }} />}
                   </p>
                   <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
                     {formatCurrency(l.price)} · {(l.kmDriven / 1000).toFixed(0)}k km · {l.fuel} · {l.photos.length} photos
