@@ -13,7 +13,7 @@ Next.js + Firebase car detailing booking application.
 
 ## Getting Started
 
-Follow steps in [`SETUP.md`](./SETUP.md). Key points:
+Follow steps in [`docs/SETUP.md`](./docs/SETUP.md). Key points:
 
 1. Copy `.env.local.example` to `.env.local` and fill values.
 2. Never commit `.env.local` to git (secrets!).

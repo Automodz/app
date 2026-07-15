@@ -13,7 +13,15 @@ const firebaseConfig = {
 };
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+
+// Every Firebase call in this app runs in the browser (inside effects), never
+// during SSR/prerender. Without the public env vars, getAuth() throws
+// `auth/invalid-api-key` at import time and aborts the whole `next build`
+// while statically generating pages. Guard it so a missing key surfaces at
+// runtime (where the vars are always present) instead of failing the build.
+export const auth = firebaseConfig.apiKey
+  ? getAuth(app)
+  : (undefined as unknown as ReturnType<typeof getAuth>);
 export const db   = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
