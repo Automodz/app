@@ -706,6 +706,174 @@ body {
 .reveal-delay-2 { transition-delay: 0.16s; }
 .reveal-delay-3 { transition-delay: 0.24s; }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   LIQUID ORB — CSS/SVG 3D metallic sphere + liquid morphism (no WebGL)
+   ═══════════════════════════════════════════════════════════════════════ */
+.liquid-orb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.liquid-orb .lo-sphere,
+.liquid-orb .lo-blob,
+.liquid-orb .lo-shadow { position: absolute; }
+
+/* the sphere: metallic radial shading reads as a lit 3D ball */
+.liquid-orb .lo-sphere {
+  width: min(62%, 62vmin);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%,
+      #ffffff 0%, #eef0f2 12%, #cfd4d9 34%,
+      #9aa0a7 60%, #6a6f77 80%, #45494f 100%);
+  box-shadow:
+    inset 0 0 40px rgba(255,255,255,0.35),
+    inset -18px -22px 50px rgba(20,22,25,0.45),
+    0 30px 90px rgba(20,22,25,0.28);
+  overflow: hidden;
+  animation: lo-float 9s ease-in-out infinite;
+}
+/* rotating chrome sheen band — the "liquid" reflection travelling the surface */
+.liquid-orb .lo-sheen {
+  position: absolute; inset: -25%;
+  background: conic-gradient(from 0deg,
+    transparent 0deg, rgba(255,255,255,0.0) 40deg,
+    rgba(255,255,255,0.55) 90deg, rgba(255,255,255,0.0) 150deg,
+    transparent 210deg, rgba(150,157,166,0.4) 280deg, transparent 330deg);
+  mix-blend-mode: screen;
+  filter: blur(6px);
+  animation: lo-spin 14s linear infinite;
+}
+/* drifting specular hotspot */
+.liquid-orb .lo-spec {
+  position: absolute;
+  width: 26%; aspect-ratio: 1; left: 24%; top: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+  filter: blur(2px);
+  animation: lo-spec 9s ease-in-out infinite;
+}
+/* morphing liquid satellites */
+.liquid-orb .lo-blob {
+  width: 44%; aspect-ratio: 1;
+  filter: blur(14px);
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+  border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+}
+.liquid-orb .lo-blob-a {
+  left: 6%; top: 14%;
+  background: radial-gradient(circle at 40% 40%, rgba(120,126,134,0.55), transparent 68%);
+  animation: lo-morph 12s ease-in-out infinite, lo-float 11s ease-in-out infinite;
+}
+.liquid-orb .lo-blob-b {
+  right: 4%; bottom: 10%;
+  background: radial-gradient(circle at 60% 60%, rgba(58,62,68,0.5), transparent 68%);
+  animation: lo-morph 15s ease-in-out infinite reverse, lo-float 13s ease-in-out infinite reverse;
+}
+.liquid-orb .lo-shadow {
+  bottom: 8%;
+  width: 48%; height: 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(20,22,25,0.28), transparent 70%);
+  filter: blur(10px);
+  animation: lo-shadow 9s ease-in-out infinite;
+}
+@keyframes lo-float  { 0%,100% { transform: translateY(-3%); } 50% { transform: translateY(3%); } }
+@keyframes lo-spin   { to { transform: rotate(360deg); } }
+@keyframes lo-spec   { 0%,100% { transform: translate(0,0); opacity: 0.9; } 50% { transform: translate(18%,10%); opacity: 0.6; } }
+@keyframes lo-shadow { 0%,100% { transform: scale(0.94); opacity: 0.6; } 50% { transform: scale(1.06); opacity: 0.85; } }
+@keyframes lo-morph {
+  0%,100% { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; }
+  33%     { border-radius: 63% 37% 41% 59% / 58% 63% 37% 42%; }
+  66%     { border-radius: 37% 63% 58% 42% / 63% 41% 59% 37%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LUXURY BACKGROUND — one continuous premium field, theme-aware (light+dark)
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {                     /* dark base (default) — graphite showroom */
+  --lux-a: #050609;
+  --lux-b: #0b0d11;
+  --lux-bloom-1: rgba(232,236,240,0.20);
+  --lux-bloom-2: rgba(150,157,166,0.14);
+  --lux-sheen:   rgba(244,247,250,0.26);
+  --lux-vignette: rgba(0,0,0,0.72);
+  --lux-grain: 0.06;
+}
+[data-theme="light"] {      /* brushed-silver premium (deeper than porcelain) */
+  --lux-a: #eef0f2;
+  --lux-b: #cfd4d9;
+  --lux-bloom-1: rgba(255,255,255,1);
+  --lux-bloom-2: rgba(120,127,137,0.34);
+  --lux-sheen:   rgba(255,255,255,0.9);
+  --lux-vignette: rgba(26,29,34,0.28);
+  --lux-grain: 0.05;
+}
+
+.lux-bg {
+  position: fixed; inset: 0; z-index: -10; overflow: hidden;
+  background:
+    radial-gradient(80% 60% at 14% 8%,  var(--lux-bloom-1) 0%, transparent 50%),
+    radial-gradient(70% 60% at 88% 18%, var(--lux-bloom-2) 0%, transparent 52%),
+    radial-gradient(95% 75% at 50% 116%, var(--lux-bloom-1) 0%, transparent 55%),
+    linear-gradient(180deg, var(--lux-a) 0%, var(--lux-b) 100%);
+  background-size: 165% 165%, 150% 150%, 175% 175%, 100% 100%;
+  animation: lux-drift 30s ease-in-out infinite alternate;
+}
+@keyframes lux-drift {
+  from { background-position: 0% 0%,  100% 0%,  50% 100%, 0 0; }
+  to   { background-position: 24% 14%, 72% 20%, 40% 84%,  0 0; }
+}
+/* slow chrome sheen sweeping the field */
+.lux-bg::before {
+  content: ''; position: absolute; inset: -25%;
+  background: conic-gradient(from 200deg at 62% 38%,
+    transparent 0deg, var(--lux-sheen) 55deg, transparent 130deg, transparent 360deg);
+  filter: blur(70px); opacity: 0.55;
+  animation: lux-spin 46s linear infinite;
+}
+/* vignette to frame the premium feel */
+.lux-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(125% 100% at 50% 45%, transparent 52%, var(--lux-vignette) 100%);
+}
+@keyframes lux-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lux-bg, .lux-bg::before { animation: none !important; }
+}
+
+/* ceramic chapter — falling rain streaks */
+@keyframes ceramic-rain { from { background-position: 0 0; } to { background-position: 0 9px; } }
+
+/* maintain chapter — drifting touchless foam */
+.foam-flow {
+  background:
+    radial-gradient(60% 40% at 20% 30%, rgba(255,255,255,0.5) 0%, transparent 60%),
+    radial-gradient(50% 45% at 70% 55%, rgba(255,255,255,0.42) 0%, transparent 62%),
+    radial-gradient(45% 40% at 45% 80%, rgba(255,255,255,0.35) 0%, transparent 60%);
+  background-size: 180% 180%, 160% 160%, 200% 200%;
+  filter: blur(6px);
+  animation: foam-drift 9s ease-in-out infinite alternate;
+}
+@keyframes foam-drift {
+  from { background-position: 0% 0%, 100% 20%, 30% 100%; }
+  to   { background-position: 25% 30%, 70% 50%, 50% 70%; }
+}
+
+/* horizontal swipe galleries — native momentum without a visible scrollbar */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .foam-flow { animation: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
@@ -713,6 +881,8 @@ body {
   .animate-ember-pulse, .animate-float, .animate-float-sm,
   .animate-breathe, .animate-spin-cw, .animate-spin-ccw,
   .animate-flicker, .shimmer, .holo-surface::after,
+  .liquid-orb .lo-sphere, .liquid-orb .lo-sheen, .liquid-orb .lo-spec,
+  .liquid-orb .lo-blob, .liquid-orb .lo-shadow,
   .bg-mesh { animation: none !important; }
 }
 

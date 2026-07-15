@@ -2,31 +2,21 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Wordmark from '@/components/ui/Wordmark';
-import { Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import {
-  signInWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { linkEmployeeRole } from '@/lib/services/auth';
-import { getUserProfile, stashReferralCode, resetPassword, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
+import { getUserProfile, stashReferralCode, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setUser, setAuthLoading } = useAppStore();
+  const { setUser } = useAppStore();
 
-  const [showPass, setShowPass]             = useState(false);
-  const [loading, setLoading]               = useState(false);
-  const [googleLoading, setGoogleLoading]   = useState(false);
-  const [form, setForm]                     = useState({ email: '', password: '' });
-
-  const field = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(p => ({ ...p, [k]: e.target.value }));
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Capture an incoming referral code (?ref=CODE) before sign-in
   useEffect(() => {
@@ -34,7 +24,7 @@ export default function LoginPage() {
     if (ref) stashReferralCode(ref);
   }, []);
 
-  // ── Google sign-in ─────────────────────────────────────────────────────
+  // ── Google sign-in — the only way in ──────────────────────────────────
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
@@ -44,7 +34,7 @@ export default function LoginPage() {
 
       if (!profile) {
         await signOut(auth);
-        toast.error('Failed to create account. Please try again.');
+        toast.error('Could not sign you in. Please try again.');
         return;
       }
 
@@ -69,59 +59,6 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   };
-
-  // ── Email/password sign-in - routes by role after auth ─────────────────
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.email.trim() || !form.password) {
-      toast.error('Enter your email and password.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const result  = await signInWithEmailAndPassword(auth, form.email.trim(), form.password);
-      let profile = await getUserProfile(result.user.uid);
-      if (!profile) {
-        profile = await ensureUserProfile(result.user);
-      }
-
-      if (!profile) {
-        await signOut(auth);
-        toast.error('Account not found. Contact support.');
-        return;
-      }
-
-      profile = await linkEmployeeRole(profile);
-      setUser(profile);
-
-      if (profile.role === 'admin') {
-        router.replace('/admin');
-        return;
-      }
-      if (profile.role === 'employee') {
-        toast.success(`Welcome, ${profile.name.split(' ')[0]}!`);
-        router.replace('/store');
-        return;
-      }
-
-      toast.success(`Welcome back, ${profile.name.split(' ')[0]}!`);
-      router.replace('/dashboard');
-    } catch (err: unknown) {
-      const msg: Record<string, string> = {
-        'auth/user-not-found':     'No account found with this email.',
-        'auth/wrong-password':     'Incorrect password.',
-        'auth/invalid-email':      'Invalid email address.',
-        'auth/too-many-requests':  'Too many attempts. Try again later.',
-        'auth/invalid-credential': 'Invalid email or password.',
-      };
-      const authError = err as { code?: string };
-      toast.error(msg[authError.code ?? ''] || 'Sign-in failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const busy = loading || googleLoading;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-mesh"
@@ -166,85 +103,19 @@ export default function LoginPage() {
         </motion.div>
 
         {/* Card */}
-        <div className="glass-strong rounded-3xl p-6">
-
-          <form onSubmit={handleEmailLogin} className="space-y-3">
-            <div>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase' }}>
-                Email
-              </label>
-              <input
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={field('email')}
-                className="input mt-1.5"
-                disabled={busy}
-              />
-            </div>
-
-            <div>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase' }}>
-                Password
-              </label>
-              <div className="relative mt-1.5">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={field('password')}
-                  className="input pr-12"
-                  disabled={busy}
-                />
-                <button type="button" onClick={() => setShowPass(p => !p)}
-                  aria-label={showPass ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center"
-                  style={{ color: 'var(--steel)' }}>
-                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              type="submit"
-              disabled={busy}
-              className="btn-ember w-full rounded-xl py-3.5 mt-1">
-              {loading
-                ? <><Loader2 size={15} className="animate-spin" /> SIGNING IN...</>
-                : 'SIGN IN'}
-            </motion.button>
-
-            <button type="button"
-              onClick={async () => {
-                const email = form.email.trim();
-                if (!email) { toast.error('Enter your email above first'); return; }
-                try {
-                  await resetPassword(email);
-                  toast.success(`Reset link sent to ${email}`);
-                } catch {
-                  toast.error('Could not send reset email - check the address');
-                }
-              }}
-              className="w-full text-center mt-3"
-              style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--faint)', textDecoration: 'underline' }}>
-              Forgot password?
-            </button>
-          </form>
-
-          <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px" style={{ background: 'var(--border-2)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--faint)' }}>OR</span>
-            <div className="flex-1 h-px" style={{ background: 'var(--border-2)' }} />
-          </div>
+        <div className="glass-strong rounded-3xl p-6 text-center">
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '19px', color: 'var(--fg)' }}>
+            Sign in
+          </h1>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', lineHeight: 1.6, color: 'var(--muted)', marginTop: '8px', marginBottom: '22px' }}>
+            One tap with Google — no passwords to remember.
+          </p>
 
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleGoogle}
-            disabled={busy}
-            className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 mb-3 transition-all"
+            disabled={googleLoading}
+            className="w-full rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all"
             style={{
               background:    'var(--dark)',
               border:        '1px solid var(--border-2)',
@@ -264,7 +135,6 @@ export default function LoginPage() {
                 </svg>}
             CONTINUE WITH GOOGLE
           </motion.button>
-
         </div>
 
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--faint)', textAlign: 'center', marginTop: '20px' }}>

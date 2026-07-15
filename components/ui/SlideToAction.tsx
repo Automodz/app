@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
-import { ChevronsRight } from 'lucide-react';
+import { Car } from 'lucide-react';
 
 /**
  * Aston "Slide to Start" control. Drag the knob to ~90% of the track to fire
@@ -63,6 +63,19 @@ export default function SlideToAction({
       onPointerUp={end}
       onPointerLeave={end}
     >
+      {/* road the car drives along — dashed lane line, fades as it completes */}
+      <div
+        aria-hidden
+        className="absolute top-1/2 -translate-y-1/2"
+        style={{
+          left: knob + 6,
+          right: 14,
+          height: 2,
+          opacity: 0.45 * (1 - pct),
+          backgroundImage:
+            'repeating-linear-gradient(90deg, var(--faint) 0 10px, transparent 10px 22px)',
+        }}
+      />
       <div
         className="absolute inset-0 grid place-items-center font-display font-600 tracking-wide"
         style={{ color: 'var(--muted)', opacity: 1 - pct, fontSize: 14 }}
@@ -88,7 +101,7 @@ export default function SlideToAction({
           cursor: disabled ? 'not-allowed' : 'grab',
         }}
       >
-        <ChevronsRight size={22} strokeWidth={2.5} />
+        <Car size={24} strokeWidth={2.2} />
       </div>
     </div>
   );

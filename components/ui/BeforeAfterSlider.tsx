@@ -12,11 +12,15 @@ export default function BeforeAfterSlider({
   after,
   alt = 'Before and after',
   className = '',
+  beforeFilter,
 }: {
   before: string;
   after: string;
   alt?: string;
   className?: string;
+  /** CSS filter applied to the "before" layer — lets you pass the SAME image
+   *  for before/after and simulate the uncorrected state (dull/hazy). */
+  beforeFilter?: string;
 }) {
   const [pos, setPos] = useState(50);
   return (
@@ -27,7 +31,7 @@ export default function BeforeAfterSlider({
         <img src={after} alt={`${alt} - after`} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
         <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={before} alt={`${alt} - before`} className="w-full h-full object-cover" draggable={false} />
+          <img src={before} alt={`${alt} - before`} className="w-full h-full object-cover" draggable={false} style={beforeFilter ? { filter: beforeFilter } : undefined} />
         </div>
         {/* divider + handle */}
         <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}>
