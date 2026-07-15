@@ -12,6 +12,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAppStore } from '@/lib/store';
+import Wordmark from '@/components/ui/Wordmark';
 
 const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
   {
@@ -88,7 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Zap size={16} style={{ color: 'var(--on-accent)' }} />
           </div>
           <div>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', letterSpacing: '0.08em', color: 'var(--chrome)' }}>AUTOMODZ</p>
+            <Wordmark height={16} />
             <div className="flex items-center gap-1 mt-0.5">
               <Shield size={9} color="var(--ember)" />
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ember)', textTransform: 'uppercase' }}>Admin Panel</p>
@@ -190,7 +191,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               style={{ background: 'var(--accent-grad)' }}>
               <Zap size={13} style={{ color: 'var(--on-accent)' }} />
             </div>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', letterSpacing: '0.08em', color: 'var(--chrome)' }}>AUTOMODZ</span>
+            <Wordmark height={15} />
           </div>
           <div className="flex items-center gap-1 ml-1">
             <Shield size={9} color="var(--ember)" />

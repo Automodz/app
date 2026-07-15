@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Plus, ChevronRight, Zap, Bell, Clock, CheckCircle } from 'lucide-react';
+import { Plus, ChevronRight, Zap, Bell, Clock, CheckCircle, Car, Tag, Gift } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -20,6 +20,9 @@ import {
 
 import { getUserSubscription, getServices } from '@/lib/firebaseService';
 import { MEMBERSHIP_PLANS, type Subscription } from '@/lib/types';
+import GaugeRing from '@/components/ui/GaugeRing';
+import HeroMedia from '@/components/ui/HeroMedia';
+import { STOCK } from '@/lib/stockImages';
 
 // Keys match MembershipPlan type: 'Silver' | 'Gold' | 'Platinum'
 const PLAN_ICONS: Record<string, string> = {
@@ -29,10 +32,10 @@ const PLAN_ICONS: Record<string, string> = {
 };
 
 const SERVICES = [
-  { cat: 'PPF',     icon: '🛡', label: 'Paint Protection',  sub: 'from ₹1,45,000', href: '/dashboard/booking?cat=PPF' },
-  { cat: 'Ceramic', icon: '✱', label: 'Ceramic Coating',   sub: 'from ₹10,000',   href: '/dashboard/booking?cat=Ceramic' },
-  { cat: 'Washing', icon: '💧', label: 'Wash & Detail',     sub: 'from ₹500',      href: '/dashboard/booking?cat=Washing' },
-  { cat: 'Coating', icon: '◆', label: 'Teflon & Glass',    sub: 'from ₹1,200',    href: '/dashboard/booking?cat=Coating' },
+  { cat: 'PPF',     img: STOCK.ppf,     label: 'Paint Protection',  sub: 'from ₹1,45,000', href: '/dashboard/booking?cat=PPF' },
+  { cat: 'Ceramic', img: STOCK.ceramic, label: 'Ceramic Coating',   sub: 'from ₹10,000',   href: '/dashboard/booking?cat=Ceramic' },
+  { cat: 'Washing', img: STOCK.washing, label: 'Wash & Detail',     sub: 'from ₹500',      href: '/dashboard/booking?cat=Washing' },
+  { cat: 'Coating', img: STOCK.coating, label: 'Teflon & Glass',    sub: 'from ₹1,200',    href: '/dashboard/booking?cat=Coating' },
 ];
 
 // Content-first: no hidden initial - content is visible immediately.
@@ -200,27 +203,52 @@ export default function DashboardPage() {
             ))}
           </motion.div>
 
-          {/* Membership card */}
+          {/* Membership instrument cluster — twin gauges (washes · validity) */}
           {isMemberActive && planConfig && !membershipLoading && (
             <motion.button
               {...stagger(0.12)}
               onClick={() => router.push('/dashboard/subscriptions')}
-              className="w-full rounded-xl p-3 text-left flex items-center gap-3"
-              style={{
-                background: `color-mix(in srgb, var(--accent) 6%, transparent)`,
-                border: '1px solid var(--border-strong)',
-              }}
+              className="card-ember glass w-full p-4 text-left overflow-hidden relative"
+              style={{ borderRadius: 20 }}
             >
-              <span style={{ fontSize: '20px' }}>{PLAN_ICONS[planConfig.id] ?? '⭐'}</span>
-              <div className="flex-1 min-w-0">
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--ember)' }}>
-                  {planConfig.label} Member
-                </p>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted)', marginTop: '1px' }}>
-                  {washesRemaining} wash{washesRemaining !== 1 ? 'es' : ''} remaining · {daysRemaining}d left
-                </p>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: '18px' }}>{PLAN_ICONS[planConfig.id] ?? '⭐'}</span>
+                  <span className="font-display font-700 text-sm text-ember">{planConfig.label} Membership</span>
+                </div>
+                <ChevronRight size={16} style={{ color: 'var(--ember)' }} />
               </div>
-              <ChevronRight size={14} style={{ color: 'var(--ember)', flexShrink: 0 }} />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-3">
+                  <GaugeRing
+                    size={78} stroke={7}
+                    value={membership.washesTotal ? (washesRemaining / membership.washesTotal) * 100 : 0}
+                    label={washesRemaining}
+                    caption="LEFT"
+                  />
+                  <div>
+                    <p className="data-label">WASHES</p>
+                    <p className="font-body text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                      of {membership.washesTotal}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <GaugeRing
+                    size={78} stroke={7}
+                    value={Math.min(100, (daysRemaining / 30) * 100)}
+                    danger={daysRemaining <= 5}
+                    label={daysRemaining}
+                    caption="DAYS"
+                  />
+                  <div>
+                    <p className="data-label">VALIDITY</p>
+                    <p className="font-body text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                      renews soon
+                    </p>
+                  </div>
+                </div>
+              </div>
             </motion.button>
           )}
         </div>
@@ -347,15 +375,21 @@ export default function DashboardPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + i * 0.07 }}
                 onClick={() => router.push(s.href)}
-                className="card rounded-xl p-4 text-left"
+                className="relative rounded-2xl overflow-hidden text-left h-32 flex flex-col justify-end p-3.5"
+                style={{ border: '1px solid var(--border)' }}
               >
-                <div style={{ fontSize: '22px', marginBottom: '8px' }}>{s.icon}</div>
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                  {s.label}
-                </p>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-                  {liveMin[s.cat] ? `from ${formatCurrency(liveMin[s.cat])}` : s.sub}
-                </p>
+                <div aria-hidden className="absolute inset-0">
+                  <HeroMedia src={s.img} alt="" scrim="none"
+                    overlay="linear-gradient(to top, rgba(6,7,9,0.86) 0%, rgba(6,7,9,0.34) 46%, rgba(6,7,9,0.08) 100%)" />
+                </div>
+                <div className="relative z-10">
+                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: '#FFFFFF' }}>
+                    {s.label}
+                  </p>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,0.82)', marginTop: '2px' }}>
+                    {liveMin[s.cat] ? `from ${formatCurrency(liveMin[s.cat])}` : s.sub}
+                  </p>
+                </div>
               </motion.button>
             ))}
           </div>
@@ -363,30 +397,32 @@ export default function DashboardPage() {
 
         {/* Cars & Offers quick links */}
         <motion.div {...stagger(0.09)} className="grid grid-cols-2 gap-2.5">
-          <Link href="/dashboard/cars" className="card rounded-xl p-4 block">
-            <div style={{ fontSize: '22px', marginBottom: '8px' }}>🚗</div>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-              Cars for Sale
-            </p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-              Buy & sell with AutoModz
-            </p>
-          </Link>
-          <Link href="/dashboard/offers" className="card rounded-xl p-4 block">
-            <div style={{ fontSize: '22px', marginBottom: '8px' }}>🏷️</div>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-              Offers
-            </p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-              Your discounts & promos
-            </p>
-          </Link>
-          <Link href="/dashboard/refer" className="card rounded-xl p-4 block col-span-2">
+          {[
+            { href: '/dashboard/cars', icon: Car, title: 'Cars for Sale', sub: 'Buy & sell with AutoModz' },
+            { href: '/dashboard/offers', icon: Tag, title: 'Offers', sub: 'Your discounts & promos' },
+          ].map(q => (
+            <Link key={q.href} href={q.href} className="card rounded-2xl p-4 block">
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl mb-3"
+                style={{ background: 'var(--accent-mist)', border: '1px solid var(--border)' }}>
+                <q.icon size={17} style={{ color: 'var(--accent)' }} />
+              </span>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
+                {q.title}
+              </p>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                {q.sub}
+              </p>
+            </Link>
+          ))}
+          <Link href="/dashboard/refer" className="card rounded-2xl p-4 block col-span-2">
             <div className="flex items-center gap-3">
-              <div style={{ fontSize: '22px' }}>🎁</div>
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+                style={{ background: 'var(--accent-mist)', border: '1px solid var(--border)' }}>
+                <Gift size={18} style={{ color: 'var(--accent)' }} />
+              </span>
               <div>
                 <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                  Refer a friend - give ₹200, get ₹200
+                  Refer a friend — give ₹200, get ₹200
                 </p>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
                   Share your link on WhatsApp, both of you save

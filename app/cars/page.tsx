@@ -5,6 +5,7 @@ import { Zap, Car, ArrowLeft, Search } from 'lucide-react';
 import { getActiveCarListings } from '@/lib/firebaseService';
 import CarCard from '@/components/cars/CarCard';
 import ErrorState from '@/components/ui/ErrorState';
+import Wordmark from '@/components/ui/Wordmark';
 import type { CarListing } from '@/lib/types';
 
 const BUDGETS = [
@@ -55,7 +56,7 @@ export default function PublicCarsPage() {
           <Zap size={15} style={{ color: 'var(--on-accent)' }} />
         </div>
         <div>
-          <p className="font-display font-800 text-sm tracking-wider" style={{ color: 'var(--chrome)' }}>AUTOMODZ</p>
+          <Wordmark height={16} />
           <p className="data-label" style={{ color: 'var(--ember)' }}>Cars for Sale</p>
         </div>
       </header>

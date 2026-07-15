@@ -3,23 +3,25 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════
-   AUTOMODZ v7 - LIQUID CHROME DESIGN SYSTEM (Phase 0, style-tile A)
-   Grey/white monochrome in gradients · metallic chrome ramps on deep black
-   liquid glass · silver mesh glow · muted statuses
+   AUTOMODZ v9 - STUDIO WHITE DESIGN SYSTEM (light-first, brand monochrome)
+   AutoModz brand = white wordmark on grey. Palette stays in that family:
+   porcelain/white surfaces · graphite ink as the focal accent · brushed-silver
+   metallic ramps · soft neutral shadows · muted status hues. No colour accents.
+   Light is the default/primary; a graphite dark theme is available via toggle.
    Fonts: Unbounded (hero) · Outfit (display/UI) · DM Sans (body) · DM Mono
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ─── Design Tokens ─────────────────────────────────────────────────── */
+/* ─── Design Tokens (DARK theme base — light overrides below) ────────── */
 :root {
-  /* ── Chrome accent (white on dark) ── */
-  --accent:        #F5F6F7;
-  --accent-2:      #AEB4BA;
-  --accent-grad:   linear-gradient(120deg, #FFFFFF 0%, #DDE0E3 45%, #AEB4BA 100%);
-  --on-accent:     #111214;
-  --on-accent-dim: rgba(17,18,20,0.65);
-  --accent-glow:   rgba(255,255,255,0.30);
-  --accent-haze:   rgba(255,255,255,0.14);
-  --accent-mist:   rgba(255,255,255,0.07);
+  /* ── Accent: brushed chrome on graphite (dark theme) ── */
+  --accent:        #EDEFF1;
+  --accent-2:      #9AA0A6;
+  --accent-grad:   linear-gradient(120deg, #FFFFFF 0%, #D5D9DD 46%, #9AA0A6 100%);
+  --on-accent:     #131417;
+  --on-accent-dim: rgba(19,20,23,0.66);
+  --accent-glow:   rgba(226,230,234,0.26);
+  --accent-haze:   rgba(226,230,234,0.13);
+  --accent-mist:   rgba(226,230,234,0.06);
 
   /* Legacy accent names (many inline var() references) */
   --ember:         var(--accent);
@@ -28,7 +30,7 @@
   --ember-glow:    var(--accent-glow);
   --ember-haze:    var(--accent-haze);
   --ember-mist:    var(--accent-mist);
-  --ember-trace:   rgba(255,255,255,0.035);
+  --ember-trace:   rgba(226,230,234,0.035);
 
   /* ── Graphite depth ramp (cool neutral, deepened for Liquid Chrome) ── */
   --void:          #08090B;
@@ -83,9 +85,9 @@
   --shadow:        0 8px 32px rgba(0,0,0,0.7);
   --shadow-lg:     0 16px 56px rgba(0,0,0,0.8);
   --shadow-xl:     0 24px 80px rgba(0,0,0,0.9);
-  --ember-glow-sm: 0 0 18px rgba(255,255,255,0.18);
-  --ember-glow-md: 0 0 34px rgba(255,255,255,0.22);
-  --ember-glow-lg: 0 0 64px rgba(255,255,255,0.28);
+  --ember-glow-sm: 0 0 18px rgba(226,230,234,0.16);
+  --ember-glow-md: 0 0 34px rgba(226,230,234,0.20);
+  --ember-glow-lg: 0 0 64px rgba(226,230,234,0.26);
 
   /* ── Typography ── */
   --font-hero:     'Unbounded', 'Outfit', sans-serif;
@@ -106,15 +108,16 @@
 
 /* ── Light theme (porcelain + graphite accent) ── */
 [data-theme="light"] {
-  --accent:        #17181A;
-  --accent-2:      #43484E;
-  --accent-grad:   linear-gradient(135deg, #2B2E32 0%, #17181A 60%, #0C0D0E 100%);
+  /* Graphite ink accent on porcelain — brand grey/white family */
+  --accent:        #23262B;
+  --accent-2:      #565B62;
+  --accent-grad:   linear-gradient(135deg, #3A3E44 0%, #23262B 58%, #15171A 100%);
   --on-accent:     #FFFFFF;
-  --on-accent-dim: rgba(255,255,255,0.72);
-  --accent-glow:   rgba(23,24,26,0.22);
-  --accent-haze:   rgba(23,24,26,0.10);
-  --accent-mist:   rgba(23,24,26,0.05);
-  --ember-trace:   rgba(23,24,26,0.03);
+  --on-accent-dim: rgba(255,255,255,0.74);
+  --accent-glow:   rgba(35,38,43,0.16);
+  --accent-haze:   rgba(35,38,43,0.08);
+  --accent-mist:   rgba(35,38,43,0.045);
+  --ember-trace:   rgba(35,38,43,0.03);
 
   --bg:            #F7F7F6;
   --bg-2:          #EFEFEE;
@@ -165,9 +168,9 @@
   --ember-glow-md: 0 0 32px rgba(23,24,26,0.16);
   --ember-glow-lg: 0 0 64px rgba(23,24,26,0.20);
 
-  /* Tokens hardcoded white in :root - must flip to ink on porcelain */
-  --ember-hot:     #141517;
-  --plasma-hi:     #141517;
+  /* Tokens hardcoded white in :root - flip to graphite ink on porcelain */
+  --ember-hot:     #15171A;
+  --plasma-hi:     #15171A;
 
   /* Status hues darkened for 4.5:1 on white surfaces */
   --success:       #1F7A4D;
@@ -175,6 +178,21 @@
   --danger:        #B93838;
   --info:          #21618C;
 }
+
+/* ─── Wordmark (real logo typeface, theme-aware) ─────────────────────── */
+.wordmark { position: relative; }
+.wordmark img { display: block; height: 100%; width: auto; object-fit: contain; }
+/* default (light theme): show ink, hide white */
+.wordmark .wm-w { display: none; }
+.wordmark .wm-i { display: block; }
+/* dark theme, auto variant: flip to white */
+[data-theme="dark"] .wordmark.wm-auto .wm-i { display: none; }
+[data-theme="dark"] .wordmark.wm-auto .wm-w { display: block; }
+/* forced variants */
+.wordmark.wm-white .wm-i { display: none; }
+.wordmark.wm-white .wm-w { display: block; }
+.wordmark.wm-ink .wm-w { display: none; }
+.wordmark.wm-ink .wm-i { display: block; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    BASE RESET
@@ -199,8 +217,8 @@ body {
   position: relative;
 }
 
-::selection { background: rgba(255,255,255,0.22); color: #000; }
-[data-theme="light"] ::selection { background: rgba(23,24,26,0.16); color: #000; }
+::selection { background: rgba(226,230,234,0.24); color: #000; }
+[data-theme="light"] ::selection { background: rgba(35,38,43,0.14); color: #000; }
 
 /* Glossy porcelain body - soft top sheen over a white→grey wash */
 [data-theme="light"] body {
@@ -237,14 +255,14 @@ body {
 .font-900 { font-weight: 800; }
 
 .text-ember {
-  background: linear-gradient(120deg, #FFFFFF 0%, #D8DBDE 30%, #8E959C 52%, #F2F4F5 74%, #B9BEC4 100%);
+  background: linear-gradient(120deg, #FFFFFF 0%, #DBDEE2 30%, #9198A0 52%, #F4F6F7 74%, #B9BEC5 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 [data-theme="light"] .text-ember {
-  background: linear-gradient(135deg, #17181A 0%, #52585F 55%, #17181A 100%);
+  background: linear-gradient(135deg, #15171A 0%, #4A4F56 52%, #23262B 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }

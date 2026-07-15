@@ -8,6 +8,7 @@ import PinPad from '@/components/store/PinPad';
 import { listEmployees, verifyPin } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
 import ErrorState from '@/components/ui/ErrorState';
+import Wordmark from '@/components/ui/Wordmark';
 import type { Employee } from '@/lib/types';
 
 export default function StoreLockScreen() {
@@ -49,7 +50,7 @@ export default function StoreLockScreen() {
           <Zap size={22} style={{ color: 'var(--on-accent)' }} />
         </div>
         <div>
-          <p className="font-display font-800 text-xl tracking-wider" style={{ color: 'var(--chrome)' }}>AUTOMODZ</p>
+          <Wordmark height={24} className="mx-auto" />
           <p className="data-label flex items-center gap-1.5" style={{ color: 'var(--ember)' }}>
             <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: 'var(--ember)' }} />
             Store Mode · Staff Sign-In

@@ -7,6 +7,7 @@ import { useAppStore } from '@/lib/store';
 import { getEmployee } from '@/lib/firebaseService';
 import { KIOSK_LOCK_TIMEOUT_MS } from '@/lib/config/storeConfig';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Wordmark from '@/components/ui/Wordmark';
 
 const NAV = [
   { href: '/store/board',      label: 'Job Board',  icon: LayoutGrid },
@@ -114,7 +115,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Zap size={16} style={{ color: 'var(--on-accent)' }} />
           </div>
           <div className="mr-2">
-            <p className="font-display font-800 text-sm tracking-wider" style={{ color: 'var(--chrome)' }}>AUTOMODZ</p>
+            <Wordmark height={16} />
             <p className="data-label flex items-center gap-1.5" style={{ color: 'var(--ember)' }}>
               <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: 'var(--ember)' }} />
               Store Mode

@@ -1,5 +1,5 @@
 'use client';
-import Image from 'next/image';
+import Wordmark from '@/components/ui/Wordmark';
 import { BUSINESS, GOOGLE_REVIEW_URL } from '@/lib/config/storeConfig';
 
 export interface InvoiceDocData {
@@ -35,15 +35,10 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
     }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <Image src="/logo.png" alt="AutoModz" width={56} height={56} style={{ borderRadius: 12, objectFit: 'contain' }} />
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, letterSpacing: '0.06em' }}>
-              AUTOMODZ
-            </div>
-            <div style={{ fontSize: 11, color: '#666', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              {BUSINESS.tagline}
-            </div>
+        <div>
+          <Wordmark variant="ink" height={26} />
+          <div style={{ fontSize: 11, color: '#666', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 8 }}>
+            {BUSINESS.tagline}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>

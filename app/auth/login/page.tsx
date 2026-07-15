@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2, Zap } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import Wordmark from '@/components/ui/Wordmark';
 import { Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import {
@@ -125,6 +127,17 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-mesh"
       style={{ overflowX: 'clip' }}>
 
+      {/* Back to home */}
+      <Link href="/"
+        className="fixed top-5 left-5 z-20 inline-flex items-center gap-1.5 font-mono"
+        style={{
+          fontSize: 11, letterSpacing: '0.08em', color: 'var(--fg-dim)',
+          border: '1px solid var(--border-2)', borderRadius: 10,
+          padding: '8px 14px', background: 'var(--glass)', backdropFilter: 'blur(12px)',
+        }}>
+        <ArrowLeft size={14} /> HOME
+      </Link>
+
       {/* Background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="plasma-orb w-96 h-96 -top-24 -left-24 animate-breathe"
@@ -141,22 +154,16 @@ export default function LoginPage() {
         className="w-full max-w-sm relative z-10">
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={false}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 animate-ember-pulse"
-            style={{ background: 'var(--accent-grad)', boxShadow: '0 8px 32px var(--accent-glow)' }}>
-            <Zap size={26} style={{ color: 'var(--on-accent)' }} />
-          </motion.div>
-          <h1 className="font-hero" style={{ fontWeight: 800, fontSize: '26px', color: 'var(--chrome)', letterSpacing: '0.08em' }}>
-            AUTO<span className="text-ember">MODZ</span>
-          </h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="flex flex-col items-center text-center mb-8">
+          <Wordmark height={30} />
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted)', marginTop: '14px' }}>
             Premium Car Detailing Studio
           </p>
-        </div>
+        </motion.div>
 
         {/* Card */}
         <div className="glass-strong rounded-3xl p-6">
