@@ -18,7 +18,9 @@ import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Star, MapPin, Phone, ShieldCheck, Smartphone, IndianRupee, Clock, Navigation,
+  CalendarCheck, SprayCan, Sparkles, CarFront,
 } from 'lucide-react';
+import HeroWash from '@/components/home/HeroWash';
 import { getServices } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import SlideToAction from '@/components/ui/SlideToAction';
@@ -114,23 +116,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ── HOME — full screen, centred ── */}
-      <section className="relative min-h-[100svh] flex flex-col items-center justify-center text-center px-6">
-        <motion.p {...reveal} className="font-mono mb-5" style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--fg-dim)' }}>
-          DETAILING STUDIO · MANINAGAR, AHMEDABAD
-        </motion.p>
-        <motion.h1 {...reveal} transition={{ ...reveal.transition, delay: 0.05 }} className="font-hero"
-          style={{ fontSize: 'clamp(46px, 13vw, 108px)', fontWeight: 800, lineHeight: 0.94, letterSpacing: '-0.03em', color: 'var(--fg)' }}>
-          The art of<br /><span className="text-ember">the finish.</span>
-        </motion.h1>
-        <motion.p {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="font-body mt-7 max-w-md mx-auto"
-          style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--muted)' }}>
-          The studio in Maninagar that treats your car like it&rsquo;s the only one in the bay.
-        </motion.p>
-        <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.16 }} className="mt-10 w-full max-w-sm">
-          <SlideToAction label="Slide to book now" onComplete={book} />
-        </motion.div>
-      </section>
+      {/* ── HOME — scroll-driven car wash ── */}
+      <HeroWash onBook={book} />
 
       {/* ── TRUST STRIP ── */}
       <section className="relative px-6 py-6">
@@ -204,47 +191,38 @@ export default function HomePage() {
 
       {/* ── BEFORE / AFTER PROOF ── */}
       <section className="relative px-6 py-16">
-        <SectionTitle kicker="THE DIFFERENCE" title="Correction, not cover-up." sub="Drag across a real paint-correction. The swirls come out before anything is sealed over them." />
+        <SectionTitle kicker="THE DIFFERENCE" title="From grimy to gleaming." sub="Drag across. The same car — dusty and dull on the left, corrected and glossed on the right." />
         <motion.div {...reveal} className="max-w-2xl mx-auto">
           <BeforeAfterSlider
             before={STOCK.ceramic}
             after={STOCK.ceramic}
-            beforeFilter="saturate(0.45) brightness(0.8) contrast(0.9) blur(0.4px)"
-            alt="Paint correction — same panel, before and after" />
+            dirtBefore
+            beforeFilter="saturate(0.4) brightness(0.72) contrast(0.95) blur(0.5px)"
+            alt="The same car — dirty before, clean after" />
         </motion.div>
       </section>
 
-      {/* ── GOOGLE REVIEWS ── */}
-      <section id="reviews" className="relative py-16">
-        <div className="text-center max-w-2xl mx-auto px-6 mb-8">
-          <motion.p {...reveal} className="font-mono mb-3" style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--fg-dim)' }}>WHAT AHMEDABAD SAYS</motion.p>
-          <motion.h2 {...reveal} transition={{ ...reveal.transition, delay: 0.05 }} className="font-display" style={{ fontSize: 'clamp(26px, 6vw, 44px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.015em', color: 'var(--fg)' }}>
-            Loved across the city.
-          </motion.h2>
-          <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="inline-flex items-center gap-2.5 mt-5 px-4 py-2 rounded-full"
-            style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)' }}>
-            <GoogleG />
-            <span className="font-display" style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)' }}>{GOOGLE_RATING.score.toFixed(1)}</span>
-            <Stars n={5} />
-            <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.06em', color: 'var(--muted)' }}>{GOOGLE_RATING.count}+ REVIEWS</span>
-          </motion.div>
-        </div>
-
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar px-6 pb-3" style={{ scrollPaddingLeft: 24 }}>
-          {REVIEWS.map(r => (
-            <motion.article key={r.name} {...reveal} className="snap-start shrink-0 w-[82vw] sm:w-[340px] rounded-[22px] p-5"
-              style={{ background: 'var(--glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-sm)' }}>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="grid place-items-center rounded-full font-display" style={{ width: 38, height: 38, fontSize: 15, fontWeight: 700, color: 'var(--on-accent)', background: 'var(--accent-grad)' }}>{r.name[0]}</span>
-                <div>
-                  <div className="font-display" style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{r.name}</div>
-                  <div className="flex items-center gap-2"><Stars n={r.rating} size={12} /><span className="font-mono" style={{ fontSize: 9.5, color: 'var(--muted)' }}>{r.when}</span></div>
-                </div>
-              </div>
-              <p className="font-body" style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--fg-dim)' }}>{r.text}</p>
-            </motion.article>
+      {/* ── HOW TO BOOK — minimal steps ── */}
+      <section className="relative px-6 py-16">
+        <SectionTitle kicker="HOW IT WORKS" title="Booked in the app, in a minute." sub="No calls, no back-and-forth. Slide to book, pick your service, and track every stage from your phone." />
+        <div className="max-w-3xl mx-auto grid sm:grid-cols-4 gap-3">
+          {[
+            { icon: CalendarCheck, t: 'Book', d: 'Slide to book and pick a slot that suits you.' },
+            { icon: CarFront,      t: 'Drop off', d: 'Bring it to the Maninagar studio — or we collect.' },
+            { icon: SprayCan,      t: 'We detail', d: 'Every panel worked and photographed, live to your phone.' },
+            { icon: Sparkles,      t: 'Glow', d: 'Pick it up gleaming. Pay in-app, done.' },
+          ].map((s, i) => (
+            <motion.div key={s.t} {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }}
+              className="relative rounded-[20px] p-5 text-center flex flex-col items-center"
+              style={{ background: 'var(--glass)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid var(--glass-border)' }}>
+              <span className="font-mono absolute top-3 right-4" style={{ fontSize: 10, color: 'var(--faint)' }}>0{i + 1}</span>
+              <span className="grid place-items-center rounded-2xl mb-3" style={{ width: 44, height: 44, background: 'var(--accent-mist)', border: '1px solid var(--border-strong)', color: 'var(--fg)' }}>
+                <s.icon size={19} />
+              </span>
+              <h3 className="font-display" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--fg)' }}>{s.t}</h3>
+              <p className="font-body mt-1.5" style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>{s.d}</p>
+            </motion.div>
           ))}
-          <div aria-hidden className="shrink-0 w-2" />
         </div>
       </section>
 
@@ -253,13 +231,18 @@ export default function HomePage() {
         <SectionTitle kicker="FIND US" title="Right here in Maninagar." />
         <motion.div {...reveal} className="max-w-md mx-auto rounded-[26px] overflow-hidden text-center"
           style={{ background: 'var(--glass)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid var(--glass-border)' }}>
-          <div className="relative h-40" style={{ background: 'var(--accent-mist)' }}>
-            <div className="absolute inset-0 bg-grid" style={{ opacity: 0.5 }} />
-            <div className="absolute inset-0 grid place-items-center">
-              <span className="grid place-items-center rounded-full" style={{ width: 52, height: 52, background: 'var(--accent-grad)', color: 'var(--on-accent)', boxShadow: 'var(--shadow)' }}>
-                <MapPin size={22} />
-              </span>
-            </div>
+          <div className="relative h-48" style={{ background: 'var(--accent-mist)' }}>
+            <iframe
+              title="AutoModz on Google Maps"
+              src="https://www.google.com/maps?q=AutoModz+Maninagar+Ahmedabad+Bhairavnath+Rd&output=embed"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="absolute inset-0 w-full h-full"
+              style={{ border: 0, filter: 'grayscale(0.35) contrast(1.05)' }}
+            />
+            <span className="pointer-events-none absolute top-3 left-3 grid place-items-center rounded-full" style={{ width: 34, height: 34, background: 'var(--accent-grad)', color: 'var(--on-accent)', boxShadow: 'var(--shadow)' }}>
+              <MapPin size={16} />
+            </span>
           </div>
           <div className="p-6">
             {openNow !== null && (
@@ -291,6 +274,40 @@ export default function HomePage() {
         <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="mt-10 w-full max-w-sm mx-auto">
           <SlideToAction label="Slide to book now" onComplete={book} />
         </motion.div>
+      </section>
+
+      {/* ── GOOGLE REVIEWS — last section before footer ── */}
+      <section id="reviews" className="relative py-16">
+        <div className="text-center max-w-2xl mx-auto px-6 mb-8">
+          <motion.p {...reveal} className="font-mono mb-3" style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--fg-dim)' }}>WHAT AHMEDABAD SAYS</motion.p>
+          <motion.h2 {...reveal} transition={{ ...reveal.transition, delay: 0.05 }} className="font-display" style={{ fontSize: 'clamp(26px, 6vw, 44px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.015em', color: 'var(--fg)' }}>
+            Loved across the city.
+          </motion.h2>
+          <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="inline-flex items-center gap-2.5 mt-5 px-4 py-2 rounded-full"
+            style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)' }}>
+            <GoogleG />
+            <span className="font-display" style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)' }}>{GOOGLE_RATING.score.toFixed(1)}</span>
+            <Stars n={5} />
+            <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.06em', color: 'var(--muted)' }}>{GOOGLE_RATING.count}+ REVIEWS</span>
+          </motion.div>
+        </div>
+
+        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar px-6 pb-3" style={{ scrollPaddingLeft: 24 }}>
+          {REVIEWS.map(r => (
+            <motion.article key={r.name} {...reveal} className="snap-start shrink-0 w-[82vw] sm:w-[340px] rounded-[22px] p-5"
+              style={{ background: 'var(--glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-sm)' }}>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="grid place-items-center rounded-full font-display" style={{ width: 38, height: 38, fontSize: 15, fontWeight: 700, color: 'var(--on-accent)', background: 'var(--accent-grad)' }}>{r.name[0]}</span>
+                <div>
+                  <div className="font-display" style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{r.name}</div>
+                  <div className="flex items-center gap-2"><Stars n={r.rating} size={12} /><span className="font-mono" style={{ fontSize: 9.5, color: 'var(--muted)' }}>{r.when}</span></div>
+                </div>
+              </div>
+              <p className="font-body" style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--fg-dim)' }}>{r.text}</p>
+            </motion.article>
+          ))}
+          <div aria-hidden className="shrink-0 w-2" />
+        </div>
       </section>
 
       {/* ── FOOTER ── */}

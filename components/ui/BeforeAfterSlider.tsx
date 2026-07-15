@@ -13,6 +13,7 @@ export default function BeforeAfterSlider({
   alt = 'Before and after',
   className = '',
   beforeFilter,
+  dirtBefore = false,
 }: {
   before: string;
   after: string;
@@ -21,6 +22,9 @@ export default function BeforeAfterSlider({
   /** CSS filter applied to the "before" layer — lets you pass the SAME image
    *  for before/after and simulate the uncorrected state (dull/hazy). */
   beforeFilter?: string;
+  /** Paint a grime/dust layer over the "before" side so the same car reads as
+   *  dirty before → clean after. */
+  dirtBefore?: boolean;
 }) {
   const [pos, setPos] = useState(50);
   return (
@@ -32,6 +36,26 @@ export default function BeforeAfterSlider({
         <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={before} alt={`${alt} - before`} className="w-full h-full object-cover" draggable={false} style={beforeFilter ? { filter: beforeFilter } : undefined} />
+          {dirtBefore && (
+            <div
+              aria-hidden
+              className="absolute inset-0 mix-blend-multiply pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(circle at 18% 30%, rgba(92,68,38,0.55) 0 6px, transparent 7px),' +
+                  'radial-gradient(circle at 32% 62%, rgba(74,58,34,0.5) 0 9px, transparent 10px),' +
+                  'radial-gradient(circle at 55% 25%, rgba(88,66,40,0.45) 0 5px, transparent 6px),' +
+                  'radial-gradient(circle at 68% 70%, rgba(70,54,30,0.5) 0 11px, transparent 12px),' +
+                  'radial-gradient(circle at 82% 44%, rgba(90,66,38,0.5) 0 7px, transparent 8px),' +
+                  'radial-gradient(circle at 44% 82%, rgba(76,58,34,0.45) 0 8px, transparent 9px),' +
+                  'linear-gradient(160deg, rgba(83,64,40,0.4), rgba(48,38,24,0.28))',
+                backgroundColor: 'rgba(70,54,32,0.16)',
+              }}
+            />
+          )}
+          {dirtBefore && (
+            <div aria-hidden className="absolute inset-0 noise-overlay pointer-events-none" style={{ opacity: 0.5 }} />
+          )}
         </div>
         {/* divider + handle */}
         <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}>

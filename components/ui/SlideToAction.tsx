@@ -1,6 +1,23 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Car } from 'lucide-react';
+
+/** Sleek sports-car silhouette (side profile) — richer than the stock glyph. */
+function SportsCar({ size = 26 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 32" fill="none" aria-hidden>
+      <path
+        d="M2 22c0-1.2.9-2.1 2-2.3l4.2-.7 4.8-5.4c1.3-1.5 3.2-2.4 5.2-2.4h8.9c1.6 0 3.1.6 4.3 1.6l4.4 3.9 5.1 1.2c1.6.4 2.8 1.8 2.8 3.5V22c0 1.1-.9 2-2 2h-3.1"
+        stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" fillOpacity="0.14"
+      />
+      <path d="M13 12.2l3 5.3h9.5l-4-5.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 24H5.5" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+      <circle cx="15" cy="24" r="4" fill="var(--track,#111)" stroke="currentColor" strokeWidth="2.2" />
+      <circle cx="34" cy="24" r="4" fill="var(--track,#111)" stroke="currentColor" strokeWidth="2.2" />
+      <circle cx="15" cy="24" r="1.3" fill="currentColor" />
+      <circle cx="34" cy="24" r="1.3" fill="currentColor" />
+    </svg>
+  );
+}
 
 /**
  * Aston "Slide to Start" control. Drag the knob to ~90% of the track to fire
@@ -63,17 +80,14 @@ export default function SlideToAction({
       onPointerUp={end}
       onPointerLeave={end}
     >
-      {/* road the car drives along — dashed lane line, fades as it completes */}
+      {/* soft trail the knob leaves behind as it slides — no dashed line */}
       <div
         aria-hidden
-        className="absolute top-1/2 -translate-y-1/2"
+        className="absolute top-1 bottom-1 left-1 rounded-full"
         style={{
-          left: knob + 6,
-          right: 14,
-          height: 2,
-          opacity: 0.45 * (1 - pct),
-          backgroundImage:
-            'repeating-linear-gradient(90deg, var(--faint) 0 10px, transparent 10px 22px)',
+          width: knob + x,
+          background: 'var(--accent-mist)',
+          opacity: 0.9 * (1 - pct * 0.4),
         }}
       />
       <div
@@ -101,7 +115,7 @@ export default function SlideToAction({
           cursor: disabled ? 'not-allowed' : 'grab',
         }}
       >
-        <Car size={24} strokeWidth={2.2} />
+        <SportsCar size={28} />
       </div>
     </div>
   );
