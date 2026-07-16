@@ -166,6 +166,18 @@ export default function JobWorkspace() {
                 className="flex items-center gap-2.5 w-full px-3.5 py-3 rounded-xl" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
                 <Phone size={15} /><span className="font-body" style={{ fontSize: 13 }}>Call customer</span>
               </a>
+              {job.customerId && (
+                <button onClick={() => router.push(`/admin/customers/${job.customerId}`)}
+                  className="flex items-center gap-2.5 w-full px-3.5 py-3 rounded-xl cursor-pointer" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
+                  <UserIcon size={15} /><span className="font-body" style={{ fontSize: 13 }}>Customer history</span>
+                </button>
+              )}
+              {job.vehicleRegNo && (
+                <button onClick={() => router.push(`/admin/vehicles/${encodeURIComponent(job.vehicleRegNo)}`)}
+                  className="flex items-center gap-2.5 w-full px-3.5 py-3 rounded-xl cursor-pointer" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
+                  <Car size={15} /><span className="font-body" style={{ fontSize: 13 }}>Vehicle history</span>
+                </button>
+              )}
             </div>
           </Section>
 

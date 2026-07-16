@@ -297,13 +297,15 @@ export default function CustomerDetailPage() {
             ) : (
               <div className="space-y-2">
                 {vehicles.map(v => (
-                  <div key={v.id} className="flex items-center gap-2.5">
+                  <button key={v.id} onClick={() => router.push(`/admin/vehicles/${encodeURIComponent(v.registrationNumber)}`)}
+                    className="group w-full flex items-center gap-2.5 text-left cursor-pointer">
                     <Car size={13} style={{ color: 'var(--pewter)', flexShrink: 0 }} />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-body font-600 truncate" style={{ fontSize: 12.5, color: 'var(--chrome)' }}>{v.name}</p>
                       <p className="text-[11px] font-body truncate" style={{ color: 'var(--steel)' }}>{v.registrationNumber} · {v.category}{v.color ? ` · ${v.color}` : ''}</p>
                     </div>
-                  </div>
+                    <ChevronRight size={13} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
+                  </button>
                 ))}
               </div>
             )}
