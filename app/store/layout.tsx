@@ -24,6 +24,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isStaff = user?.role === 'admin' || user?.role === 'employee';
+  // Managers (admin/owner) run Store Mode as a shared front-desk OS — no kiosk PIN.
+  const isManager = user?.role === 'admin';
   // Employees sign in on their own phones; kiosk mode (PIN) rides on the
   // owner's admin session on the shared tablet.
   const isPersonal = user?.role === 'employee';
@@ -87,13 +89,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   // Redirect into the lock screen when no employee is unlocked (kiosk only);
   // personal sessions land straight on the board.
   useEffect(() => {
-    if (!kioskRestored || isPersonal) return;
+    if (!kioskRestored || isPersonal || isManager) return;
     if (!kioskEmployee && pathname !== '/store') router.replace('/store');
-  }, [kioskEmployee, kioskRestored, pathname, router, isPersonal]);
+  }, [kioskEmployee, kioskRestored, pathname, router, isPersonal, isManager]);
 
   useEffect(() => {
-    if (isPersonal && pathname === '/store') router.replace('/store/board');
-  }, [isPersonal, pathname, router]);
+    if ((isPersonal || isManager) && pathname === '/store') router.replace('/store/board');
+  }, [isPersonal, isManager, pathname, router]);
 
   if (authLoading || !user || !isStaff) {
     return (
@@ -107,7 +109,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex flex-col select-none" style={{ background: 'var(--void)' }}>
-      {!isLockScreen && kioskEmployee && (
+      {!isLockScreen && (kioskEmployee || isManager) && (
         <header className="flex items-center gap-3 px-5 py-3 sticky top-0 z-30"
           style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -139,10 +141,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </nav>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{kioskEmployee.name}</p>
-              <p className="data-label" style={{ color: 'var(--steel)' }}>{kioskEmployee.role}</p>
+              <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{kioskEmployee?.name ?? user.name ?? 'Manager'}</p>
+              <p className="data-label" style={{ color: 'var(--steel)' }}>{kioskEmployee?.role ?? 'Manager'}</p>
             </div>
-            {!isPersonal && (
+            {!isPersonal && !isManager && (
               <button onClick={relock} title="Lock kiosk" aria-label="Lock kiosk"
                 className="w-11 h-11 flex items-center justify-center rounded-xl cursor-pointer transition-colors"
                 style={{ background: 'var(--dark)', color: 'var(--steel)', border: '1px solid var(--border)' }}>

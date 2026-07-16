@@ -17,7 +17,9 @@ const CATEGORIES = ['Washing', 'Ceramic', 'Coating', 'PPF'];
 
 export default function StoreNewJobPage() {
   const router = useRouter();
-  const { kioskEmployee } = useAppStore();
+  const { kioskEmployee, user } = useAppStore();
+  // Managers (admin) run the front desk without a kiosk PIN — they act as themselves.
+  const operator = kioskEmployee ?? (user?.role === 'admin' ? { id: user.uid, name: user.name || 'Manager' } : null);
   const [step, setStep] = useState(0); // 0 customer, 1 vehicle, 2 services, 3 confirm
 
   useEffect(() => { listEmployees().then(setStaff).catch(() => {}); }, []);
@@ -114,7 +116,7 @@ export default function StoreNewJobPage() {
     step === 2 ? items.length > 0 : true;
 
   const create = async () => {
-    if (!kioskEmployee) { toast.error('Kiosk locked'); return; }
+    if (!operator) { toast.error('Kiosk locked'); return; }
     setCreating(true);
     try {
       const id = await createWalkInJob({
@@ -123,7 +125,7 @@ export default function StoreNewJobPage() {
         vehicleName: vehicleName.trim(), vehicleRegNo: regNo,
         serviceItems: items, bay,
         discount: memberWashActive && discount ? undefined : discount,
-        byEmployee: { id: kioskEmployee.id, name: kioskEmployee.name },
+        byEmployee: operator,
         assignees: [...assignees].map(([id, name]) => ({ id, name })),
       });
       if (memberWashActive && matched) {
@@ -136,7 +138,8 @@ export default function StoreNewJobPage() {
         }).catch(() => {});
       }
       toast.success('Job created');
-      router.replace(`/store/job/${id}`);
+      // managers land in the admin workspace; kiosk staff stay on the kiosk job card
+      router.replace(kioskEmployee ? `/store/job/${id}` : `/admin/jobs/${id}`);
     } catch (e) {
       console.error(e); toast.error('Could not create job'); setCreating(false);
     }
