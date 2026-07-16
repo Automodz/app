@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Clock, Phone, Car, CalendarDays } from 'lucide-react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -15,6 +16,7 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 export default function AdminSchedulePage() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -118,18 +120,21 @@ export default function AdminSchedulePage() {
                             transition={{ delay: i * 0.04 }}
                             className="card rounded-2xl p-3 flex items-center gap-3"
                             style={{ borderLeft: `3px solid ${accent}` }}>
-                            <div className="w-8 flex justify-center shrink-0"><ServiceIcon category={b.serviceCategory} size={16} style={{ color: 'var(--chrome)' }} /></div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-body text-sm font-600 text-foreground">{b.userName}</span>
-                                <span className={`badge ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
+                            <button onClick={() => router.push(`/admin/bookings/${b.id}`)}
+                              className="flex-1 flex items-center gap-3 min-w-0 text-left">
+                              <div className="w-8 flex justify-center shrink-0"><ServiceIcon category={b.serviceCategory} size={16} style={{ color: 'var(--chrome)' }} /></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-body text-sm font-600 text-foreground">{b.userName}</span>
+                                  <span className={`badge ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
+                                </div>
+                                <div className="text-xs font-body text-muted mt-0.5 flex items-center gap-3 flex-wrap">
+                                  <span className="flex items-center gap-1"><Clock size={9} />{formatTime(b.scheduledTime)}</span>
+                                  <span className="flex items-center gap-1"><Car size={9} />{b.vehicleName}</span>
+                                  <span style={{ color: accent }}>{b.serviceName}</span>
+                                </div>
                               </div>
-                              <div className="text-xs font-body text-muted mt-0.5 flex items-center gap-3 flex-wrap">
-                                <span className="flex items-center gap-1"><Clock size={9} />{formatTime(b.scheduledTime)}</span>
-                                <span className="flex items-center gap-1"><Car size={9} />{b.vehicleName}</span>
-                                <span style={{ color: accent }}>{b.serviceName}</span>
-                              </div>
-                            </div>
+                            </button>
                             <a href={`tel:+91${b.userPhone}`}
                               className="w-9 h-9 rounded-xl glass flex items-center justify-center shrink-0">
                               <Phone size={13} className="text-muted" />

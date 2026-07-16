@@ -1,11 +1,11 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Phone, MessageCircle, Car, Wrench, FileText,
-  CreditCard, BadgePercent, StickyNote, Pencil, Plus, X,
+  CreditCard, BadgePercent, StickyNote, Pencil, Plus, X, ChevronRight,
 } from 'lucide-react';
 import { doc, getDoc, getDocs, updateDoc, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -21,6 +21,7 @@ type Tab = 'bookings' | 'jobs' | 'vehicles' | 'memberships' | 'invoices' | 'prom
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [customer, setCustomer] = useState<User | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -207,7 +208,8 @@ export default function CustomerDetailPage() {
         <div className="space-y-3">
           {bookings.length === 0 && <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>No bookings yet.</p>}
           {bookings.map(b => (
-            <div key={b.id} className="card-dark flex items-center gap-4">
+            <button key={b.id} onClick={() => router.push(`/admin/bookings/${b.id}`)}
+              className="group card-dark w-full text-left flex items-center gap-4 transition-all hover:border-white/10">
               <div className="flex-1 min-w-0">
                 <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{b.serviceName}</p>
                 <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
@@ -217,7 +219,8 @@ export default function CustomerDetailPage() {
               </div>
               <span className="font-mono text-sm font-700" style={{ color: 'var(--chrome)' }}>{formatCurrency(b.totalAmount)}</span>
               <span className={`status-badge text-xs ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
-            </div>
+              <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
+            </button>
           ))}
         </div>
       )}
@@ -226,7 +229,8 @@ export default function CustomerDetailPage() {
         <div className="space-y-3">
           {jobs.length === 0 && <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>No walk-in jobs.</p>}
           {jobs.map(j => (
-            <div key={j.id} className="card-dark flex items-center gap-4">
+            <button key={j.id} onClick={() => router.push(j.bookingId ? `/admin/bookings/${j.bookingId}` : `/admin/jobs/${j.id}`)}
+              className="group card-dark w-full text-left flex items-center gap-4 transition-all hover:border-white/10">
               <div className="flex-1 min-w-0">
                 <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>
                   {j.serviceItems.map(s => s.serviceName).join(', ')}
@@ -235,7 +239,8 @@ export default function CustomerDetailPage() {
               </div>
               <span className="font-mono text-sm font-700" style={{ color: 'var(--chrome)' }}>{formatCurrency(j.totalAmount)}</span>
               <span className="data-label" style={{ color: j.status === 'completed' ? 'var(--success)' : 'var(--ember)' }}>{j.status}</span>
-            </div>
+              <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
+            </button>
           ))}
         </div>
       )}

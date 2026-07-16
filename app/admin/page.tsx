@@ -247,7 +247,7 @@ export default function AdminDashboard() {
             {recentBookings.map((b, i) => (
               <motion.div key={b.id} initial={false} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.04 }}>
-                <Link href="/admin/bookings">
+                <Link href={`/admin/bookings/${b.id}`}>
                   <div className="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors border border-transparent"
                     style={{ borderColor: 'transparent' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--fog)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
