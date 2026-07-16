@@ -10,10 +10,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  ArrowLeft, Phone, MessageCircle, Car, User as UserIcon, Clock,
+  ArrowLeft, Phone, MessageCircle, Car, User as UserIcon, Clock, FileText, Star,
 } from 'lucide-react';
 import {
   getJob, updateJobStatus, saveJobNotes,
+  createInvoiceForJob, getInvoice, buildInvoiceWhatsAppLink, invoicePublicUrl, buildReviewAskLink,
   logActivity, listJobActivity, type ActivityEvent, type ActivityType,
 } from '@/lib/firebaseService';
 import { formatCurrency, getStatusLabel } from '@/lib/utils';
@@ -22,7 +23,7 @@ import type { Job, JobStatus } from '@/lib/types';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 import ErrorState from '@/components/ui/ErrorState';
 import {
-  Section, Field, serviceIconField, WorkspaceSkeleton,
+  Section, Field, ActionBtn, serviceIconField, WorkspaceSkeleton,
   OperationalStage, AssigneesSection, PhotosSection, PaymentsSection, ActivityTimeline, EASE,
 } from '@/components/workspace/parts';
 
@@ -73,6 +74,18 @@ export default function JobWorkspace() {
       await refresh();
       toast.success('Stage updated');
     } catch { toast.error('Could not update stage'); } finally { setBusy(null); }
+  };
+
+  const doInvoice = async () => {
+    if (!job) return;
+    setBusy('invoice');
+    try {
+      const inv = job.invoiceId ? await getInvoice(job.invoiceId) : await createInvoiceForJob(job, actor);
+      if (!inv) throw new Error('missing');
+      if (!job.invoiceId) { record('invoice', 'Invoice generated', { invoiceNumber: inv.invoiceNumber }); await refresh(); }
+      window.open(invoicePublicUrl(inv), '_blank');
+      setTimeout(() => window.open(buildInvoiceWhatsAppLink(inv), '_blank'), 400);
+    } catch { toast.error('Invoice failed'); } finally { setBusy(null); }
   };
 
   const saveNotes = async () => {
@@ -137,6 +150,14 @@ export default function JobWorkspace() {
         <div className="space-y-4">
           <Section title="Actions" delay={0.08}>
             <div className="space-y-2">
+              {(job.status === 'completed' || job.invoiceId) && (
+                <ActionBtn onClick={doInvoice} busy={busy === 'invoice'} icon={FileText}
+                  label={job.invoiceId ? 'Open invoice + WhatsApp' : 'Generate invoice'} primary={!job.invoiceId} />
+              )}
+              {job.status === 'completed' && (
+                <ActionBtn icon={Star} label="Request Google review"
+                  onClick={() => { window.open(buildReviewAskLink(job.customerName, job.customerPhone), '_blank'); record('review', 'Review requested on WhatsApp'); }} />
+              )}
               <a href={wa(job.customerPhone)} target="_blank" rel="noopener noreferrer" onClick={() => record('whatsapp', 'WhatsApp opened')}
                 className="flex items-center gap-2.5 w-full px-3.5 py-3 rounded-xl" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
                 <MessageCircle size={15} /><span className="font-body" style={{ fontSize: 13 }}>WhatsApp customer</span>

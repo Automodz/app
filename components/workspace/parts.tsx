@@ -10,11 +10,11 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   Loader2, CheckCircle2, Clock, Plus, X, Camera, CalendarClock, LogIn,
-  Users, IndianRupee, FileText, MessageCircle, Phone,
+  Users, IndianRupee, FileText, MessageCircle, Phone, Star,
 } from 'lucide-react';
 import { setJobAssignees, addJobPhoto, listEmployees, addJobPayment } from '@/lib/firebaseService';
 import { getStatusLabel, formatCurrency } from '@/lib/utils';
-import type { Job, JobStatus, BookingStatus, Employee } from '@/lib/types';
+import type { Job, JobStatus, BookingStatus, Employee, JobPhoto } from '@/lib/types';
 import type { ActivityType, ActivityEvent } from '@/lib/services/activity';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 
@@ -189,26 +189,31 @@ export function AssigneesSection({ job, actor, record, onChange }: { job: Job; a
   );
 }
 
+type PhotoKind = JobPhoto['kind'];
+
 export function PhotosSection({ job, record, onChange }: { job: Job; record: RecordFn; onChange: () => void }) {
   const beforeRef = useRef<HTMLInputElement>(null);
+  const duringRef = useRef<HTMLInputElement>(null);
   const afterRef = useRef<HTMLInputElement>(null);
-  const [up, setUp] = useState<'before' | 'after' | null>(null);
+  const [up, setUp] = useState<PhotoKind | null>(null);
   const photos = job.photos ?? [];
   const before = photos.filter(p => p.kind === 'before');
+  const during = photos.filter(p => p.kind === 'during');
   const after = photos.filter(p => p.kind === 'after');
 
-  const upload = async (file: File | undefined, kind: 'before' | 'after') => {
+  const upload = async (file: File | undefined, kind: PhotoKind) => {
     if (!file) return;
     setUp(kind);
     try {
       await addJobPhoto(job, file, kind);
-      record('photo', `${kind === 'before' ? 'Before' : 'After'} photo added`);
+      const label = kind.charAt(0).toUpperCase() + kind.slice(1);
+      record('photo', `${label} photo added`);
       onChange();
-      toast.success(kind === 'before' ? 'Before photo added' : 'After photo added');
+      toast.success(`${label} photo added`);
     } catch { toast.error('Upload failed'); } finally { setUp(null); }
   };
 
-  const Grid = ({ list, kind, inputRef }: { list: typeof photos; kind: 'before' | 'after'; inputRef: React.RefObject<HTMLInputElement> }) => (
+  const Grid = ({ list, kind, inputRef }: { list: typeof photos; kind: PhotoKind; inputRef: React.RefObject<HTMLInputElement> }) => (
     <div>
       <div className="flex items-center justify-between mb-2">
         <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.1em', color: 'var(--faint)', textTransform: 'uppercase' }}>{kind}</span>
@@ -232,8 +237,9 @@ export function PhotosSection({ job, record, onChange }: { job: Job; record: Rec
 
   return (
     <Section title="Photos" delay={0.14}>
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-3 gap-4">
         <Grid list={before} kind="before" inputRef={beforeRef} />
+        <Grid list={during} kind="during" inputRef={duringRef} />
         <Grid list={after} kind="after" inputRef={afterRef} />
       </div>
     </Section>
@@ -321,7 +327,7 @@ export const ACTIVITY_ICON: Record<ActivityType, React.ElementType> = {
   booking_created: CalendarClock, confirmed: CheckCircle2, rescheduled: CalendarClock,
   checked_in: LogIn, stage: Clock, assigned: Users, photo: Camera, payment: IndianRupee,
   invoice: FileText, whatsapp: MessageCircle, call: Phone, note: FileText,
-  cancelled: X, delivered: CheckCircle2,
+  cancelled: X, delivered: CheckCircle2, review: Star,
 };
 
 type Seed = { type: ActivityType; title: string; actorName: string; at?: { toDate?: () => Date } };

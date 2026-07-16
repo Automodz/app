@@ -16,7 +16,7 @@ import { db } from '../firebase';
 export type ActivityType =
   | 'booking_created' | 'confirmed' | 'rescheduled' | 'checked_in'
   | 'stage' | 'assigned' | 'photo' | 'payment' | 'invoice'
-  | 'whatsapp' | 'call' | 'note' | 'cancelled' | 'delivered';
+  | 'whatsapp' | 'call' | 'note' | 'cancelled' | 'delivered' | 'review';
 
 export interface ActivityEvent {
   id: string;

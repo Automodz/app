@@ -251,7 +251,7 @@ export const getReceivables = async (): Promise<Job[]> => {
 };
 
 /** Attach a before/after photo taken at the kiosk. */
-export const addJobPhoto = async (job: Job, file: File, kind: 'before' | 'after'): Promise<JobPhoto> => {
+export const addJobPhoto = async (job: Job, file: File, kind: JobPhoto['kind']): Promise<JobPhoto> => {
   const uploaded = await uploadImage(`jobs/${job.id}/${crypto.randomUUID()}.jpg`, file, { maxWidth: 1280 });
   const photo: JobPhoto = { ...uploaded, kind };
   await updateDoc(doc(db, 'jobs', job.id), {

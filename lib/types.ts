@@ -280,7 +280,7 @@ export interface JobServiceItem {
 export interface JobPhoto {
   url: string;
   path: string;
-  kind: 'before' | 'after';
+  kind: 'before' | 'during' | 'after';
 }
 
 export interface JobStatusEntry {

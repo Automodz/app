@@ -18,11 +18,11 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Phone, MessageCircle, Loader2, CheckCircle2, Clock, Car, User as UserIcon,
-  IndianRupee, FileText, CalendarClock, LogIn, ShieldCheck, Zap,
+  IndianRupee, FileText, CalendarClock, LogIn, ShieldCheck, Zap, Star,
 } from 'lucide-react';
 import {
-  getBooking, updateBookingStatusWithNotification, updateBookingStatus, verifyPayment,
-  createInvoiceForBooking, getInvoice, buildInvoiceWhatsAppLink, invoicePublicUrl,
+  getBooking, updateBookingStatusWithNotification, verifyPayment,
+  createInvoiceForBooking, getInvoice, buildInvoiceWhatsAppLink, invoicePublicUrl, buildReviewAskLink,
   saveBookingAdminNotes, rescheduleBooking, createJobFromBooking, getJob, updateJobStatus,
   logActivity, listBookingActivity, type ActivityEvent, type ActivityType,
 } from '@/lib/firebaseService';
@@ -155,7 +155,9 @@ export default function BookingWorkspace() {
     setBusy('stage:' + status);
     try {
       await updateJobStatus(job.id, status, actor);
-      updateBookingStatus(booking.id, mirror).catch(() => {}); // keep commercial truth in sync
+      // Mirror to the commercial record — customer notification, push and
+      // (on completion) the vehicle's service history all ride on this one call.
+      updateBookingStatusWithNotification(booking, mirror).catch(() => {});
       setBooking(b => b ? { ...b, status: mirror } : b);
       record(status === 'completed' ? 'delivered' : 'stage', 'Stage · ' + getStatusLabel(mirror));
       await refreshJob(job.id);
@@ -285,6 +287,10 @@ export default function BookingWorkspace() {
               )}
               {(booking.status === 'completed' || booking.invoiceId) && (
                 <ActionBtn onClick={doInvoice} busy={busy === 'invoice'} icon={FileText} label={booking.invoiceId ? 'Open invoice + WhatsApp' : 'Generate invoice'} />
+              )}
+              {booking.status === 'completed' && (
+                <ActionBtn icon={Star} label="Request Google review"
+                  onClick={() => { window.open(buildReviewAskLink(booking.userName, booking.userPhone), '_blank'); record('review', 'Review requested on WhatsApp'); }} />
               )}
               <a href={wa(booking.userPhone)} target="_blank" rel="noopener noreferrer" onClick={() => record('whatsapp', 'WhatsApp opened')}
                 className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl transition-colors" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
