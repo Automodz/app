@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Search, FileText, MessageCircle, ExternalLink, Briefcase } from 'lucide-react';
 import { getRecentInvoices, getReceivables, buildInvoiceWhatsAppLink, invoicePublicUrl } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
@@ -39,7 +38,7 @@ export default function AdminInvoicesPage() {
   return (
     <div className="p-4 md:p-6 max-w-4xl">
       <div className="mb-6">
-        <h1 className="font-display font-800 text-2xl" style={{ color: 'var(--chrome)' }}>INVOICES</h1>
+        <h1 className="font-display font-800 text-2xl" style={{ color: 'var(--chrome)' }}>Invoices</h1>
         <p className="text-sm font-body" style={{ color: 'var(--steel)' }}>
           {invoices.length} invoices · {formatCurrency(total)} collected (filtered)
         </p>
@@ -81,45 +80,46 @@ export default function AdminInvoicesPage() {
           <p className="font-body" style={{ color: 'var(--steel)' }}>No invoices yet - generate them from completed jobs and bookings.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
           {filtered.map((inv, i) => (
-            <motion.div key={inv.id} initial={false} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.02 }} className="card-dark">
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-700 text-sm" style={{ color: 'var(--ember)' }}>{inv.invoiceNumber}</span>
-                    <span className="data-label" style={{ color: inv.paymentStatus === 'paid' ? 'var(--success)' : 'var(--warning)' }}>
-                      {inv.paymentStatus === 'paid' ? 'PAID' : 'PENDING'}
-                    </span>
-                  </div>
-                  <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
-                    {inv.customerName} · {inv.vehicleName} ({inv.vehicleRegNo}) ·{' '}
-                    {inv.createdAt?.toDate?.().toLocaleDateString('en-IN')}
-                  </p>
-                </div>
-                <span className="font-mono font-700" style={{ color: 'var(--chrome)' }}>{formatCurrency(inv.total)}</span>
-                <div className="flex items-center gap-2">
-                  {(inv.bookingId || inv.jobId) && (
-                    <Link href={inv.bookingId ? `/admin/bookings/${inv.bookingId}` : `/admin/jobs/${inv.jobId}`} title="Open job workspace"
-                      className="w-9 h-9 flex items-center justify-center rounded-xl"
-                      style={{ background: 'var(--dark)', color: 'var(--steel)' }}>
-                      <Briefcase size={14} />
-                    </Link>
-                  )}
-                  <a href={invoicePublicUrl(inv)} target="_blank" rel="noreferrer" title="Open invoice"
-                    className="w-9 h-9 flex items-center justify-center rounded-xl"
-                    style={{ background: 'var(--dark)', color: 'var(--steel)' }}>
-                    <ExternalLink size={14} />
-                  </a>
-                  <a href={buildInvoiceWhatsAppLink(inv)} target="_blank" rel="noreferrer" title="Send on WhatsApp"
-                    className="w-9 h-9 flex items-center justify-center rounded-xl"
-                    style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366' }}>
-                    <MessageCircle size={14} />
-                  </a>
-                </div>
+            <div key={inv.id} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[.03]"
+              style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+              <div className="flex-1 min-w-0">
+                <p className="truncate" style={{ fontSize: 13 }}>
+                  <span className="font-mono font-700" style={{ color: 'var(--chrome)' }}>{inv.invoiceNumber}</span>
+                  <span className="font-body" style={{ color: 'var(--steel)' }}> · {inv.customerName} · {inv.vehicleName} ({inv.vehicleRegNo})</span>
+                </p>
+                <p className="text-xs font-body mt-0.5" style={{ color: 'var(--faint)' }}>
+                  {inv.createdAt?.toDate?.().toLocaleDateString('en-IN')}
+                </p>
               </div>
-            </motion.div>
+              <div className="text-right shrink-0">
+                <p className="font-mono font-700 text-sm" style={{ color: 'var(--chrome)' }}>{formatCurrency(inv.total)}</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider"
+                  style={{ color: inv.paymentStatus === 'paid' ? 'var(--success)' : 'var(--warning)' }}>
+                  {inv.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {(inv.bookingId || inv.jobId) && (
+                  <Link href={inv.bookingId ? `/admin/bookings/${inv.bookingId}` : `/admin/jobs/${inv.jobId}`} title="Open job workspace"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-white/[.06]"
+                    style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}>
+                    <Briefcase size={11} />
+                  </Link>
+                )}
+                <a href={invoicePublicUrl(inv)} target="_blank" rel="noreferrer" title="Open invoice"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-white/[.06]"
+                  style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}>
+                  <ExternalLink size={11} />
+                </a>
+                <a href={buildInvoiceWhatsAppLink(inv)} target="_blank" rel="noreferrer" title="Send on WhatsApp"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:bg-white/[.06]"
+                  style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}>
+                  <MessageCircle size={11} />
+                </a>
+              </div>
+            </div>
           ))}
         </div>
       )}
