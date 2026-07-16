@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, FileText, MessageCircle, ExternalLink } from 'lucide-react';
+import { Search, FileText, MessageCircle, ExternalLink, Briefcase } from 'lucide-react';
 import { getRecentInvoices, getReceivables, buildInvoiceWhatsAppLink, invoicePublicUrl } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import type { Invoice, Job } from '@/lib/types';
@@ -99,6 +100,13 @@ export default function AdminInvoicesPage() {
                 </div>
                 <span className="font-mono font-700" style={{ color: 'var(--chrome)' }}>{formatCurrency(inv.total)}</span>
                 <div className="flex items-center gap-2">
+                  {(inv.bookingId || inv.jobId) && (
+                    <Link href={inv.bookingId ? `/admin/bookings/${inv.bookingId}` : `/admin/jobs/${inv.jobId}`} title="Open job workspace"
+                      className="w-9 h-9 flex items-center justify-center rounded-xl"
+                      style={{ background: 'var(--dark)', color: 'var(--steel)' }}>
+                      <Briefcase size={14} />
+                    </Link>
+                  )}
                   <a href={invoicePublicUrl(inv)} target="_blank" rel="noreferrer" title="Open invoice"
                     className="w-9 h-9 flex items-center justify-center rounded-xl"
                     style={{ background: 'var(--dark)', color: 'var(--steel)' }}>
