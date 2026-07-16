@@ -8,6 +8,7 @@ import {
   Settings, Menu, X, LogOut, Zap, Shield,
   Wrench, UserCog, Package, BadgePercent, Car, FileText, CalendarClock, Clock,
   Images, BarChart3, Wallet, LockKeyhole, FileSpreadsheet, Search, Plus, UserPlus,
+  Store,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -16,8 +17,9 @@ import Wordmark from '@/components/ui/Wordmark';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
 // Navigation is organised around workflows, not Firestore collections.
-// Store Mode and Active Jobs are gone as destinations — both live inside
-// the Workspace, the single live view of the floor.
+// The Front Desk is not a nav item — it is a sibling OPERATING MODE with its
+// own chrome (/store), reached through the mode switch at the top of the
+// sidebar. Active Jobs lives inside the Workspace, the single live floor view.
 const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
   {
     group: 'TODAY',
@@ -130,6 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: i.icon,
       run: () => router.push(i.href),
     })),
+    { id: 'act:frontdesk', label: 'Switch to Front Desk', group: 'Quick actions', icon: Store, run: () => router.push('/store/board') },
     { id: 'act:walkin', label: 'New walk-in', group: 'Quick actions', icon: Plus, run: () => router.push('/admin/walkin') },
     { id: 'act:close', label: 'Start daily close', group: 'Quick actions', icon: LockKeyhole, run: () => router.push('/admin/close') },
     { id: 'act:expense', label: 'Add expense', group: 'Quick actions', icon: Wallet, run: () => router.push('/admin/expenses') },
@@ -148,9 +151,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Wordmark height={16} />
             <div className="flex items-center gap-1 mt-0.5">
               <Shield size={9} color="var(--ember)" />
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ember)', textTransform: 'uppercase' }}>Admin Panel</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ember)', textTransform: 'uppercase' }}>Admin OS</p>
             </div>
           </div>
+        </div>
+
+        {/* Operating-mode switch — Admin OS ⇄ Front Desk OS (Shopify-style) */}
+        <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
+          <span className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg"
+            style={{ background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)', fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '0.1em', color: 'var(--ember)' }}>
+            <Shield size={11} /> ADMIN
+          </span>
+          <Link href="/store/board" onClick={() => setSidebarOpen(false)}
+            className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-colors hover:bg-white/[.04]"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '0.1em', color: 'var(--steel)' }}>
+            <Store size={11} /> FRONT DESK
+          </Link>
         </div>
       </div>
 

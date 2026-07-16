@@ -2,7 +2,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Zap, LayoutGrid, PlusCircle, Clock, Lock, DoorOpen } from 'lucide-react';
+import { Zap, LayoutGrid, PlusCircle, Clock, Lock, DoorOpen, Shield } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { getEmployee } from '@/lib/firebaseService';
 import { KIOSK_LOCK_TIMEOUT_MS } from '@/lib/config/storeConfig';
@@ -10,8 +10,8 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Wordmark from '@/components/ui/Wordmark';
 
 const NAV = [
-  { href: '/store/board',      label: 'Job Board',  icon: LayoutGrid },
-  { href: '/store/new',        label: 'New Job',    icon: PlusCircle },
+  { href: '/store/board',      label: 'Floor',      icon: LayoutGrid },
+  { href: '/store/new',        label: 'Check-In',   icon: PlusCircle },
   { href: '/store/attendance', label: 'Attendance', icon: Clock },
 ];
 
@@ -120,7 +120,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Wordmark height={16} />
             <p className="data-label flex items-center gap-1.5" style={{ color: 'var(--ember)' }}>
               <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: 'var(--ember)' }} />
-              Store Mode
+              Front Desk
             </p>
           </div>
           <nav className="flex items-center gap-1 flex-1">
@@ -151,11 +151,20 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 <Lock size={16} />
               </button>
             )}
-            <button onClick={() => setExitOpen(true)} title="Exit Store Mode" aria-label="Exit Store Mode"
-              className="w-11 h-11 flex items-center justify-center rounded-xl cursor-pointer transition-colors"
-              style={{ background: 'var(--dark)', color: 'var(--steel)', border: '1px solid var(--border)' }}>
-              <DoorOpen size={16} />
-            </button>
+            {isManager ? (
+              /* managers flip modes directly — mirror of the Admin sidebar switch */
+              <Link href="/admin" title="Switch to Admin OS"
+                className="flex items-center gap-2 h-11 px-4 rounded-xl data-label transition-colors"
+                style={{ background: 'var(--dark)', color: 'var(--steel)', border: '1px solid var(--border)' }}>
+                <Shield size={14} /> <span className="hidden sm:inline">Admin</span>
+              </Link>
+            ) : (
+              <button onClick={() => setExitOpen(true)} title="Exit Front Desk" aria-label="Exit Front Desk"
+                className="w-11 h-11 flex items-center justify-center rounded-xl cursor-pointer transition-colors"
+                style={{ background: 'var(--dark)', color: 'var(--steel)', border: '1px solid var(--border)' }}>
+                <DoorOpen size={16} />
+              </button>
+            )}
           </div>
         </header>
       )}
@@ -165,9 +174,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         open={exitOpen}
         onClose={() => setExitOpen(false)}
         onConfirm={exitStore}
-        title="Exit Store Mode?"
+        title="Exit Front Desk?"
         message="Unfinished jobs stay on the board and live updates continue for other staff. You can come back anytime from /store."
-        confirmLabel="Exit Store Mode"
+        confirmLabel="Exit Front Desk"
         cancelLabel="Stay"
       />
     </div>
