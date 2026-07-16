@@ -135,7 +135,8 @@ export default function AdminWorkspace() {
             Live · {format(new Date(), 'EEEE, dd MMM')}
           </p>
         </div>
-        <Link href="/admin/walkin" className="btn-ember flex items-center gap-2 px-4 py-2.5 text-sm">
+        {/* top bar already carries this action on desktop — keep it for mobile only */}
+        <Link href="/admin/walkin" className="btn-ember flex md:hidden items-center gap-2 px-4 py-2.5 text-sm">
           <PlusCircle size={15} /> New walk-in
         </Link>
       </div>
