@@ -278,7 +278,7 @@ export default function SubscriptionsPage() {
             Welcome to {cfg.label}!
           </h2>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--steel)', marginBottom: '32px', lineHeight: 1.6 }}>
-            Your {cfg.label} membership is pending verification - the studio confirms your payment and activates it, usually within a few hours. You'll see it live on this page.
+            Your {cfg.label} membership is pending verification - the studio confirms your payment and activates it, usually within a few hours. You&rsquo;ll see it live on this page.
           </p>
           <button className="btn-ember w-full rounded-2xl py-4 mb-3"
             style={{ fontSize: '13px', letterSpacing: '0.12em' }}

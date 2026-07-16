@@ -214,7 +214,7 @@ function BookingInner() {
     setSubmitting(true);
 
     try {
-      let bookingId: string;
+      let bookingId = '';
       let membershipId: string | undefined;
       let membershipWashApplied = false;
 
@@ -564,7 +564,7 @@ function BookingInner() {
                         Want an exact price for your car?
                       </p>
                       <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
-                        {cat} pricing depends on your car's size and condition - request a personal quote.
+                        {cat} pricing depends on your car&rsquo;s size and condition - request a personal quote.
                       </p>
                     </button>
                   ) : (
