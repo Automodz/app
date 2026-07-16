@@ -20,7 +20,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { motion, useScroll, useSpring, useReducedMotion } from 'framer-motion';
 import {
-  Star, MapPin, Phone, ShieldCheck, Smartphone, IndianRupee, Clock, Navigation,
+  MapPin, Phone, ShieldCheck, Smartphone, IndianRupee, Clock, Navigation,
   CalendarCheck, SprayCan, Sparkles, CarFront,
 } from 'lucide-react';
 import { getServices } from '@/lib/firebaseService';
@@ -32,7 +32,6 @@ import WhatsAppFloat from '@/components/ui/WhatsAppFloat';
 import SmoothScroll from '@/components/home/SmoothScroll';
 import ScrollChapter from '@/components/home/ScrollChapter';
 import { SERVICE_SHOWCASE, STOCK } from '@/lib/stockImages';
-import { REVIEWS, GOOGLE_RATING } from '@/lib/reviews';
 import type { Service } from '@/lib/types';
 
 const CarStage = dynamic(() => import('@/components/home/CarStage'), { ssr: false });
@@ -43,16 +42,6 @@ const COPY: Record<string, { title: string; line: string }> = {
   Coating: { title: 'Detailing & Polish',    line: 'We chase out the swirls and bring the depth back — the shine it had on day one.' },
   Washing: { title: 'Wash & Care',           line: 'pH-neutral foam, steam and patience. A proper wash that never leaves a swirl.' },
 };
-
-function Stars({ n = 5, size = 14 }: { n?: number; size?: number }) {
-  return (
-    <span className="inline-flex gap-0.5" aria-label={`${n} out of 5 stars`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} size={size} strokeWidth={0} fill={i < n ? 'var(--accent)' : 'var(--border-strong)'} />
-      ))}
-    </span>
-  );
-}
 
 /** Big chapter heading — Unbounded, with a soft glow so it reads over the car. */
 function ChapterTitle({ children, size = 'clamp(30px, 7vw, 56px)' }: { children: React.ReactNode; size?: string }) {
@@ -288,35 +277,23 @@ export default function HomePage() {
         </div>
       </ScrollChapter>
 
-      {/* ═══ CHAPTER 08 — GOOGLE REVIEWS (last before footer) ═══ */}
-      <section id="reviews" className="relative z-10 py-24">
-        <div className="text-center max-w-2xl mx-auto px-6 mb-8">
+      {/* ═══ CHAPTER 08 — GOOGLE REVIEWS (last before footer) ═══
+           Launch-honest: no fabricated review cards. We point to the REAL
+           Google profile; the live Places feed replaces this when the API
+           key + Place ID are wired (see lib/reviews.ts). */}
+      <section id="reviews" className="relative z-10 py-24 px-6">
+        <div className="text-center max-w-2xl mx-auto">
           <p className="font-mono mb-3" style={{ fontSize: 11, letterSpacing: '0.24em', color: 'var(--fg-dim)' }}>08 — WHAT AHMEDABAD SAYS</p>
-          <ChapterTitle>Loved across the city.</ChapterTitle>
-          <div className="inline-flex items-center gap-2.5 mt-6 px-4 py-2 rounded-full"
-            style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)' }}>
+          <ChapterTitle>Don&rsquo;t take our word for it.</ChapterTitle>
+          <p className="font-body mt-5 max-w-md mx-auto" style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>
+            Every review on our Google profile is from a real car and a real owner. Read them before you book.
+          </p>
+          <a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2.5 mt-8 px-6 py-3.5 rounded-2xl transition-transform active:scale-95"
+            style={{ background: 'var(--glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-sm)' }}>
             <GoogleG />
-            <span className="font-display" style={{ fontSize: 16, fontWeight: 800, color: 'var(--fg)' }}>{GOOGLE_RATING.score.toFixed(1)}</span>
-            <Stars n={5} />
-            <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.06em', color: 'var(--muted)' }}>{GOOGLE_RATING.count}+ REVIEWS</span>
-          </div>
-        </div>
-
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar px-6 pb-3" style={{ scrollPaddingLeft: 24 }}>
-          {REVIEWS.map(r => (
-            <article key={r.name} className="snap-start shrink-0 w-[82vw] sm:w-[340px] rounded-[22px] p-5"
-              style={{ background: 'var(--glass)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-sm)' }}>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="grid place-items-center rounded-full font-display" style={{ width: 38, height: 38, fontSize: 15, fontWeight: 700, color: 'var(--on-accent)', background: 'var(--accent-grad)' }}>{r.name[0]}</span>
-                <div>
-                  <div className="font-display" style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>{r.name}</div>
-                  <div className="flex items-center gap-2"><Stars n={r.rating} size={12} /><span className="font-mono" style={{ fontSize: 9.5, color: 'var(--muted)' }}>{r.when}</span></div>
-                </div>
-              </div>
-              <p className="font-body" style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--fg-dim)' }}>{r.text}</p>
-            </article>
-          ))}
-          <div aria-hidden className="shrink-0 w-2" />
+            <span className="font-display" style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--fg)' }}>Read our reviews on Google</span>
+          </a>
         </div>
       </section>
 
