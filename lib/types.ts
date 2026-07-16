@@ -378,6 +378,8 @@ export interface Quote {
   status: QuoteStatus;
   notes?: string;             // internal
   customerMessage?: string;   // what the customer asked for
+  /** Operational link — set when an accepted quote is started as a job. */
+  jobId?: string;
   createdById?: string;
   createdByName?: string;
   createdAt: Timestamp;

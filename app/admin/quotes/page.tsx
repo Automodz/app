@@ -1,10 +1,11 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { MessageCircle, Plus, Trash2, X, FileSpreadsheet } from 'lucide-react';
+import { MessageCircle, Plus, Trash2, X, FileSpreadsheet, Wrench } from 'lucide-react';
 import {
   listQuotes, createQuote, updateQuote, setQuoteStatus,
-  buildQuoteWhatsAppLink, addTask, todayDateStr,
+  buildQuoteWhatsAppLink, addTask, todayDateStr, createWalkInJob,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
@@ -28,7 +29,9 @@ const emptyDraft = {
 };
 
 export default function AdminQuotesPage() {
+  const router = useRouter();
   const { user } = useAppStore();
+  const [startingJob, setStartingJob] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -116,6 +119,28 @@ export default function AdminQuotesPage() {
     } catch { toast.error('Could not update'); }
   };
 
+  // Accepted quote → operational job, zero re-typing. The quote keeps a jobId
+  // link so the card becomes a doorway into the job workspace.
+  const startJob = async (q: Quote) => {
+    if (!user || startingJob) return;
+    setStartingJob(q.id);
+    try {
+      const jobId = await createWalkInJob({
+        customerId: q.customerId,
+        customerName: q.customerName, customerPhone: q.customerPhone,
+        vehicleName: q.vehicleName, vehicleRegNo: '',
+        serviceItems: q.items.map((it, i) => ({
+          serviceId: `quote:${q.id}:${i}`, serviceName: it.name,
+          category: q.serviceCategory, price: it.amount,
+        })),
+        byEmployee: { id: user.uid, name: user.name || 'Admin' },
+      });
+      await updateQuote(q.id, { jobId });
+      toast.success('Job started from quote');
+      router.push(`/admin/jobs/${jobId}`);
+    } catch { toast.error('Could not start the job'); setStartingJob(null); }
+  };
+
   const pipelineValue = quotes.filter(q => ['draft', 'sent', 'requested'].includes(q.status))
     .reduce((s, q) => s + q.total, 0);
 
@@ -174,6 +199,19 @@ export default function AdminQuotesPage() {
                             <button onClick={() => changeStatus(q, 'accepted')} className="btn-ember flex-1 py-1.5 text-xs">Won</button>
                             <button onClick={() => changeStatus(q, 'declined')} className="btn-ghost flex-1 py-1.5 text-xs">Lost</button>
                           </>
+                        )}
+                        {q.status === 'accepted' && !q.jobId && (
+                          <button onClick={() => startJob(q)} disabled={startingJob === q.id}
+                            className="btn-ember flex-1 py-1.5 text-xs flex items-center justify-center gap-1.5">
+                            <Wrench size={12} /> {startingJob === q.id ? 'Starting…' : 'Start job'}
+                          </button>
+                        )}
+                        {q.jobId && (
+                          <button onClick={() => router.push(`/admin/jobs/${q.jobId}`)}
+                            className="btn-ghost flex-1 py-1.5 text-xs flex items-center justify-center gap-1.5"
+                            style={{ color: 'var(--success)' }}>
+                            <Wrench size={12} /> In studio →
+                          </button>
                         )}
                         {q.status !== 'requested' && q.items.length > 0 && (
                           <a href={buildQuoteWhatsAppLink(q)} target="_blank" rel="noreferrer"
@@ -266,9 +304,9 @@ export default function AdminQuotesPage() {
                 <MessageCircle size={15} /> Send on WhatsApp
               </button>
             </div>
-            {editing?.status === 'accepted' && (
+            {editing?.status === 'accepted' && !editing.jobId && (
               <p className="text-xs font-body mt-3 flex items-center gap-1.5" style={{ color: 'var(--success)' }}>
-                <FileSpreadsheet size={12} /> Accepted - create the job from Store Mode when the car arrives; reference {formatCurrency(editing.total)}.
+                <FileSpreadsheet size={12} /> Accepted — use “Start job” on the card when the car arrives; everything carries over.
               </p>
             )}
           </div>
