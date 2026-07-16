@@ -24,7 +24,7 @@ import {
   getBooking, updateBookingStatusWithNotification, verifyPayment,
   createInvoiceForBooking, getInvoice, buildInvoiceWhatsAppLink, invoicePublicUrl, buildReviewAskLink,
   saveBookingAdminNotes, rescheduleBooking, createJobFromBooking, getJob, updateJobStatus,
-  rejectBooking, markNoShow,
+  rejectBooking, markNoShow, writeNotification,
   logActivity, listBookingActivity, type ActivityEvent, type ActivityType,
 } from '@/lib/firebaseService';
 import { formatCurrency, formatDate, formatTime, getStatusLabel } from '@/lib/utils';
@@ -361,7 +361,14 @@ export default function BookingWorkspace() {
                 <Car size={15} /><span className="font-body" style={{ fontSize: 13 }}>Vehicle history</span>
               </button>
               {!['completed', 'cancelled'].includes(booking.status) && (
-                <RescheduleControl booking={booking} onDone={(d, t) => { setBooking({ ...booking, scheduledDate: d, scheduledTime: t }); record('rescheduled', `Rescheduled to ${formatDate(d)} ${formatTime(t)}`); }} />
+                <RescheduleControl booking={booking} onDone={(d, t) => {
+                  setBooking({ ...booking, scheduledDate: d, scheduledTime: t });
+                  record('rescheduled', `Rescheduled to ${formatDate(d)} ${formatTime(t)}`);
+                  // customer hears about it — in-app + push, fire-and-forget
+                  writeNotification(booking.userId, 'Booking rescheduled',
+                    `Your ${booking.serviceName} for ${booking.vehicleName} moved to ${formatDate(d)} at ${formatTime(t)}.`,
+                    'booking_update', booking.id).catch(() => {});
+                }} />
               )}
               {booking.status !== 'cancelled' && booking.status !== 'completed' && (
                 <button onClick={cancel} disabled={busy === 'cancel'}
