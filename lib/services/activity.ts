@@ -69,6 +69,14 @@ export const listBookingActivity = async (bookingId: string): Promise<ActivityEv
     .sort((a, b) => (b.at?.toMillis?.() ?? 0) - (a.at?.toMillis?.() ?? 0));
 };
 
+/** All events for one job, newest first. */
+export const listJobActivity = async (jobId: string): Promise<ActivityEvent[]> => {
+  const snap = await getDocs(query(collection(db, 'activity'), where('jobId', '==', jobId)));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as ActivityEvent))
+    .sort((a, b) => (b.at?.toMillis?.() ?? 0) - (a.at?.toMillis?.() ?? 0));
+};
+
 /** All events for one customer (for the customer workspace later), newest first. */
 export const listCustomerActivity = async (customerId: string): Promise<ActivityEvent[]> => {
   const snap = await getDocs(query(collection(db, 'activity'), where('customerId', '==', customerId)));
