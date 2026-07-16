@@ -9,11 +9,11 @@
  * Primary conversion is the Apple-style slide control. Reviews stay honest —
  * real Google profile only, no fabricated cards.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
 import { MapPin, Phone, Clock, Navigation, ArrowRight, Droplets } from 'lucide-react';
 import { getServices } from '@/lib/firebaseService';
 import { formatCurrency, getDurationLabel } from '@/lib/utils';
@@ -58,10 +58,41 @@ const SERVICE_META: Record<string, { warranty?: string; duration: number; line: 
   Washing: { duration: 60,            line: 'pH-neutral foam and steam. Zero swirls.' },
 };
 
+const NAV = [
+  { label: 'Services', href: '#services' },
+  { label: 'Membership', href: '#membership' },
+  { label: 'Gallery', href: '#gallery' },
+  { label: 'Contact', href: '#contact' },
+] as const;
+
 export default function HomePage() {
   const router = useRouter();
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [openNow, setOpenNow] = useState<boolean | null>(null);
+  // brand intro: wordmark + light sweep, ~750ms, once per session
+  const [intro, setIntro] = useState(false);
+  // sticky slide CTA once the hero has scrolled away
+  const [heroGone, setHeroGone] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollY } = useScroll();
+  const heroParallax = useTransform(scrollY, [0, 700], [0, 54]);
+
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduced && !sessionStorage.getItem('am-intro')) {
+      sessionStorage.setItem('am-intro', '1');
+      setIntro(true);
+      const t = setTimeout(() => setIntro(false), 750);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!heroRef.current) return;
+    const io = new IntersectionObserver(([e]) => setHeroGone(!e.isIntersecting), { threshold: 0.1 });
+    io.observe(heroRef.current);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     getServices()
@@ -83,6 +114,38 @@ export default function HomePage() {
     <div className="relative" style={{ overflowX: 'clip', background: '#08090b' }}>
       <SmoothScroll />
 
+      {/* ── brand intro: wordmark under a light sweep, then fade ── */}
+      <AnimatePresence>
+        {intro && (
+          <motion.div key="intro" className="fixed inset-0 z-[60] grid place-items-center"
+            style={{ background: '#08090b' }}
+            exit={{ opacity: 0, transition: { duration: 0.35, ease: EASE } }}>
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: EASE }} className="relative overflow-hidden px-6 py-3">
+              <Wordmark height="clamp(26px, 7vw, 40px)" variant="white" />
+              <motion.div aria-hidden className="absolute inset-y-0 w-24"
+                style={{ background: 'linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent)', filter: 'blur(6px)' }}
+                initial={{ left: '-30%' }} animate={{ left: '110%' }}
+                transition={{ duration: 0.55, ease: 'easeInOut', delay: 0.15 }} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── sticky slide-to-book once the hero is gone ── */}
+      <AnimatePresence>
+        {heroGone && (
+          <motion.div key="sticky-cta" className="fixed inset-x-0 z-40 flex justify-center pointer-events-none"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.4, ease: EASE }}>
+            <div className="pointer-events-auto w-[min(320px,80vw)]" style={{ filter: 'drop-shadow(0 12px 40px rgba(0,0,0,0.6))' }}>
+              <SlideToAction label="Slide to book" onComplete={book} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── ambient stage: blurred warm light + cool counter-glow, fixed ── */}
       <div aria-hidden className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute" style={{ top: '-12%', right: '-8%', width: '55vw', height: '55vw', maxWidth: 900, maxHeight: 900, background: 'radial-gradient(circle, rgba(255,120,40,0.16) 0%, transparent 62%)', filter: 'blur(60px)' }} />
@@ -95,14 +158,22 @@ export default function HomePage() {
         <div className="mx-3 mt-3 flex items-center justify-between rounded-2xl px-4 py-2.5"
           style={{ background: 'rgba(14,15,18,0.55)', backdropFilter: 'blur(20px) saturate(1.4)', WebkitBackdropFilter: 'blur(20px) saturate(1.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <Wordmark height="clamp(16px, 4.6vw, 20px)" variant="white" />
-          <Link href="/auth/login" className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.1em', color: '#fff', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 9, padding: '7px 14px' }}>
-            SIGN IN
-          </Link>
+          <nav className="hidden md:flex items-center gap-7">
+            {NAV.map(n => (
+              <a key={n.href} href={n.href} className="font-mono transition-colors hover:text-white"
+                style={{ fontSize: 10, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.5)' }}>
+                {n.label.toUpperCase()}
+              </a>
+            ))}
+          </nav>
+          <button onClick={book} className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.1em', color: '#0b0c0e', background: '#fff', borderRadius: 9, padding: '7px 14px' }}>
+            BOOK →
+          </button>
         </div>
       </header>
 
       {/* ═══ HERO — split: copy left, close-up paint right ═══ */}
-      <section className="relative z-10 min-h-[100svh] flex items-center px-6 pt-24 pb-16">
+      <section ref={heroRef} className="relative z-10 min-h-[100svh] flex items-center px-6 pt-24 pb-16">
         <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-[1fr_1.1fr] gap-10 lg:gap-6 items-center">
           {/* copy stack */}
           <div className="text-center lg:text-left order-2 lg:order-1">
@@ -128,25 +199,12 @@ export default function HomePage() {
               </a>
             </motion.div>
 
-            {/* trust numbers */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.9, delay: 0.3 }}
-              className="mt-10 flex items-center gap-7 justify-center lg:justify-start flex-wrap">
-              {[
-                { n: 'Since 2025', l: 'IN MANINAGAR' },
-                { n: '500+', l: 'CARS PROTECTED' },
-                { n: '100%', l: 'PHOTOGRAPHED' },
-              ].map(x => (
-                <div key={x.l} className="text-center lg:text-left">
-                  <div className="font-display" style={{ fontSize: 19, fontWeight: 800, color: '#fff' }}>{x.n}</div>
-                  <div className="font-mono mt-0.5" style={{ fontSize: 8.5, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.38)' }}>{x.l}</div>
-                </div>
-              ))}
-            </motion.div>
           </div>
 
           {/* photoreal paint close-up — floating on the light stage */}
           <motion.div initial={{ opacity: 0, scale: 0.96, x: 24 }} animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 1, ease: EASE, delay: 0.1 }}
+            style={{ y: heroParallax }}
             className="relative order-1 lg:order-2">
             {/* bloom behind the car */}
             <div aria-hidden className="absolute -inset-8 pointer-events-none" style={{ background: 'radial-gradient(60% 55% at 60% 45%, rgba(255,140,60,0.10), transparent 70%)', filter: 'blur(30px)' }} />
@@ -175,6 +233,25 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── trust strip — proof five seconds in ── */}
+      <section aria-label="Why owners trust AutoModz" className="relative z-10 px-6">
+        <motion.div {...reveal} className="max-w-5xl mx-auto rounded-2xl px-5 py-4 flex items-center justify-center gap-x-7 gap-y-2 flex-wrap"
+          style={glass(0.03)}>
+          {[
+            <a key="g" href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" className="hover:opacity-80" style={{ color: '#ffb27a' }}>★★★★★ <span style={{ color: 'rgba(255,255,255,0.55)' }}>ON GOOGLE</span></a>,
+            <span key="p" style={{ color: 'rgba(255,255,255,0.55)' }}>PPF EXPERTS</span>,
+            <span key="c" style={{ color: 'rgba(255,255,255,0.55)' }}>CERAMIC SPECIALISTS</span>,
+            <span key="v" style={{ color: 'rgba(255,255,255,0.55)' }}>500+ VEHICLES PROTECTED</span>,
+            <span key="s" style={{ color: 'rgba(255,255,255,0.55)' }}>SINCE 2025</span>,
+          ].map((item, i, arr) => (
+            <span key={i} className="font-mono inline-flex items-center gap-7" style={{ fontSize: 9.5, letterSpacing: '0.16em' }}>
+              {item}
+              {i < arr.length - 1 && <span aria-hidden style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
+            </span>
+          ))}
+        </motion.div>
+      </section>
+
       {/* ═══ SERVICES — image cards with glass overlay + price/warranty/duration ═══ */}
       <section id="services" className="relative z-10 px-6 py-20">
         <SectionHead kicker="THE CRAFT" title="Four disciplines. One standard." />
@@ -182,12 +259,19 @@ export default function HomePage() {
           {SERVICE_SHOWCASE.map((s, i) => {
             const meta = SERVICE_META[s.cat];
             const from = prices[s.cat] ?? s.from;
+            const featured = s.cat === 'PPF';
             return (
               <motion.article key={s.cat} {...reveal} transition={{ ...reveal.transition, delay: (i % 2) * 0.07 }}
                 onClick={book}
                 whileHover={{ y: -4 }}
-                className="group relative rounded-[26px] overflow-hidden cursor-pointer"
-                style={{ minHeight: 340, border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 24px 60px rgba(0,0,0,0.4)' }}>
+                className={`group relative rounded-[26px] overflow-hidden cursor-pointer ${featured ? 'sm:col-span-2' : ''}`}
+                style={{ minHeight: featured ? 400 : 340, border: `1px solid ${featured ? 'rgba(255,178,122,0.25)' : 'rgba(255,255,255,0.08)'}`, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 24px 60px rgba(0,0,0,0.4)' }}>
+                {featured && (
+                  <span className="absolute top-4 right-4 z-10 font-mono rounded-full px-3 py-1.5"
+                    style={{ fontSize: 9, letterSpacing: '0.16em', color: '#ffb27a', background: 'rgba(10,10,12,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,178,122,0.4)' }}>
+                    MOST POPULAR
+                  </span>
+                )}
                 <Image src={s.img} alt={s.name} fill sizes="(max-width:640px) 100vw, 50vw"
                   className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]" />
                 <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(185deg, transparent 30%, rgba(6,7,9,0.72) 78%)' }} />
@@ -211,17 +295,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ MEMBERSHIP — luxury cards ═══ */}
-      <section className="relative z-10 px-6 py-20">
-        <SectionHead kicker="MEMBERSHIP" title="Your car, always fresh." />
+      {/* ═══ MEMBERSHIP — benefit first, plans second ═══ */}
+      <section id="membership" className="relative z-10 px-6 py-20">
+        <SectionHead kicker="MEMBERSHIP" title="Protect your car, all year." />
+        <motion.div {...reveal} className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap max-w-2xl mx-auto -mt-4 mb-10">
+          {['MONTHLY PREMIUM WASHES', 'PRIORITY BOOKING', 'MEMBER PRICING'].map((b, i, arr) => (
+            <span key={b} className="font-mono inline-flex items-center gap-6" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.5)' }}>
+              {b}
+              {i < arr.length - 1 && <span aria-hidden style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
+            </span>
+          ))}
+        </motion.div>
         <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {MEMBERSHIP_PLANS.map((p, i) => (
             <motion.button key={p.id} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }} onClick={book}
               whileHover={{ y: -4 }} whileTap={{ scale: 0.98, y: 0 }}
-              className="relative overflow-hidden rounded-[22px] p-6 text-left flex flex-col justify-between"
+              className="group relative overflow-hidden rounded-[22px] p-6 text-left flex flex-col justify-between"
               style={{ ...glass(0.04, i === 1), aspectRatio: '1.586' }}>
-              {/* card sheen — a diagonal light pass, like brushed metal */}
-              <div aria-hidden className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.05) 45%, transparent 60%)' }} />
+              {/* card sheen — a diagonal light pass that travels on hover */}
+              <div aria-hidden className="absolute inset-0 pointer-events-none transition-transform duration-[1200ms] ease-out -translate-x-1/3 group-hover:translate-x-1/3"
+                style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.07) 45%, transparent 60%)' }} />
               <div className="flex items-start justify-between">
                 <span className="font-mono" style={{ fontSize: 9, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)' }}>AUTOMODZ MEMBER</span>
                 {i === 1 && <span className="font-mono px-2 py-0.5 rounded-full" style={{ fontSize: 8.5, letterSpacing: '0.1em', color: '#ffb27a', border: '1px solid rgba(255,178,122,0.35)' }}>POPULAR</span>}
@@ -243,7 +336,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ BEFORE / AFTER — visual proof, no labels needed ═══ */}
-      <section className="relative z-10 px-6 py-20">
+      <section id="gallery" className="relative z-10 px-6 py-20">
         <SectionHead kicker="THE DIFFERENCE" title="Drag. See for yourself." />
         <motion.div {...reveal} className="relative max-w-3xl mx-auto">
           {/* cinematic frame: bloom under, glass rim around */}
@@ -261,9 +354,10 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ═══ FIND US + REVIEWS — closing ═══ */}
-      <section className="relative z-10 px-6 py-20">
-        <div className="max-w-4xl mx-auto grid lg:grid-cols-2 gap-6 items-center">
+      {/* ═══ CONTACT — closing ═══ */}
+      <section id="contact" className="relative z-10 px-6 py-20">
+        <SectionHead kicker="CONTACT" title="Bring it by. We’ll take it from here." />
+        <div className="max-w-2xl mx-auto">
           <motion.div {...reveal} className="rounded-[26px] overflow-hidden" style={glass(0.035)}>
             <div className="relative h-44">
               <iframe
@@ -293,21 +387,16 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.08 }} className="text-center lg:text-left">
-            <h2 className="font-hero" style={{ fontSize: 'clamp(30px, 6vw, 52px)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-0.02em', color: '#fff' }}>
-              Bring it by.<br /><span style={{ color: 'rgba(255,255,255,0.45)' }}>We’ll take it from here.</span>
-            </h2>
-            <div className="mt-7 flex justify-center lg:justify-start">
-              <Magnetic strength={0.3}>
-                <motion.a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer"
-                  whileHover={{ y: -2 }} whileTap={{ scale: 0.97, y: 0 }} transition={{ duration: 0.35, ease: EASE }}
-                  className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl"
-                  style={glass(0.05)}>
-                  <GoogleG />
-                  <span className="font-display" style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>Read our reviews on Google</span>
-                </motion.a>
-              </Magnetic>
-            </div>
+          <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.08 }} className="mt-8 flex justify-center">
+            <Magnetic strength={0.3}>
+              <motion.a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer"
+                whileHover={{ y: -2 }} whileTap={{ scale: 0.97, y: 0 }} transition={{ duration: 0.35, ease: EASE }}
+                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl"
+                style={glass(0.05)}>
+                <GoogleG />
+                <span className="font-display" style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>Read our reviews on Google</span>
+              </motion.a>
+            </Magnetic>
           </motion.div>
         </div>
       </section>

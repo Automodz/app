@@ -13,11 +13,11 @@ export const STOCK = {
   heroAlt: u('photo-1618843479313-40f8afb4b4d8', 2200),
 
   // Service categories — luxury cars, each depicting that specific service
-  ppf: u('photo-1553440569-bcc63803a83d', 1800),         // dark 911 bodywork under low light
+  ppf: u('photo-1618843479313-40f8afb4b4d8', 1800),      // grey AMG GT R, studio-lit bodywork
   ceramic: u('photo-1580273916550-e323be2ae537', 1800),  // glossy coated luxury car
   coating: u('photo-1601362840469-51e4d8d58785', 1800),  // buffing / polishing pad
   washing: u('photo-1520340356584-f9917d1eea6f', 1800),  // foam wash
-  detailing: u('photo-1621252179027-94459d278660', 1800),// hands detailing panel
+  detailing: u('photo-1600661653561-629509216228', 1800),// hand polishing a panel
 
   // Studio / app surfaces
   studio: u('photo-1618843479313-40f8afb4b4d8', 2000),  // luxury car in studio
