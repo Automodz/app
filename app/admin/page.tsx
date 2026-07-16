@@ -1,108 +1,87 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Calendar, Users, TrendingUp, ChevronRight, AlertCircle,
-  Wrench, UserCheck, Package, Inbox, IndianRupee,
-} from 'lucide-react';
+/**
+ * Workspace — the admin lands here. One screen that runs the day:
+ *   intelligence strip  → numbers that change decisions (revenue, floor,
+ *                         staff, stock, unpaid, leads)
+ *   follow-ups          → the owner's action queue
+ *   arriving            → today's bookings not yet checked in
+ *   the floor           → live stage-grouped jobs, real time
+ * No decorative dashboards. Everything clicks through to a workflow.
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import {
+  PlusCircle, Wrench, ChevronRight, Clock, CircleAlert,
+  UserCheck, Package, Inbox, IndianRupee, Phone,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import {
-  getAllBookings, getAdminStats, getJobsForDate,
+  subscribeTodaysJobs, getBookingsForDates,
   getPresentTodayCount, getLowStockItems, getCarLeads, getSellRequests,
   getDueTasks, completeTask, addTask,
 } from '@/lib/firebaseService';
-import { formatCurrency, getStatusColor, getStatusLabel, formatDate } from '@/lib/utils';
-import ServiceIcon from '@/components/ui/ServiceIcon';
+import { formatCurrency, formatTime, getStatusColor, getStatusLabel } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
-import StatCard from '@/components/ui/StatCard';
-import GlassCard from '@/components/ui/GlassCard';
-import PageHeader from '@/components/ui/PageHeader';
-import Skeleton from '@/components/ui/Skeleton';
-import type { Booking, FollowUpTask } from '@/lib/types';
+import ServiceIcon from '@/components/ui/ServiceIcon';
+import type { Booking, FollowUpTask, Job } from '@/lib/types';
 
-interface Stats {
-  totalBookings: number;
-  todayBookings: number;
-  totalCustomers: number;
-  revenue: number;
-}
+const STAGES: { key: Job['status']; label: string; color: string }[] = [
+  { key: 'checked_in',         label: 'Waiting',       color: 'var(--info)' },
+  { key: 'in_progress',        label: 'In progress',   color: 'var(--warning)' },
+  { key: 'quality_check',      label: 'Quality check', color: 'var(--info)' },
+  { key: 'ready_for_delivery', label: 'Ready',         color: 'var(--success)' },
+  { key: 'completed',          label: 'Delivered',     color: 'var(--success)' },
+];
 
-interface OpsStats {
-  todayRevenue: number;
-  activeJobs: number;
-  staffPresent: number;
-  lowStock: number;
-  pendingPayments: number;
-  newLeads: number;
-}
-
-export default function AdminDashboard() {
+export default function AdminWorkspace() {
+  const router = useRouter();
   const { user } = useAppStore();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [ops, setOps] = useState<OpsStats | null>(null);
-  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  // ── Live floor ──
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobsReady, setJobsReady] = useState(false);
+  const [streamKey, setStreamKey] = useState(0);
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    const load = async () => {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      try {
-        const [statsData, bookings] = await Promise.all([
-          getAdminStats(),
-          getAllBookings(),
-        ]);
-        setStats(statsData);
-        setRecentBookings(bookings.slice(0, 8));
-
-        // Operational cards - each source tolerated independently
-        const [jobs, staffPresent, lowStockItems, leads, sellReqs] = await Promise.all([
-          getJobsForDate(today).catch(() => []),
-          getPresentTodayCount().catch(() => 0),
-          getLowStockItems().catch(() => []),
-          getCarLeads().catch(() => []),
-          getSellRequests().catch(() => []),
-        ]);
-        const todayBookingsRevenue = bookings
-          .filter(b => b.status === 'completed' && b.scheduledDate === today)
-          .reduce((s, b) => s + b.totalAmount, 0);
-        const todayJobsRevenue = jobs
-          .filter(j => j.status === 'completed')
-          .reduce((s, j) => s + j.totalAmount, 0);
-        setOps({
-          todayRevenue: todayBookingsRevenue + todayJobsRevenue,
-          activeJobs: jobs.filter(j => !['completed', 'cancelled'].includes(j.status)).length,
-          staffPresent,
-          lowStock: lowStockItems.length,
-          pendingPayments:
-            bookings.filter(b => b.paymentStatus === 'pending' && !['cancelled'].includes(b.status)).length +
-            jobs.filter(j => j.paymentStatus === 'pending' && j.status !== 'cancelled').length,
-          newLeads: leads.filter(l => l.status === 'new').length + sellReqs.filter(r => r.status === 'new').length,
-        });
-      } catch {}
-      finally { setLoading(false); }
-    };
-    load();
+    const unsub = subscribeTodaysJobs(
+      j => { setJobs(j); setJobsReady(true); },
+      () => setJobsReady(true),
+    );
+    return unsub;
+  }, [streamKey]);
+  useEffect(() => {
+    const retry = () => setStreamKey(k => k + 1);
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
   }, []);
 
-  const pendingBookings = recentBookings.filter(b => b.status === 'pending');
+  // ── Intelligence strip + arrivals (one-shot, each source tolerated) ──
+  const [todayBookings, setTodayBookings] = useState<Booking[]>([]);
+  const [staffPresent, setStaffPresent] = useState(0);
+  const [lowStock, setLowStock] = useState(0);
+  const [newLeads, setNewLeads] = useState(0);
+  useEffect(() => {
+    getBookingsForDates([today]).then(setTodayBookings).catch(() => {});
+    getPresentTodayCount().then(setStaffPresent).catch(() => {});
+    getLowStockItems().then(items => setLowStock(items.length)).catch(() => {});
+    Promise.all([getCarLeads().catch(() => []), getSellRequests().catch(() => [])])
+      .then(([l, r]) => setNewLeads(
+        l.filter(x => x.status === 'new').length + r.filter(x => x.status === 'new').length,
+      ));
+  }, [today]);
 
+  // ── Follow-ups ──
   const [tasks, setTasks] = useState<FollowUpTask[]>([]);
   const [taskDraft, setTaskDraft] = useState('');
-  useEffect(() => {
-    getDueTasks(new Date().toISOString().slice(0, 10)).then(setTasks).catch(() => {});
-  }, []);
-
+  useEffect(() => { getDueTasks(today).then(setTasks).catch(() => {}); }, [today]);
   const finishTask = async (t: FollowUpTask) => {
-    try {
-      await completeTask(t.id);
-      setTasks(prev => prev.filter(x => x.id !== t.id));
-    } catch {}
+    try { await completeTask(t.id); setTasks(prev => prev.filter(x => x.id !== t.id)); } catch {}
   };
-
   const quickAddTask = async () => {
     if (!taskDraft.trim() || !user) return;
-    const today = new Date().toISOString().slice(0, 10);
     try {
       await addTask({ note: taskDraft.trim(), dueDate: today, byName: user.name });
       setTaskDraft('');
@@ -110,165 +89,227 @@ export default function AdminDashboard() {
     } catch {}
   };
 
-  const OPS_CARDS = ops ? [
-    { label: "TODAY'S REVENUE", value: formatCurrency(ops.todayRevenue), icon: IndianRupee, href: '/admin/workspace', alert: false },
-    { label: 'ON THE FLOOR', value: String(ops.activeJobs), icon: Wrench, href: '/admin/workspace', alert: false },
-    { label: 'STAFF PRESENT', value: String(ops.staffPresent), icon: UserCheck, href: '/admin/employees', alert: false },
-    { label: 'LOW STOCK', value: String(ops.lowStock), icon: Package, href: '/admin/inventory', alert: ops.lowStock > 0 },
-    { label: 'UNPAID', value: String(ops.pendingPayments), icon: AlertCircle, href: '/admin/bookings', alert: ops.pendingPayments > 0 },
-    { label: 'NEW CAR LEADS', value: String(ops.newLeads), icon: Inbox, href: '/admin/cars/leads', alert: false },
-  ] : [];
+  // ── Derived ──
+  const byStage = useMemo(() => {
+    const map: Record<string, Job[]> = {};
+    for (const s of STAGES) map[s.key] = [];
+    for (const j of jobs) if (map[j.status]) map[j.status].push(j);
+    return map;
+  }, [jobs]);
+  const collected =
+    jobs.filter(j => j.status === 'completed').reduce((s, j) => s + j.totalAmount, 0) +
+    todayBookings.filter(b => b.status === 'completed' && !b.jobId).reduce((s, b) => s + b.totalAmount, 0);
+  const unpaid = jobs.filter(j =>
+    ['ready_for_delivery', 'completed'].includes(j.status) && j.paymentStatus === 'pending').length;
+  const floor = jobs.filter(j => !['completed', 'cancelled'].includes(j.status)).length;
+  const arriving = todayBookings
+    .filter(b => ['pending', 'confirmed'].includes(b.status) && !b.jobId)
+    .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
+
+  const openJob = (j: Job) =>
+    router.push(j.bookingId ? `/admin/bookings/${j.bookingId}` : `/admin/jobs/${j.id}`);
+  const scrollTo = (key: string) =>
+    sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const INTEL: { label: string; value: string; icon: typeof Wrench; href?: string; alert?: boolean; onClick?: () => void }[] = [
+    { label: 'collected',     value: formatCurrency(collected), icon: IndianRupee },
+    { label: 'on the floor',  value: String(floor),             icon: Wrench },
+    { label: 'unpaid',        value: String(unpaid),            icon: CircleAlert, alert: unpaid > 0 },
+    { label: 'staff in',      value: String(staffPresent),      icon: UserCheck,   href: '/store/attendance' },
+    { label: 'low stock',     value: String(lowStock),          icon: Package,     href: '/admin/inventory', alert: lowStock > 0 },
+    { label: 'new leads',     value: String(newLeads),          icon: Inbox,       href: '/admin/cars/leads', alert: newLeads > 0 },
+  ];
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto">
-      <PageHeader
-        title="Dashboard"
-        subtitle={`Welcome back · ${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}`}
-      />
-
-      {/* Operations right now — the first thing the owner needs to know */}
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+    <div className="p-4 md:p-6 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <div>
+          <h1 className="font-display font-800 text-2xl" style={{ color: 'var(--chrome)' }}>Workspace</h1>
+          <p className="text-sm font-body flex items-center gap-2" style={{ color: 'var(--steel)' }}>
+            <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: 'var(--success)' }} />
+            Live · {format(new Date(), 'EEEE, dd MMM')}
+          </p>
         </div>
-      ) : ops && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
-          {OPS_CARDS.map(s => (
-            <Link key={s.label} href={s.href} className="block">
-              <GlassCard className="holo-surface transition-all hover:!border-[var(--border-strong)]" padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                    style={{
-                      background: s.alert
-                        ? 'color-mix(in srgb, var(--warning) 12%, transparent)'
-                        : 'var(--accent-mist)',
-                      border: '1px solid var(--accent-haze)',
-                    }}>
-                    <s.icon size={16} style={{ color: s.alert ? 'var(--warning)' : 'var(--ember)' }} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-display font-800 text-lg truncate text-ember">{s.value}</div>
-                    <div className="data-label mt-0.5">{s.label}</div>
-                  </div>
-                </div>
-              </GlassCard>
-            </Link>
-          ))}
-        </div>
-      )}
+        <Link href="/store/new" className="btn-ember flex items-center gap-2 px-4 py-2.5 text-sm">
+          <PlusCircle size={15} /> New walk-in
+        </Link>
+      </div>
 
-      {/* Follow-ups due - the owner's action queue */}
-      <div className="card p-4 mb-5">
-        <p className="data-label mb-3" style={{ color: tasks.length ? 'var(--warning)' : 'var(--steel)' }}>
-          FOLLOW-UPS DUE · {tasks.length}
+      {/* Intelligence strip — numbers that change decisions */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
+        {INTEL.map(s => {
+          const inner = (
+            <div className="flex flex-col gap-1 px-3 py-2.5 rounded-xl h-full transition-colors hover:bg-white/[.03]"
+              style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+              <s.icon size={13} style={{ color: s.alert ? 'var(--warning)' : 'var(--steel)' }} />
+              <span className="font-mono font-700 text-base leading-none" style={{ color: s.alert ? 'var(--warning)' : 'var(--chrome)' }}>
+                {s.value}
+              </span>
+              <span className="text-[10px] font-body" style={{ color: 'var(--pewter)' }}>{s.label}</span>
+            </div>
+          );
+          return s.href
+            ? <Link key={s.label} href={s.href}>{inner}</Link>
+            : <div key={s.label} className="cursor-default">{inner}</div>;
+        })}
+      </div>
+
+      {/* Stage strip */}
+      <div className="flex items-stretch gap-2 mb-6 overflow-x-auto pb-1">
+        {STAGES.map(s => (
+          <button key={s.key} onClick={() => scrollTo(s.key)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl shrink-0 transition-colors cursor-pointer"
+            style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+            <span className="rounded-full" style={{ width: 6, height: 6, background: s.color }} />
+            <span className="font-mono font-700 text-sm" style={{ color: 'var(--chrome)' }}>
+              {byStage[s.key]?.length ?? 0}
+            </span>
+            <span className="text-xs font-body" style={{ color: 'var(--pewter)' }}>{s.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Follow-ups — the action queue */}
+      <div className="rounded-2xl px-4 py-3 mb-6" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider mb-2"
+          style={{ color: tasks.length ? 'var(--warning)' : 'var(--faint)' }}>
+          Follow-ups due · {tasks.length}
         </p>
-        <div className="space-y-2 mb-3">
+        <div className="space-y-1.5 mb-2">
           {tasks.slice(0, 6).map(t => (
-            <div key={t.id} className="flex items-center gap-3 text-sm font-body">
-              <button onClick={() => finishTask(t)}
-                className="w-5 h-5 rounded-md shrink-0 flex items-center justify-center"
-                style={{ border: '1.5px solid var(--border-strong)' }} aria-label="done" />
-              <span style={{ color: 'var(--chrome)' }}>{t.note}</span>
-              {t.customerName && <span style={{ color: 'var(--steel)' }}>· {t.customerName}</span>}
+            <div key={t.id} className="flex items-center gap-2.5 text-sm font-body">
+              <button onClick={() => finishTask(t)} aria-label="done"
+                className="w-4 h-4 rounded shrink-0 cursor-pointer transition-colors hover:bg-white/[.08]"
+                style={{ border: '1.5px solid var(--border-strong)' }} />
+              <span style={{ color: 'var(--chrome)', fontSize: 13 }}>{t.note}</span>
+              {t.customerName && <span className="text-xs" style={{ color: 'var(--steel)' }}>· {t.customerName}</span>}
               {t.customerPhone && (
                 <a href={`https://wa.me/91${t.customerPhone}`} target="_blank" rel="noreferrer"
-                  className="data-label" style={{ color: 'var(--ember)' }}>WhatsApp →</a>
+                  className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--ember)' }}>WhatsApp →</a>
               )}
-              <span className="ml-auto font-mono text-xs shrink-0"
-                style={{ color: t.dueDate < new Date().toISOString().slice(0, 10) ? 'var(--danger)' : 'var(--steel)' }}>
+              <span className="ml-auto font-mono text-[11px] shrink-0"
+                style={{ color: t.dueDate < today ? 'var(--danger)' : 'var(--faint)' }}>
                 {t.dueDate}
               </span>
             </div>
           ))}
           {tasks.length === 0 && (
-            <p className="text-sm font-body" style={{ color: 'var(--steel)' }}>All clear - nothing due.</p>
+            <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>All clear — nothing due.</p>
           )}
         </div>
-        <div className="flex gap-2">
-          <input className="input flex-1 text-sm" value={taskDraft}
-            onChange={e => setTaskDraft(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && quickAddTask()}
-            placeholder="Add a follow-up for today… (Enter)" />
-        </div>
+        <input className="input w-full text-sm py-2" value={taskDraft}
+          onChange={e => setTaskDraft(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && quickAddTask()}
+          placeholder="Add a follow-up for today… (Enter)" />
       </div>
 
-      {/* Alerts */}
-      {pendingBookings.length > 0 && (
-        <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="mb-5">
-          <GlassCard accent padding="sm" className="flex items-center gap-3">
-            <AlertCircle size={16} style={{ color: 'var(--warning)' }} className="shrink-0" />
-            <span className="text-sm font-body flex-1" style={{ color: 'var(--fg-dim)' }}>
-              {pendingBookings.length} booking{pendingBookings.length > 1 ? 's' : ''} waiting for confirmation
-            </span>
-            <Link href="/admin/bookings" className="text-xs font-mono shrink-0"
-              style={{ color: 'var(--ember)', letterSpacing: '0.08em' }}>
-              VIEW →
-            </Link>
-          </GlassCard>
-        </motion.div>
-      )}
-
-      {/* Business totals - metallic stat grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
-        </div>
-      ) : stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <StatCard label="TODAY'S BOOKINGS" value={stats.todayBookings} icon={<Calendar size={16} />} />
-          <StatCard label="TOTAL CUSTOMERS" value={stats.totalCustomers} icon={<Users size={16} />} />
-          <StatCard label="TOTAL REVENUE" value={formatCurrency(stats.revenue)} icon={<TrendingUp size={16} />} />
-        </div>
-      )}
-
-      {/* Recent Bookings */}
-      <GlassCard padding="lg">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-800 text-base tracking-wide" style={{ color: 'var(--chrome)' }}>
-            RECENT BOOKINGS
-          </h2>
-          <Link href="/admin/bookings" className="text-xs font-mono flex items-center gap-1"
-            style={{ color: 'var(--ember)', letterSpacing: '0.08em' }}>
-            VIEW ALL <ChevronRight size={12} />
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+      {/* Arriving — bookings not yet checked in */}
+      {arriving.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="rounded-full" style={{ width: 6, height: 6, background: 'var(--pewter)' }} />
+            <h2 className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+              Arriving today
+            </h2>
+            <span className="font-mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{arriving.length}</span>
           </div>
-        ) : recentBookings.length === 0 ? (
-          <div className="text-center py-8 font-body text-sm" style={{ color: 'var(--muted)' }}>No bookings yet</div>
-        ) : (
-          <div className="space-y-2">
-            {recentBookings.map((b, i) => (
-              <motion.div key={b.id} initial={false} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}>
-                <Link href={`/admin/bookings/${b.id}`}>
-                  <div className="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors border border-transparent"
-                    style={{ borderColor: 'transparent' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--fog)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}>
-                    <ServiceIcon category={b.serviceCategory} size={16} style={{ color: 'var(--chrome)' }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-body text-sm font-500 truncate" style={{ color: 'var(--fg)' }}>{b.userName}</div>
-                      <div className="text-xs font-body" style={{ color: 'var(--muted)' }}>
-                        {b.serviceName} • {formatDate(b.scheduledDate)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`status-badge text-xs ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
-                      <div className="font-display font-700 text-xs mt-1" style={{ color: 'var(--fg)' }}>
-                        {formatCurrency(b.totalAmount)}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
+            {arriving.map((b, i) => (
+              <button key={b.id} onClick={() => router.push(`/admin/bookings/${b.id}`)}
+                className="group w-full text-left flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[.03] cursor-pointer"
+                style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+                <span className="font-mono text-xs w-14 shrink-0" style={{ color: 'var(--pewter)' }}>
+                  {formatTime(b.scheduledTime)}
+                </span>
+                <ServiceIcon category={b.serviceCategory} size={15} style={{ color: 'var(--pewter)', flexShrink: 0 }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-body font-600 truncate" style={{ fontSize: 13.5, color: 'var(--chrome)' }}>
+                    {b.userName}
+                    <span className="font-400" style={{ color: 'var(--steel)' }}> · {b.vehicleName}</span>
+                  </p>
+                  <p className="text-xs font-body truncate mt-0.5" style={{ color: 'var(--steel)' }}>{b.serviceName}</p>
+                </div>
+                <span className={`status-badge text-[10px] shrink-0 ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
+                <a href={`tel:+91${b.userPhone}`} onClick={e => e.stopPropagation()}
+                  className="w-7 h-7 rounded-lg hidden sm:flex items-center justify-center transition-colors hover:bg-white/[.06] shrink-0"
+                  style={{ border: '1px solid var(--border)' }}>
+                  <Phone size={11} style={{ color: 'var(--pewter)' }} />
+                </a>
+                <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
+              </button>
             ))}
           </div>
-        )}
-      </GlassCard>
+        </div>
+      )}
+
+      {/* The floor — live stage-grouped jobs */}
+      {!jobsReady ? (
+        <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-14 shimmer rounded-xl" />)}</div>
+      ) : jobs.length === 0 ? (
+        <div className="card text-center py-14">
+          <Wrench size={24} className="mx-auto mb-3" style={{ color: 'var(--steel)' }} />
+          <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Quiet floor — start a walk-in to get moving.</p>
+        </div>
+      ) : (
+        <div className="space-y-7">
+          {STAGES.map(stage => {
+            const group = byStage[stage.key] ?? [];
+            if (group.length === 0) return null;
+            return (
+              <div key={stage.key} ref={el => { sectionRefs.current[stage.key] = el; }}
+                style={{ scrollMarginTop: 76 }}>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <span className="rounded-full" style={{ width: 6, height: 6, background: stage.color }} />
+                  <h2 className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+                    {stage.label}
+                  </h2>
+                  <span className="font-mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{group.length}</span>
+                </div>
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
+                  {group.map((j, i) => (
+                    <button key={j.id} onClick={() => openJob(j)}
+                      className="group w-full text-left flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[.03] cursor-pointer"
+                      style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-body font-600 truncate" style={{ fontSize: 13.5, color: 'var(--chrome)' }}>
+                          {j.customerName}
+                          <span className="font-400" style={{ color: 'var(--steel)' }}> · {j.vehicleName}{j.vehicleRegNo ? ` · ${j.vehicleRegNo}` : ''}</span>
+                        </p>
+                        <p className="text-xs font-body truncate mt-0.5" style={{ color: 'var(--steel)' }}>
+                          {j.serviceItems.map(s => s.serviceName).join(', ')}
+                          {j.bay ? ` · Bay ${j.bay}` : ''}
+                          {j.assignments?.filter(a => !a.removedAt).length
+                            ? ` · ${j.assignments.filter(a => !a.removedAt).map(a => a.employeeName).join(', ')}`
+                            : ''}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-mono font-700 text-sm" style={{ color: 'var(--chrome)' }}>{formatCurrency(j.totalAmount)}</p>
+                        <p className="text-[10px] font-mono uppercase tracking-wider"
+                          style={{ color: j.paymentStatus === 'collected' ? 'var(--success)' : 'var(--steel)' }}>
+                          {j.paymentStatus === 'collected' ? 'Paid' : 'Unpaid'}
+                        </p>
+                      </div>
+                      <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Front-desk shortcuts */}
+      <div className="flex items-center gap-4 mt-8">
+        <Link href="/store/attendance" className="flex items-center gap-1.5 text-xs font-body" style={{ color: 'var(--steel)' }}>
+          <Clock size={12} /> Team attendance →
+        </Link>
+        <Link href="/admin/close" className="flex items-center gap-1.5 text-xs font-body" style={{ color: 'var(--steel)' }}>
+          Daily close →
+        </Link>
+      </div>
     </div>
   );
 }

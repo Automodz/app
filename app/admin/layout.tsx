@@ -22,9 +22,8 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: t
   {
     group: 'TODAY',
     items: [
-      { href: '/admin',           label: 'Overview',  icon: LayoutDashboard },
-      { href: '/admin/schedule',  label: 'Schedule',  icon: CalendarDays },
-      { href: '/admin/workspace', label: 'Workspace', icon: Wrench },
+      { href: '/admin',          label: 'Workspace', icon: Wrench },
+      { href: '/admin/schedule', label: 'Schedule',  icon: CalendarDays },
     ],
   },
   {
@@ -132,7 +131,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       run: () => router.push(i.href),
     })),
     { id: 'act:walkin', label: 'New walk-in', group: 'Quick actions', icon: Plus, run: () => router.push('/store/new') },
-    { id: 'act:workspace', label: 'Open workspace', group: 'Quick actions', icon: Wrench, run: () => router.push('/admin/workspace') },
     { id: 'act:close', label: 'Start daily close', group: 'Quick actions', icon: LockKeyhole, run: () => router.push('/admin/close') },
     { id: 'act:expense', label: 'Add expense', group: 'Quick actions', icon: Wallet, run: () => router.push('/admin/expenses') },
     { id: 'act:signout', label: 'Sign out', group: 'Quick actions', icon: LogOut, run: handleLogout },
