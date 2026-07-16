@@ -57,17 +57,26 @@ export default function BeforeAfterSlider({
             <div aria-hidden className="absolute inset-0 noise-overlay pointer-events-none" style={{ opacity: 0.5 }} />
           )}
         </div>
-        {/* divider + handle */}
+        {/* divider + glass handle */}
         <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}>
-          <div className="w-0.5 h-full mx-auto" style={{ background: 'var(--chrome)', boxShadow: 'var(--ember-glow-sm)' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--accent-grad)', boxShadow: 'var(--shadow-sm)' }}>
-            <span style={{ color: 'var(--on-accent)', fontSize: 12, letterSpacing: 1 }}>⇄</span>
+          <div className="h-full mx-auto" style={{ width: 1.5, background: 'linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.2))', boxShadow: '0 0 18px rgba(255,255,255,0.35)' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center"
+            style={{
+              background: 'rgba(18,19,22,0.55)',
+              backdropFilter: 'blur(16px) saturate(1.5)', WebkitBackdropFilter: 'blur(16px) saturate(1.5)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 24px rgba(0,0,0,0.45)',
+            }}>
+            <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden>
+              <path d="M5 1 1 5l4 4M11 1l4 4-4 4" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
         </div>
         {/* labels */}
-        <span className="absolute top-2 left-2 status-badge" style={{ background: 'rgba(5,5,7,0.7)', color: 'var(--warning)' }}>BEFORE</span>
-        <span className="absolute top-2 right-2 status-badge" style={{ background: 'rgba(5,5,7,0.7)', color: 'var(--success)' }}>AFTER</span>
+        <span className="absolute top-3 left-3 font-mono rounded-full px-2.5 py-1"
+          style={{ fontSize: 8.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.75)', background: 'rgba(5,5,7,0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}>BEFORE</span>
+        <span className="absolute top-3 right-3 font-mono rounded-full px-2.5 py-1"
+          style={{ fontSize: 8.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.9)', background: 'rgba(5,5,7,0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}>AFTER</span>
         <input
           type="range" min={0} max={100} value={pos}
           onChange={e => setPos(Number(e.target.value))}

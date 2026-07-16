@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   MapPin, Phone, ShieldCheck, Smartphone, IndianRupee, Clock, Navigation,
-  CalendarCheck, SprayCan, Sparkles, CarFront, ChevronDown, ArrowRight, Droplets,
+  ChevronDown, ArrowRight, Droplets,
 } from 'lucide-react';
 import { getServices } from '@/lib/firebaseService';
 import { formatCurrency, getDurationLabel } from '@/lib/utils';
@@ -40,8 +40,20 @@ const reveal = {
   transition: { duration: 0.7, ease: EASE },
 };
 
-// photorealistic hero — Mercedes-AMG GT (design-time photography, swap for studio shoot)
-const HERO_CAR = 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1800&q=85';
+/** Vision-Pro-grade glass: layered fill, inner top highlight, saturated blur.
+ *  `tint` scales the fill; pass warm=true for the champagne membership tier. */
+const glass = (tint = 0.05, warm = false): React.CSSProperties => ({
+  background: warm
+    ? 'linear-gradient(170deg, rgba(255,178,122,0.14) 0%, rgba(255,255,255,0.05) 45%, rgba(255,178,122,0.05) 100%)'
+    : `linear-gradient(180deg, rgba(255,255,255,${tint + 0.045}) 0%, rgba(255,255,255,${tint}) 55%, rgba(255,255,255,${Math.max(tint - 0.015, 0.015)}) 100%)`,
+  backdropFilter: 'blur(24px) saturate(1.6)',
+  WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
+  border: `1px solid ${warm ? 'rgba(255,178,122,0.32)' : 'rgba(255,255,255,0.10)'}`,
+  boxShadow: `inset 0 1px 0 rgba(255,255,255,${warm ? 0.18 : 0.12}), inset 0 -1px 0 rgba(0,0,0,0.2), 0 24px 60px rgba(0,0,0,0.35)`,
+});
+
+// photorealistic hero — swap this ONE url for the real studio shoot (AMG / M4) when licensed
+const HERO_CAR = 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1800&q=85';
 
 const SERVICE_META: Record<string, { warranty?: string; duration: number; line: string }> = {
   PPF:     { warranty: 'Up to 12 yr', duration: 480, line: 'Self-healing film. Stone chips hit the film — never your paint.' },
@@ -124,19 +136,25 @@ export default function HomePage() {
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.18 }}
               className="mt-9 flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
               <Magnetic strength={0.35}>
-                <button onClick={book}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl transition-transform active:scale-95"
-                  style={{ background: '#fff', color: '#0b0c0e', boxShadow: '0 8px 40px rgba(255,255,255,0.18)' }}>
+                <motion.button onClick={book}
+                  whileHover={{ y: -2, boxShadow: '0 14px 50px rgba(255,255,255,0.28), inset 0 1px 0 rgba(255,255,255,0.9)' }}
+                  whileTap={{ scale: 0.97, y: 0 }}
+                  transition={{ duration: 0.35, ease: EASE }}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl"
+                  style={{ background: 'linear-gradient(180deg, #fff 0%, #e9ebef 100%)', color: '#0b0c0e', boxShadow: '0 8px 40px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
                   <span className="font-display" style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '0.01em' }}>Book a slot</span>
                   <ArrowRight size={16} />
-                </button>
+                </motion.button>
               </Magnetic>
               <Magnetic strength={0.3}>
-                <a href="#services"
+                <motion.a href="#services"
+                  whileHover={{ y: -2, backgroundColor: 'rgba(255,255,255,0.1)' }}
+                  whileTap={{ scale: 0.97, y: 0 }}
+                  transition={{ duration: 0.35, ease: EASE }}
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(10px)' }}>
+                  style={{ ...glass(0.05), color: 'rgba(255,255,255,0.85)' }}>
                   <span className="font-display" style={{ fontSize: 14.5, fontWeight: 700 }}>Explore services</span>
-                </a>
+                </motion.a>
               </Magnetic>
             </motion.div>
 
@@ -160,13 +178,17 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0, scale: 0.96, x: 24 }} animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 1, ease: EASE, delay: 0.1 }}
             className="relative order-1 lg:order-2">
-            <div className="relative rounded-[28px] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 120px rgba(0,0,0,0.55), 0 0 80px rgba(255,120,40,0.08)' }}>
+            {/* bloom behind the car */}
+            <div aria-hidden className="absolute -inset-8 pointer-events-none" style={{ background: 'radial-gradient(60% 55% at 60% 45%, rgba(255,140,60,0.10), transparent 70%)', filter: 'blur(30px)' }} />
+            <div className="relative rounded-[28px] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 40px 120px rgba(0,0,0,0.55), 0 0 100px rgba(255,120,40,0.1)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={HERO_CAR} alt="Mercedes-AMG GT under studio light" className="w-full object-cover" style={{ aspectRatio: '4/3' }} />
-              <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(200deg, transparent 40%, rgba(8,9,11,0.55) 100%)' }} />
+              <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(8,9,11,0.55) 0%, transparent 35%), linear-gradient(200deg, transparent 40%, rgba(8,9,11,0.6) 100%)' }} />
+              {/* glass rim highlight along the top edge */}
+              <div aria-hidden className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />
               {/* liquid-glass rating card */}
               <div className="absolute bottom-4 left-4 right-4 sm:right-auto flex items-center gap-3 rounded-2xl px-4 py-3"
-                style={{ background: 'rgba(16,17,20,0.55)', backdropFilter: 'blur(22px) saturate(1.5)', WebkitBackdropFilter: 'blur(22px) saturate(1.5)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                style={glass(0.04)}>
                 <GoogleG />
                 <div>
                   <p className="font-display" style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Rated on Google</p>
@@ -193,13 +215,13 @@ export default function HomePage() {
             return (
               <motion.article key={s.cat} {...reveal} transition={{ ...reveal.transition, delay: (i % 2) * 0.07 }}
                 onClick={book}
+                whileHover={{ y: -4 }}
                 className="group relative rounded-[26px] overflow-hidden cursor-pointer"
-                style={{ minHeight: 320, border: '1px solid rgba(255,255,255,0.08)' }}>
+                style={{ minHeight: 340, border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 24px 60px rgba(0,0,0,0.4)' }}>
                 <Image src={s.img} alt={s.name} fill sizes="(max-width:640px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]" />
+                  className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]" />
                 <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(185deg, transparent 30%, rgba(6,7,9,0.72) 78%)' }} />
-                <div className="absolute inset-x-3 bottom-3 rounded-[20px] p-4"
-                  style={{ background: 'rgba(14,15,18,0.5)', backdropFilter: 'blur(20px) saturate(1.5)', WebkitBackdropFilter: 'blur(20px) saturate(1.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="absolute inset-x-3 bottom-3 rounded-[20px] p-4" style={glass(0.035)}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="font-display" style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em', color: '#fff' }}>{s.name}</h3>
@@ -229,7 +251,7 @@ export default function HomePage() {
             { icon: IndianRupee, t: 'Honest pricing', d: 'Only what your car actually needs. No upselling, no surprises.' },
           ].map(p => (
             <motion.div key={p.t} {...reveal} className="rounded-[22px] p-6 text-center flex flex-col items-center"
-              style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={glass(0.04)}>
               <span className="grid place-items-center rounded-2xl mb-4" style={{ width: 46, height: 46, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
                 <p.icon size={20} />
               </span>
@@ -246,22 +268,26 @@ export default function HomePage() {
         <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {MEMBERSHIP_PLANS.map((p, i) => (
             <motion.button key={p.id} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }} onClick={book}
-              className="rounded-[22px] p-6 text-left transition-transform active:scale-[0.98]"
-              style={{
-                background: i === 1 ? 'linear-gradient(170deg, rgba(255,178,122,0.12), rgba(255,255,255,0.04))' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${i === 1 ? 'rgba(255,178,122,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-              }}>
-              <div className="flex items-center justify-between">
-                <span className="font-display" style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{p.label}</span>
+              whileHover={{ y: -4 }} whileTap={{ scale: 0.98, y: 0 }}
+              className="relative overflow-hidden rounded-[22px] p-6 text-left flex flex-col justify-between"
+              style={{ ...glass(0.04, i === 1), aspectRatio: '1.586' }}>
+              {/* card sheen — a diagonal light pass, like brushed metal */}
+              <div aria-hidden className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.05) 45%, transparent 60%)' }} />
+              <div className="flex items-start justify-between">
+                <span className="font-mono" style={{ fontSize: 9, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)' }}>AUTOMODZ MEMBER</span>
                 {i === 1 && <span className="font-mono px-2 py-0.5 rounded-full" style={{ fontSize: 8.5, letterSpacing: '0.1em', color: '#ffb27a', border: '1px solid rgba(255,178,122,0.35)' }}>POPULAR</span>}
               </div>
-              <p className="font-display mt-3" style={{ fontSize: 26, fontWeight: 800, color: '#fff' }}>
-                {formatCurrency(p.price)}<span className="font-body" style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.45)' }}> /month</span>
-              </p>
-              <p className="font-body mt-2 inline-flex items-center gap-1.5" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
-                <Droplets size={13} /> {p.washesPerMonth} washes every month
-              </p>
+              <div>
+                <span className="font-display block" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em', color: '#fff' }}>{p.label}</span>
+                <div className="flex items-end justify-between gap-3 mt-1.5">
+                  <p className="font-display whitespace-nowrap" style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>
+                    {formatCurrency(p.price)}<span className="font-body" style={{ fontSize: 11.5, fontWeight: 400, color: 'rgba(255,255,255,0.45)' }}> /mo</span>
+                  </p>
+                  <p className="font-body inline-flex items-center gap-1.5 pb-1 whitespace-nowrap" style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+                    <Droplets size={12} /> {p.washesPerMonth} washes
+                  </p>
+                </div>
+              </div>
             </motion.button>
           ))}
         </div>
@@ -270,22 +296,30 @@ export default function HomePage() {
       {/* ═══ PROCESS — how it works ═══ */}
       <section className="relative z-10 px-6 py-20">
         <SectionHead kicker="HOW IT WORKS" title="Booked in a minute." />
-        <div className="max-w-3xl mx-auto grid sm:grid-cols-4 gap-3">
+        <div className="max-w-md mx-auto">
           {[
-            { icon: CalendarCheck, t: 'Book', d: 'Pick a slot that suits you.' },
-            { icon: CarFront, t: 'Drop off', d: 'Bring it in — or we collect.' },
-            { icon: SprayCan, t: 'We detail', d: 'Every stage live to your phone.' },
-            { icon: Sparkles, t: 'Glow', d: 'Pick it up gleaming. Pay in-app.' },
-          ].map((s, i) => (
-            <motion.div key={s.t} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }}
-              className="relative rounded-[20px] p-5 text-center flex flex-col items-center"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <span className="font-mono absolute top-3 right-4" style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>0{i + 1}</span>
-              <span className="grid place-items-center rounded-2xl mb-3" style={{ width: 42, height: 42, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
-                <s.icon size={18} />
-              </span>
-              <h3 className="font-display" style={{ fontSize: 14.5, fontWeight: 800, color: '#fff' }}>{s.t}</h3>
-              <p className="font-body mt-1" style={{ fontSize: 12, lineHeight: 1.5, color: 'rgba(255,255,255,0.5)' }}>{s.d}</p>
+            { t: 'Vehicle enters', d: 'Checked in and photographed, panel by panel.' },
+            { t: 'Inspection', d: 'Paint depth measured under studio lighting.' },
+            { t: 'Service', d: 'Every stage streamed live to your phone.' },
+            { t: 'Quality check', d: 'Senior detailer signs off under inspection light.' },
+            { t: 'Delivery', d: 'Handed back gleaming. Pay in-app.' },
+          ].map((s, i, arr) => (
+            <motion.div key={s.t} {...reveal} transition={{ ...reveal.transition, delay: i * 0.06 }}
+              className="relative flex gap-5 pb-9 last:pb-0">
+              {/* rail */}
+              <div className="flex flex-col items-center">
+                <span className="grid place-items-center rounded-full shrink-0 font-mono"
+                  style={{ width: 34, height: 34, fontSize: 10, color: 'rgba(255,255,255,0.75)', ...glass(0.05) }}>
+                  0{i + 1}
+                </span>
+                {i < arr.length - 1 && (
+                  <span aria-hidden className="w-px flex-1 mt-2" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05))' }} />
+                )}
+              </div>
+              <div className="pt-1.5">
+                <h3 className="font-display" style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em', color: '#fff' }}>{s.t}</h3>
+                <p className="font-body mt-1" style={{ fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.5)' }}>{s.d}</p>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -294,13 +328,17 @@ export default function HomePage() {
       {/* ═══ BEFORE / AFTER — prove it ═══ */}
       <section className="relative z-10 px-6 py-20">
         <SectionHead kicker="THE DIFFERENCE" title="From grimy to gleaming." sub="Drag across. The same car — dusty on the left, corrected and glossed on the right." />
-        <motion.div {...reveal} className="max-w-3xl mx-auto">
-          <BeforeAfterSlider
-            before={STOCK.ceramic}
-            after={STOCK.ceramic}
-            dirtBefore
-            beforeFilter="saturate(0.4) brightness(0.72) contrast(0.95) blur(0.5px)"
-            alt="The same car — dirty before, clean after" />
+        <motion.div {...reveal} className="relative max-w-3xl mx-auto">
+          {/* cinematic frame: bloom under, glass rim around */}
+          <div aria-hidden className="absolute -inset-6 pointer-events-none" style={{ background: 'radial-gradient(55% 50% at 50% 60%, rgba(255,140,60,0.08), transparent 70%)', filter: 'blur(24px)' }} />
+          <div className="relative rounded-[26px] p-2" style={glass(0.03)}>
+            <BeforeAfterSlider
+              before={STOCK.ceramic}
+              after={STOCK.ceramic}
+              dirtBefore
+              beforeFilter="saturate(0.4) brightness(0.72) contrast(0.95) blur(0.5px)"
+              alt="The same car — dirty before, clean after" />
+          </div>
         </motion.div>
       </section>
 
@@ -309,12 +347,13 @@ export default function HomePage() {
         <div className="text-center max-w-2xl mx-auto">
           <SectionHead kicker="WHAT OWNERS SAY" title="Don’t take our word for it." sub="Every review on our Google profile is from a real car and a real owner. Read them before you book." />
           <Magnetic strength={0.3}>
-            <a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl transition-transform active:scale-95"
-              style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <motion.a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer"
+              whileHover={{ y: -2 }} whileTap={{ scale: 0.97, y: 0 }} transition={{ duration: 0.35, ease: EASE }}
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl"
+              style={glass(0.05)}>
               <GoogleG />
               <span className="font-display" style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>Read our reviews on Google</span>
-            </a>
+            </motion.a>
           </Magnetic>
         </div>
       </section>
@@ -328,7 +367,7 @@ export default function HomePage() {
             return (
               <motion.div key={f.q} {...reveal} transition={{ ...reveal.transition, delay: Math.min(i * 0.05, 0.2) }}
                 className="rounded-2xl overflow-hidden"
-                style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${open ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)'}` }}>
+                style={{ ...glass(open ? 0.05 : 0.03), border: `1px solid ${open ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)'}` }}>
                 <button onClick={() => setFaqOpen(open ? null : i)}
                   className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
                   <span className="font-display" style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>{f.q}</span>
@@ -348,23 +387,22 @@ export default function HomePage() {
       {/* ═══ FIND US + FINAL CTA ═══ */}
       <section className="relative z-10 px-6 py-20">
         <div className="max-w-4xl mx-auto grid lg:grid-cols-2 gap-6 items-center">
-          <motion.div {...reveal} className="rounded-[26px] overflow-hidden"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <motion.div {...reveal} className="rounded-[26px] overflow-hidden" style={glass(0.035)}>
             <div className="relative h-44">
               <iframe
                 title="AutoModz on Google Maps"
                 src="https://www.google.com/maps?q=AutoModz+Maninagar+Ahmedabad+Bhairavnath+Rd&output=embed"
                 loading="lazy" referrerPolicy="no-referrer-when-downgrade"
-                className="absolute inset-0 w-full h-full" style={{ border: 0, filter: 'grayscale(0.4) contrast(1.05)' }} />
+                className="absolute inset-0 w-full h-full" style={{ border: 0, filter: 'invert(0.9) hue-rotate(180deg) grayscale(0.35) contrast(0.92) brightness(0.9)' }} />
             </div>
             <div className="p-5">
               {openNow !== null && (
-                <span className="inline-flex items-center gap-1.5 font-mono mb-2" style={{ fontSize: 9.5, letterSpacing: '0.1em', color: openNow ? '#5FBF8F' : 'rgba(255,255,255,0.4)' }}>
+                <span className="flex items-center gap-1.5 font-mono mb-2" style={{ fontSize: 9.5, letterSpacing: '0.1em', color: openNow ? '#5FBF8F' : 'rgba(255,255,255,0.4)' }}>
                   <span className="rounded-full" style={{ width: 6, height: 6, background: openNow ? '#5FBF8F' : 'rgba(255,255,255,0.3)' }} />
                   {openNow ? 'OPEN NOW' : 'CLOSED'} · <Clock size={10} /> 9 AM – 9 PM DAILY
                 </span>
               )}
-              <p className="font-body inline-flex items-start gap-1.5" style={{ fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.6)' }}>
+              <p className="font-body flex items-start gap-1.5" style={{ fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.6)' }}>
                 <MapPin size={14} className="mt-0.5 shrink-0" /> Bhairavnath Rd, Maninagar, Ahmedabad 380028
               </p>
               <div className="flex items-center gap-2.5 mt-4">
@@ -390,9 +428,14 @@ export default function HomePage() {
       </section>
 
       {/* ── footer ── */}
-      <footer className="relative z-10 px-6 pb-10 pt-12 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex flex-col items-center gap-3">
+      <footer className="relative z-10 px-6 pb-14 pt-16 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col items-center gap-6">
           <Wordmark height="clamp(18px, 5vw, 24px)" variant="white" />
+          <div className="flex items-center gap-8 font-mono" style={{ fontSize: 9.5, letterSpacing: '0.16em' }}>
+            <a href="tel:+919512605088" style={{ color: 'rgba(255,255,255,0.45)' }}>CALL</a>
+            <a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.45)' }}>DIRECTIONS</a>
+            <Link href="/auth/login" style={{ color: 'rgba(255,255,255,0.45)' }}>SIGN IN</Link>
+          </div>
           <p className="font-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.28)' }}>
             © {new Date().getFullYear()} AUTOMODZ · CRAFTED IN AHMEDABAD
           </p>
