@@ -131,7 +131,7 @@ export default function AdminWorkspace() {
             Live · {format(new Date(), 'EEEE, dd MMM')}
           </p>
         </div>
-        <Link href="/store/new" className="btn-ember flex items-center gap-2 px-4 py-2.5 text-sm">
+        <Link href="/admin/walkin" className="btn-ember flex items-center gap-2 px-4 py-2.5 text-sm">
           <PlusCircle size={15} /> New walk-in
         </Link>
       </div>
