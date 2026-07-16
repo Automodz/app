@@ -11,6 +11,7 @@
  */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 export interface CarStageHandle {
   setProgress: (p: number) => void;
@@ -23,6 +24,7 @@ export interface CarStageHandle {
 interface Panel {
   mesh: THREE.Object3D;
   home: THREE.Vector3;
+  baseRot: THREE.Euler; // resting orientation (raked glass etc.)
   dir: THREE.Vector3;   // explode direction (unit-ish), scaled by distance
   dist: number;         // how far it flies out
   spin: THREE.Vector3;  // extra rotation applied at full explode
@@ -64,12 +66,21 @@ export function createCarScene(canvas: HTMLCanvasElement): CarStageHandle {
   rim.position.set(-6, 3, -4);
   scene.add(rim);
 
-  // materials
-  const paint = new THREE.MeshStandardMaterial({ color: 0xd9dde1, metalness: 0.9, roughness: 0.28 });
-  const paintDark = new THREE.MeshStandardMaterial({ color: 0x2a2d31, metalness: 0.7, roughness: 0.35 });
-  const glass = new THREE.MeshStandardMaterial({ color: 0x11151b, metalness: 0.4, roughness: 0.08 });
-  const tyre = new THREE.MeshStandardMaterial({ color: 0x14161a, metalness: 0.1, roughness: 0.85 });
-  const chrome = new THREE.MeshStandardMaterial({ color: 0xf2f4f6, metalness: 1, roughness: 0.12 });
+  // materials — clearcoat physical paint sells the showroom finish
+  const paint = new THREE.MeshPhysicalMaterial({
+    color: 0xc9ced4, metalness: 0.9, roughness: 0.22,
+    clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.35,
+  });
+  const paintDark = new THREE.MeshPhysicalMaterial({
+    color: 0x101215, metalness: 0.7, roughness: 0.4,
+    clearcoat: 0.6, clearcoatRoughness: 0.15,
+  });
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0x0b0e13, metalness: 0.2, roughness: 0.03,
+    clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.6,
+  });
+  const tyre = new THREE.MeshStandardMaterial({ color: 0x121418, metalness: 0.05, roughness: 0.9 });
+  const chrome = new THREE.MeshPhysicalMaterial({ color: 0xf2f4f6, metalness: 1, roughness: 0.08, envMapIntensity: 1.5 });
 
   const car = new THREE.Group();
   scene.add(car);
@@ -78,50 +89,67 @@ export function createCarScene(canvas: HTMLCanvasElement): CarStageHandle {
   const addPanel = (
     mesh: THREE.Object3D, x: number, y: number, z: number,
     dir: [number, number, number], dist: number, spin: [number, number, number] = [0, 0, 0],
+    rot: [number, number, number] = [0, 0, 0],
   ) => {
     mesh.position.set(x, y, z);
+    mesh.rotation.set(...rot);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     car.add(mesh);
     panels.push({
       mesh,
       home: new THREE.Vector3(x, y, z),
+      baseRot: new THREE.Euler(...rot),
       dir: new THREE.Vector3(...dir).normalize(),
       dist,
       spin: new THREE.Vector3(...spin),
     });
   };
 
-  // ── car body panels (stylised, low-poly) ──
-  const box = (w: number, h: number, d: number, m: THREE.Material) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d, 1, 1, 1), m);
+  // ── car body panels — rounded edges read as pressed metal, not toy bricks ──
+  const box = (w: number, h: number, d: number, m: THREE.Material, edge = 0.12) => {
+    const r = Math.min(w, h, d) * edge;
+    return new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 4, r), m);
+  };
 
-  // chassis / lower body (long + low stance)
-  addPanel(box(4.4, 0.42, 1.9, paint), 0, 0.12, 0, [0, -1, 0], 1.1);
-  // hood (front) — low and raked
-  addPanel(box(1.6, 0.22, 1.78, paint), 1.35, 0.42, 0, [1, 0.5, 0], 1.8, [0, 0, 0.4]);
-  // trunk (rear) — low deck
-  addPanel(box(1.1, 0.24, 1.78, paint), -1.65, 0.44, 0, [-1, 0.5, 0], 1.7, [0, 0, -0.4]);
-  // cabin roof — lower, shorter, set back (coupe silhouette)
-  addPanel(box(1.55, 0.34, 1.55, paint), -0.28, 0.74, 0, [0, 1, 0], 1.6, [0.3, 0, 0]);
-  // windshield — raked
-  addPanel(box(0.1, 0.44, 1.5, glass), 0.62, 0.66, 0, [0.6, 1, 0], 2.0);
-  // rear glass
-  addPanel(box(0.1, 0.4, 1.5, glass), -1.02, 0.66, 0, [-0.6, 1, 0], 1.9);
-  // left door (with glass strip feel via lower body panel)
-  addPanel(box(1.5, 0.5, 0.12, paint), -0.2, 0.42, 0.9, [0, 0.2, 1], 1.9, [0, 0.5, 0]);
-  // right door
-  addPanel(box(1.5, 0.5, 0.12, paint), -0.2, 0.42, -0.9, [0, 0.2, -1], 1.9, [0, -0.5, 0]);
-  // front bumper
-  addPanel(box(0.3, 0.35, 1.85, paintDark), 2.05, 0.3, 0, [1, 0, 0], 2.4);
-  // rear bumper
-  addPanel(box(0.3, 0.35, 1.85, paintDark), -2.15, 0.32, 0, [-1, 0, 0], 2.3);
-  // headlights
-  addPanel(box(0.14, 0.16, 0.4, chrome), 2.02, 0.5, 0.6, [1, 0.3, 0.4], 2.6);
-  addPanel(box(0.14, 0.16, 0.4, chrome), 2.02, 0.5, -0.6, [1, 0.3, -0.4], 2.6);
+  /** Extrude a 2D side-profile across the car's width — real automotive curves. */
+  const profile = (pts: [number, number][], width: number, m: THREE.Material) => {
+    const shape = new THREE.Shape();
+    shape.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
+    shape.closePath();
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: width, bevelEnabled: true, bevelThickness: 0.09,
+      bevelSize: 0.07, bevelSegments: 5, curveSegments: 12,
+    });
+    geo.translate(0, 0, -width / 2);
+    return new THREE.Mesh(geo, m);
+  };
 
-  // wheels
-  const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.34, 22);
-  const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.36, 12);
+  // lower body shell — one continuous coupe profile (nose → beltline → tail)
+  addPanel(profile([
+    [-2.25, 0.06], [-2.32, 0.5], [-2.0, 0.56], [1.05, 0.56],
+    [1.75, 0.44], [2.28, 0.38], [2.34, 0.12], [2.0, 0.04], [-1.95, 0.04],
+  ], 1.72, paint), 0, 0.06, 0, [0, -1, 0], 0.9);
+
+  // glass canopy — raked windshield into a fastback roof line
+  addPanel(profile([
+    [1.02, 0.56], [0.2, 1.0], [-0.6, 0.99], [-1.55, 0.57], [-0.9, 0.53], [0.6, 0.53],
+  ], 1.5, glass), 0, 0.06, 0, [0, 1, 0], 1.7, [0.25, 0, 0]);
+
+  // doors — thin overlays that blow outward
+  addPanel(box(1.5, 0.34, 0.07, paint, 0.3), -0.25, 0.34, 0.92, [0, 0.2, 1], 1.9, [0, 0.5, 0]);
+  addPanel(box(1.5, 0.34, 0.07, paint, 0.3), -0.25, 0.34, -0.92, [0, 0.2, -1], 1.9, [0, -0.5, 0]);
+  // front splitter + rear diffuser
+  addPanel(box(0.5, 0.14, 1.8, paintDark, 0.35), 2.2, 0.06, 0, [1, 0, 0], 2.4);
+  addPanel(box(0.5, 0.14, 1.8, paintDark, 0.35), -2.24, 0.07, 0, [-1, 0, 0], 2.3);
+  // headlights — slim LED strips tucked into the nose
+  addPanel(box(0.1, 0.06, 0.46, chrome), 2.32, 0.3, 0.52, [1, 0.3, 0.4], 2.6);
+  addPanel(box(0.1, 0.06, 0.46, chrome), 2.32, 0.3, -0.52, [1, 0.3, -0.4], 2.6);
+
+  // wheels — larger, smoother, tighter to the arches
+  const wheelGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.32, 40);
+  const rimGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.34, 24);
   const wheelPos: [number, number][] = [[1.35, 1.02], [1.35, -1.02], [-1.4, 1.02], [-1.4, -1.02]];
   const wheels: THREE.Group[] = [];
   wheelPos.forEach(([x, z]) => {
@@ -163,7 +191,11 @@ export function createCarScene(canvas: HTMLCanvasElement): CarStageHandle {
         pan.home.y + pan.dir.y * pan.dist * eased,
         pan.home.z + pan.dir.z * pan.dist * eased,
       );
-      pan.mesh.rotation.set(pan.spin.x * eased, pan.spin.y * eased, pan.spin.z * eased);
+      pan.mesh.rotation.set(
+        pan.baseRot.x + pan.spin.x * eased,
+        pan.baseRot.y + pan.spin.y * eased,
+        pan.baseRot.z + pan.spin.z * eased,
+      );
     }
     // whole car turns slowly across the scroll for parallax life
     car.rotation.y = -0.5 + p * 1.15;
