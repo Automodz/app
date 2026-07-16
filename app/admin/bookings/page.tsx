@@ -6,8 +6,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Search, CheckCircle2, Clock, ChevronRight, Zap } from 'lucide-react';
+import { Search, CheckCircle2, Clock, ChevronRight } from 'lucide-react';
 import { getAllBookings } from '@/lib/firebaseService';
 import { formatCurrency, getStatusColor, getStatusLabel, formatDate, formatTime } from '@/lib/utils';
 import type { Booking, BookingStatus } from '@/lib/types';
@@ -83,45 +82,39 @@ export default function AdminBookingsPage() {
 
       {/* list */}
       {loading ? (
-        <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-[76px] shimmer rounded-2xl" />)}</div>
+        <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-14 shimmer rounded-xl" />)}</div>
       ) : loadError ? (
         <ErrorState onRetry={load} />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-muted font-body">No bookings found</div>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
           {filtered.map((b, i) => (
-            <motion.button key={b.id} onClick={() => open(b.id)}
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              whileTap={{ scale: 0.99 }}
-              className="group w-full card-dark text-left transition-all hover:border-white/10">
-              <div className="flex items-center gap-3">
-                <span className="grid place-items-center rounded-xl shrink-0"
-                  style={{ width: 44, height: 44, background: 'var(--smoke)', border: '1px solid var(--border-strong)', color: 'var(--chrome)' }}>
-                  <ServiceIcon category={b.serviceCategory} size={19} />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="font-body text-sm text-foreground font-600 truncate">{b.userName}</div>
-                      <div className="text-muted text-xs font-body truncate">{b.serviceName} • {b.vehicleName}</div>
-                    </div>
-                    <span className={`status-badge text-xs shrink-0 ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs font-body" style={{ color: 'var(--muted)' }}>
-                    <span>{formatDate(b.scheduledDate)} {formatTime(b.scheduledTime)}</span>
-                    <span>{formatCurrency(b.totalAmount)}</span>
-                    <span className={`inline-flex items-center gap-1 ${b.paymentStatus === 'verified' ? 'text-emerald-400' : ''}`}>
-                      {b.paymentStatus === 'verified' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                      {b.paymentStatus === 'verified' ? 'Paid' : 'Unpaid'}
-                    </span>
-                    {b.jobId && <span className="inline-flex items-center gap-1" style={{ color: 'var(--success)' }}><Zap size={11} /> In studio</span>}
-                  </div>
-                </div>
-                <ChevronRight size={16} className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+            <button key={b.id} onClick={() => open(b.id)}
+              className="group w-full text-left flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[.03] cursor-pointer"
+              style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+              <ServiceIcon category={b.serviceCategory} size={16} style={{ color: 'var(--pewter)', flexShrink: 0 }} />
+              <div className="flex-1 min-w-0">
+                <p className="font-body font-600 truncate" style={{ fontSize: 13.5, color: 'var(--chrome)' }}>
+                  {b.userName}
+                  <span className="font-400" style={{ color: 'var(--steel)' }}> · {b.vehicleName}</span>
+                </p>
+                <p className="text-xs font-body truncate mt-0.5" style={{ color: 'var(--steel)' }}>
+                  {b.serviceName} · {formatDate(b.scheduledDate)} {formatTime(b.scheduledTime)}
+                  {b.jobId ? ' · In studio' : ''}
+                </p>
               </div>
-            </motion.button>
+              <div className="text-right shrink-0">
+                <p className="font-mono font-700 text-sm" style={{ color: 'var(--chrome)' }}>{formatCurrency(b.totalAmount)}</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider inline-flex items-center gap-1"
+                  style={{ color: b.paymentStatus === 'verified' ? 'var(--success)' : 'var(--steel)' }}>
+                  {b.paymentStatus === 'verified' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
+                  {b.paymentStatus === 'verified' ? 'Paid' : 'Unpaid'}
+                </p>
+              </div>
+              <span className={`status-badge text-xs shrink-0 ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
+              <ChevronRight size={15} className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+            </button>
           ))}
         </div>
       )}

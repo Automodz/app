@@ -111,8 +111,8 @@ export default function AdminDashboard() {
   };
 
   const OPS_CARDS = ops ? [
-    { label: "TODAY'S REVENUE", value: formatCurrency(ops.todayRevenue), icon: IndianRupee, href: '/admin/jobs', alert: false },
-    { label: 'ACTIVE JOBS', value: String(ops.activeJobs), icon: Wrench, href: '/store/board', alert: false },
+    { label: "TODAY'S REVENUE", value: formatCurrency(ops.todayRevenue), icon: IndianRupee, href: '/admin/workspace', alert: false },
+    { label: 'ON THE FLOOR', value: String(ops.activeJobs), icon: Wrench, href: '/admin/workspace', alert: false },
     { label: 'STAFF PRESENT', value: String(ops.staffPresent), icon: UserCheck, href: '/admin/employees', alert: false },
     { label: 'LOW STOCK', value: String(ops.lowStock), icon: Package, href: '/admin/inventory', alert: ops.lowStock > 0 },
     { label: 'UNPAID', value: String(ops.pendingPayments), icon: AlertCircle, href: '/admin/bookings', alert: ops.pendingPayments > 0 },
@@ -125,6 +125,37 @@ export default function AdminDashboard() {
         title="Dashboard"
         subtitle={`Welcome back · ${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}`}
       />
+
+      {/* Operations right now — the first thing the owner needs to know */}
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+        </div>
+      ) : ops && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
+          {OPS_CARDS.map(s => (
+            <Link key={s.label} href={s.href} className="block">
+              <GlassCard className="holo-surface transition-all hover:!border-[var(--border-strong)]" padding="md">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: s.alert
+                        ? 'color-mix(in srgb, var(--warning) 12%, transparent)'
+                        : 'var(--accent-mist)',
+                      border: '1px solid var(--accent-haze)',
+                    }}>
+                    <s.icon size={16} style={{ color: s.alert ? 'var(--warning)' : 'var(--ember)' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-display font-800 text-lg truncate text-ember">{s.value}</div>
+                    <div className="data-label mt-0.5">{s.label}</div>
+                  </div>
+                </div>
+              </GlassCard>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Follow-ups due - the owner's action queue */}
       <div className="card p-4 mb-5">
@@ -187,40 +218,6 @@ export default function AdminDashboard() {
           <StatCard label="TODAY'S BOOKINGS" value={stats.todayBookings} icon={<Calendar size={16} />} />
           <StatCard label="TOTAL CUSTOMERS" value={stats.totalCustomers} icon={<Users size={16} />} />
           <StatCard label="TOTAL REVENUE" value={formatCurrency(stats.revenue)} icon={<TrendingUp size={16} />} />
-        </div>
-      )}
-
-      {/* Operations today - tappable liquid-glass tiles */}
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
-        </div>
-      ) : ops && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          {OPS_CARDS.map((s, i) => (
-            <motion.div key={s.label} initial={false} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 + i * 0.05 }}>
-              <Link href={s.href} className="block">
-                <GlassCard className="holo-surface transition-all hover:!border-[var(--border-strong)]" padding="md">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{
-                        background: s.alert
-                          ? 'color-mix(in srgb, var(--warning) 12%, transparent)'
-                          : 'var(--accent-mist)',
-                        border: '1px solid var(--accent-haze)',
-                      }}>
-                      <s.icon size={17} style={{ color: s.alert ? 'var(--warning)' : 'var(--ember)' }} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-display font-800 text-lg truncate text-ember">{s.value}</div>
-                      <div className="data-label mt-0.5">{s.label}</div>
-                    </div>
-                  </div>
-                </GlassCard>
-              </Link>
-            </motion.div>
-          ))}
         </div>
       )}
 

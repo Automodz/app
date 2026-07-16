@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CalendarDays, Users, CreditCard,
   Settings, Menu, X, LogOut, Zap, Shield,
-  Store, Wrench, UserCog, Package, BadgePercent, Car, FileText, CalendarClock,
+  Wrench, UserCog, Package, BadgePercent, Car, FileText, CalendarClock, Clock,
   Images, BarChart3, Wallet, LockKeyhole, FileSpreadsheet, Search, Plus, UserPlus,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
@@ -15,18 +15,23 @@ import { useAppStore } from '@/lib/store';
 import Wordmark from '@/components/ui/Wordmark';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
-// Navigation is organised around how the studio runs a day — not around
-// Firestore collections. Lifecycle order: bring cars in → work them → get paid
-// → run the studio → grow.
+// Navigation is organised around workflows, not Firestore collections.
+// Store Mode and Active Jobs are gone as destinations — both live inside
+// the Workspace, the single live view of the floor.
 const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
   {
-    group: 'OPERATIONS',
+    group: 'TODAY',
     items: [
-      { href: '/admin',          label: 'Dashboard',   icon: LayoutDashboard },
-      { href: '/store',          label: 'Store Mode',  icon: Store },
-      { href: '/admin/schedule', label: 'Schedule',    icon: CalendarDays },
-      { href: '/admin/bookings', label: 'Bookings',    icon: CalendarClock },
-      { href: '/admin/jobs',     label: 'Active Jobs', icon: Wrench },
+      { href: '/admin',           label: 'Overview',  icon: LayoutDashboard },
+      { href: '/admin/schedule',  label: 'Schedule',  icon: CalendarDays },
+      { href: '/admin/workspace', label: 'Workspace', icon: Wrench },
+    ],
+  },
+  {
+    group: 'WORK',
+    items: [
+      { href: '/admin/bookings', label: 'Bookings', icon: CalendarClock },
+      { href: '/admin/quotes',   label: 'Quotes',   icon: FileSpreadsheet },
     ],
   },
   {
@@ -38,29 +43,34 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: t
     ],
   },
   {
-    group: 'FINANCE',
+    group: 'BUSINESS',
     items: [
-      { href: '/admin/quotes',   label: 'Quotes',      icon: FileSpreadsheet },
-      { href: '/admin/invoices', label: 'Invoices',    icon: FileText },
-      { href: '/admin/expenses', label: 'Expenses',    icon: Wallet },
-      { href: '/admin/close',    label: 'Daily Close', icon: LockKeyhole },
-      { href: '/admin/reports',  label: 'Reports',     icon: BarChart3 },
+      { href: '/admin/invoices',  label: 'Invoices',    icon: FileText },
+      { href: '/admin/expenses',  label: 'Expenses',    icon: Wallet },
+      { href: '/admin/close',     label: 'Daily Close', icon: LockKeyhole },
+      { href: '/admin/reports',   label: 'Reports',     icon: BarChart3 },
+      { href: '/admin/inventory', label: 'Inventory',   icon: Package },
     ],
   },
   {
-    group: 'STUDIO',
+    group: 'TEAM',
     items: [
-      { href: '/admin/employees', label: 'Team',      icon: UserCog },
-      { href: '/admin/inventory', label: 'Inventory', icon: Package },
-      { href: '/admin/settings',  label: 'Services',  icon: Settings },
-      { href: '/admin/gallery',   label: 'Gallery',   icon: Images },
+      { href: '/admin/employees',  label: 'Employees',  icon: UserCog },
+      { href: '/store/attendance', label: 'Attendance', icon: Clock },
     ],
   },
   {
-    group: 'GROWTH',
+    group: 'MARKETING',
     items: [
-      { href: '/admin/promos', label: 'Promotions', icon: BadgePercent },
-      { href: '/admin/cars',   label: 'Marketplace', icon: Car },
+      { href: '/admin/promos',  label: 'Promotions',  icon: BadgePercent },
+      { href: '/admin/gallery', label: 'Gallery',     icon: Images },
+      { href: '/admin/cars',    label: 'Marketplace', icon: Car },
+    ],
+  },
+  {
+    group: 'SETTINGS',
+    items: [
+      { href: '/admin/settings', label: 'Services', icon: Settings },
     ],
   },
 ];
@@ -121,7 +131,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: i.icon,
       run: () => router.push(i.href),
     })),
-    { id: 'act:walkin', label: 'New walk-in', group: 'Quick actions', icon: Plus, hint: 'Store', run: () => router.push('/store/new') },
+    { id: 'act:walkin', label: 'New walk-in', group: 'Quick actions', icon: Plus, run: () => router.push('/store/new') },
+    { id: 'act:workspace', label: 'Open workspace', group: 'Quick actions', icon: Wrench, run: () => router.push('/admin/workspace') },
     { id: 'act:close', label: 'Start daily close', group: 'Quick actions', icon: LockKeyhole, run: () => router.push('/admin/close') },
     { id: 'act:expense', label: 'Add expense', group: 'Quick actions', icon: Wallet, run: () => router.push('/admin/expenses') },
     { id: 'act:signout', label: 'Sign out', group: 'Quick actions', icon: LogOut, run: handleLogout },
@@ -160,20 +171,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 const active = href === current.href;
                 return (
                   <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
-                    className="nav-item group relative flex items-center gap-3 pl-3.5 pr-3 py-2.5 rounded-xl transition-all duration-150"
+                    className="nav-item group relative flex items-center gap-2.5 pl-3 pr-3 py-2 rounded-lg transition-all duration-150"
                     style={{
                       background: active ? 'var(--accent-mist)' : 'transparent',
                       border: active ? '1px solid var(--accent-haze)' : '1px solid transparent',
-                      color: active ? 'var(--fg)' : 'var(--steel)',
-                      fontFamily: 'var(--font-mono)', fontSize: '11px',
-                      fontWeight: active ? 700 : 500, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      color: active ? 'var(--fg)' : 'var(--pewter)',
+                      fontFamily: 'var(--font-body)', fontSize: '13px',
+                      fontWeight: active ? 600 : 450, letterSpacing: '0.005em',
                     }}>
                     {active && (
                       <motion.span layoutId="nav-active" aria-hidden
                         className="absolute left-0 top-1/2 -translate-y-1/2 rounded-r-full"
                         style={{ width: 3, height: 18, background: 'var(--ember)' }} />
                     )}
-                    <Icon size={15} className="transition-transform duration-150 group-hover:scale-110" style={{ color: active ? 'var(--ember)' : 'var(--steel)' }} />{label}
+                    <Icon size={14} style={{ color: active ? 'var(--ember)' : 'var(--steel)' }} />{label}
                   </Link>
                 );
               })}
