@@ -280,7 +280,7 @@ export default function BookingWorkspace() {
               {canCheckIn && (
                 <ActionBtn onClick={checkIn} busy={busy === 'checkin'} icon={LogIn} label="Check in vehicle" primary={booking.status !== 'pending'} />
               )}
-              {booking.paymentStatus !== 'verified' && (
+              {booking.paymentStatus !== 'verified' && !job && (
                 <ActionBtn onClick={doVerifyPayment} busy={busy === 'pay'} icon={ShieldCheck} label="Verify payment" />
               )}
               {(booking.status === 'completed' || booking.invoiceId) && (

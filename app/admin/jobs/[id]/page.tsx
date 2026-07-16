@@ -10,7 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
-  ArrowLeft, Phone, MessageCircle, Car, User as UserIcon, IndianRupee, CheckCircle2, Clock,
+  ArrowLeft, Phone, MessageCircle, Car, User as UserIcon, Clock,
 } from 'lucide-react';
 import {
   getJob, updateJobStatus, saveJobNotes,
@@ -123,10 +123,7 @@ export default function JobWorkspace() {
               <Field icon={UserIcon} label="Customer" value={job.customerName} sub={job.customerPhone} />
               <Field icon={Car} label="Vehicle" value={job.vehicleName} sub={job.vehicleRegNo} />
               <Field icon={serviceIconField(category ?? '')} label="Services" value={services} sub={`${job.serviceItems.length} item${job.serviceItems.length === 1 ? '' : 's'}`} />
-              <Field icon={job.paymentStatus === 'collected' ? CheckCircle2 : Clock}
-                label="Payment" value={job.paymentStatus === 'collected' ? 'Collected' : 'Pending'}
-                sub={job.amountPaid ? `${formatCurrency(job.amountPaid)} of ${formatCurrency(job.totalAmount)}` : formatCurrency(job.totalAmount)}
-                tone={job.paymentStatus === 'collected' ? 'good' : 'warn'} />
+              <Field icon={job.bay ? Car : Clock} label="Bay" value={job.bay ? `Bay ${job.bay}` : 'Unassigned'} sub={`By ${job.createdByEmployeeName}`} />
             </div>
           </Section>
 
