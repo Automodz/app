@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CalendarDays, Users, CreditCard,
   Settings, Menu, X, LogOut, Zap, Shield,
-  Store, Wrench, UserCog, Package, BadgePercent, Car, FileText, Clock,
-  Images, BarChart3, Wallet, LockKeyhole, FileSpreadsheet, Search, Plus,
+  Store, Wrench, UserCog, Package, BadgePercent, Car, FileText, CalendarClock,
+  Images, BarChart3, Wallet, LockKeyhole, FileSpreadsheet, Search, Plus, UserPlus,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -15,43 +15,52 @@ import { useAppStore } from '@/lib/store';
 import Wordmark from '@/components/ui/Wordmark';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
+// Navigation is organised around how the studio runs a day — not around
+// Firestore collections. Lifecycle order: bring cars in → work them → get paid
+// → run the studio → grow.
 const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
   {
-    group: 'OPERATE',
+    group: 'OPERATIONS',
     items: [
-      { href: '/admin',          label: 'Dashboard',  icon: LayoutDashboard },
-      { href: '/store',          label: 'Store Mode', icon: Store },
-      { href: '/admin/bookings', label: 'Bookings',   icon: CalendarDays },
-      { href: '/admin/jobs',     label: 'Walk-Ins',   icon: Wrench },
-      { href: '/admin/schedule', label: 'Schedule',   icon: Clock },
+      { href: '/admin',          label: 'Dashboard',   icon: LayoutDashboard },
+      { href: '/store',          label: 'Store Mode',  icon: Store },
+      { href: '/admin/schedule', label: 'Schedule',    icon: CalendarDays },
+      { href: '/admin/bookings', label: 'Bookings',    icon: CalendarClock },
+      { href: '/admin/jobs',     label: 'Active Jobs', icon: Wrench },
     ],
   },
   {
-    group: 'PEOPLE',
+    group: 'CUSTOMERS',
     items: [
-      { href: '/admin/customers', label: 'Customers', icon: Users },
-      { href: '/admin/employees', label: 'Employees', icon: UserCog },
-    ],
-  },
-  {
-    group: 'MONEY',
-    items: [
-      { href: '/admin/quotes',        label: 'Quotes',      icon: FileSpreadsheet },
-      { href: '/admin/invoices',      label: 'Invoices',    icon: FileText },
-      { href: '/admin/expenses',      label: 'Expenses',    icon: Wallet },
-      { href: '/admin/close',         label: 'Daily Close', icon: LockKeyhole },
-      { href: '/admin/reports',       label: 'Reports',     icon: BarChart3 },
-      { href: '/admin/promos',        label: 'Promos',      icon: BadgePercent },
+      { href: '/admin/cars/leads',    label: 'Leads',       icon: UserPlus },
+      { href: '/admin/customers',     label: 'Customers',   icon: Users },
       { href: '/admin/subscriptions', label: 'Memberships', icon: CreditCard },
     ],
   },
   {
-    group: 'CATALOG',
+    group: 'FINANCE',
     items: [
-      { href: '/admin/settings',  label: 'Services',  icon: Settings },
+      { href: '/admin/quotes',   label: 'Quotes',      icon: FileSpreadsheet },
+      { href: '/admin/invoices', label: 'Invoices',    icon: FileText },
+      { href: '/admin/expenses', label: 'Expenses',    icon: Wallet },
+      { href: '/admin/close',    label: 'Daily Close', icon: LockKeyhole },
+      { href: '/admin/reports',  label: 'Reports',     icon: BarChart3 },
+    ],
+  },
+  {
+    group: 'STUDIO',
+    items: [
+      { href: '/admin/employees', label: 'Team',      icon: UserCog },
       { href: '/admin/inventory', label: 'Inventory', icon: Package },
-      { href: '/admin/cars',      label: 'Cars',      icon: Car },
+      { href: '/admin/settings',  label: 'Services',  icon: Settings },
       { href: '/admin/gallery',   label: 'Gallery',   icon: Images },
+    ],
+  },
+  {
+    group: 'GROWTH',
+    items: [
+      { href: '/admin/promos', label: 'Promotions', icon: BadgePercent },
+      { href: '/admin/cars',   label: 'Marketplace', icon: Car },
     ],
   },
 ];
@@ -148,7 +157,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </p>
             <div className="space-y-1">
               {items.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href || (href !== '/admin' && pathname.startsWith(href));
+                const active = href === current.href;
                 return (
                   <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
                     className="nav-item group relative flex items-center gap-3 pl-3.5 pr-3 py-2.5 rounded-xl transition-all duration-150"
