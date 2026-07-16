@@ -13,11 +13,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   PlusCircle, Wrench, ChevronRight, Clock, CircleAlert,
-  UserCheck, Package, Inbox, IndianRupee, Phone,
+  UserCheck, Package, IndianRupee, Phone, CalendarCheck,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
-  subscribeTodaysJobs, getBookingsForDates,
+  subscribeTodaysJobs, getBookingsForDates, getPendingApprovals,
   getPresentTodayCount, getLowStockItems, getCarLeads, getSellRequests,
   getDueTasks, completeTask, addTask,
 } from '@/lib/firebaseService';
@@ -60,11 +60,13 @@ export default function AdminWorkspace() {
 
   // ── Intelligence strip + arrivals (one-shot, each source tolerated) ──
   const [todayBookings, setTodayBookings] = useState<Booking[]>([]);
+  const [approvals, setApprovals] = useState<Booking[]>([]);
   const [staffPresent, setStaffPresent] = useState(0);
   const [lowStock, setLowStock] = useState(0);
   const [newLeads, setNewLeads] = useState(0);
   useEffect(() => {
     getBookingsForDates([today]).then(setTodayBookings).catch(() => {});
+    getPendingApprovals().then(setApprovals).catch(() => {});
     getPresentTodayCount().then(setStaffPresent).catch(() => {});
     getLowStockItems().then(items => setLowStock(items.length)).catch(() => {});
     Promise.all([getCarLeads().catch(() => []), getSellRequests().catch(() => [])])
@@ -99,8 +101,10 @@ export default function AdminWorkspace() {
   const collected =
     jobs.filter(j => j.status === 'completed').reduce((s, j) => s + j.totalAmount, 0) +
     todayBookings.filter(b => b.status === 'completed' && !b.jobId).reduce((s, b) => s + b.totalAmount, 0);
-  const unpaid = jobs.filter(j =>
-    ['ready_for_delivery', 'completed'].includes(j.status) && j.paymentStatus === 'pending').length;
+  // no hidden money: outstanding = every ready/delivered job with balance due
+  const unpaidJobs = jobs.filter(j =>
+    ['ready_for_delivery', 'completed'].includes(j.status) && j.paymentStatus === 'pending');
+  const outstanding = unpaidJobs.reduce((s, j) => s + Math.max(0, j.totalAmount - (j.amountPaid ?? 0)), 0);
   const floor = jobs.filter(j => !['completed', 'cancelled'].includes(j.status)).length;
   const arriving = todayBookings
     .filter(b => ['pending', 'confirmed'].includes(b.status) && !b.jobId)
@@ -112,12 +116,12 @@ export default function AdminWorkspace() {
     sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   const INTEL: { label: string; value: string; icon: typeof Wrench; href?: string; alert?: boolean; onClick?: () => void }[] = [
+    { label: 'approvals',     value: String(approvals.length),  icon: CalendarCheck, alert: approvals.length > 0, onClick: () => scrollTo('approvals') },
     { label: 'collected',     value: formatCurrency(collected), icon: IndianRupee },
+    { label: 'outstanding',   value: formatCurrency(outstanding), icon: CircleAlert, alert: outstanding > 0, onClick: () => scrollTo(unpaidJobs[0]?.status ?? 'completed') },
     { label: 'on the floor',  value: String(floor),             icon: Wrench },
-    { label: 'unpaid',        value: String(unpaid),            icon: CircleAlert, alert: unpaid > 0 },
     { label: 'staff in',      value: String(staffPresent),      icon: UserCheck,   href: '/store/attendance' },
     { label: 'low stock',     value: String(lowStock),          icon: Package,     href: '/admin/inventory', alert: lowStock > 0 },
-    { label: 'new leads',     value: String(newLeads),          icon: Inbox,       href: '/admin/cars/leads', alert: newLeads > 0 },
   ];
 
   return (
@@ -151,7 +155,9 @@ export default function AdminWorkspace() {
           );
           return s.href
             ? <Link key={s.label} href={s.href}>{inner}</Link>
-            : <div key={s.label} className="cursor-default">{inner}</div>;
+            : s.onClick
+              ? <button key={s.label} onClick={s.onClick} className="text-left cursor-pointer">{inner}</button>
+              : <div key={s.label} className="cursor-default">{inner}</div>;
         })}
       </div>
 
@@ -169,6 +175,38 @@ export default function AdminWorkspace() {
           </button>
         ))}
       </div>
+
+      {/* Pending booking approvals — first decision of the day */}
+      {approvals.length > 0 && (
+        <div className="mb-6" ref={el => { sectionRefs.current['approvals'] = el; }}>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="rounded-full pulse-dot" style={{ width: 6, height: 6, background: 'var(--warning)' }} />
+            <h2 className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--warning)' }}>
+              Needs approval
+            </h2>
+            <span className="font-mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{approvals.length}</span>
+          </div>
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid color-mix(in srgb, var(--warning) 25%, transparent)', background: 'var(--fog)' }}>
+            {approvals.slice(0, 8).map((b, i) => (
+              <button key={b.id} onClick={() => router.push(`/admin/bookings/${b.id}`)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[.03] cursor-pointer"
+                style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+                <ServiceIcon category={b.serviceCategory} size={15} style={{ color: 'var(--chrome)' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-body text-sm font-600 truncate" style={{ color: 'var(--chrome)' }}>
+                    {b.userName} <span style={{ color: 'var(--steel)', fontWeight: 400 }}>· {b.serviceName}</span>
+                  </p>
+                  <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
+                    {b.vehicleName} · {b.scheduledDate} {formatTime(b.scheduledTime)}
+                  </p>
+                </div>
+                <span className="font-mono text-sm font-700 shrink-0" style={{ color: 'var(--chrome)' }}>{formatCurrency(b.totalAmount)}</span>
+                <ChevronRight size={15} className="shrink-0" style={{ color: 'var(--steel)' }} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Follow-ups — the action queue */}
       <div className="rounded-2xl px-4 py-3 mb-6" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>

@@ -8,8 +8,16 @@ import { useAppStore } from '@/lib/store';
 import {
   markNotificationRead, markAllNotificationsRead,
   enablePush, disablePush, pushEnabled, pushSupported,
+  updateUserProfile,
 } from '@/lib/firebaseService';
-import type { Notification } from '@/lib/types';
+import type { Notification, NotificationPrefs } from '@/lib/types';
+
+const PREF_ROWS: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
+  { key: 'whatsapp',            label: 'WhatsApp updates',     sub: 'Booking confirmations and status on WhatsApp' },
+  { key: 'serviceReminders',    label: 'Service reminders',    sub: 'Maintenance, protection expiry and service due' },
+  { key: 'membershipReminders', label: 'Membership reminders', sub: 'Renewals and remaining washes' },
+  { key: 'promotions',          label: 'Offers & promotions',  sub: 'Deals and seasonal offers' },
+];
 
 const typeIcon = (type: string) => {
   if (type === 'booking_update') return Calendar;
@@ -25,7 +33,7 @@ const typeColor = (type: string) => {
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const { notifications, setNotifications, setUnreadCount, user } = useAppStore();
+  const { notifications, setNotifications, setUnreadCount, user, setUser } = useAppStore();
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [showPushCard, setShowPushCard] = useState(false);
@@ -49,6 +57,18 @@ export default function NotificationsPage() {
       else toast.error('Permission denied - enable notifications in browser settings');
     }
     setPushBusy(false);
+  };
+
+  const prefs: NotificationPrefs = {
+    promotions: true, serviceReminders: true, membershipReminders: true, whatsapp: true,
+    ...(user?.notificationPrefs ?? {}),
+  };
+  const togglePref = async (key: keyof NotificationPrefs) => {
+    if (!user) return;
+    const next = { ...prefs, [key]: !prefs[key] };
+    setUser({ ...user, notificationPrefs: next });
+    try { await updateUserProfile(user.uid, { notificationPrefs: next }); }
+    catch { toast.error('Could not save preference'); setUser(user); }
   };
 
   const markRead = async (n: Notification) => {
@@ -116,6 +136,28 @@ export default function NotificationsPage() {
             </button>
           </div>
         )}
+
+        {/* Per-category preferences — respected by reminder + promo senders */}
+        <div className="card mb-5">
+          <p className="font-mono mb-3" style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+            What you hear about
+          </p>
+          <div className="space-y-3">
+            {PREF_ROWS.map(row => (
+              <div key={row.key} className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{row.label}</p>
+                  <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>{row.sub}</p>
+                </div>
+                <button onClick={() => togglePref(row.key)} aria-label={`Toggle ${row.label}`}
+                  className={`toggle-track ${prefs[row.key] ? 'on' : 'off'}`}>
+                  <div className="toggle-knob" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {notifications.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float"

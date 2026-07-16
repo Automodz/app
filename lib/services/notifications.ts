@@ -29,7 +29,7 @@ export const markAllNotificationsRead = async (uid: string) => {
 
 
 /** Fire-and-forget ops event → owner gets notified (server-verified ownership). */
-export const fireOpsEvent = async (event: 'booking_created' | 'membership_pending' | 'quote_requested', id: string) => {
+export const fireOpsEvent = async (event: 'booking_created' | 'booking_cancelled' | 'membership_pending' | 'quote_requested', id: string) => {
   try {
     const token = await auth.currentUser?.getIdToken();
     if (!token) return;

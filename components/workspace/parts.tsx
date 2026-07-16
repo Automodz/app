@@ -101,13 +101,23 @@ export function WorkspaceSkeleton() {
 
 export function OperationalStage({ job, busy, onAdvance }: { job: Job; busy: string | null; onAdvance: (s: JobStatus, m: BookingStatus) => void }) {
   const idx = JOB_STAGES.findIndex(s => s.status === job.status);
+  // 'collected' covers booking-verified payments that never hit the job ledger
+  const balance = job.paymentStatus === 'collected' ? 0 : Math.max(0, job.totalAmount - (job.amountPaid ?? 0));
+  const [deliverAsk, setDeliverAsk] = useState(false);
+
+  // Delivery is guarded: never one-tap-finish a job with money outstanding.
+  const request = (s: JobStatus, m: BookingStatus) => {
+    if (s === 'completed' && balance > 0) { setDeliverAsk(true); return; }
+    onAdvance(s, m);
+  };
+
   return (
     <Section title="Job stage" delay={0.1}>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {JOB_STAGES.map((s, i) => {
           const done = i <= idx; const current = i === idx; const next = i === idx + 1;
           return (
-            <button key={s.status} disabled={!next || !!busy} onClick={() => onAdvance(s.status, s.booking)}
+            <button key={s.status} disabled={!next || !!busy} onClick={() => request(s.status, s.booking)}
               className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl transition-all disabled:cursor-default"
               style={{ background: current ? 'var(--accent-mist)' : next ? 'var(--fog)' : 'transparent', border: `1px solid ${done ? 'var(--border-strong)' : next ? 'var(--border-2)' : 'var(--border)'}`, opacity: !next && !done ? 0.5 : 1 }}>
               {busy === 'stage:' + s.status ? <Loader2 size={15} className="animate-spin" style={{ color: 'var(--fg)' }} />
@@ -117,7 +127,25 @@ export function OperationalStage({ job, busy, onAdvance }: { job: Job; busy: str
           );
         })}
       </div>
-      {idx < JOB_STAGES.length - 1 && (
+      {deliverAsk && (
+        <div className="mt-3 rounded-xl p-3.5" style={{ background: 'color-mix(in srgb, var(--warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 25%, transparent)' }}>
+          <p className="font-body inline-flex items-center gap-2" style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
+            <IndianRupee size={14} style={{ color: 'var(--warning)' }} /> {formatCurrency(balance)} still outstanding — has payment been received?
+          </p>
+          <p className="font-body mt-1" style={{ fontSize: 12, color: 'var(--muted)' }}>Record it in Payments below, or deliver with the balance pending — it will stay flagged until collected.</p>
+          <div className="flex gap-2 mt-3">
+            <button onClick={() => setDeliverAsk(false)}
+              className="flex-1 py-2.5 rounded-lg font-display" style={{ fontSize: 12, fontWeight: 700, background: 'var(--accent-grad)', color: 'var(--on-accent)' }}>
+              Collect payment first
+            </button>
+            <button onClick={() => { setDeliverAsk(false); onAdvance('completed', 'completed'); }}
+              className="flex-1 py-2.5 rounded-lg font-body" style={{ fontSize: 12, color: 'var(--warning)', border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)' }}>
+              Deliver — payment pending
+            </button>
+          </div>
+        </div>
+      )}
+      {idx < JOB_STAGES.length - 1 && !deliverAsk && (
         <p className="font-body mt-3" style={{ fontSize: 12, color: 'var(--muted)' }}>Tap the next stage to advance. The customer’s booking stays in sync automatically.</p>
       )}
     </Section>
@@ -250,7 +278,7 @@ export function PhotosSection({ job, record, onChange }: { job: Job; record: Rec
 
 export function PaymentsSection({ job, actor, record, onChange }: { job: Job; actor: { id: string; name: string }; record: RecordFn; onChange: () => void }) {
   const paid = job.amountPaid ?? 0;
-  const balance = Math.max(0, job.totalAmount - paid);
+  const balance = job.paymentStatus === 'collected' ? 0 : Math.max(0, job.totalAmount - paid);
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<'cash' | 'upi'>('cash');

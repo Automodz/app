@@ -1,11 +1,20 @@
 import { Timestamp } from 'firebase/firestore';
 
+/** Customer-controlled notification channels/categories (Profile → Notifications). */
+export interface NotificationPrefs {
+  promotions: boolean;
+  serviceReminders: boolean;
+  membershipReminders: boolean;
+  whatsapp: boolean;
+}
+
 export interface User {
   uid: string;
   name: string;
   email: string;
   phone?: string;
   photoURL?: string;
+  notificationPrefs?: NotificationPrefs;
   role: 'customer' | 'employee' | 'admin';
   /** Set when role === 'employee' - links to the employees collection */
   employeeId?: string;
@@ -86,6 +95,10 @@ export interface Booking {
   usedMembershipWash?: boolean;
   membershipId?: string;
   cancelledAt?: Timestamp;
+  /** Approval workflow — set when an admin rejects the pending booking. */
+  rejectionReason?: string;
+  /** Customer never arrived for a confirmed slot. */
+  noShow?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

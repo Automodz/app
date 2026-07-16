@@ -27,7 +27,16 @@ export async function runRetentionForUser(uid: string): Promise<{ created: strin
   const today = isoDateOnly(now);
   let sentToday = 0;
 
+  // Respect the customer's notification preferences (Profile → Notifications).
+  const userSnap = await adminDb!.collection('users').doc(uid).get();
+  const prefs = (userSnap.data()?.notificationPrefs ?? {}) as Record<string, boolean>;
+  const typeAllowed = (type: string) =>
+    type === 'membership' ? prefs.membershipReminders !== false :
+    type === 'reminder'   ? prefs.serviceReminders !== false :
+    type === 'promotion'  ? prefs.promotions !== false : true;
+
   const createNotif = async (kind: string, title: string, body: string, type: string) => {
+    if (!typeAllowed(type)) { result.skipped.push(kind); return; }
     if (sentToday >= DAILY_CAP) { result.skipped.push(kind); return; }
     const id = `ret_${uid}_${kind}_${today}`;
     const ref = adminDb!.collection('notifications').doc(id);

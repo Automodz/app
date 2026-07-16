@@ -49,6 +49,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (event === 'booking_cancelled') {
+    const snap = await adminDb!.collection('bookings').doc(id).get();
+    const b = snap.data() as {
+      userId?: string; userName?: string; serviceName?: string;
+      vehicleName?: string; scheduledDate?: string; scheduledTime?: string;
+    } | undefined;
+    if (!b || b.userId !== uid) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    await notifyAdmins('booking_cancelled',
+      `Cancelled by customer · ${b.userName}`,
+      `${b.serviceName} - ${b.vehicleName} · ${b.scheduledDate} ${b.scheduledTime}. Slot is free again.`,
+      { url: `/admin/bookings/${id}`, dedupeKey: `cancel-${id}` });
+    return NextResponse.json({ ok: true });
+  }
+
   if (event === 'quote_requested') {
     const snap = await adminDb!.collection('quotes').doc(id).get();
     const q = snap.data() as { customerId?: string; customerName?: string; serviceCategory?: string; vehicleName?: string } | undefined;

@@ -18,12 +18,13 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Phone, MessageCircle, Loader2, CheckCircle2, Clock, Car, User as UserIcon,
-  IndianRupee, FileText, CalendarClock, LogIn, ShieldCheck, Zap, Star,
+  IndianRupee, FileText, CalendarClock, LogIn, ShieldCheck, Zap, Star, UserX,
 } from 'lucide-react';
 import {
   getBooking, updateBookingStatusWithNotification, verifyPayment,
   createInvoiceForBooking, getInvoice, buildInvoiceWhatsAppLink, invoicePublicUrl, buildReviewAskLink,
   saveBookingAdminNotes, rescheduleBooking, createJobFromBooking, getJob, updateJobStatus,
+  rejectBooking, markNoShow,
   logActivity, listBookingActivity, type ActivityEvent, type ActivityType,
 } from '@/lib/firebaseService';
 import { formatCurrency, formatDate, formatTime, getStatusLabel } from '@/lib/utils';
@@ -56,6 +57,8 @@ export default function BookingWorkspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   const load = useCallback(async () => {
     setError(false); setLoading(true);
@@ -149,6 +152,28 @@ export default function BookingWorkspace() {
     } catch { toast.error('Could not cancel'); } finally { setBusy(null); }
   };
 
+  const reject = async (reason: string) => {
+    if (!booking) return;
+    setBusy('reject');
+    try {
+      await rejectBooking(booking, reason);
+      setBooking({ ...booking, status: 'cancelled', rejectionReason: reason });
+      record('cancelled', reason ? `Booking rejected · ${reason}` : 'Booking rejected');
+      toast.success('Booking rejected — customer notified');
+    } catch { toast.error('Could not reject'); } finally { setBusy(null); setRejectOpen(false); }
+  };
+
+  const noShow = async () => {
+    if (!booking) return;
+    setBusy('noshow');
+    try {
+      await markNoShow(booking);
+      setBooking({ ...booking, status: 'cancelled', noShow: true });
+      record('cancelled', 'Marked as no-show');
+      toast.success('Marked as no-show');
+    } catch { toast.error('Could not update'); } finally { setBusy(null); }
+  };
+
   // ── operational (job) actions ──
   const advanceJob = async (status: JobStatus, mirror: BookingStatus) => {
     if (!job || !booking) return;
@@ -170,6 +195,8 @@ export default function BookingWorkspace() {
 
   const stageIdx = BOOKING_STAGES.indexOf(booking.status);
   const canCheckIn = !booking.jobId && !['cancelled', 'completed'].includes(booking.status);
+  // slot has passed → confirmed-but-absent bookings can be marked no-show
+  const isPastSlot = new Date(`${booking.scheduledDate}T${booking.scheduledTime || '23:59'}`) < new Date();
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -277,7 +304,32 @@ export default function BookingWorkspace() {
           <Section title="Actions" delay={0.08}>
             <div className="space-y-2">
               {booking.status === 'pending' && (
-                <ActionBtn onClick={confirmBooking} busy={busy === 'confirm'} icon={CheckCircle2} label="Confirm booking" primary />
+                <>
+                  <ActionBtn onClick={confirmBooking} busy={busy === 'confirm'} icon={CheckCircle2} label="Approve booking" primary />
+                  {!rejectOpen ? (
+                    <button onClick={() => setRejectOpen(true)}
+                      className="w-full px-3.5 py-2.5 rounded-xl font-body transition-colors" style={{ fontSize: 12.5, color: 'var(--danger)', border: '1px solid color-mix(in srgb, var(--danger) 22%, transparent)' }}>
+                      Reject booking
+                    </button>
+                  ) : (
+                    <div className="rounded-xl p-3 space-y-2" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)' }}>
+                      <textarea value={rejectReason} maxLength={200} rows={2} onChange={e => setRejectReason(e.target.value)}
+                        placeholder="Reason the customer will see (e.g. bay full at this time)…"
+                        className="w-full rounded-lg px-2.5 py-2 font-body resize-none outline-none"
+                        style={{ fontSize: 12.5, background: 'var(--surface)', border: '1px solid var(--border-2)', color: 'var(--fg)' }} />
+                      <div className="flex gap-2">
+                        <button onClick={() => setRejectOpen(false)} className="flex-1 py-2 rounded-lg font-body" style={{ fontSize: 12, color: 'var(--muted)' }}>Keep</button>
+                        <button onClick={() => reject(rejectReason.trim())} disabled={busy === 'reject'}
+                          className="flex-1 py-2 rounded-lg font-display" style={{ fontSize: 12, fontWeight: 700, background: 'var(--danger)', color: '#fff' }}>
+                          {busy === 'reject' ? 'Rejecting…' : 'Reject + notify'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {booking.status === 'confirmed' && !job && isPastSlot && (
+                <ActionBtn onClick={noShow} busy={busy === 'noshow'} icon={UserX} label="Mark as no-show" />
               )}
               {canCheckIn && (
                 <ActionBtn onClick={checkIn} busy={busy === 'checkin'} icon={LogIn} label="Check in vehicle" primary={booking.status !== 'pending'} />

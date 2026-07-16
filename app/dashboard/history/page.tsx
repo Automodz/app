@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppStore } from '@/lib/store';
-import { cancelBooking, rescheduleBooking, getBookedSlotsForDate } from '@/lib/firebaseService';
+import { cancelBooking, rescheduleBooking, getBookedSlotsForDate, fireOpsEvent, logActivity } from '@/lib/firebaseService';
 import {
   formatCurrency, getStatusColor, getStatusLabel,
   formatDate, formatTime,
@@ -77,6 +77,13 @@ export default function HistoryPage() {
     try {
       await cancelBooking(selected.id);
       cancelBookingInStore(selected.id);
+      // studio gets notified + the job timeline records it — fire-and-forget
+      fireOpsEvent('booking_cancelled', selected.id);
+      logActivity({
+        type: 'cancelled', title: 'Cancelled by customer',
+        bookingId: selected.id, customerId: selected.userId,
+        actor: { id: selected.userId, name: user?.name || 'Customer' },
+      });
       toast.success('Booking cancelled');
       setSelected(null);
       setShowConfirm(false);

@@ -64,6 +64,14 @@ export const getBooking = async (id: string): Promise<Booking | null> => {
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Booking) : null;
 };
 
+/** Every booking awaiting admin approval (any date) — the approval queue. */
+export const getPendingApprovals = async (): Promise<Booking[]> => {
+  const snap = await getDocs(query(collection(db, 'bookings'), where('status', '==', 'pending')));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Booking))
+    .sort((a, b) => (a.scheduledDate + a.scheduledTime).localeCompare(b.scheduledDate + b.scheduledTime));
+};
+
 export const getAllBookings = async (): Promise<Booking[]> => {
   const snap = await getDocs(query(collection(db, 'bookings'), orderBy('createdAt', 'desc')));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking));
@@ -88,6 +96,47 @@ export const cancelBooking = async (bookingId: string) =>
     cancelledAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+/**
+ * Admin rejects a pending booking (approval workflow). Slot frees automatically
+ * because cancelled bookings are excluded from occupancy. The customer gets the
+ * reason via in-app + push.
+ */
+export const rejectBooking = async (
+  booking: Pick<Booking, 'id' | 'userId' | 'serviceName' | 'vehicleName'>,
+  reason: string,
+) => {
+  await updateDoc(doc(db, 'bookings', booking.id), {
+    status: 'cancelled',
+    cancelledAt: serverTimestamp(),
+    rejectionReason: reason,
+    updatedAt: serverTimestamp(),
+  });
+  const body = `We couldn't accept your ${booking.serviceName} booking for ${booking.vehicleName}.${reason ? ` Reason: ${reason}` : ''} Please pick another slot — we'd love to have you in.`;
+  await writeNotification(booking.userId, 'Booking not accepted', body, 'booking_update', booking.id);
+  try {
+    const { sendPushToUser } = await import('./push');
+    sendPushToUser({ userId: booking.userId, title: 'Booking not accepted', body, url: '/dashboard/history' });
+  } catch { /* best-effort */ }
+};
+
+/** Admin marks a confirmed booking as a customer no-show. */
+export const markNoShow = async (
+  booking: Pick<Booking, 'id' | 'userId' | 'serviceName' | 'vehicleName' | 'scheduledDate' | 'scheduledTime'>,
+) => {
+  await updateDoc(doc(db, 'bookings', booking.id), {
+    status: 'cancelled',
+    cancelledAt: serverTimestamp(),
+    noShow: true,
+    updatedAt: serverTimestamp(),
+  });
+  const body = `You missed your ${booking.serviceName} appointment for ${booking.vehicleName} on ${booking.scheduledDate} at ${booking.scheduledTime}. Rebook anytime from the app.`;
+  await writeNotification(booking.userId, 'Missed appointment', body, 'booking_update', booking.id);
+  try {
+    const { sendPushToUser } = await import('./push');
+    sendPushToUser({ userId: booking.userId, title: 'Missed appointment', body, url: '/dashboard/booking' });
+  } catch { /* best-effort */ }
+};
 
 export const updateBookingStatus = async (id: string, status: Booking['status'], notes?: string) => {
   const data: Record<string, unknown> = { status, updatedAt: serverTimestamp() };
