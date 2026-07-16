@@ -300,6 +300,10 @@ export default function BookingWorkspace() {
                 className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl transition-colors" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
                 <Phone size={15} /><span className="font-body" style={{ fontSize: 13 }}>Call customer</span>
               </a>
+              <button onClick={() => router.push(`/admin/customers/${booking.userId}`)}
+                className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
+                <UserIcon size={15} /><span className="font-body" style={{ fontSize: 13 }}>Customer history</span>
+              </button>
               {!['completed', 'cancelled'].includes(booking.status) && (
                 <RescheduleControl booking={booking} onDone={(d, t) => { setBooking({ ...booking, scheduledDate: d, scheduledTime: t }); record('rescheduled', `Rescheduled to ${formatDate(d)} ${formatTime(t)}`); }} />
               )}

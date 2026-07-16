@@ -1,11 +1,17 @@
 'use client';
+/**
+ * Customer 360 — not a CRUD page. One continuous, chronological timeline of
+ * everything this customer has ever done (bookings, walk-ins, invoices,
+ * memberships), with the operational rail (garage, membership, promos, notes)
+ * always visible beside it. No tabs, nothing hidden.
+ */
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Phone, MessageCircle, Car, Wrench, FileText,
-  CreditCard, BadgePercent, StickyNote, Pencil, Plus, X, ChevronRight,
+  CreditCard, Pencil, Plus, X, ChevronRight, CalendarClock,
 } from 'lucide-react';
 import { doc, getDoc, getDocs, updateDoc, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -17,7 +23,17 @@ import { MEMBERSHIP_PLANS } from '@/lib/types';
 import { formatCurrency, formatDate, getStatusLabel, getStatusColor } from '@/lib/utils';
 import type { User, Vehicle, Booking, Subscription, Job, Invoice, Promo } from '@/lib/types';
 
-type Tab = 'bookings' | 'jobs' | 'vehicles' | 'memberships' | 'invoices' | 'promos' | 'notes';
+type TimelineItem = {
+  id: string;
+  at: number;
+  icon: typeof Car;
+  title: string;
+  sub: string;
+  amount?: number;
+  badge?: { label: string; className?: string; color?: string };
+  onOpen?: () => void;
+  trailing?: React.ReactNode;
+};
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +45,6 @@ export default function CustomerDetailPage() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
-  const [tab, setTab] = useState<Tab>('bookings');
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
@@ -56,8 +71,7 @@ export default function CustomerDetailPage() {
       setCustomer(u); setNotes(u.notes ?? '');
     }
     setVehicles(vehiclesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Vehicle)));
-    setBookings(bookingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Booking))
-      .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0)));
+    setBookings(bookingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)));
     setSubs(subsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Subscription))
       .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0)));
     setJobs(customerJobs);
@@ -69,7 +83,7 @@ export default function CustomerDetailPage() {
 
   const ltv =
     bookings.filter(b => b.status === 'completed').reduce((s, b) => s + b.totalAmount, 0) +
-    jobs.filter(j => j.status === 'completed').reduce((s, j) => s + j.totalAmount, 0) +
+    jobs.filter(j => j.status === 'completed' && !j.bookingId).reduce((s, j) => s + j.totalAmount, 0) +
     subs.reduce((s, x) => s + (x.status !== 'pending' ? (x.plan === 'Silver' ? 1499 : x.plan === 'Gold' ? 2999 : 5999) : 0), 0);
 
   const saveNotes = async () => {
@@ -134,243 +148,243 @@ export default function CustomerDetailPage() {
   if (loading) return <div className="p-8 flex justify-center"><div className="w-10 h-10 loader-ring" /></div>;
   if (!customer) return <div className="p-8 text-center font-body" style={{ color: 'var(--steel)' }}>Customer not found.</div>;
 
-  const TABS: { id: Tab; label: string; icon: typeof Car; count: number }[] = [
-    { id: 'bookings', label: 'Bookings', icon: Wrench, count: bookings.length },
-    { id: 'jobs', label: 'Walk-ins', icon: Car, count: jobs.length },
-    { id: 'vehicles', label: 'Garage', icon: Car, count: vehicles.length },
-    { id: 'memberships', label: 'Plans', icon: CreditCard, count: subs.length },
-    { id: 'invoices', label: 'Invoices', icon: FileText, count: invoices.length },
-    { id: 'promos', label: 'Promos', icon: BadgePercent, count: promos.filter(p => p.target.kind === 'customers' && p.target.userIds.includes(id)).length },
-    { id: 'notes', label: 'Notes', icon: StickyNote, count: 0 },
-  ];
+  // ── One chronological stream. Booking-linked jobs are folded into their
+  //    booking entry (one car, one row) — never duplicated. ──
+  const timeline: TimelineItem[] = [
+    ...bookings.map((b): TimelineItem => ({
+      id: 'b' + b.id,
+      at: b.createdAt?.toMillis?.() ?? 0,
+      icon: CalendarClock,
+      title: b.serviceName,
+      sub: `${b.vehicleName} · ${formatDate(b.scheduledDate)}${b.discount ? ` · ${b.discount.label}` : ''}${b.jobId ? ' · in studio' : ''}`,
+      amount: b.totalAmount,
+      badge: { label: getStatusLabel(b.status), className: getStatusColor(b.status) },
+      onOpen: () => router.push(`/admin/bookings/${b.id}`),
+    })),
+    ...jobs.filter(j => !j.bookingId).map((j): TimelineItem => ({
+      id: 'j' + j.id,
+      at: j.createdAt?.toMillis?.() ?? 0,
+      icon: Wrench,
+      title: j.serviceItems.map(s => s.serviceName).join(', '),
+      sub: `${j.vehicleName} · ${formatDate(j.date)} · walk-in`,
+      amount: j.totalAmount,
+      badge: { label: getStatusLabel(j.status), color: j.status === 'completed' ? 'var(--success)' : 'var(--warning)' },
+      onOpen: () => router.push(`/admin/jobs/${j.id}`),
+    })),
+    ...invoices.map((inv): TimelineItem => ({
+      id: 'i' + inv.id,
+      at: inv.createdAt?.toMillis?.() ?? 0,
+      icon: FileText,
+      title: `Invoice ${inv.invoiceNumber}`,
+      sub: `${inv.vehicleName} · ${inv.paymentStatus === 'paid' ? 'paid' : 'pending'}`,
+      amount: inv.total,
+      trailing: (
+        <span className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+          <a href={invoicePublicUrl(inv)} target="_blank" rel="noreferrer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[.06]"
+            style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}><FileText size={11} /></a>
+          <a href={buildInvoiceWhatsAppLink(inv)} target="_blank" rel="noreferrer"
+            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[.06]"
+            style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}><MessageCircle size={11} /></a>
+        </span>
+      ),
+    })),
+    ...subs.map((s): TimelineItem => ({
+      id: 's' + s.id,
+      at: s.createdAt?.toMillis?.() ?? 0,
+      icon: CreditCard,
+      title: `${s.plan} membership`,
+      sub: `${s.startDate} → ${s.endDate} · ${s.washesUsed}/${s.washesTotal} washes used`,
+      badge: { label: s.status, color: s.status === 'active' ? 'var(--success)' : 'var(--steel)' },
+    })),
+  ].sort((a, b) => b.at - a.at);
+
+  const activeSub = subs.find(s => s.status === 'active');
+  const assignablePromos = promos.filter(p => p.active);
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl">
+    <div className="p-4 md:p-6 max-w-5xl">
       <Link href="/admin/customers" className="flex items-center gap-2 data-label mb-4" style={{ color: 'var(--steel)' }}>
         <ArrowLeft size={13} /> Customers
       </Link>
 
       {/* Header */}
-      <div className="card mb-5">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: 'var(--smoke)' }}>
-            <span className="font-display font-800 text-xl" style={{ color: 'var(--ember)' }}>
-              {customer.name?.charAt(0) || 'C'}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display font-700 text-lg" style={{ color: 'var(--chrome)' }}>{customer.name}</h1>
-            <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>{customer.email}{customer.phone ? ` · ${customer.phone}` : ''}</p>
-            <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
-              Joined {customer.createdAt?.toDate?.().toLocaleDateString('en-IN') ?? '-'}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="data-label" style={{ color: 'var(--steel)' }}>Lifetime value</p>
-            <p className="font-display font-800 text-xl" style={{ color: 'var(--ember)' }}>{formatCurrency(ltv)}</p>
-          </div>
-          <div className="flex gap-2">
-            {customer.phone && (
-              <>
-                <a href={`tel:+91${customer.phone}`} className="w-10 h-10 flex items-center justify-center rounded-xl"
-                  style={{ background: 'var(--dark)', color: 'var(--steel)' }}><Phone size={15} /></a>
-                <a href={`https://wa.me/91${customer.phone}`} target="_blank" rel="noreferrer"
-                  className="w-10 h-10 flex items-center justify-center rounded-xl"
-                  style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366' }}><MessageCircle size={15} /></a>
-              </>
-            )}
-            <button onClick={openEdit} aria-label="Edit customer"
-              className="w-10 h-10 flex items-center justify-center rounded-xl"
-              style={{ background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)', color: 'var(--ember)' }}>
-              <Pencil size={14} />
-            </button>
-          </div>
+      <div className="flex items-center gap-4 flex-wrap mb-6">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'var(--smoke)' }}>
+          <span className="font-display font-800 text-lg" style={{ color: 'var(--chrome)' }}>
+            {customer.name?.charAt(0) || 'C'}
+          </span>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className="px-3.5 py-2 rounded-xl data-label whitespace-nowrap"
-            style={{
-              background: tab === t.id ? 'var(--accent-mist)' : 'var(--dark)',
-              border: tab === t.id ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
-              color: tab === t.id ? 'var(--ember)' : 'var(--steel)',
-            }}>
-            {t.label}{t.count > 0 && ` (${t.count})`}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-display font-800 text-xl" style={{ color: 'var(--chrome)' }}>{customer.name}</h1>
+          <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
+            {customer.email}{customer.phone ? ` · ${customer.phone}` : ''} · joined {customer.createdAt?.toDate?.().toLocaleDateString('en-IN') ?? '—'}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--faint)' }}>Lifetime value</p>
+          <p className="font-display font-800 text-lg" style={{ color: 'var(--chrome)' }}>{formatCurrency(ltv)}</p>
+        </div>
+        <div className="flex gap-1.5">
+          {customer.phone && (
+            <>
+              <a href={`tel:+91${customer.phone}`} className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors hover:bg-white/[.06]"
+                style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}><Phone size={14} /></a>
+              <a href={`https://wa.me/91${customer.phone}`} target="_blank" rel="noreferrer"
+                className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors hover:bg-white/[.06]"
+                style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}><MessageCircle size={14} /></a>
+            </>
+          )}
+          <button onClick={openEdit} aria-label="Edit customer"
+            className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors hover:bg-white/[.06]"
+            style={{ border: '1px solid var(--border)', color: 'var(--pewter)' }}>
+            <Pencil size={13} />
           </button>
-        ))}
+        </div>
       </div>
 
-      {tab === 'bookings' && (
-        <div className="space-y-3">
-          {bookings.length === 0 && <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>No bookings yet.</p>}
-          {bookings.map(b => (
-            <button key={b.id} onClick={() => router.push(`/admin/bookings/${b.id}`)}
-              className="group card-dark w-full text-left flex items-center gap-4 transition-all hover:border-white/10">
-              <div className="flex-1 min-w-0">
-                <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{b.serviceName}</p>
-                <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
-                  {b.vehicleName} · {formatDate(b.scheduledDate)}
-                  {b.discount ? ` · ${b.discount.label}` : ''}
-                </p>
-              </div>
-              <span className="font-mono text-sm font-700" style={{ color: 'var(--chrome)' }}>{formatCurrency(b.totalAmount)}</span>
-              <span className={`status-badge text-xs ${getStatusColor(b.status)}`}>{getStatusLabel(b.status)}</span>
-              <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {tab === 'jobs' && (
-        <div className="space-y-3">
-          {jobs.length === 0 && <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>No walk-in jobs.</p>}
-          {jobs.map(j => (
-            <button key={j.id} onClick={() => router.push(j.bookingId ? `/admin/bookings/${j.bookingId}` : `/admin/jobs/${j.id}`)}
-              className="group card-dark w-full text-left flex items-center gap-4 transition-all hover:border-white/10">
-              <div className="flex-1 min-w-0">
-                <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>
-                  {j.serviceItems.map(s => s.serviceName).join(', ')}
-                </p>
-                <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>{j.vehicleName} · {formatDate(j.date)}</p>
-              </div>
-              <span className="font-mono text-sm font-700" style={{ color: 'var(--chrome)' }}>{formatCurrency(j.totalAmount)}</span>
-              <span className="data-label" style={{ color: j.status === 'completed' ? 'var(--success)' : 'var(--ember)' }}>{j.status}</span>
-              <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {tab === 'vehicles' && (
-        <div className="space-y-3">
-          {vehicles.length === 0 && <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>No vehicles in garage.</p>}
-          {vehicles.map(v => (
-            <div key={v.id} className="card-dark flex items-center gap-4">
-              <Car size={18} style={{ color: 'var(--ember)' }} />
-              <div className="flex-1">
-                <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{v.name}</p>
-                <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>{v.registrationNumber} · {v.category} · {v.color}</p>
-              </div>
+      <div className="grid lg:grid-cols-3 gap-4 items-start">
+        {/* ── Timeline: everything, chronological ── */}
+        <div className="lg:col-span-2">
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <h2 className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>History</h2>
+            <span className="font-mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{timeline.length}</span>
+          </div>
+          {timeline.length === 0 ? (
+            <div className="card text-center py-14">
+              <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Nothing yet — their first visit will appear here.</p>
             </div>
-          ))}
-        </div>
-      )}
-
-      {tab === 'memberships' && (
-        <div className="space-y-3">
-          {!planPickerOpen ? (
-            <button onClick={() => setPlanPickerOpen(true)}
-              className="btn-ghost w-full py-3 flex items-center justify-center gap-2 text-sm">
-              <Plus size={15} /> New membership for {customer.name?.split(' ')[0]}
-            </button>
           ) : (
-            <div className="card-ember p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="data-label" style={{ color: 'var(--ember)' }}>START A MEMBERSHIP</p>
-                <button onClick={() => setPlanPickerOpen(false)} aria-label="Close"
-                  className="w-9 h-9 flex items-center justify-center rounded-lg"
-                  style={{ background: 'var(--dark)', color: 'var(--steel)' }}><X size={13} /></button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {MEMBERSHIP_PLANS.map(p => (
-                  <button key={p.id} onClick={() => createPlanFor(p.id)} disabled={!!creatingPlan}
-                    className="card p-3 text-left active:scale-95 transition-transform">
-                    <p className="font-display font-800 text-sm text-ember">{p.label.toUpperCase()}</p>
-                    <p className="data-label mt-1">{p.washesPerMonth} washes · {formatCurrency(p.price)}/mo</p>
-                    <p className="font-mono text-[10px] mt-2" style={{ color: 'var(--ember)' }}>
-                      {creatingPlan === p.id ? 'CREATING…' : 'TAP TO START →'}
-                    </p>
+            <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
+              {timeline.map((t, i) => {
+                const Row = (
+                  <>
+                    <t.icon size={15} style={{ color: 'var(--pewter)', flexShrink: 0 }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body font-600 truncate" style={{ fontSize: 13.5, color: 'var(--chrome)' }}>{t.title}</p>
+                      <p className="text-xs font-body truncate mt-0.5" style={{ color: 'var(--steel)' }}>{t.sub}</p>
+                    </div>
+                    {t.amount !== undefined && (
+                      <span className="font-mono font-700 text-sm shrink-0" style={{ color: 'var(--chrome)' }}>{formatCurrency(t.amount)}</span>
+                    )}
+                    {t.badge && (t.badge.className
+                      ? <span className={`status-badge text-[10px] shrink-0 ${t.badge.className}`}>{t.badge.label}</span>
+                      : <span className="text-[10px] font-mono uppercase tracking-wider shrink-0" style={{ color: t.badge.color }}>{t.badge.label}</span>)}
+                    {t.trailing}
+                    {t.onOpen && <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />}
+                  </>
+                );
+                const style = { borderTop: i === 0 ? 'none' : '1px solid var(--border)' } as React.CSSProperties;
+                return t.onOpen ? (
+                  <button key={t.id} onClick={t.onOpen} style={style}
+                    className="group w-full text-left flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[.03] cursor-pointer">
+                    {Row}
                   </button>
+                ) : (
+                  <div key={t.id} style={style} className="flex items-center gap-3 px-4 py-2.5">{Row}</div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Rail: garage, membership, promos, notes — always visible ── */}
+        <div className="space-y-4">
+          <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+            <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Garage · {vehicles.length}</p>
+            {vehicles.length === 0 ? (
+              <p className="font-body text-xs" style={{ color: 'var(--steel)' }}>No vehicles saved.</p>
+            ) : (
+              <div className="space-y-2">
+                {vehicles.map(v => (
+                  <div key={v.id} className="flex items-center gap-2.5">
+                    <Car size={13} style={{ color: 'var(--pewter)', flexShrink: 0 }} />
+                    <div className="min-w-0">
+                      <p className="font-body font-600 truncate" style={{ fontSize: 12.5, color: 'var(--chrome)' }}>{v.name}</p>
+                      <p className="text-[11px] font-body truncate" style={{ color: 'var(--steel)' }}>{v.registrationNumber} · {v.category}{v.color ? ` · ${v.color}` : ''}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
-              <p className="font-body text-[11px] mt-3" style={{ color: 'var(--muted)' }}>
-                Starts today, runs 30 days, payment collected as cash.
-              </p>
-            </div>
-          )}
-          {subs.length === 0 && <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>No memberships.</p>}
-          {subs.map(s => (
-            <div key={s.id} className="card-dark flex items-center gap-4">
-              <div className="flex-1">
-                <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{s.plan}</p>
-                <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
-                  {s.startDate} → {s.endDate} · {s.washesUsed}/{s.washesTotal} washes used
+            )}
+          </div>
+
+          <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+            <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Membership</p>
+            {activeSub ? (
+              <div>
+                <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{activeSub.plan}</p>
+                <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
+                  {activeSub.washesUsed}/{activeSub.washesTotal} washes · ends {activeSub.endDate}
                 </p>
               </div>
-              <span className="data-label" style={{ color: s.status === 'active' ? 'var(--success)' : 'var(--steel)' }}>{s.status}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === 'invoices' && (
-        <div className="space-y-3">
-          {invoices.length === 0 && <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>No invoices.</p>}
-          {invoices.map(inv => (
-            <div key={inv.id} className="card-dark flex items-center gap-4">
-              <div className="flex-1">
-                <p className="font-mono font-700 text-sm" style={{ color: 'var(--ember)' }}>{inv.invoiceNumber}</p>
-                <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
-                  {inv.vehicleName} · {inv.createdAt?.toDate?.().toLocaleDateString('en-IN')}
-                </p>
-              </div>
-              <span className="font-mono text-sm font-700" style={{ color: 'var(--chrome)' }}>{formatCurrency(inv.total)}</span>
-              <a href={invoicePublicUrl(inv)} target="_blank" rel="noreferrer" className="btn-ghost px-3 py-1.5 text-xs">View</a>
-              <a href={buildInvoiceWhatsAppLink(inv)} target="_blank" rel="noreferrer"
-                className="w-8 h-8 flex items-center justify-center rounded-lg"
-                style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366' }}><MessageCircle size={13} /></a>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === 'promos' && (
-        <div className="space-y-3">
-          <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
-            Tap a promo to assign it to {customer.name} (targets them specifically).
-          </p>
-          {promos.filter(p => p.active).map(p => {
-            const assigned = p.target.kind === 'customers' && p.target.userIds.includes(id);
-            const forEveryone = p.target.kind === 'all';
-            return (
-              <button key={p.id} onClick={() => !assigned && !forEveryone && assignPromo(p)}
-                className="card-dark w-full flex items-center gap-4 text-left"
-                style={{ opacity: forEveryone ? 0.6 : 1 }}>
-                <div className="flex-1">
-                  <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>
-                    <span className="font-mono" style={{ color: 'var(--ember)' }}>{p.code}</span> - {p.label}
-                  </p>
-                  <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
-                    {p.type === 'percent' ? `${p.value}%` : formatCurrency(p.value)} off · till {p.validTo}
-                  </p>
-                </div>
-                <span className="data-label" style={{ color: assigned ? 'var(--success)' : forEveryone ? 'var(--steel)' : 'var(--ember)' }}>
-                  {assigned ? 'Assigned' : forEveryone ? 'For everyone' : 'Assign →'}
-                </span>
+            ) : !planPickerOpen ? (
+              <button onClick={() => setPlanPickerOpen(true)}
+                className="w-full py-2 rounded-xl text-xs font-body flex items-center justify-center gap-1.5 transition-colors hover:bg-white/[.04] cursor-pointer"
+                style={{ border: '1px dashed var(--border-strong)', color: 'var(--pewter)' }}>
+                <Plus size={12} /> Start a membership
               </button>
-            );
-          })}
-          {promos.filter(p => p.active).length === 0 && (
-            <p className="font-body text-sm py-8 text-center" style={{ color: 'var(--steel)' }}>
-              No active promos - create one in <Link href="/admin/promos" style={{ color: 'var(--ember)' }}>Promos</Link>.
-            </p>
-          )}
-        </div>
-      )}
+            ) : (
+              <div className="space-y-1.5">
+                {MEMBERSHIP_PLANS.map(p => (
+                  <button key={p.id} onClick={() => createPlanFor(p.id)} disabled={!!creatingPlan}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors hover:bg-white/[.04] cursor-pointer"
+                    style={{ border: '1px solid var(--border)' }}>
+                    <span className="font-body font-600 text-xs" style={{ color: 'var(--chrome)' }}>{p.label}</span>
+                    <span className="text-[11px] font-mono" style={{ color: 'var(--steel)' }}>
+                      {creatingPlan === p.id ? 'Starting…' : `${p.washesPerMonth} washes · ${formatCurrency(p.price)}`}
+                    </span>
+                  </button>
+                ))}
+                <button onClick={() => setPlanPickerOpen(false)} className="w-full py-1.5 text-[11px] font-body cursor-pointer" style={{ color: 'var(--faint)' }}>Cancel</button>
+              </div>
+            )}
+          </div>
 
-      {tab === 'notes' && (
-        <div className="card">
-          <textarea className="input" rows={6} value={notes} onChange={e => setNotes(e.target.value)}
-            placeholder="Private notes about this customer - preferences, car quirks, follow-ups…" />
-          <button onClick={saveNotes} disabled={savingNotes} className="btn-ember px-6 py-2.5 mt-3 text-sm">
-            {savingNotes ? 'Saving…' : 'Save Notes'}
-          </button>
+          <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+            <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Promos</p>
+            {assignablePromos.length === 0 ? (
+              <p className="font-body text-xs" style={{ color: 'var(--steel)' }}>
+                No active promos — create one in <Link href="/admin/promos" style={{ color: 'var(--chrome)' }}>Promotions</Link>.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {assignablePromos.map(p => {
+                  const assigned = p.target.kind === 'customers' && p.target.userIds.includes(id);
+                  const forEveryone = p.target.kind === 'all';
+                  return (
+                    <button key={p.id} onClick={() => !assigned && !forEveryone && assignPromo(p)}
+                      disabled={assigned || forEveryone}
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl transition-colors enabled:hover:bg-white/[.04] enabled:cursor-pointer"
+                      style={{ border: '1px solid var(--border)', opacity: forEveryone ? 0.6 : 1 }}>
+                      <span className="font-mono text-xs truncate" style={{ color: 'var(--chrome)' }}>{p.code}</span>
+                      <span className="text-[10px] font-mono uppercase tracking-wider shrink-0"
+                        style={{ color: assigned ? 'var(--success)' : forEveryone ? 'var(--faint)' : 'var(--pewter)' }}>
+                        {assigned ? 'Assigned' : forEveryone ? 'Everyone' : 'Assign →'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+            <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Notes</p>
+            <textarea rows={4} value={notes} onChange={e => setNotes(e.target.value)}
+              placeholder="Preferences, car quirks, follow-ups…"
+              className="w-full rounded-xl px-3 py-2.5 font-body resize-none outline-none"
+              style={{ fontSize: 12.5, background: 'var(--phantom)', border: '1px solid var(--border-2)', color: 'var(--fg)' }} />
+            {notes !== (customer.notes ?? '') && (
+              <button onClick={saveNotes} disabled={savingNotes}
+                className="mt-2 w-full py-2 rounded-xl text-xs font-body cursor-pointer"
+                style={{ background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg-dim)' }}>
+                {savingNotes ? 'Saving…' : 'Save notes'}
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Edit customer sheet */}
       {editOpen && (
@@ -379,7 +393,7 @@ export default function CustomerDetailPage() {
           onClick={() => setEditOpen(false)}>
           <div className="glass-strong rounded-3xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <p className="font-display font-800 text-base" style={{ color: 'var(--chrome)' }}>EDIT CUSTOMER</p>
+              <p className="font-display font-800 text-base" style={{ color: 'var(--chrome)' }}>Edit customer</p>
               <button onClick={() => setEditOpen(false)} aria-label="Close"
                 className="w-9 h-9 flex items-center justify-center rounded-lg"
                 style={{ background: 'var(--dark)', color: 'var(--steel)' }}><X size={13} /></button>
