@@ -69,6 +69,19 @@ export const getAllBookings = async (): Promise<Booking[]> => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking));
 };
 
+/** Bookings for a set of days (max 10 — Firestore `in` limit). Cancelled excluded. */
+export const getBookingsForDates = async (dates: string[]): Promise<Booking[]> => {
+  if (dates.length === 0) return [];
+  const snap = await getDocs(query(
+    collection(db, 'bookings'),
+    where('scheduledDate', 'in', dates.slice(0, 10)),
+  ));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Booking))
+    .filter(b => b.status !== 'cancelled')
+    .sort((a, b) => (a.scheduledDate + a.scheduledTime).localeCompare(b.scheduledDate + b.scheduledTime));
+};
+
 export const cancelBooking = async (bookingId: string) =>
   updateDoc(doc(db, 'bookings', bookingId), {
     status: 'cancelled',
