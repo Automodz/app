@@ -33,7 +33,7 @@ import ServiceIcon from '@/components/ui/ServiceIcon';
 import ErrorState from '@/components/ui/ErrorState';
 import {
   Section, Field, ActionBtn, serviceIconField, WorkspaceSkeleton,
-  OperationalStage, AssigneesSection, PhotosSection, ActivityTimeline, EASE,
+  OperationalStage, AssigneesSection, PhotosSection, PaymentsSection, ActivityTimeline, EASE,
 } from '@/components/workspace/parts';
 
 // commercial stage order (the booking's lifecycle)
@@ -242,6 +242,7 @@ export default function BookingWorkspace() {
               <OperationalStage job={job} busy={busy} onAdvance={advanceJob} />
               <AssigneesSection job={job} actor={actor} record={record} onChange={() => refreshJob(job.id)} />
               <PhotosSection job={job} record={record} onChange={() => refreshJob(job.id)} />
+              <PaymentsSection job={job} actor={actor} record={record} onChange={() => refreshJob(job.id)} />
             </>
           ) : (
             <Section title="Operational workspace" delay={0.1}>

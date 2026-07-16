@@ -12,8 +12,8 @@ import {
   Loader2, CheckCircle2, Clock, Plus, X, Camera, CalendarClock, LogIn,
   Users, IndianRupee, FileText, MessageCircle, Phone,
 } from 'lucide-react';
-import { setJobAssignees, addJobPhoto, listEmployees } from '@/lib/firebaseService';
-import { getStatusLabel } from '@/lib/utils';
+import { setJobAssignees, addJobPhoto, listEmployees, addJobPayment } from '@/lib/firebaseService';
+import { getStatusLabel, formatCurrency } from '@/lib/utils';
 import type { Job, JobStatus, BookingStatus, Employee } from '@/lib/types';
 import type { ActivityType, ActivityEvent } from '@/lib/services/activity';
 import ServiceIcon from '@/components/ui/ServiceIcon';
@@ -236,6 +236,81 @@ export function PhotosSection({ job, record, onChange }: { job: Job; record: Rec
         <Grid list={before} kind="before" inputRef={beforeRef} />
         <Grid list={after} kind="after" inputRef={afterRef} />
       </div>
+    </Section>
+  );
+}
+
+/* ── payments (job ledger) ── */
+
+export function PaymentsSection({ job, actor, record, onChange }: { job: Job; actor: { id: string; name: string }; record: RecordFn; onChange: () => void }) {
+  const paid = job.amountPaid ?? 0;
+  const balance = Math.max(0, job.totalAmount - paid);
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState<'cash' | 'upi'>('cash');
+  const [txn, setTxn] = useState('');
+  const [saving, setSaving] = useState(false);
+  const ledger = job.payments ?? [];
+
+  const openForm = () => { setAmount(String(balance || job.totalAmount)); setMethod('cash'); setTxn(''); setOpen(true); };
+  const submit = async () => {
+    const amt = Math.round(Number(amount));
+    if (!amt || amt <= 0) { toast.error('Enter an amount'); return; }
+    setSaving(true);
+    try {
+      await addJobPayment(job, { amount: amt, method, transactionId: txn.trim() || undefined, by: actor });
+      record('payment', `${formatCurrency(amt)} received · ${method.toUpperCase()}`, { amount: amt, method });
+      setOpen(false);
+      onChange();
+      toast.success('Payment recorded');
+    } catch { toast.error('Could not record payment'); } finally { setSaving(false); }
+  };
+
+  return (
+    <Section title="Payments" delay={0.15}
+      action={balance > 0
+        ? <button onClick={openForm} className="inline-flex items-center gap-1 font-mono" style={{ fontSize: 10, letterSpacing: '0.06em', color: 'var(--muted)' }}><Plus size={12} /> RECORD</button>
+        : <span className="inline-flex items-center gap-1 font-mono" style={{ fontSize: 10, letterSpacing: '0.06em', color: 'var(--success)' }}><CheckCircle2 size={12} /> SETTLED</span>}>
+      <div className="flex items-end justify-between mb-3">
+        <div>
+          <p className="font-mono" style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--faint)' }}>Collected</p>
+          <p className="font-display" style={{ fontSize: 20, fontWeight: 800, color: 'var(--fg)' }}>{formatCurrency(paid)} <span className="font-body" style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 400 }}>of {formatCurrency(job.totalAmount)}</span></p>
+        </div>
+        {balance > 0 && <p className="font-mono" style={{ fontSize: 11, color: 'var(--warning)' }}>{formatCurrency(balance)} due</p>}
+      </div>
+
+      {ledger.length > 0 && (
+        <div className="space-y-1.5 mb-1">
+          {ledger.map(p => (
+            <div key={p.id} className="flex items-center justify-between rounded-lg px-2.5 py-1.5" style={{ background: 'var(--fog)' }}>
+              <span className="font-body inline-flex items-center gap-1.5" style={{ fontSize: 12.5, color: 'var(--fg-dim)' }}><IndianRupee size={11} />{formatCurrency(p.amount)} · {p.method.toUpperCase()}</span>
+              <span className="font-mono" style={{ fontSize: 9.5, color: 'var(--muted)' }}>{p.receivedByName}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {open && (
+        <div className="mt-3 rounded-xl p-3 space-y-2" style={{ background: 'var(--fog)', border: '1px solid var(--border-2)' }}>
+          <div className="flex gap-2">
+            <input inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="Amount"
+              className="flex-1 rounded-lg px-2.5 py-2 font-body outline-none" style={{ fontSize: 13, background: 'var(--surface)', border: '1px solid var(--border-2)', color: 'var(--fg)' }} />
+            {(['cash', 'upi'] as const).map(m => (
+              <button key={m} onClick={() => setMethod(m)} className="px-3 rounded-lg font-mono" style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', background: method === m ? 'var(--accent-grad)' : 'transparent', color: method === m ? 'var(--on-accent)' : 'var(--fg-dim)', border: `1px solid ${method === m ? 'transparent' : 'var(--border-2)'}` }}>{m}</button>
+            ))}
+          </div>
+          {method === 'upi' && (
+            <input value={txn} onChange={e => setTxn(e.target.value)} placeholder="UPI transaction id (optional)"
+              className="w-full rounded-lg px-2.5 py-2 font-body outline-none" style={{ fontSize: 12.5, background: 'var(--surface)', border: '1px solid var(--border-2)', color: 'var(--fg)' }} />
+          )}
+          <div className="flex gap-2">
+            <button onClick={() => setOpen(false)} className="flex-1 py-2 rounded-lg font-body" style={{ fontSize: 12.5, color: 'var(--muted)' }}>Cancel</button>
+            <button onClick={submit} disabled={saving} className="flex-1 py-2 rounded-lg font-display inline-flex items-center justify-center gap-1.5" style={{ fontSize: 12.5, fontWeight: 700, background: 'var(--accent-grad)', color: 'var(--on-accent)' }}>
+              {saving ? <Loader2 size={13} className="animate-spin" /> : null}{saving ? 'Saving…' : 'Record'}
+            </button>
+          </div>
+        </div>
+      )}
     </Section>
   );
 }

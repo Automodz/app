@@ -23,7 +23,7 @@ import ServiceIcon from '@/components/ui/ServiceIcon';
 import ErrorState from '@/components/ui/ErrorState';
 import {
   Section, Field, serviceIconField, WorkspaceSkeleton,
-  OperationalStage, AssigneesSection, PhotosSection, ActivityTimeline, EASE,
+  OperationalStage, AssigneesSection, PhotosSection, PaymentsSection, ActivityTimeline, EASE,
 } from '@/components/workspace/parts';
 
 const wa = (phone: string) => `https://wa.me/${phone.startsWith('91') ? phone : '91' + phone}`;
@@ -133,6 +133,7 @@ export default function JobWorkspace() {
           <OperationalStage job={job} busy={busy} onAdvance={(s) => advance(s)} />
           <AssigneesSection job={job} actor={actor} record={record} onChange={refresh} />
           <PhotosSection job={job} record={record} onChange={refresh} />
+          <PaymentsSection job={job} actor={actor} record={record} onChange={refresh} />
           <ActivityTimeline events={activity} seed={{ type: 'checked_in', title: 'Walk-in checked in', actorName: job.createdByEmployeeName, at: job.createdAt }} />
         </div>
 
