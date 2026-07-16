@@ -78,6 +78,10 @@ export interface Booking {
   /** Discount applied at checkout - membership % or promo, best-of, never stacked */
   discount?: BookingDiscount;
   invoiceId?: string;
+  /** Operational record link — set at vehicle check-in. Booking (commercial
+   *  truth) and Job (operational truth) are a permanent 1:1; neither replaces
+   *  the other. */
+  jobId?: string;
   // membership fields - set when a wash is deducted from an active subscription
   usedMembershipWash?: boolean;
   membershipId?: string;

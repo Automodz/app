@@ -259,5 +259,13 @@ service cloud.firestore {
         (isAdmin() || resource.data.userId == request.auth.uid);
       allow update, delete: if request.auth != null && isAdmin();
     }
+
+    // ── Activity - the operational event log (the workspace timeline).
+    //    Append-only: staff create + read; admin may amend/prune. ────────
+    match /activity/{id} {
+      allow read:   if request.auth != null && isStaff();
+      allow create: if request.auth != null && isStaff();
+      allow update, delete: if request.auth != null && isAdmin();
+    }
   }
 }

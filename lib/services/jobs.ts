@@ -6,7 +6,7 @@ import {
 import { format } from 'date-fns';
 import { db } from '../firebase';
 import { uploadImage } from './storage';
-import type { Job, JobStatus, JobServiceItem, JobPhoto, JobAssignment, PaymentRecord, User, BookingDiscount } from '../types';
+import type { Job, JobStatus, JobServiceItem, JobPhoto, JobAssignment, PaymentRecord, User, BookingDiscount, Booking } from '../types';
 
 const todayStr = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -73,6 +73,64 @@ export const createWalkInJob = async (data: {
       })).catch(() => {});
   }
   return r.id;
+};
+
+/**
+ * Vehicle check-in: create the operational Job for a customer Booking.
+ * The Booking (commercial truth) is NEVER replaced — it stays and gains a
+ * `jobId` link; the Job (operational truth) carries the work. 1:1, permanent.
+ * Idempotent: if the booking already has a job, returns it.
+ */
+export const createJobFromBooking = async (
+  booking: Booking,
+  byEmployee: { id: string; name: string },
+): Promise<string> => {
+  if (booking.jobId) return booking.jobId;
+
+  const serviceItems: JobServiceItem[] = [{
+    serviceId: booking.serviceId,
+    serviceName: booking.serviceName,
+    category: booking.serviceCategory,
+    price: booking.serviceBasePrice,
+  }];
+  const subtotal = booking.serviceBasePrice;
+
+  const job: Record<string, unknown> = {
+    source: 'booking',
+    bookingId: booking.id,
+    customerName: booking.userName,
+    customerPhone: booking.userPhone.replace(/\D/g, '').slice(-10),
+    vehicleName: booking.vehicleName,
+    vehicleRegNo: booking.vehicleRegNo.toUpperCase(),
+    serviceItems,
+    status: 'checked_in' as JobStatus,
+    subtotal,
+    totalAmount: booking.totalAmount,
+    paymentStatus: booking.paymentStatus === 'verified' ? 'collected' : 'pending',
+    createdByEmployeeId: byEmployee.id,
+    createdByEmployeeName: byEmployee.name,
+    assignments: [] as JobAssignment[],
+    assignedIds: [] as string[],
+    statusHistory: [{
+      status: 'checked_in', at: Timestamp.now(),
+      byEmployeeId: byEmployee.id, byEmployeeName: byEmployee.name,
+      note: 'Vehicle checked in from booking',
+    }],
+    date: todayStr(),
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  };
+  if (booking.userId) job.customerId = booking.userId;
+  if (booking.discount) job.discount = booking.discount;
+  if (booking.invoiceId) job.invoiceId = booking.invoiceId;
+
+  const ref = await addDoc(collection(db, 'jobs'), job);
+  // Link the commercial record to its operational record + advance its stage.
+  await updateDoc(doc(db, 'bookings', booking.id), {
+    jobId: ref.id,
+    status: 'vehicle_received',
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
 };
 
 export const getJob = async (id: string): Promise<Job | null> => {

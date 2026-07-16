@@ -3,6 +3,7 @@ import {
   doc,
   addDoc,
   updateDoc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -55,6 +56,12 @@ export const subscribeUserBookings = (
       console.error('bookings listener dropped', err);
     },
   );
+};
+
+/** Load a single booking (commercial record) by id — for the workspace route. */
+export const getBooking = async (id: string): Promise<Booking | null> => {
+  const snap = await getDoc(doc(db, 'bookings', id));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Booking) : null;
 };
 
 export const getAllBookings = async (): Promise<Booking[]> => {

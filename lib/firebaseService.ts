@@ -12,6 +12,7 @@ export * from './services/services';
 export * from './services/employees';
 export * from './services/attendance';
 export * from './services/jobs';
+export * from './services/activity';
 export * from './services/inventory';
 export * from './services/invoices';
 export * from './services/pricing';
