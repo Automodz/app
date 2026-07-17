@@ -161,6 +161,13 @@ service cloud.firestore {
     // Follow-up tasks - owner's queue
     match /tasks/{id} { allow read, write: if request.auth != null && isStaff(); }
 
+    // ── Studio resource config (wash capacity etc.) - staff read, admin writes.
+    //    Customers never read it directly; availability flows through the API. ──
+    match /studioConfig/{id} {
+      allow read: if request.auth != null && isStaff();
+      allow write: if request.auth != null && isAdmin();
+    }
+
     // Private feedback from the public invoice rating - anyone may create a
     // shape-valid entry; only admin reads
     match /feedback/{id} {

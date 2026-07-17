@@ -8,7 +8,7 @@ import { format, addMonths, getDaysInMonth } from 'date-fns';
 import {
   getEmployee, getAttendanceForMonth, overrideAttendanceStatus,
   computeMonth, netPayable, getPayrollRecord, savePayrollDraft, markPayrollPaid, getPayrollHistory,
-  getJobsForEmployee,
+  getJobsForEmployee, employeeWashStats, fmtMin,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import type { Employee, AttendanceRecord, PayrollRecord, PayrollAdjustment, AttendanceStatus, Job } from '@/lib/types';
@@ -289,6 +289,30 @@ export default function EmployeePayrollPage() {
           </div>
         </div>
       )}
+
+      {/* Wash performance — derived from the automatic job timeline */}
+      {(() => {
+        const w = employeeWashStats(jobsWorked, id);
+        if (!w.washesDone) return null;
+        return (
+          <div className="card-dark mt-4">
+            <p className="data-label mb-3" style={{ color: 'var(--steel)' }}>Wash performance · last {jobsWorked.length} jobs</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Cars washed', value: String(w.washesDone) },
+                { label: 'Avg completion', value: fmtMin(w.avgWorkMin) },
+                { label: 'Active time', value: fmtMin(w.activeWorkMin) },
+                { label: 'Completion rate', value: w.completionRate !== null ? `${w.completionRate}%` : '—' },
+              ].map(s => (
+                <div key={s.label} className="p-3 rounded-xl" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+                  <p className="font-mono font-700 text-base" style={{ color: 'var(--chrome)' }}>{s.value}</p>
+                  <p className="text-[10px] font-body mt-0.5" style={{ color: 'var(--pewter)' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Jobs worked (assignment-based) */}
       {jobsWorked.length > 0 && (

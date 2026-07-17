@@ -10,7 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAppStore } from '@/lib/store';
 import {
-  getServices, createBooking, getBookedSlotsForDate,
+  getServices, createBooking, getAvailability,
   STATIC_SERVICES, getUserSubscription, deductMembershipWash,
   getEligiblePromos, validatePromoCode, recordPromoRedemption,
   computeBestDiscount, promoDiscountAmount, fireOpsEvent, requestQuote,
@@ -56,6 +56,7 @@ function BookingInner() {
   const [data, setData]                         = useState<StepData>({});
   const [cat, setCat]                           = useState(params.get('cat') || 'Washing');
   const [bookedSlots, setBookedSlots]           = useState<string[]>([]);
+  const [fullDates, setFullDates]               = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading]         = useState(false);
   const [copiedUpi, setCopiedUpi]               = useState(false);
   const [confirmedId, setConfirmedId]           = useState('');
@@ -105,12 +106,18 @@ function BookingInner() {
     if (v && s) { setData({ vehicle: v, service: s }); setCat(s.category); setStep(2); }
   }, [services, vehicles]);
 
-  // Load booked slots when date/service changes, factoring in service duration and bay capacity
+  // Resource-aware availability: one server call returns full slots for the
+  // selected date AND fully-booked dates for the whole picker (bay blocking —
+  // a 3-day PPF removes those days entirely).
   useEffect(() => {
-    if (!data.date || !data.service) return;
+    if (!data.service) return;
     setSlotsLoading(true);
-    getBookedSlotsForDate(data.date, data.service.category, data.service.duration)
-      .then(setBookedSlots)
+    getAvailability(getAvailableDates(), data.service.category, data.service.duration)
+      .then(r => {
+        setFullDates(r.fullDates);
+        setBookedSlots(data.date ? (r.fullSlots[data.date] ?? []) : []);
+      })
+      .catch(() => { setFullDates([]); setBookedSlots([]); })
       .finally(() => setSlotsLoading(false));
   }, [data.date, data.service?.category]);
 
@@ -659,13 +666,17 @@ function BookingInner() {
                   {availDates.map(d => {
                     const dt  = new Date(d + 'T12:00:00');
                     const sel = data.date === d;
+                    const full = fullDates.includes(d);
                     return (
-                      <button key={d} onClick={() => setData(p => ({ ...p, date: d, time: '' }))}
+                      <button key={d} onClick={() => !full && setData(p => ({ ...p, date: d, time: '' }))}
+                        disabled={full}
                         className="flex-shrink-0 w-16 rounded-2xl p-3 flex flex-col items-center gap-1 transition-all"
                         style={{
                           background: sel ? 'var(--ember)' : 'var(--dark)',
                           border: '1px solid ' + (sel ? 'var(--ember)' : 'var(--border-2)'),
                           boxShadow: sel ? '0 4px 16px var(--accent-glow)' : 'none',
+                          opacity: full ? 0.35 : 1,
+                          cursor: full ? 'not-allowed' : 'pointer',
                         }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: sel ? 'var(--on-accent-dim)' : 'var(--faint)', letterSpacing: '0.08em' }}>
                           {dt.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase()}

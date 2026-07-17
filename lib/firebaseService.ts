@@ -27,4 +27,6 @@ export * from './services/expenses';
 export * from './services/walkinCustomers';
 export * from './services/quotes';
 export * from './services/tasks';
+export * from './services/studioConfig';
+export * from './services/washMetrics';
 export * from './constants';

@@ -24,6 +24,7 @@ import {
 import { formatCurrency, formatTime, getStatusColor, getStatusLabel } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import ServiceIcon from '@/components/ui/ServiceIcon';
+import BayStrip from '@/components/workspace/BayStrip';
 import type { Booking, FollowUpTask, Job } from '@/lib/types';
 
 const STAGES: { key: Job['status']; label: string; color: string }[] = [
@@ -161,6 +162,9 @@ export default function AdminWorkspace() {
               : <div key={s.label} className="cursor-default">{inner}</div>;
         })}
       </div>
+
+      {/* Bay occupancy + wash pulse — the physical floor */}
+      <BayStrip jobs={jobs} bookings={todayBookings} />
 
       {/* Stage strip */}
       <div className="flex items-stretch gap-2 mb-6 overflow-x-auto pb-1">

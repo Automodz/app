@@ -19,6 +19,7 @@ import { formatCurrency, formatTime, getStatusColor, getStatusLabel } from '@/li
 import { useAppStore } from '@/lib/store';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 import ErrorState from '@/components/ui/ErrorState';
+import BayStrip from '@/components/workspace/BayStrip';
 import type { Booking, Employee, Job } from '@/lib/types';
 
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 9);
@@ -188,6 +189,9 @@ export default function AdminSchedulePage() {
           ))}
         </div>
       </div>
+
+      {/* Bay occupancy — live only for today, where jobs are real */}
+      {isToday && !loading && <BayStrip jobs={jobs} bookings={dayBookings} />}
 
       {/* Date strip (Week view carries its own days) */}
       {view !== 'Week' && (

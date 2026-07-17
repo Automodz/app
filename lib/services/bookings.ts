@@ -14,17 +14,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Booking, Notification } from '../types';
-import { STATIC_SERVICES } from '../constants';
-import { generateTimeSlots } from '../utils';
-import { SLOT_CAPACITY } from '../config/bookingConfig';
-
-const SERVICE_DURATION_LOOKUP: Record<string, number> = STATIC_SERVICES.reduce(
-  (acc, svc) => {
-    acc[`${svc.category}:${svc.name}`] = svc.duration;
-    return acc;
-  },
-  {} as Record<string, number>,
-);
 
 export const createBooking = async (booking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>) => {
   // JSON round-trip drops all undefined fields (Firestore rejects them)
@@ -157,59 +146,28 @@ export const verifyPayment = async (bookingId: string) =>
   });
 
 /**
- * Returns time slots that are at full capacity for the given date and requested service duration.
- * Capacity is calculated across all services and bays, using a 30-minute sub-slot resolution.
+ * Resource-aware availability for the customer booking flow.
+ * The studio schedules RESOURCES (PPF bay ×1, coating bay ×1, wash ×N) — a
+ * 3-day PPF blocks its bay for the whole span. Computed SERVER-SIDE
+ * (/api/availability, Admin SDK) because Firestore rules stop customers
+ * reading other people's bookings or any jobs, which is exactly the data
+ * occupancy derives from.
  */
-export const getBookedSlotsForDate = async (
-  date: string,
-  _serviceCategory: string,
-  requestedDurationMinutes = 60,
-): Promise<string[]> => {
-  const q = query(
-    collection(db, 'bookings'),
-    where('scheduledDate', '==', date),
-  );
-  const snap = await getDocs(q);
-  const bookings = snap.docs
-    .map(d => ({ id: d.id, ...d.data() } as Booking))
-    .filter(b => b.status !== 'cancelled');
-
-  const SUB_SLOT_MINUTES = 30;
-  const occupancy = new Map<number, number>();
-
-  for (const b of bookings) {
-    const [h, m] = b.scheduledTime.split(':').map(Number);
-    const start = h * 60 + m;
-    const key = `${b.serviceCategory}:${b.serviceName}`;
-    const fallback = SERVICE_DURATION_LOOKUP[key] ?? 60;
-    const duration = b.serviceDurationMinutes ?? fallback;
-    const end = start + duration;
-
-    for (let t = start; t < end; t += SUB_SLOT_MINUTES) {
-      occupancy.set(t, (occupancy.get(t) ?? 0) + 1);
-    }
-  }
-
-  const fullSlots: string[] = [];
-  const candidateSlots = generateTimeSlots(requestedDurationMinutes);
-
-  for (const slot of candidateSlots) {
-    const [h, m] = slot.split(':').map(Number);
-    const start = h * 60 + m;
-    const end = start + requestedDurationMinutes;
-    let blocked = false;
-
-    for (let t = start; t < end; t += SUB_SLOT_MINUTES) {
-      if ((occupancy.get(t) ?? 0) >= SLOT_CAPACITY) {
-        blocked = true;
-        break;
-      }
-    }
-
-    if (blocked) fullSlots.push(slot);
-  }
-
-  return fullSlots;
+export const getAvailability = async (
+  dates: string[],
+  serviceCategory: string,
+  durationMinutes = 60,
+): Promise<{ fullSlots: Record<string, string[]>; fullDates: string[] }> => {
+  const { auth } = await import('../firebase');
+  const idToken = await auth.currentUser?.getIdToken();
+  if (!idToken) throw new Error('Not signed in');
+  const res = await fetch('/api/availability', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ dates, category: serviceCategory, durationMinutes }),
+  });
+  if (!res.ok) throw new Error('availability failed');
+  return res.json();
 };
 
 export const writeNotification = async (

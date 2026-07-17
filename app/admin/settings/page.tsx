@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Save, Loader2, RefreshCw, Package, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getServices, seedServices } from '@/lib/firebaseService';
+import { getServices, seedServices, getResourceConfig, setWashCapacity } from '@/lib/firebaseService';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatCurrency } from '@/lib/utils';
@@ -18,6 +18,9 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [prices, setPrices] = useState<Record<string, string>>({});
+  const [durations, setDurations] = useState<Record<string, string>>({});
+  const [washCap, setWashCap] = useState('3');
+  const [washSaving, setWashSaving] = useState(false);
 
   const load = () => {
     setLoadError(false);
@@ -27,13 +30,27 @@ export default function AdminSettingsPage() {
         const sorted = s.sort((a, b) => a.category.localeCompare(b.category) || a.order - b.order);
         setServices(sorted);
         const p: Record<string, string> = {};
-        sorted.forEach(sv => { p[sv.id] = sv.price.toString(); });
+        const dur: Record<string, string> = {};
+        sorted.forEach(sv => { p[sv.id] = sv.price.toString(); dur[sv.id] = String(sv.duration ?? 60); });
         setPrices(p);
+        setDurations(dur);
       })
       .catch(e => { console.error('services load failed', e); setLoadError(true); })
       .finally(() => setLoading(false));
+    getResourceConfig().then(c => setWashCap(String(c.washCapacity))).catch(() => {});
   };
   useEffect(load, []);
+
+  const saveWashCap = async () => {
+    const n = parseInt(washCap);
+    if (isNaN(n) || n < 1 || n > 10) return toast.error('Wash capacity must be 1–10');
+    setWashSaving(true);
+    try {
+      await setWashCapacity(n);
+      toast.success('Wash capacity updated — availability recalculates immediately');
+    } catch { toast.error('Failed to update'); }
+    finally { setWashSaving(false); }
+  };
 
   const handleSeed = async () => {
     if (!confirm('Add all default services to Firestore?')) return;
@@ -47,12 +64,14 @@ export default function AdminSettingsPage() {
 
   const handleSave = async (svc: Service) => {
     const p = parseInt(prices[svc.id]);
+    const dur = parseInt(durations[svc.id]);
     if (isNaN(p) || p < 0) return toast.error('Invalid price');
+    if (isNaN(dur) || dur < 15) return toast.error('Duration must be at least 15 minutes');
     setSaving(svc.id);
     try {
-      await updateDoc(doc(db, 'services', svc.id), { price: p });
-      setServices(services.map(s => s.id === svc.id ? { ...s, price: p } : s));
-      toast.success('Price updated!');
+      await updateDoc(doc(db, 'services', svc.id), { price: p, duration: dur });
+      setServices(services.map(s => s.id === svc.id ? { ...s, price: p, duration: dur } : s));
+      toast.success('Service updated — bookings use the new duration immediately');
     } catch { toast.error('Failed to update'); }
     finally { setSaving(null); }
   };
@@ -64,6 +83,42 @@ export default function AdminSettingsPage() {
       <div className="mb-6">
         <h1 className="font-display font-900 text-2xl text-foreground tracking-wide">SETTINGS</h1>
         <p className="text-muted text-sm font-body">Manage services and pricing</p>
+      </div>
+
+      {/* Studio resources — what the booking engine schedules against */}
+      <div className="card-dark mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Package size={20} className="text-white" />
+          <div>
+            <div className="font-display font-800 text-sm text-foreground tracking-wide">Studio Resources</div>
+            <div className="text-muted text-xs font-body">The calendar blocks these — one car per bay, N per wash line</div>
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div className="p-3 rounded-xl" style={{ background: 'var(--background-2)' }}>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">PPF Bay</p>
+            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· PPF, wraps</span></p>
+          </div>
+          <div className="p-3 rounded-xl" style={{ background: 'var(--background-2)' }}>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Coating Bay</p>
+            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· ceramic, correction</span></p>
+          </div>
+          <div className="p-3 rounded-xl flex items-center justify-between gap-2" style={{ background: 'var(--background-2)' }}>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Wash Capacity</p>
+              <p className="font-body text-xs text-muted mt-1">simultaneous cars</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="number" min={1} max={10} value={washCap}
+                onChange={e => setWashCap(e.target.value)}
+                className="w-16 input-dark text-sm py-1.5 px-2 text-right" />
+              <button onClick={saveWashCap} disabled={washSaving}
+                className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+                {washSaving ? <Loader2 size={12} className="animate-spin text-foreground" /> : <Save size={12} className="text-foreground" />}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* DB Init */}
@@ -104,7 +159,12 @@ export default function AdminSettingsPage() {
                     </div>
                     <div className="text-muted text-xs font-body hidden sm:block">{formatCurrency(svc.price)}</div>
                     <div className="flex items-center gap-2">
-                      <span className="text-muted text-sm font-body">₹</span>
+                      <input type="number" value={durations[svc.id] || ''}
+                        onChange={e => setDurations(d => ({ ...d, [svc.id]: e.target.value }))}
+                        title="Duration (minutes) — drives bay blocking on the calendar"
+                        className="w-20 input-dark text-sm py-1.5 px-2 text-right" />
+                      <span className="text-muted text-xs font-body">min</span>
+                      <span className="text-muted text-sm font-body ml-1">₹</span>
                       <input type="number" value={prices[svc.id] || ''}
                         onChange={e => setPrices(p => ({ ...p, [svc.id]: e.target.value }))}
                         className="w-24 input-dark text-sm py-1.5 px-2 text-right" />

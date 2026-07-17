@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Car, Wrench, FileText, CalendarClock, ChevronRight, MessageCircle } from 'lucide-react';
 import {
   getJobsForVehicle, getBookingsForVehicle, getInvoicesForVehicle,
+  isWashJob, jobTimeline, fmtMin,
   invoicePublicUrl, buildInvoiceWhatsAppLink,
 } from '@/lib/firebaseService';
 import { formatCurrency, formatDate, getStatusLabel, getStatusColor } from '@/lib/utils';
@@ -44,6 +45,16 @@ export default function VehicleHistoryPage() {
   const photos = jobs.flatMap(j => j.photos ?? []);
   const technicians = [...new Set(jobs.flatMap(j => (j.assignments ?? []).map(a => a.employeeName)))];
 
+  // average wash duration for THIS car - derived from the automatic job timeline
+  const washWorks = jobs
+    .filter(j => isWashJob(j) && ['ready_for_delivery', 'completed'].includes(j.status))
+    .map(j => jobTimeline(j).workMin)
+    .filter((n): n is number => n !== null);
+  const avgWashMin = washWorks.length
+    ? Math.round(washWorks.reduce((s, n) => s + n, 0) / washWorks.length)
+    : null;
+  const turnaroundOf = (j: Job): number | null => jobTimeline(j).turnaroundMin;
+
   const timeline = [
     ...bookings.map(b => ({
       id: 'b' + b.id, at: b.createdAt?.toMillis?.() ?? 0, icon: CalendarClock,
@@ -57,7 +68,7 @@ export default function VehicleHistoryPage() {
     ...jobs.filter(j => !j.bookingId).map(j => ({
       id: 'j' + j.id, at: j.createdAt?.toMillis?.() ?? 0, icon: Wrench,
       title: j.serviceItems.map(s => s.serviceName).join(', '),
-      sub: `${formatDate(j.date)} · ${j.customerName} · walk-in${(j.assignments ?? []).filter(a => !a.removedAt).length ? ` · ${(j.assignments ?? []).filter(a => !a.removedAt).map(a => a.employeeName).join(', ')}` : ''}`,
+      sub: `${formatDate(j.date)} · ${j.customerName} · walk-in${(j.assignments ?? []).filter(a => !a.removedAt).length ? ` · ${(j.assignments ?? []).filter(a => !a.removedAt).map(a => a.employeeName).join(', ')}` : ''}${turnaroundOf(j) !== null ? ` · completed in ${fmtMin(turnaroundOf(j))}` : ''}`,
       amount: j.totalAmount,
       badge: { label: getStatusLabel(j.status), className: undefined as string | undefined },
       onOpen: () => router.push(`/admin/jobs/${j.id}`),
@@ -107,6 +118,11 @@ export default function VehicleHistoryPage() {
         <div className="text-right">
           <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--faint)' }}>Lifetime spend</p>
           <p className="font-display font-800 text-lg" style={{ color: 'var(--chrome)' }}>{formatCurrency(spent)}</p>
+          {avgWashMin !== null && (
+            <p className="text-[10px] font-mono uppercase tracking-wider mt-1" style={{ color: 'var(--pewter)' }}>
+              Avg wash · {fmtMin(avgWashMin)}
+            </p>
+          )}
         </div>
       </div>
 

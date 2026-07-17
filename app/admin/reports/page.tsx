@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Download, TrendingUp, TrendingDown } from 'l
 import { format, addMonths } from 'date-fns';
 import { getDocs, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { listInventoryItems , getExpensesForMonth } from '@/lib/firebaseService';
+import { listInventoryItems , getExpensesForMonth, studioThroughput, fmtMin } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import type { Booking, Job, PayrollRecord, InventoryTxn } from '@/lib/types';
 
@@ -20,6 +20,10 @@ interface MonthReport {
   salariesPaid: number;
   inventoryConsumedCost: number;
   purchasesCost: number;
+  avgTurnaroundMin: number | null;
+  peakHour: number | null;
+  busyMin: { ppf: number; coating: number; wash: number };
+  workingDays: number;
 }
 
 export default function AdminReportsPage() {
@@ -79,6 +83,15 @@ export default function AdminReportsPage() {
       purchasesCost: txns
         .filter(t => t.type === 'purchase')
         .reduce((s, t) => s + (t.costTotal ?? 0), 0),
+      ...(() => {
+        const t = studioThroughput(jobs);
+        return {
+          avgTurnaroundMin: t.avgTurnaroundMin,
+          peakHour: t.peakHour,
+          busyMin: t.busyMin,
+          workingDays: new Set(jobs.map(j => j.date)).size || 1,
+        };
+      })(),
     };
     setReport(r);
 
@@ -164,6 +177,12 @@ export default function AdminReportsPage() {
               { l: 'Materials used (est.)', v: formatCurrency(report.inventoryConsumedCost), c: 'var(--warning)' },
               { l: 'Expenses', v: formatCurrency(expenses), c: 'var(--danger)' },
               { l: 'Stock purchases', v: formatCurrency(report.purchasesCost), c: 'var(--danger)' },
+              { l: 'Avg turnaround', v: fmtMin(report.avgTurnaroundMin), c: 'var(--info)' },
+              { l: 'Peak hour', v: report.peakHour !== null ? `${report.peakHour}:00` : '—', c: 'var(--info)' },
+              // utilization = worked minutes / (working days × 600-min day per bay)
+              { l: 'PPF bay utilization', v: `${Math.min(100, Math.round(report.busyMin.ppf / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },
+              { l: 'Coating bay utilization', v: `${Math.min(100, Math.round(report.busyMin.coating / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },
+              { l: 'Wash line busy time', v: fmtMin(report.busyMin.wash), c: 'var(--chrome)' },
             ].map((s, i) => (
               <motion.div key={s.l} initial={false} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }} className="card-dark py-4 text-center">

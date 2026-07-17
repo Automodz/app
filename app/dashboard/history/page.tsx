@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppStore } from '@/lib/store';
-import { cancelBooking, rescheduleBooking, getBookedSlotsForDate, fireOpsEvent, logActivity } from '@/lib/firebaseService';
+import { cancelBooking, rescheduleBooking, getAvailability, fireOpsEvent, logActivity } from '@/lib/firebaseService';
 import {
   formatCurrency, getStatusColor, getStatusLabel,
   formatDate, formatTime,
@@ -39,8 +39,8 @@ export default function HistoryPage() {
   useEffect(() => { setReschedOpen(false); setReschedDate(''); setReschedTime(''); }, [selected?.id]);
   useEffect(() => {
     if (!reschedDate || !selected) return;
-    getBookedSlotsForDate(reschedDate, selected.serviceCategory, selected.serviceDurationMinutes ?? 60)
-      .then(setReschedSlots)
+    getAvailability([reschedDate], selected.serviceCategory, selected.serviceDurationMinutes ?? 60)
+      .then(r => setReschedSlots(r.fullSlots[reschedDate] ?? []))
       .catch(() => setReschedSlots([]));
   }, [reschedDate, selected?.id]);
 
