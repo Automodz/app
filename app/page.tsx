@@ -14,7 +14,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
-import { MapPin, Phone, Clock, Navigation, ArrowRight, Droplets } from 'lucide-react';
+import { MapPin, Phone, Navigation, Droplets } from 'lucide-react';
 import { getServices } from '@/lib/firebaseService';
 import { formatCurrency, getDurationLabel } from '@/lib/utils';
 import SlideToAction from '@/components/ui/SlideToAction';
@@ -22,7 +22,6 @@ import Wordmark from '@/components/ui/Wordmark';
 import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';
 import WhatsAppFloat from '@/components/ui/WhatsAppFloat';
 import SmoothScroll from '@/components/home/SmoothScroll';
-import Magnetic from '@/components/home/Magnetic';
 import { SERVICE_SHOWCASE, STOCK } from '@/lib/stockImages';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
 import type { Service } from '@/lib/types';
@@ -208,7 +207,7 @@ export default function HomePage() {
             className="relative order-1 lg:order-2">
             {/* bloom behind the car */}
             <div aria-hidden className="absolute -inset-8 pointer-events-none" style={{ background: 'radial-gradient(60% 55% at 60% 45%, rgba(255,140,60,0.10), transparent 70%)', filter: 'blur(30px)' }} />
-            <div className="relative rounded-[28px] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 40px 120px rgba(0,0,0,0.55), 0 0 100px rgba(255,120,40,0.1)' }}>
+            <div className="relative rounded-[28px] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 12px 28px rgba(0,0,0,0.4), 0 48px 130px rgba(0,0,0,0.6), 0 0 110px rgba(255,120,40,0.1)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={HERO_CAR} alt="Close-up of freshly detailed paintwork" className="w-full object-cover max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }} />
               <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(8,9,11,0.35) 0%, transparent 30%), linear-gradient(200deg, transparent 40%, rgba(8,9,11,0.6) 100%)' }} />
@@ -274,20 +273,16 @@ export default function HomePage() {
                 )}
                 <Image src={s.img} alt={s.name} fill sizes="(max-width:640px) 100vw, 50vw"
                   className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]" />
-                <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(185deg, transparent 30%, rgba(6,7,9,0.72) 78%)' }} />
-                <div className="absolute inset-x-3 bottom-3 rounded-[20px] p-4" style={glass(0.035)}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-display" style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em', color: '#fff' }}>{s.name}</h3>
-                      <p className="font-body mt-1" style={{ fontSize: 12.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.55)' }}>{meta.line}</p>
-                    </div>
-                    <ArrowRight size={17} className="shrink-0 mt-1 transition-transform group-hover:translate-x-1" style={{ color: 'rgba(255,255,255,0.5)' }} />
-                  </div>
-                  <div className="flex items-center gap-4 mt-3 pt-3 flex-wrap" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                    <Spec label="FROM" value={formatCurrency(from)} />
-                    {meta.warranty && <Spec label="WARRANTY" value={meta.warranty} />}
-                    <Spec label="TIME" value={getDurationLabel(meta.duration)} />
-                  </div>
+                {/* editorial overlay: type sits on the photograph, no inner card */}
+                <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,7,9,0.15) 0%, transparent 30%, transparent 45%, rgba(6,7,9,0.92) 100%)' }} />
+                <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
+                  <h3 className="font-display" style={{ fontSize: featured ? 24 : 20, fontWeight: 800, letterSpacing: '-0.015em', color: '#fff', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>{s.name}</h3>
+                  <p className="font-body mt-1 max-w-md" style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)' }}>{meta.line}</p>
+                  <p className="font-mono mt-3" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)' }}>
+                    FROM {formatCurrency(from)}
+                    {meta.warranty ? ` · ${meta.warranty.toUpperCase()} WARRANTY` : ''}
+                    {` · ${getDurationLabel(meta.duration).toUpperCase()}`}
+                  </p>
                 </div>
               </motion.article>
             );
@@ -311,10 +306,19 @@ export default function HomePage() {
             <motion.button key={p.id} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }} onClick={book}
               whileHover={{ y: -4 }} whileTap={{ scale: 0.98, y: 0 }}
               className="group relative overflow-hidden rounded-[22px] p-6 text-left flex flex-col justify-between"
-              style={{ ...glass(0.04, i === 1), aspectRatio: '1.586' }}>
-              {/* card sheen - a diagonal light pass that travels on hover */}
+              style={{
+                aspectRatio: '1.586',
+                // black-card face: near-black metal, soft top light, hairline edge
+                background: i === 1
+                  ? 'radial-gradient(120% 120% at 20% 0%, #221c16 0%, #121011 55%, #0a0a0c 100%)'
+                  : 'radial-gradient(120% 120% at 20% 0%, #1c1e22 0%, #101114 55%, #0a0b0d 100%)',
+                border: `1px solid ${i === 1 ? 'rgba(255,178,122,0.35)' : 'rgba(255,255,255,0.12)'}`,
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -12px 30px rgba(0,0,0,0.5), 0 24px 60px rgba(0,0,0,0.55)',
+              }}>
+              {/* brushed-metal sheen - travels across the face on hover */}
               <div aria-hidden className="absolute inset-0 pointer-events-none transition-transform duration-[1200ms] ease-out -translate-x-1/3 group-hover:translate-x-1/3"
-                style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.07) 45%, transparent 60%)' }} />
+                style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.08) 45%, transparent 60%)' }} />
+              <div aria-hidden className="absolute inset-0 noise-overlay pointer-events-none" style={{ opacity: 0.35 }} />
               <div className="flex items-start justify-between">
                 <span className="font-mono" style={{ fontSize: 9, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)' }}>AUTOMODZ MEMBER</span>
                 {i === 1 && <span className="font-mono px-2 py-0.5 rounded-full" style={{ fontSize: 8.5, letterSpacing: '0.1em', color: '#ffb27a', border: '1px solid rgba(255,178,122,0.35)' }}>POPULAR</span>}
@@ -347,7 +351,7 @@ export default function HomePage() {
               after={STOCK.ceramic}
               dirtBefore
               showLabels={false}
-              beforeFilter="saturate(0.3) brightness(0.62) contrast(0.88) sepia(0.22) blur(0.6px)"
+              beforeFilter="saturate(0.5) brightness(0.82) contrast(0.94) sepia(0.18) blur(0.4px)"
               afterFilter="saturate(1.18) contrast(1.1) brightness(1.04)"
               alt="The same car - dirty before, detailed after" />
           </div>
@@ -366,37 +370,46 @@ export default function HomePage() {
                 loading="lazy" referrerPolicy="no-referrer-when-downgrade"
                 className="absolute inset-0 w-full h-full" style={{ border: 0, filter: 'invert(0.9) hue-rotate(180deg) grayscale(0.35) contrast(0.92) brightness(0.9)' }} />
             </div>
-            <div className="p-5">
-              {openNow !== null && (
-                <span className="flex items-center gap-1.5 font-mono mb-2" style={{ fontSize: 9.5, letterSpacing: '0.1em', color: openNow ? '#5FBF8F' : 'rgba(255,255,255,0.4)' }}>
-                  <span className="rounded-full" style={{ width: 6, height: 6, background: openNow ? '#5FBF8F' : 'rgba(255,255,255,0.3)' }} />
-                  {openNow ? 'OPEN NOW' : 'CLOSED'} · <Clock size={10} /> 9 AM – 9 PM DAILY
-                </span>
-              )}
-              <p className="font-body flex items-start gap-1.5" style={{ fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.6)' }}>
-                <MapPin size={14} className="mt-0.5 shrink-0" /> Bhairavnath Rd, Maninagar, Ahmedabad 380028
-              </p>
-              <div className="flex items-center gap-2.5 mt-4">
-                <a href="tel:+919512605088" className="flex-1 text-center px-4 py-2.5 rounded-xl font-mono inline-flex items-center justify-center gap-1.5" style={{ fontSize: 10.5, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  <Phone size={11} /> CALL
-                </a>
-                <a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" className="flex-1 text-center px-4 py-2.5 rounded-xl font-mono inline-flex items-center justify-center gap-1.5" style={{ fontSize: 10.5, letterSpacing: '0.08em', color: '#0b0c0e', background: '#fff' }}>
-                  <Navigation size={11} /> DIRECTIONS
-                </a>
+            <div className="p-5 md:p-6">
+              {/* studio identity row: name + live hours */}
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="font-display" style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>AutoModz Detailing Studio</p>
+                  <p className="font-body mt-1 flex items-start gap-1.5" style={{ fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,0.6)' }}>
+                    <MapPin size={13} className="mt-0.5 shrink-0" /> Bhairavnath Rd, Maninagar, Ahmedabad 380028
+                  </p>
+                </div>
+                {openNow !== null && (
+                  <span className="inline-flex items-center gap-1.5 font-mono rounded-full px-3 py-1.5 shrink-0"
+                    style={{ fontSize: 9, letterSpacing: '0.12em', color: openNow ? '#5FBF8F' : 'rgba(255,255,255,0.45)', border: `1px solid ${openNow ? 'rgba(95,191,143,0.3)' : 'rgba(255,255,255,0.12)'}` }}>
+                    <span className="rounded-full" style={{ width: 6, height: 6, background: openNow ? '#5FBF8F' : 'rgba(255,255,255,0.3)' }} />
+                    {openNow ? 'OPEN' : 'CLOSED'} · 9 AM – 9 PM
+                  </span>
+                )}
+              </div>
+
+              {/* four ways in - every path a customer actually uses */}
+              <div className="grid grid-cols-2 gap-2.5 mt-5">
+                {[
+                  { label: 'CALL', icon: <Phone size={13} />, href: 'tel:+919512605088' },
+                  { label: 'WHATSAPP', icon: <WhatsAppMark size={13} />, href: 'https://wa.me/919512605088?text=' + encodeURIComponent("Hi AutoModz! I'd like to book a detailing slot.") },
+                  { label: 'REVIEWS', icon: <GoogleG size={13} />, href: 'https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9' },
+                  { label: 'DIRECTIONS', icon: <Navigation size={13} />, href: 'https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9', primary: true },
+                ].map(a => (
+                  <a key={a.label} href={a.href}
+                    {...(a.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl font-mono tap-target transition-transform active:scale-[0.97]"
+                    style={{
+                      minHeight: 48, fontSize: 10.5, letterSpacing: '0.1em',
+                      ...(a.primary
+                        ? { color: '#0b0c0e', background: 'linear-gradient(180deg, #fff, #e9ebef)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)' }
+                        : { color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)' }),
+                    }}>
+                    {a.icon} {a.label}
+                  </a>
+                ))}
               </div>
             </div>
-          </motion.div>
-
-          <motion.div {...reveal} transition={{ ...reveal.transition, delay: 0.08 }} className="mt-8 flex justify-center">
-            <Magnetic strength={0.3}>
-              <motion.a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer"
-                whileHover={{ y: -2 }} whileTap={{ scale: 0.97, y: 0 }} transition={{ duration: 0.35, ease: EASE }}
-                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl"
-                style={glass(0.05)}>
-                <GoogleG />
-                <span className="font-display" style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>Read our reviews on Google</span>
-              </motion.a>
-            </Magnetic>
           </motion.div>
         </div>
       </section>
@@ -437,22 +450,21 @@ function SectionHead({ kicker, title, sub }: { kicker: string; title: string; su
   );
 }
 
-function Spec({ label, value }: { label: string; value: string }) {
+function GoogleG({ size = 18 }: { size?: number }) {
   return (
-    <div>
-      <p className="font-mono" style={{ fontSize: 8, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.35)' }}>{label}</p>
-      <p className="font-display" style={{ fontSize: 13.5, fontWeight: 700, color: '#fff' }}>{value}</p>
-    </div>
-  );
-}
-
-function GoogleG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+    </svg>
+  );
+}
+
+function WhatsAppMark({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#25D366" aria-hidden>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.002-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
     </svg>
   );
 }

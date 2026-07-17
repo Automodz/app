@@ -1,6 +1,16 @@
 'use client';
 import { useState } from 'react';
 
+/* Organic grime textures - SVG fractal noise, not geometric overlays.
+   MUD: low-frequency brown blotches (splatter/road film).
+   DUST: high-frequency fine speckle (brake dust / dried dirt). */
+const svgTile = (freq: number, octaves: number, seed: number, rgb: string, alpha: string) =>
+  `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='${freq}' numOctaves='${octaves}' seed='${seed}'/><feColorMatrix type='matrix' values='0 0 0 0 ${rgb.split(' ')[0]}  0 0 0 0 ${rgb.split(' ')[1]}  0 0 0 0 ${rgb.split(' ')[2]}  ${alpha}'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>`,
+  )}")`;
+const MUD  = svgTile(0.045, 4, 11, '0.30 0.23 0.14', '0 0 1.4 -0.45 0');
+const DUST = svgTile(0.65, 2, 4, '0.42 0.36 0.27', '0 0 0.9 -0.28 0');
+
 /**
  * Before/after reveal slider - pure CSS/JS trust widget. The after image
  * sits underneath; the before layer is clipped to the handle position.
@@ -48,26 +58,33 @@ export default function BeforeAfterSlider({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={before} alt={`${alt} - before`} className="w-full h-full object-cover" draggable={false} style={beforeFilter ? { filter: beforeFilter } : undefined} />
           {dirtBefore && (
-            /* mud splatter + dust film (multiplied into the paint) */
+            /* road film: heavy organic mud low on the body, thinning upward */
             <div
               aria-hidden
               className="absolute inset-0 mix-blend-multiply pointer-events-none"
               style={{
-                background:
-                  'radial-gradient(circle at 18% 30%, rgba(92,68,38,0.6) 0 6px, transparent 7px),' +
-                  'radial-gradient(circle at 32% 62%, rgba(74,58,34,0.55) 0 9px, transparent 10px),' +
-                  'radial-gradient(circle at 55% 25%, rgba(88,66,40,0.5) 0 5px, transparent 6px),' +
-                  'radial-gradient(circle at 68% 70%, rgba(70,54,30,0.55) 0 11px, transparent 12px),' +
-                  'radial-gradient(circle at 82% 44%, rgba(90,66,38,0.55) 0 7px, transparent 8px),' +
-                  'radial-gradient(circle at 44% 82%, rgba(76,58,34,0.5) 0 8px, transparent 9px),' +
-                  'radial-gradient(circle at 12% 74%, rgba(66,50,28,0.55) 0 10px, transparent 11px),' +
-                  'radial-gradient(circle at 90% 80%, rgba(60,46,26,0.5) 0 13px, transparent 14px),' +
-                  'radial-gradient(circle at 26% 12%, rgba(84,64,38,0.4) 0 4px, transparent 5px),' +
-                  // road grime rising from the bottom (wheels/sills catch the worst)
-                  'linear-gradient(0deg, rgba(52,40,24,0.55) 0%, rgba(52,40,24,0.25) 22%, transparent 45%),' +
-                  'linear-gradient(160deg, rgba(83,64,40,0.42), rgba(48,38,24,0.3))',
-                backgroundColor: 'rgba(70,54,32,0.18)',
+                backgroundImage: MUD,
+                backgroundSize: '280px 280px',
+                // wheels/sills catch the worst - fade the mud out above mid-body
+                WebkitMaskImage: 'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.12) 100%)',
+                maskImage: 'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.12) 100%)',
               }}
+            />
+          )}
+          {dirtBefore && (
+            /* fine dust + brake-dust speckle over the whole panel */
+            <div
+              aria-hidden
+              className="absolute inset-0 mix-blend-multiply pointer-events-none"
+              style={{ backgroundImage: DUST, backgroundSize: '280px 280px', opacity: 0.38 }}
+            />
+          )}
+          {dirtBefore && (
+            /* dulling film: an even haze that kills the clear-coat gloss */
+            <div
+              aria-hidden
+              className="absolute inset-0 mix-blend-multiply pointer-events-none"
+              style={{ background: 'linear-gradient(160deg, rgba(126,110,86,0.2), rgba(90,76,56,0.16))' }}
             />
           )}
           {dirtBefore && (
