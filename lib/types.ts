@@ -238,6 +238,21 @@ export interface Employee {
 
 export type AttendanceStatus = 'present' | 'half_day' | 'leave';
 
+/** One break window inside a shift; endAt missing = currently on break. */
+export interface AttendanceBreak {
+  startAt: Timestamp;
+  endAt?: Timestamp;
+}
+
+/** Where/what a check-in came from — captured automatically, best-effort. */
+export interface AttendanceMeta {
+  lat?: number;
+  lng?: number;
+  accuracy?: number;          // metres
+  device?: string;            // trimmed user-agent
+  ip?: string;
+}
+
 export interface AttendanceRecord {
   id: string;                 // `${date}_${employeeId}` - deterministic, idempotent check-in
   employeeId: string;
@@ -247,6 +262,16 @@ export interface AttendanceRecord {
   checkOutAt?: Timestamp;
   status: AttendanceStatus;
   note?: string;
+  /** Check-in → working → break → working → check-out */
+  breaks?: AttendanceBreak[];
+  checkInMeta?: AttendanceMeta;
+  /** Manager audit trail — who reopened / forced out / corrected times */
+  reopenedById?: string;
+  reopenedByName?: string;
+  forcedOutById?: string;
+  forcedOutByName?: string;
+  editedById?: string;
+  editedByName?: string;
 }
 
 export interface PayrollAdjustment {

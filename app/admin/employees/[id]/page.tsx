@@ -8,7 +8,7 @@ import { format, addMonths, getDaysInMonth } from 'date-fns';
 import {
   getEmployee, getAttendanceForMonth, overrideAttendanceStatus,
   computeMonth, netPayable, getPayrollRecord, savePayrollDraft, markPayrollPaid, getPayrollHistory,
-  getJobsForEmployee, employeeWashStats, fmtMin,
+  getJobsForEmployee, employeeWashStats, fmtMin, shiftMath, attendanceCsv,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import type { Employee, AttendanceRecord, PayrollRecord, PayrollAdjustment, AttendanceStatus, Job } from '@/lib/types';
@@ -147,6 +147,47 @@ export default function EmployeePayrollPage() {
             style={{ background: 'var(--dark)', color: 'var(--steel)' }}><ChevronRight size={15} /></button>
         </div>
       </div>
+
+      {/* Month hours — derived from the automatic shift timeline */}
+      {attendance.length > 0 && (() => {
+        const maths = attendance.map(a => shiftMath(a));
+        const tot = (k: 'workedMin' | 'breakMin' | 'overtimeMin') =>
+          maths.reduce((s, m) => s + m[k], 0);
+        const lateDays = maths.filter(m => m.lateMin > 0).length;
+        const h = (m: number) => `${Math.floor(m / 60)}h ${m % 60}m`;
+        return (
+          <div className="card mb-5">
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <p className="data-label" style={{ color: 'var(--steel)' }}>Hours · {month}</p>
+              <button
+                onClick={() => {
+                  const blob = new Blob([attendanceCsv(attendance)], { type: 'text/csv' });
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = `hours-${employee?.name ?? id}-${month}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(a.href);
+                }}
+                className="btn-ghost flex items-center gap-1.5 px-3 py-2 text-xs">
+                <ChevronRight size={12} className="rotate-90" /> Hours CSV
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Worked', value: h(tot('workedMin')) },
+                { label: 'Breaks', value: h(tot('breakMin')) },
+                { label: 'Overtime', value: h(tot('overtimeMin')) },
+                { label: 'Late days', value: String(lateDays) },
+              ].map(s => (
+                <div key={s.label} className="p-3 rounded-xl" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+                  <p className="font-mono font-700 text-base" style={{ color: 'var(--chrome)' }}>{s.value}</p>
+                  <p className="text-[10px] font-body mt-0.5" style={{ color: 'var(--pewter)' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Attendance calendar */}
       <div className="card mb-5">

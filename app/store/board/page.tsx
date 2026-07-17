@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 import {
   subscribeTodaysJobs, checkIn, checkOut, getTodayAttendance, getBookingsForDates,
+  startBreak, endBreak, captureAttendanceMeta, ShiftClosedError, shiftMath,
 } from '@/lib/firebaseService';
+import { Coffee, Play } from 'lucide-react';
 import { formatCurrency, formatTime } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import JobCard from '@/components/store/JobCard';
@@ -73,6 +75,11 @@ export default function StoreBoardPage() {
       .catch(() => setMyShift(null));
   }, [myId]);
 
+  const refreshShift = async () => {
+    const recs = await getTodayAttendance();
+    setMyShift(recs.find(r => r.employeeId === myId) ?? null);
+  };
+
   const toggleShift = async () => {
     if (!myId || shiftBusy) return;
     setShiftBusy(true);
@@ -81,12 +88,25 @@ export default function StoreBoardPage() {
         await checkOut(myId);
         toast.success('Checked out - see you tomorrow!');
       } else if (!myShift) {
-        await checkIn({ id: myId, name: myName });
+        const meta = await captureAttendanceMeta();
+        await checkIn({ id: myId, name: myName }, meta);
         toast.success('Checked in - have a great shift!');
       }
-      const recs = await getTodayAttendance();
-      setMyShift(recs.find(r => r.employeeId === myId) ?? null);
-    } catch { toast.error('Could not update your shift'); }
+      await refreshShift();
+    } catch (e) {
+      toast.error(e instanceof ShiftClosedError ? e.message : 'Could not update your shift');
+    }
+    setShiftBusy(false);
+  };
+
+  const toggleBreak = async () => {
+    if (!myId || shiftBusy || !myShift || myShift.checkOutAt) return;
+    setShiftBusy(true);
+    try {
+      if (shiftMath(myShift).onBreak) { await endBreak(myId); toast.success('Back to work'); }
+      else { await startBreak(myId); toast.success('Break started'); }
+      await refreshShift();
+    } catch { toast.error('Could not update break'); }
     setShiftBusy(false);
   };
 
@@ -140,11 +160,21 @@ export default function StoreBoardPage() {
             </div>
           )}
           {myId && !shiftDone && myShift !== undefined && (
-            <button onClick={toggleShift} disabled={shiftBusy}
-              className={`${onShift ? 'btn-ghost' : 'btn-ember'} w-full py-3 flex items-center justify-center gap-2 text-sm`}>
-              {onShift ? <LogOut size={15} /> : <LogIn size={15} />}
-              {shiftBusy ? 'Saving…' : onShift ? 'Check Out' : 'Check In'}
-            </button>
+            <div className="flex gap-2">
+              {onShift && (
+                <button onClick={toggleBreak} disabled={shiftBusy}
+                  className="btn-ghost flex-1 py-3 flex items-center justify-center gap-2 text-sm">
+                  {myShift && shiftMath(myShift).onBreak
+                    ? <><Play size={14} /> Resume</>
+                    : <><Coffee size={14} /> Break</>}
+                </button>
+              )}
+              <button onClick={toggleShift} disabled={shiftBusy}
+                className={`${onShift ? 'btn-ghost' : 'btn-ember'} flex-1 py-3 flex items-center justify-center gap-2 text-sm`}>
+                {onShift ? <LogOut size={15} /> : <LogIn size={15} />}
+                {shiftBusy ? 'Saving…' : onShift ? 'Check Out' : 'Check In'}
+              </button>
+            </div>
           )}
           <Link href="/store/attendance" className="flex items-center justify-center text-center data-label mt-2 tap-target cursor-pointer"
             style={{ color: 'var(--steel)' }}>
