@@ -290,6 +290,34 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══ BUY / SELL — the marketplace, two doors ═══ */}
+      <section id="cars" className="relative z-10 px-6 py-14 md:py-20">
+        <SectionHead kicker="MARKETPLACE" title="Cars, kept honest." />
+        <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          {[
+            { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: STOCK.carFallback },
+            { title: 'Sell your car', line: 'List it in minutes — we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: STOCK.vehicleFallback },
+          ].map((t, i) => (
+            <motion.div key={t.href} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }}>
+              <Link href={t.href}
+                className="group relative flex flex-col justify-end rounded-[26px] overflow-hidden"
+                style={{ minHeight: 220, border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 24px 60px rgba(0,0,0,0.4)' }}>
+                <Image src={t.img} alt={t.title} fill sizes="(max-width:640px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]" />
+                <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,7,9,0.2) 0%, transparent 35%, rgba(6,7,9,0.92) 100%)' }} />
+                <div className="relative p-5 md:p-6">
+                  <h3 className="font-display" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.015em', color: '#fff', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>{t.title}</h3>
+                  <p className="font-body mt-1 max-w-xs" style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)' }}>{t.line}</p>
+                  <p className="font-mono mt-3 inline-flex items-center gap-1.5" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.55)' }}>
+                    {t.cta.toUpperCase()} <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+                  </p>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* ═══ MEMBERSHIP - benefit first, plans second ═══ */}
       <section id="membership" className="relative z-10 px-6 py-14 md:py-20">
         <SectionHead kicker="MEMBERSHIP" title="Protect your car, all year." />
