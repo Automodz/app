@@ -115,7 +115,7 @@ export default function ProfilePage() {
                 {user?.email}
               </p>
               <button onClick={openEdit}
-                className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-lg"
+                className="inline-flex items-center gap-1.5 mt-1.5 px-3 py-2 rounded-lg"
                 style={{ background: 'var(--ash)', border: '1px solid var(--border)', color: 'var(--silver)', fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 500 }}>
                 <Pencil size={10} /> Edit profile
               </button>
@@ -189,7 +189,7 @@ export default function ProfilePage() {
           </p>
           <a href={process.env.NEXT_PUBLIC_GOOGLE_MAPS_URL || 'https://maps.google.com'}
             target="_blank" rel="noopener noreferrer"
-            className="flex items-start gap-3 transition-opacity hover:opacity-80">
+            className="flex items-start gap-3 py-2 transition-opacity hover:opacity-80">
             <MapPin size={14} style={{ color: 'var(--ember)', marginTop: '2px', flexShrink: 0 }} />
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--fg-dim)' }}>
               Bhairavnath Rd, Maninagar, Ahmedabad 380028
@@ -197,7 +197,7 @@ export default function ProfilePage() {
           </a>
           <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}`}
             target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-3 transition-opacity hover:opacity-80">
+            className="flex items-center gap-3 py-2 transition-opacity hover:opacity-80">
             <Phone size={14} style={{ color: 'var(--ember)', flexShrink: 0 }} />
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--fg-dim)' }}>
               Chat on WhatsApp

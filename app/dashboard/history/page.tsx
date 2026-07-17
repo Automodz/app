@@ -128,7 +128,7 @@ export default function HistoryPage() {
         <div className="flex gap-2 overflow-x-auto no-scroll pb-1">
           {FILTERS.map(f => (
             <motion.button key={f} whileTap={{ scale: 0.92 }} onClick={() => setFilter(f)}
-              className="flex-shrink-0 px-3 py-1.5 rounded-xl transition-all"
+              className="flex-shrink-0 px-4 py-2.5 rounded-xl transition-all"
               style={{
                 background:    filter === f ? 'var(--ember)' : 'var(--cavern)',
                 color:         filter === f ? 'var(--on-accent)' : 'var(--muted)',

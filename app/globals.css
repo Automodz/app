@@ -925,6 +925,9 @@ body {
 
 /* 44px minimum touch target (Apple HIG) for compact controls */
 .tap-target   { min-width: 44px; min-height: 44px; }
+
+/* Anchored sections land below fixed headers, not underneath them */
+section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 .border-theme { border-color: var(--border); }
 .bg-2         { background-color: var(--bg-2); }
 .bg-3         { background-color: var(--bg-3); }
