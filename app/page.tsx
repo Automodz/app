@@ -173,12 +173,12 @@ export default function HomePage() {
       </header>
 
       {/* ═══ HERO - split: copy left, close-up paint right ═══ */}
-      <section ref={heroRef} className="relative z-10 min-h-[100svh] flex items-center px-6 pt-24 pb-16">
-        <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-[1fr_1.1fr] gap-10 lg:gap-6 items-center">
+      <section ref={heroRef} className="relative z-10 md:min-h-[100svh] flex items-center px-6 pt-[calc(var(--sat)+84px)] pb-10 md:pt-24 md:pb-16">
+        <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-[1fr_1.1fr] gap-5 lg:gap-6 items-center">
           {/* copy stack */}
           <div className="text-center lg:text-left order-2 lg:order-1">
             <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }}
-              className="font-mono mb-5" style={{ fontSize: 11, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.45)' }}>
+              className="font-mono mb-3" style={{ fontSize: 11, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.45)' }}>
               DETAILING STUDIO · MANINAGAR, AHMEDABAD
             </motion.p>
             <motion.h1 initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.05 }}
@@ -186,13 +186,13 @@ export default function HomePage() {
               The art of<br /><span style={{ background: 'linear-gradient(100deg, #fff 20%, #ffb27a 55%, #8ea2ff 90%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>the finish.</span>
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.12 }}
-              className="font-body mt-6 max-w-md mx-auto lg:mx-0" style={{ fontSize: 16.5, lineHeight: 1.65, color: 'rgba(255,255,255,0.62)' }}>
+              className="font-body mt-3 lg:mt-6 max-w-md mx-auto lg:mx-0" style={{ fontSize: 16.5, lineHeight: 1.65, color: 'rgba(255,255,255,0.62)' }}>
               PPF, ceramic and correction - photographed panel by panel, tracked live from your phone.
             </motion.p>
 
             {/* primary conversion: slide to book */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.18 }}
-              className="mt-9 max-w-sm mx-auto lg:mx-0">
+              className="mt-6 lg:mt-9 max-w-sm mx-auto lg:mx-0">
               <SlideToAction label="Slide to book" onComplete={book} />
               <a href="#services" className="font-mono inline-flex items-center mt-2 tap-target" style={{ fontSize: 10.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.45)' }}>
                 EXPLORE SERVICES ↓
@@ -210,7 +210,7 @@ export default function HomePage() {
             <div aria-hidden className="absolute -inset-8 pointer-events-none" style={{ background: 'radial-gradient(60% 55% at 60% 45%, rgba(255,140,60,0.10), transparent 70%)', filter: 'blur(30px)' }} />
             <div className="relative rounded-[28px] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 40px 120px rgba(0,0,0,0.55), 0 0 100px rgba(255,120,40,0.1)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={HERO_CAR} alt="Close-up of freshly detailed paintwork" className="w-full object-cover" style={{ aspectRatio: '4/3' }} />
+              <img src={HERO_CAR} alt="Close-up of freshly detailed paintwork" className="w-full object-cover max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }} />
               <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(8,9,11,0.35) 0%, transparent 30%), linear-gradient(200deg, transparent 40%, rgba(8,9,11,0.6) 100%)' }} />
               {/* glass rim highlight along the top edge */}
               <div aria-hidden className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />
@@ -253,7 +253,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ SERVICES - image cards with glass overlay + price/warranty/duration ═══ */}
-      <section id="services" className="relative z-10 px-6 py-20">
+      <section id="services" className="relative z-10 px-6 py-14 md:py-20">
         <SectionHead kicker="THE CRAFT" title="Four disciplines. One standard." />
         <div className="grid sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
           {SERVICE_SHOWCASE.map((s, i) => {
@@ -296,7 +296,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ MEMBERSHIP - benefit first, plans second ═══ */}
-      <section id="membership" className="relative z-10 px-6 py-20">
+      <section id="membership" className="relative z-10 px-6 py-14 md:py-20">
         <SectionHead kicker="MEMBERSHIP" title="Protect your car, all year." />
         <motion.div {...reveal} className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap max-w-2xl mx-auto -mt-4 mb-10">
           {['MONTHLY PREMIUM WASHES', 'PRIORITY BOOKING', 'MEMBER PRICING'].map((b, i, arr) => (
@@ -336,7 +336,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ BEFORE / AFTER - visual proof, no labels needed ═══ */}
-      <section id="gallery" className="relative z-10 px-6 py-20">
+      <section id="gallery" className="relative z-10 px-6 py-14 md:py-20">
         <SectionHead kicker="THE DIFFERENCE" title="Drag. See for yourself." />
         <motion.div {...reveal} className="relative max-w-3xl mx-auto">
           {/* cinematic frame: bloom under, glass rim around */}
@@ -355,7 +355,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ CONTACT - closing ═══ */}
-      <section id="contact" className="relative z-10 px-6 py-20">
+      <section id="contact" className="relative z-10 px-6 py-14 md:py-20">
         <SectionHead kicker="CONTACT" title="Bring it by. We’ll take it from here." />
         <div className="max-w-2xl mx-auto">
           <motion.div {...reveal} className="rounded-[26px] overflow-hidden" style={glass(0.035)}>
