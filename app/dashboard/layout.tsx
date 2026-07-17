@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--void)' }}>
-      <main className="flex-1 pb-24">
+      <main className="flex-1 safe-page safe-scroll-nav">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname}
@@ -97,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Bottom navigation - 5 tabs */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-50 pb-safe"
+        className="fixed bottom-0 inset-x-0 z-50 safe-bottom-bar"
         style={{
           background: 'var(--glass-bg)',
           backdropFilter: 'blur(32px) saturate(160%)',

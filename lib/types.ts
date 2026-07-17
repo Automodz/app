@@ -87,7 +87,7 @@ export interface Booking {
   /** Discount applied at checkout - membership % or promo, best-of, never stacked */
   discount?: BookingDiscount;
   invoiceId?: string;
-  /** Operational record link — set at vehicle check-in. Booking (commercial
+  /** Operational record link - set at vehicle check-in. Booking (commercial
    *  truth) and Job (operational truth) are a permanent 1:1; neither replaces
    *  the other. */
   jobId?: string;
@@ -95,7 +95,7 @@ export interface Booking {
   usedMembershipWash?: boolean;
   membershipId?: string;
   cancelledAt?: Timestamp;
-  /** Approval workflow — set when an admin rejects the pending booking. */
+  /** Approval workflow - set when an admin rejects the pending booking. */
   rejectionReason?: string;
   /** Customer never arrived for a confirmed slot. */
   noShow?: boolean;
@@ -391,7 +391,7 @@ export interface Quote {
   status: QuoteStatus;
   notes?: string;             // internal
   customerMessage?: string;   // what the customer asked for
-  /** Operational link — set when an accepted quote is started as a job. */
+  /** Operational link - set when an accepted quote is started as a job. */
   jobId?: string;
   createdById?: string;
   createdByName?: string;

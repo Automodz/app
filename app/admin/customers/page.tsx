@@ -80,7 +80,7 @@ export default function AdminCustomersPage() {
         filteredWalkins.length === 0 ? (
           <div className="card text-center py-14">
             <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>
-              {search ? `Nothing found for “${search}”.` : 'No walk-in records yet — they build automatically at intake.'}
+              {search ? `Nothing found for “${search}”.` : 'No walk-in records yet - they build automatically at intake.'}
             </p>
           </div>
         ) : (

@@ -77,7 +77,7 @@ export default function HistoryPage() {
     try {
       await cancelBooking(selected.id);
       cancelBookingInStore(selected.id);
-      // studio gets notified + the job timeline records it — fire-and-forget
+      // studio gets notified + the job timeline records it - fire-and-forget
       fireOpsEvent('booking_cancelled', selected.id);
       logActivity({
         type: 'cancelled', title: 'Cancelled by customer',
@@ -242,7 +242,7 @@ export default function HistoryPage() {
             <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl overflow-y-auto max-h-[92vh]"
+              className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl overflow-y-auto safe-sheet"
               style={{ background: 'var(--deep)', borderTop: '1px solid var(--border-2)' }}>
               <div className="p-5">
                 <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'var(--border-2)' }} />

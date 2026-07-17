@@ -1,7 +1,7 @@
 'use client';
 /**
  * Floating WhatsApp quick-chat. Opens a pre-filled chat to the studio.
- * WhatsApp brand green is intentional (like the Google mark) — it's the
+ * WhatsApp brand green is intentional (like the Google mark) - it's the
  * recognised affordance, not a UI accent. Fixed bottom-right, safe-area aware.
  */
 const PHONE = '919512605088'; // AutoModz WhatsApp (E.164, no +)
@@ -17,7 +17,7 @@ export default function WhatsAppFloat() {
       className="fixed z-40 grid place-items-center rounded-full transition-transform active:scale-95 hover:scale-105"
       style={{
         right: 16,
-        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+        bottom: 'calc(var(--sab) + 16px)',
         width: 56,
         height: 56,
         background: '#25D366',

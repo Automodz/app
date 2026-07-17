@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 
-/** Animated slide chevrons — the "»" of slide-to-unlock, staggered shimmer. */
+/** Animated slide chevrons - the "»" of slide-to-unlock, staggered shimmer. */
 function Chevrons({ active }: { active: boolean }) {
   return (
     <svg width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden>
@@ -43,7 +43,7 @@ export default function SlideToAction({
 
   const maxX = () => (trackRef.current?.offsetWidth ?? 0) - knob - 8;
 
-  // Damped resistance over the last 25% — the unlock has to be earned.
+  // Damped resistance over the last 25% - the unlock has to be earned.
   const move = (clientX: number) => {
     if (!trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
@@ -102,7 +102,7 @@ export default function SlideToAction({
           transition: dragging ? 'none' : 'width 0.35s cubic-bezier(0.22,1,0.36,1)',
         }}
       />
-      {/* shimmer label — a light sweep keeps the affordance alive */}
+      {/* shimmer label - a light sweep keeps the affordance alive */}
       <div
         className="absolute inset-0 grid place-items-center font-display"
         style={{ opacity: 1 - pct * 1.4, fontSize: 14, fontWeight: 600, letterSpacing: '0.02em' }}

@@ -77,7 +77,7 @@ export const createWalkInJob = async (data: {
 
 /**
  * Vehicle check-in: create the operational Job for a customer Booking.
- * The Booking (commercial truth) is NEVER replaced — it stays and gains a
+ * The Booking (commercial truth) is NEVER replaced - it stays and gains a
  * `jobId` link; the Job (operational truth) carries the work. 1:1, permanent.
  * Idempotent: if the booking already has a job, returns it.
  */

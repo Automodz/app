@@ -1,6 +1,6 @@
 'use client';
 /**
- * LiquidOrb — a 3D-looking metallic sphere with liquid-morphism around it,
+ * LiquidOrb - a 3D-looking metallic sphere with liquid-morphism around it,
  * built entirely from CSS + SVG (no WebGL, no external assets, no runtime deps).
  * It always paints on first frame, so it can never block or break page load.
  * Motion is pure CSS and honours `prefers-reduced-motion` via globals.css.

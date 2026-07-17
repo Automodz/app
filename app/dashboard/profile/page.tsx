@@ -230,7 +230,7 @@ export default function ProfilePage() {
               onClick={() => setEditOpen(false)} />
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl p-5 pb-safe glass-strong">
+              className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl p-5 safe-sheet glass-strong">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-display font-700 text-lg" style={{ color: 'var(--chrome)' }}>Edit Profile</h2>
                 <button onClick={() => setEditOpen(false)}

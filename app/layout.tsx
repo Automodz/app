@@ -27,6 +27,8 @@ export const viewport: Viewport = {
   width: 'device-width', initialScale: 1,
   maximumScale: 1, userScalable: false,
   viewportFit: 'cover',
+  // keyboard resizes the layout viewport → inputs never hide behind it
+  interactiveWidget: 'resizes-content',
   themeColor: '#F7F7F6',
 };
 
@@ -50,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <Toaster
               position="top-center"
+              containerStyle={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
               toastOptions={{
                 duration: 3000,
                 style: {

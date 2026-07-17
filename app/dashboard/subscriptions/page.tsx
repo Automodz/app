@@ -437,7 +437,7 @@ export default function SubscriptionsPage() {
         ))}
       </div>
 
-      <div className="fixed bottom-0 inset-x-0 px-4 py-4 pb-8"
+      <div className="fixed bottom-0 inset-x-0 px-4 pt-4 safe-bottom-bar"
         style={{ background: 'rgba(5,5,7,0.96)', backdropFilter: 'blur(24px)', borderTop: '1px solid var(--border-2)' }}>
         <button
           onClick={() => selectedPlan && setView('payment')}

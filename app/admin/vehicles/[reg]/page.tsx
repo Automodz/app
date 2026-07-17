@@ -1,8 +1,8 @@
 'use client';
 /**
- * Vehicle 360 — the operational history of one car, keyed by registration
+ * Vehicle 360 - the operational history of one car, keyed by registration
  * number. Every booking, every walk-in, every invoice, every technician,
- * every photo — one chronological stream. Reached from any workspace or
+ * every photo - one chronological stream. Reached from any workspace or
  * customer page by tapping the reg no.
  */
 import { useCallback, useEffect, useState } from 'react';

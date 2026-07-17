@@ -24,7 +24,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isStaff = user?.role === 'admin' || user?.role === 'employee';
-  // Managers (admin/owner) run the Front Desk as a shared OS — no kiosk PIN.
+  // Managers (admin/owner) run the Front Desk as a shared OS - no kiosk PIN.
   const isManager = user?.role === 'admin';
   // Employees sign in on their own phones; kiosk mode (PIN) rides on the
   // owner's admin session on the shared tablet.
@@ -110,9 +110,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen flex flex-col select-none" style={{ background: 'var(--void)' }}>
       {!isLockScreen && (kioskEmployee || isManager) && (
-        <header className="flex items-center gap-3 px-5 py-3 sticky top-0 z-30"
-          style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+        <header className="flex items-center gap-3 px-5 py-3 safe-header z-30"
+          style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', paddingLeft: 'max(var(--sal), 20px)', paddingRight: 'max(var(--sar), 20px)' }}>
+          <div className="w-9 h-9 rounded-xl hidden sm:flex items-center justify-center"
             style={{ background: 'var(--accent-grad)' }}>
             <Zap size={16} style={{ color: 'var(--on-accent)' }} />
           </div>
@@ -128,7 +128,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               const active = pathname.startsWith(href);
               return (
                 <Link key={href} href={href}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl data-label transition-all"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl data-label transition-all tap-target justify-center"
                   style={{
                     background: active ? 'var(--accent-mist)' : 'transparent',
                     border: active ? '1px solid var(--accent-haze)' : '1px solid transparent',
@@ -140,7 +140,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             })}
           </nav>
           <div className="flex items-center gap-3">
-            <div className="text-right">
+            <div className="text-right hidden md:block">
               <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{kioskEmployee?.name ?? user.name ?? 'Manager'}</p>
               <p className="data-label" style={{ color: 'var(--steel)' }}>{kioskEmployee?.role ?? 'Manager'}</p>
             </div>
@@ -152,7 +152,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               </button>
             )}
             {isManager ? (
-              /* managers flip modes directly — mirror of the Admin sidebar switch */
+              /* managers flip modes directly - mirror of the Admin sidebar switch */
               <Link href="/admin" title="Switch to Admin OS"
                 className="flex items-center gap-2 h-11 px-4 rounded-xl data-label transition-colors"
                 style={{ background: 'var(--dark)', color: 'var(--steel)', border: '1px solid var(--border)' }}>
@@ -168,7 +168,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
       )}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 safe-scroll px-safe">{children}</main>
 
       <ConfirmDialog
         open={exitOpen}

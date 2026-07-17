@@ -73,7 +73,7 @@ export default function DashboardCarsPage() {
           <Car size={28} className="mx-auto mb-3" style={{ color: 'var(--steel)' }} />
           <p className="font-body text-sm inline-flex items-center justify-center flex-wrap gap-1" style={{ color: 'var(--steel)' }}>
             {tab === 'saved'
-              ? <>No saved cars yet — tap the <Heart size={13} className="inline" /> on a car you like.</>
+              ? <>No saved cars yet - tap the <Heart size={13} className="inline" /> on a car you like.</>
               : 'New stock arriving soon.'}
           </p>
         </div>

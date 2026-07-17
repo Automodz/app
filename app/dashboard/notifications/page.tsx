@@ -137,7 +137,7 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        {/* Per-category preferences — respected by reminder + promo senders */}
+        {/* Per-category preferences - respected by reminder + promo senders */}
         <div className="card mb-5">
           <p className="font-mono mb-3" style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--faint)' }}>
             What you hear about

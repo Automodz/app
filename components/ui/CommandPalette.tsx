@@ -1,6 +1,6 @@
 'use client';
 /**
- * Command palette (⌘K / Ctrl-K) — the hallmark of an operating-system feel.
+ * Command palette (⌘K / Ctrl-K) - the hallmark of an operating-system feel.
  * Fuzzy-filter across every destination and quick action, full keyboard control
  * (↑ ↓ to move, ↵ to run, esc to close). Opens from anywhere via the global
  * shortcut or the top-bar trigger. Design-system native: glass panel, spring in,
@@ -94,8 +94,8 @@ export default function CommandPalette({
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.14 }}
-          className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[14vh]"
-          style={{ background: 'rgba(6,7,9,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+          className="fixed inset-0 z-[100] flex items-start justify-center px-4"
+          style={{ paddingTop: 'max(14vh, calc(var(--sat) + 16px))', background: 'rgba(6,7,9,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
           onClick={onClose}
         >
           <motion.div

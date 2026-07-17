@@ -196,7 +196,7 @@ export default function DashboardPage() {
             ))}
           </motion.div>
 
-          {/* Membership instrument cluster — twin gauges (washes · validity) */}
+          {/* Membership instrument cluster - twin gauges (washes · validity) */}
           {isMemberActive && planConfig && !membershipLoading && (
             <motion.button
               {...stagger(0.12)}
@@ -320,8 +320,8 @@ export default function DashboardPage() {
                   UPCOMING
                 </p>
               </div>
-              <Link href="/dashboard/history"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ember)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <Link href="/dashboard/history" className="tap-target"
+                style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ember)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px' }}>
                 All <ChevronRight size={12} />
               </Link>
             </div>
@@ -355,8 +355,8 @@ export default function DashboardPage() {
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.10em', color: 'var(--faint)' }}>
               SERVICES
             </p>
-            <Link href="/dashboard/booking"
-              style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ember)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <Link href="/dashboard/booking" className="tap-target"
+              style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ember)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px' }}>
               All <ChevronRight size={12} />
             </Link>
           </div>
@@ -415,7 +415,7 @@ export default function DashboardPage() {
               </span>
               <div>
                 <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                  Refer a friend — give ₹200, get ₹200
+                  Refer a friend - give ₹200, get ₹200
                 </p>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
                   Share your link on WhatsApp, both of you save

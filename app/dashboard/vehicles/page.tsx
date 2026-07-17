@@ -200,7 +200,7 @@ export default function VehiclesPage() {
             <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl overflow-y-auto max-h-[92vh]"
+              className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl overflow-y-auto safe-sheet"
               style={{ background: 'var(--deep)', borderTop: '1px solid var(--border-2)' }}>
 
               <div className="p-5">

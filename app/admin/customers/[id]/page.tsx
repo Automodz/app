@@ -1,6 +1,6 @@
 'use client';
 /**
- * Customer 360 — not a CRUD page. One continuous, chronological timeline of
+ * Customer 360 - not a CRUD page. One continuous, chronological timeline of
  * everything this customer has ever done (bookings, walk-ins, invoices,
  * memberships), with the operational rail (garage, membership, promos, notes)
  * always visible beside it. No tabs, nothing hidden.
@@ -149,7 +149,7 @@ export default function CustomerDetailPage() {
   if (!customer) return <div className="p-8 text-center font-body" style={{ color: 'var(--steel)' }}>Customer not found.</div>;
 
   // ── One chronological stream. Booking-linked jobs are folded into their
-  //    booking entry (one car, one row) — never duplicated. ──
+  //    booking entry (one car, one row) - never duplicated. ──
   const timeline: TimelineItem[] = [
     ...bookings.map((b): TimelineItem => ({
       id: 'b' + b.id,
@@ -218,7 +218,7 @@ export default function CustomerDetailPage() {
         <div className="flex-1 min-w-0">
           <h1 className="font-display font-800 text-xl" style={{ color: 'var(--chrome)' }}>{customer.name}</h1>
           <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
-            {customer.email}{customer.phone ? ` · ${customer.phone}` : ''} · joined {customer.createdAt?.toDate?.().toLocaleDateString('en-IN') ?? '—'}
+            {customer.email}{customer.phone ? ` · ${customer.phone}` : ''} · joined {customer.createdAt?.toDate?.().toLocaleDateString('en-IN') ?? '-'}
           </p>
         </div>
         <div className="text-right">
@@ -252,7 +252,7 @@ export default function CustomerDetailPage() {
           </div>
           {timeline.length === 0 ? (
             <div className="card text-center py-14">
-              <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Nothing yet — their first visit will appear here.</p>
+              <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Nothing yet - their first visit will appear here.</p>
             </div>
           ) : (
             <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
@@ -288,7 +288,7 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
-        {/* ── Rail: garage, membership, promos, notes — always visible ── */}
+        {/* ── Rail: garage, membership, promos, notes - always visible ── */}
         <div className="space-y-4">
           <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
             <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Garage · {vehicles.length}</p>
@@ -347,7 +347,7 @@ export default function CustomerDetailPage() {
             <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Promos</p>
             {assignablePromos.length === 0 ? (
               <p className="font-body text-xs" style={{ color: 'var(--steel)' }}>
-                No active promos — create one in <Link href="/admin/promos" style={{ color: 'var(--chrome)' }}>Promotions</Link>.
+                No active promos - create one in <Link href="/admin/promos" style={{ color: 'var(--chrome)' }}>Promotions</Link>.
               </p>
             ) : (
               <div className="space-y-1.5">

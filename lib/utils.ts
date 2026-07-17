@@ -86,7 +86,7 @@ export const getStatusStep = (status: string): number =>
   ['pending','confirmed','vehicle_received','in_progress','quality_check','ready_for_delivery','completed'].indexOf(status);
 
 // Service-category icons now come from the shared <ServiceIcon /> component
-// (components/ui/ServiceIcon.tsx) — a single Lucide source of truth. The old
+// (components/ui/ServiceIcon.tsx) - a single Lucide source of truth. The old
 // emoji map was removed to keep the platform emoji-free and consistent.
 
 export const getDurationLabel = (minutes: number): string => {

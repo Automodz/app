@@ -22,7 +22,7 @@ export const updateVehicle = (uid: string, vid: string, data: Partial<Vehicle>) 
 
 export const deleteVehicle = (uid: string, vid: string) =>
   deleteDoc(doc(db, 'users', uid, 'vehicles', vid));
-/* ── Vehicle 360 — everything ever done to one car, keyed by reg no ──
+/* ── Vehicle 360 - everything ever done to one car, keyed by reg no ──
    Single-equality queries only (no composite indexes needed); sorted client-side. */
 
 import type { Booking, Invoice, Job } from '../types';

@@ -18,7 +18,7 @@ const CATEGORIES = ['Washing', 'Ceramic', 'Coating', 'PPF'];
 export default function WalkInFlow() {
   const router = useRouter();
   const { kioskEmployee, user } = useAppStore();
-  // Managers (admin) run the front desk without a kiosk PIN — they act as themselves.
+  // Managers (admin) run the front desk without a kiosk PIN - they act as themselves.
   const operator = kioskEmployee ?? (user?.role === 'admin' ? { id: user.uid, name: user.name || 'Manager' } : null);
   const [step, setStep] = useState(0); // 0 customer, 1 vehicle, 2 services, 3 confirm
 

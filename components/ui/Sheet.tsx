@@ -42,7 +42,7 @@ export default function Sheet({
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="glass-strong relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl pb-safe max-h-[88dvh] overflow-y-auto no-scrollbar"
+            className="glass-strong relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl safe-sheet overflow-y-auto no-scrollbar"
             initial={{ y: 48 }} animate={{ y: 0 }} exit={{ y: 48, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 34 }}
           >

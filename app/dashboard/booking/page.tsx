@@ -431,7 +431,7 @@ function BookingInner() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--void)' }}>
+    <div className="min-h-screen pb-24" style={{ background: 'var(--void)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-20 glass-nav px-4 pt-4 pb-3">
@@ -1054,8 +1054,8 @@ function BookingInner() {
 
       {/* Bottom CTA */}
       {step < 5 && (
-        <div className="fixed bottom-20 left-0 right-0 z-[60] px-4 py-3 glass-nav"
-          style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="fixed left-0 right-0 z-[60] px-4 py-3 glass-nav"
+          style={{ borderTop: '1px solid var(--border)', bottom: 'var(--bottom-nav-h)' }}>
           <motion.button whileTap={{ scale: 0.97 }}
             onClick={() => step === 4 ? handleSubmit() : canProceed() && setStep(step + 1)}
             disabled={!canProceed() || submitting}

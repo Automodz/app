@@ -1,6 +1,6 @@
 'use client';
 /**
- * Workspace — the admin lands here. One screen that runs the day:
+ * Workspace - the admin lands here. One screen that runs the day:
  *   intelligence strip  → numbers that change decisions (revenue, floor,
  *                         staff, stock, unpaid, leads)
  *   follow-ups          → the owner's action queue
@@ -135,13 +135,13 @@ export default function AdminWorkspace() {
             Live · {format(new Date(), 'EEEE, dd MMM')}
           </p>
         </div>
-        {/* top bar already carries this action on desktop — keep it for mobile only */}
+        {/* top bar already carries this action on desktop - keep it for mobile only */}
         <Link href="/admin/walkin" className="btn-ember flex md:hidden items-center gap-2 px-4 py-2.5 text-sm">
           <PlusCircle size={15} /> New walk-in
         </Link>
       </div>
 
-      {/* Intelligence strip — numbers that change decisions */}
+      {/* Intelligence strip - numbers that change decisions */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
         {INTEL.map(s => {
           const inner = (
@@ -177,7 +177,7 @@ export default function AdminWorkspace() {
         ))}
       </div>
 
-      {/* Pending booking approvals — first decision of the day */}
+      {/* Pending booking approvals - first decision of the day */}
       {approvals.length > 0 && (
         <div className="mb-6" ref={el => { sectionRefs.current['approvals'] = el; }}>
           <div className="flex items-center gap-2 mb-2 px-1">
@@ -209,7 +209,7 @@ export default function AdminWorkspace() {
         </div>
       )}
 
-      {/* Follow-ups — the action queue */}
+      {/* Follow-ups - the action queue */}
       <div className="rounded-2xl px-4 py-3 mb-6" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider mb-2"
           style={{ color: tasks.length ? 'var(--warning)' : 'var(--faint)' }}>
@@ -234,7 +234,7 @@ export default function AdminWorkspace() {
             </div>
           ))}
           {tasks.length === 0 && (
-            <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>All clear — nothing due.</p>
+            <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>All clear - nothing due.</p>
           )}
         </div>
         <input className="input w-full text-sm py-2" value={taskDraft}
@@ -243,7 +243,7 @@ export default function AdminWorkspace() {
           placeholder="Add a follow-up for today… (Enter)" />
       </div>
 
-      {/* Arriving — bookings not yet checked in */}
+      {/* Arriving - bookings not yet checked in */}
       {arriving.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2 px-1">
@@ -282,13 +282,13 @@ export default function AdminWorkspace() {
         </div>
       )}
 
-      {/* The floor — live stage-grouped jobs */}
+      {/* The floor - live stage-grouped jobs */}
       {!jobsReady ? (
         <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-14 shimmer rounded-xl" />)}</div>
       ) : jobs.length === 0 ? (
         <div className="card text-center py-14">
           <Wrench size={24} className="mx-auto mb-3" style={{ color: 'var(--steel)' }} />
-          <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Quiet floor — start a walk-in to get moving.</p>
+          <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Quiet floor - start a walk-in to get moving.</p>
         </div>
       ) : (
         <div className="space-y-7">

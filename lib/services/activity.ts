@@ -4,7 +4,7 @@ import {
 import { db } from '../firebase';
 
 /**
- * Activity events — the heartbeat of the business. EVERY meaningful action
+ * Activity events - the heartbeat of the business. EVERY meaningful action
  * (status change, assignment, photo, payment, invoice, message, delivery…)
  * writes one event here. The workspace timeline reads them back.
  *
@@ -41,7 +41,7 @@ export interface LogActivityInput {
   actor: { id: string; name: string };
 }
 
-/** Fire-and-forget — logging must never block or break an operational action. */
+/** Fire-and-forget - logging must never block or break an operational action. */
 export const logActivity = async (input: LogActivityInput): Promise<void> => {
   try {
     const doc: Record<string, unknown> = {

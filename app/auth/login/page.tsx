@@ -24,7 +24,7 @@ export default function LoginPage() {
     if (ref) stashReferralCode(ref);
   }, []);
 
-  // ── Google sign-in — the only way in ──────────────────────────────────
+  // ── Google sign-in - the only way in ──────────────────────────────────
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
@@ -61,13 +61,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-mesh"
-      style={{ overflowX: 'clip' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-mesh safe-page"
+      style={{ overflowX: 'clip', paddingBottom: 'max(var(--sab), 48px)' }}>
 
       {/* Back to home */}
       <Link href="/"
-        className="fixed top-5 left-5 z-20 inline-flex items-center gap-1.5 font-mono"
+        className="fixed z-20 inline-flex items-center gap-1.5 font-mono tap-target"
         style={{
+          top: 'calc(var(--sat) + 16px)', left: 'calc(var(--sal) + 16px)',
           fontSize: 11, letterSpacing: '0.08em', color: 'var(--fg-dim)',
           border: '1px solid var(--border-2)', borderRadius: 10,
           padding: '8px 14px', background: 'var(--glass)', backdropFilter: 'blur(12px)',
@@ -108,7 +109,7 @@ export default function LoginPage() {
             Sign in
           </h1>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', lineHeight: 1.6, color: 'var(--muted)', marginTop: '8px', marginBottom: '22px' }}>
-            One tap with Google — no passwords to remember.
+            One tap with Google - no passwords to remember.
           </p>
 
           <motion.button

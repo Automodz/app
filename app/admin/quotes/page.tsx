@@ -306,7 +306,7 @@ export default function AdminQuotesPage() {
             </div>
             {editing?.status === 'accepted' && !editing.jobId && (
               <p className="text-xs font-body mt-3 flex items-center gap-1.5" style={{ color: 'var(--success)' }}>
-                <FileSpreadsheet size={12} /> Accepted — use “Start job” on the card when the car arrives; everything carries over.
+                <FileSpreadsheet size={12} /> Accepted - use “Start job” on the card when the car arrives; everything carries over.
               </p>
             )}
           </div>

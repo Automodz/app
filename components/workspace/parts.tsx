@@ -130,9 +130,9 @@ export function OperationalStage({ job, busy, onAdvance }: { job: Job; busy: str
       {deliverAsk && (
         <div className="mt-3 rounded-xl p-3.5" style={{ background: 'color-mix(in srgb, var(--warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--warning) 25%, transparent)' }}>
           <p className="font-body inline-flex items-center gap-2" style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-            <IndianRupee size={14} style={{ color: 'var(--warning)' }} /> {formatCurrency(balance)} still outstanding — has payment been received?
+            <IndianRupee size={14} style={{ color: 'var(--warning)' }} /> {formatCurrency(balance)} still outstanding - has payment been received?
           </p>
-          <p className="font-body mt-1" style={{ fontSize: 12, color: 'var(--muted)' }}>Record it in Payments below, or deliver with the balance pending — it will stay flagged until collected.</p>
+          <p className="font-body mt-1" style={{ fontSize: 12, color: 'var(--muted)' }}>Record it in Payments below, or deliver with the balance pending - it will stay flagged until collected.</p>
           <div className="flex gap-2 mt-3">
             <button onClick={() => setDeliverAsk(false)}
               className="flex-1 py-2.5 rounded-lg font-display" style={{ fontSize: 12, fontWeight: 700, background: 'var(--accent-grad)', color: 'var(--on-accent)' }}>
@@ -140,7 +140,7 @@ export function OperationalStage({ job, busy, onAdvance }: { job: Job; busy: str
             </button>
             <button onClick={() => { setDeliverAsk(false); onAdvance('completed', 'completed'); }}
               className="flex-1 py-2.5 rounded-lg font-body" style={{ fontSize: 12, color: 'var(--warning)', border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)' }}>
-              Deliver — payment pending
+              Deliver - payment pending
             </button>
           </div>
         </div>

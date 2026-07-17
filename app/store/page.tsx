@@ -43,7 +43,7 @@ export default function StoreLockScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-mesh" style={{ overflowX: 'clip' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-mesh safe-page" style={{ overflowX: 'clip', paddingBottom: 'max(var(--sab), 40px)' }}>
       <div className="flex items-center gap-3 mb-10">
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
           style={{ background: 'var(--accent-grad)', boxShadow: '0 8px 24px var(--accent-glow)' }}>

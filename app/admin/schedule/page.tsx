@@ -1,11 +1,11 @@
 'use client';
 /**
- * Schedule — the planning surface. Four ways to look at the same days:
+ * Schedule - the planning surface. Four ways to look at the same days:
  *   Day        agenda by hour; drag a card onto another hour to reschedule
  *   Week       the next seven days at a glance
  *   Board      selected day by pipeline stage
  *   Technicians who is carrying what today; drag a job between lanes to reassign
- * Every card opens the booking/job workspace — nothing dead-ends here.
+ * Every card opens the booking/job workspace - nothing dead-ends here.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -45,7 +45,7 @@ export default function AdminSchedulePage() {
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const days = Array.from({ length: 7 }, (_, i) => localDate(i));
 
-  const [bookings, setBookings] = useState<Booking[]>([]);   // whole week — all views share it
+  const [bookings, setBookings] = useState<Booking[]>([]);   // whole week - all views share it
   const [jobs, setJobs] = useState<Job[]>([]);               // technician view
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);

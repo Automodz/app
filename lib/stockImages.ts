@@ -8,11 +8,11 @@ const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
 
 export const STOCK = {
-  // Cinematic hero — bright silver supercar, works on light + dark
+  // Cinematic hero - bright silver supercar, works on light + dark
   hero: u('photo-1544829099-b9a0c07fad1a', 2200),
   heroAlt: u('photo-1618843479313-40f8afb4b4d8', 2200),
 
-  // Service categories — luxury cars, each depicting that specific service
+  // Service categories - luxury cars, each depicting that specific service
   ppf: u('photo-1618843479313-40f8afb4b4d8', 1800),      // grey AMG GT R, studio-lit bodywork
   ceramic: u('photo-1580273916550-e323be2ae537', 1800),  // glossy coated luxury car
   coating: u('photo-1601362840469-51e4d8d58785', 1800),  // buffing / polishing pad
@@ -30,7 +30,7 @@ export const STOCK = {
   vehicleFallback: u('photo-1583121274602-3e2820c69888', 1400),
 } as const;
 
-/** The four disciplines, in showcase order — used by homepage + dashboard. */
+/** The four disciplines, in showcase order - used by homepage + dashboard. */
 export const SERVICE_SHOWCASE = [
   { cat: 'PPF',     name: 'Paint Protection Film', line: 'Invisible self-healing armour, wrapped edge to edge.', from: 145000, img: STOCK.ppf },
   { cat: 'Ceramic', name: 'Ceramic Coating',       line: '9H nano-ceramic gloss that lasts for years.',        from: 10000,  img: STOCK.ceramic },

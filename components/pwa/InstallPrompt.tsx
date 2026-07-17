@@ -59,8 +59,8 @@ export default function InstallPrompt() {
       {visible && (
         <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
           transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-          className="fixed bottom-20 md:bottom-6 left-4 right-4 z-50 max-w-md mx-auto rounded-2xl p-4"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+          className="fixed left-4 right-4 z-50 max-w-md mx-auto rounded-2xl p-4"
+          style={{ bottom: 'calc(var(--bottom-nav-h) + 12px)', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'var(--accent-grad)' }}>

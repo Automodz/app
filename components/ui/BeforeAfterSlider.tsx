@@ -21,10 +21,10 @@ export default function BeforeAfterSlider({
   after: string;
   alt?: string;
   className?: string;
-  /** CSS filter applied to the "before" layer — lets you pass the SAME image
+  /** CSS filter applied to the "before" layer - lets you pass the SAME image
    *  for before/after and simulate the uncorrected state (dull/hazy). */
   beforeFilter?: string;
-  /** CSS filter applied to the "after" layer — a gloss/ceramic boost. */
+  /** CSS filter applied to the "after" layer - a gloss/ceramic boost. */
   afterFilter?: string;
   /** Paint a grime/dust layer over the "before" side so the same car reads as
    *  dirty before → clean after. */
@@ -71,7 +71,7 @@ export default function BeforeAfterSlider({
             />
           )}
           {dirtBefore && (
-            /* water spots — hard-edged pale rings that read as dried droplets */
+            /* water spots - hard-edged pale rings that read as dried droplets */
             <div
               aria-hidden
               className="absolute inset-0 mix-blend-screen pointer-events-none"

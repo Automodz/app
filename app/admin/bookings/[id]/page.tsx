@@ -1,16 +1,16 @@
 'use client';
 /**
- * Booking Operational Workspace — the single source of truth for one job.
+ * Booking Operational Workspace - the single source of truth for one job.
  *
  * A Booking (commercial truth) and its Job (operational truth) are a permanent
  * 1:1. This one page shows the booking in COMMERCIAL mode; at vehicle check-in
- * it creates the linked Job and expands IN PLACE into OPERATIONAL mode — same
+ * it creates the linked Job and expands IN PLACE into OPERATIONAL mode - same
  * page, no context switch. The operator never thinks "booking vs job"; they
  * just manage the car in front of them.
  *
  * Every section here is fully wired to real services. Sections whose data model
  * doesn't exist yet (checklist, materials, QC, comments, WhatsApp log) are NOT
- * shown — they arrive, fully built, in following increments.
+ * shown - they arrive, fully built, in following increments.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -85,7 +85,7 @@ export default function BookingWorkspace() {
     try { setActivity(await listBookingActivity(id)); } catch {}
   }, [id]);
 
-  // every meaningful action writes one timeline event — the heartbeat
+  // every meaningful action writes one timeline event - the heartbeat
   const record = useCallback(async (type: ActivityType, title: string, meta?: Record<string, unknown>) => {
     await logActivity({ type, title, bookingId: id, jobId: booking?.jobId, customerId: booking?.userId, actor, meta });
     reloadActivity();
@@ -114,7 +114,7 @@ export default function BookingWorkspace() {
       if (b) setBooking(b);
       setJob(j);
       setActivity(acts);
-      toast.success('Vehicle checked in — job opened');
+      toast.success('Vehicle checked in - job opened');
     } catch (e) { console.error(e); toast.error('Check-in failed'); } finally { setBusy(null); }
   };
 
@@ -159,7 +159,7 @@ export default function BookingWorkspace() {
       await rejectBooking(booking, reason);
       setBooking({ ...booking, status: 'cancelled', rejectionReason: reason });
       record('cancelled', reason ? `Booking rejected · ${reason}` : 'Booking rejected');
-      toast.success('Booking rejected — customer notified');
+      toast.success('Booking rejected - customer notified');
     } catch { toast.error('Could not reject'); } finally { setBusy(null); setRejectOpen(false); }
   };
 
@@ -180,7 +180,7 @@ export default function BookingWorkspace() {
     setBusy('stage:' + status);
     try {
       await updateJobStatus(job.id, status, actor);
-      // Mirror to the commercial record — customer notification, push and
+      // Mirror to the commercial record - customer notification, push and
       // (on completion) the vehicle's service history all ride on this one call.
       updateBookingStatusWithNotification(booking, mirror).catch(() => {});
       setBooking(b => b ? { ...b, status: mirror } : b);
@@ -260,7 +260,7 @@ export default function BookingWorkspace() {
             {booking.usedMembershipWash && (
               <div className="mt-4 rounded-xl px-3 py-2.5 inline-flex items-center gap-2" style={{ background: 'var(--accent-mist)', border: '1px solid var(--border-strong)' }}>
                 <Zap size={13} style={{ color: 'var(--fg)' }} />
-                <span className="font-body" style={{ fontSize: 12.5, color: 'var(--fg-dim)' }}>Covered by membership plan — one wash deducted.</span>
+                <span className="font-body" style={{ fontSize: 12.5, color: 'var(--fg-dim)' }}>Covered by membership plan - one wash deducted.</span>
               </div>
             )}
           </Section>
@@ -281,7 +281,7 @@ export default function BookingWorkspace() {
                 </span>
                 <p className="font-display" style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Not checked in yet</p>
                 <p className="font-body mt-1 max-w-xs" style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>
-                  When the vehicle arrives, check it in to open the operational job — assignments, photos, progress and delivery all live here.
+                  When the vehicle arrives, check it in to open the operational job - assignments, photos, progress and delivery all live here.
                 </p>
                 {canCheckIn && (
                   <button onClick={checkIn} disabled={busy === 'checkin'}
@@ -295,7 +295,7 @@ export default function BookingWorkspace() {
             </Section>
           )}
 
-          {/* Activity — the heartbeat. Always visible, every action lands here. */}
+          {/* Activity - the heartbeat. Always visible, every action lands here. */}
           <ActivityTimeline events={activity} seed={{ type: 'booking_created', title: 'Booking placed', actorName: booking.userName, at: booking.createdAt }} />
         </div>
 
@@ -364,7 +364,7 @@ export default function BookingWorkspace() {
                 <RescheduleControl booking={booking} onDone={(d, t) => {
                   setBooking({ ...booking, scheduledDate: d, scheduledTime: t });
                   record('rescheduled', `Rescheduled to ${formatDate(d)} ${formatTime(t)}`);
-                  // customer hears about it — in-app + push, fire-and-forget
+                  // customer hears about it - in-app + push, fire-and-forget
                   writeNotification(booking.userId, 'Booking rescheduled',
                     `Your ${booking.serviceName} for ${booking.vehicleName} moved to ${formatDate(d)} at ${formatTime(t)}.`,
                     'booking_update', booking.id).catch(() => {});
@@ -400,7 +400,7 @@ function NotesSection({ booking, onSaved }: { booking: Booking; onSaved: (n: str
   return (
     <Section title="Internal notes" delay={0.1}>
       <textarea value={draft} maxLength={500} rows={3} onChange={e => setDraft(e.target.value)}
-        placeholder="Staff-only — special requests, damage on arrival…"
+        placeholder="Staff-only - special requests, damage on arrival…"
         className="w-full rounded-xl px-3 py-2.5 font-body resize-none outline-none"
         style={{ fontSize: 13, background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg)' }} />
       {draft !== (booking.adminNotes ?? '') && (

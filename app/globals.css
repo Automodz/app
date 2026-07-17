@@ -11,7 +11,7 @@
    Fonts: Unbounded (hero) · Outfit (display/UI) · DM Sans (body) · DM Mono
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ─── Design Tokens (DARK theme base — light overrides below) ────────── */
+/* ─── Design Tokens (DARK theme base - light overrides below) ────────── */
 :root {
   /* ── Accent: brushed chrome on graphite (dark theme) ── */
   --accent:        #EDEFF1;
@@ -108,7 +108,7 @@
 
 /* ── Light theme (porcelain + graphite accent) ── */
 [data-theme="light"] {
-  /* Graphite ink accent on porcelain — brand grey/white family */
+  /* Graphite ink accent on porcelain - brand grey/white family */
   --accent:        #23262B;
   --accent-2:      #565B62;
   --accent-grad:   linear-gradient(135deg, #3A3E44 0%, #23262B 58%, #15171A 100%);
@@ -707,7 +707,7 @@ body {
 .reveal-delay-3 { transition-delay: 0.24s; }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   LIQUID ORB — CSS/SVG 3D metallic sphere + liquid morphism (no WebGL)
+   LIQUID ORB - CSS/SVG 3D metallic sphere + liquid morphism (no WebGL)
    ═══════════════════════════════════════════════════════════════════════ */
 .liquid-orb {
   position: relative;
@@ -737,7 +737,7 @@ body {
   overflow: hidden;
   animation: lo-float 9s ease-in-out infinite;
 }
-/* rotating chrome sheen band — the "liquid" reflection travelling the surface */
+/* rotating chrome sheen band - the "liquid" reflection travelling the surface */
 .liquid-orb .lo-sheen {
   position: absolute; inset: -25%;
   background: conic-gradient(from 0deg,
@@ -794,9 +794,9 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   LUXURY BACKGROUND — one continuous premium field, theme-aware (light+dark)
+   LUXURY BACKGROUND - one continuous premium field, theme-aware (light+dark)
    ═══════════════════════════════════════════════════════════════════════ */
-:root {                     /* dark base (default) — graphite showroom */
+:root {                     /* dark base (default) - graphite showroom */
   --lux-a: #050609;
   --lux-b: #0b0d11;
   --lux-bloom-1: rgba(232,236,240,0.20);
@@ -848,10 +848,10 @@ body {
   .lux-bg, .lux-bg::before { animation: none !important; }
 }
 
-/* ceramic chapter — falling rain streaks */
+/* ceramic chapter - falling rain streaks */
 @keyframes ceramic-rain { from { background-position: 0 0; } to { background-position: 0 9px; } }
 
-/* maintain chapter — drifting touchless foam */
+/* maintain chapter - drifting touchless foam */
 .foam-flow {
   background:
     radial-gradient(60% 40% at 20% 30%, rgba(255,255,255,0.5) 0%, transparent 60%),
@@ -866,7 +866,7 @@ body {
   to   { background-position: 25% 30%, 70% 50%, 50% 70%; }
 }
 
-/* horizontal swipe galleries — native momentum without a visible scrollbar */
+/* horizontal swipe galleries - native momentum without a visible scrollbar */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
@@ -889,7 +889,42 @@ body {
 /* ═══════════════════════════════════════════════════════════════════════
    UTILITY
    ═══════════════════════════════════════════════════════════════════════ */
-.pb-safe      { padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px); }
+/* ── Safe-area system ─────────────────────────────────────────────────────
+   Single source for PWA notch / Dynamic Island / home-indicator spacing.
+   Chrome (headers, bars, sheets, floats) uses these primitives - never raw
+   env() sprinkled per page. Requires viewport-fit=cover (set in layout). */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  /* height reserved by the customer bottom tab bar (content padding target) */
+  --bottom-nav-h: calc(64px + var(--sab));
+}
+
+.pb-safe      { padding-bottom: max(var(--sab), 16px); }
+.pt-safe      { padding-top: var(--sat); }
+.px-safe      { padding-left: var(--sal); padding-right: var(--sar); }
+
+/* SafeAreaPage - page container: notch + side insets, no bottom (scroll runs under bars) */
+.safe-page    { padding-top: var(--sat); padding-left: var(--sal); padding-right: var(--sar); }
+
+/* SafeAreaHeader - sticky top chrome that owns the status-bar zone */
+.safe-header  { position: sticky; top: 0; padding-top: var(--sat); }
+.safe-header-fixed { position: fixed; top: 0; left: 0; right: 0; padding-top: var(--sat); }
+
+/* SafeAreaBottomBar - fixed bottom chrome (tab bars, sticky CTAs) */
+.safe-bottom-bar { padding-bottom: max(var(--sab), 12px); padding-left: var(--sal); padding-right: var(--sar); }
+
+/* SafeAreaScroll - scrollable content that must clear fixed bottom chrome */
+.safe-scroll     { padding-bottom: calc(var(--sab) + 24px); }
+.safe-scroll-nav { padding-bottom: calc(var(--bottom-nav-h) + 32px); }
+
+/* SafeAreaSheet - bottom sheets: home-indicator padding + never under the notch */
+.safe-sheet   { padding-bottom: max(var(--sab), 16px); max-height: calc(100dvh - var(--sat) - 12px); }
+
+/* 44px minimum touch target (Apple HIG) for compact controls */
+.tap-target   { min-width: 44px; min-height: 44px; }
 .border-theme { border-color: var(--border); }
 .bg-2         { background-color: var(--bg-2); }
 .bg-3         { background-color: var(--bg-3); }
@@ -943,7 +978,7 @@ body {
 .sep { height: 1px; background: linear-gradient(90deg, transparent, var(--border-2), transparent); }
 
 /* ═══ Landing cinematics ═══ */
-/* Ghost chapter numerals — outlined type, barely-there */
+/* Ghost chapter numerals - outlined type, barely-there */
 .numeral-ghost {
   font-size: clamp(72px, 18vw, 120px);
   font-weight: 800;
@@ -956,7 +991,7 @@ body {
 /* Specular sweep across the hero headline */
 .hero-sheen { animation: shimmer-bg 6s ease-in-out infinite; }
 
-/* Gallery marquee — seamless duplicated-track drift */
+/* Gallery marquee - seamless duplicated-track drift */
 .marquee { overflow: hidden; }
 .marquee-track {
   width: max-content;

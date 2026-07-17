@@ -1,12 +1,12 @@
 'use client';
 /**
- * AutoModz homepage — luxury automotive brand page, image-first and short.
+ * AutoModz homepage - luxury automotive brand page, image-first and short.
  * Flow (~6 viewports): Hero (slide-to-book) → Services → Membership
  * → Before/After (visual proof, no labels) → Find us + reviews → Footer.
  *
  * Hero: close-up photorealistic paint/reflection shot (single swappable URL),
  * copy left, car right, liquid-glass cards on a warm blurred light stage.
- * Primary conversion is the Apple-style slide control. Reviews stay honest —
+ * Primary conversion is the Apple-style slide control. Reviews stay honest -
  * real Google profile only, no fabricated cards.
  */
 import { useEffect, useRef, useState } from 'react';
@@ -47,7 +47,7 @@ const glass = (tint = 0.05, warm = false): React.CSSProperties => ({
   boxShadow: `inset 0 1px 0 rgba(255,255,255,${warm ? 0.18 : 0.12}), inset 0 -1px 0 rgba(0,0,0,0.2), 0 24px 60px rgba(0,0,0,0.35)`,
 });
 
-// photorealistic hero — close-up paint & reflections. Swap this ONE url for the
+// photorealistic hero - close-up paint & reflections. Swap this ONE url for the
 // real studio shoot (BMW / Mercedes close-up) when licensed.
 const HERO_CAR = 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=1800&q=85';
 
@@ -136,7 +136,7 @@ export default function HomePage() {
       <AnimatePresence>
         {heroGone && (
           <motion.div key="sticky-cta" className="fixed inset-x-0 z-40 flex justify-center pointer-events-none"
-            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+            style={{ bottom: 'calc(var(--sab) + 16px)' }}
             initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.4, ease: EASE }}>
             <div className="pointer-events-auto w-[min(320px,80vw)]" style={{ filter: 'drop-shadow(0 12px 40px rgba(0,0,0,0.6))' }}>
@@ -154,7 +154,7 @@ export default function HomePage() {
       </div>
 
       {/* ── header ── */}
-      <header className="fixed top-0 inset-x-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top,0px)' }}>
+      <header className="fixed top-0 inset-x-0 z-40" style={{ paddingTop: 'var(--sat)' }}>
         <div className="mx-3 mt-3 flex items-center justify-between rounded-2xl px-4 py-2.5"
           style={{ background: 'rgba(14,15,18,0.55)', backdropFilter: 'blur(20px) saturate(1.4)', WebkitBackdropFilter: 'blur(20px) saturate(1.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <Wordmark height="clamp(16px, 4.6vw, 20px)" variant="white" />
@@ -166,13 +166,13 @@ export default function HomePage() {
               </a>
             ))}
           </nav>
-          <button onClick={book} className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.1em', color: '#0b0c0e', background: '#fff', borderRadius: 9, padding: '7px 14px' }}>
+          <button onClick={book} className="font-mono" style={{ fontSize: 10.5, letterSpacing: '0.1em', color: '#0b0c0e', background: '#fff', borderRadius: 10, padding: '10px 16px', minHeight: 40 }}>
             BOOK →
           </button>
         </div>
       </header>
 
-      {/* ═══ HERO — split: copy left, close-up paint right ═══ */}
+      {/* ═══ HERO - split: copy left, close-up paint right ═══ */}
       <section ref={heroRef} className="relative z-10 min-h-[100svh] flex items-center px-6 pt-24 pb-16">
         <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-[1fr_1.1fr] gap-10 lg:gap-6 items-center">
           {/* copy stack */}
@@ -187,21 +187,21 @@ export default function HomePage() {
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.12 }}
               className="font-body mt-6 max-w-md mx-auto lg:mx-0" style={{ fontSize: 16.5, lineHeight: 1.65, color: 'rgba(255,255,255,0.62)' }}>
-              PPF, ceramic and correction — photographed panel by panel, tracked live from your phone.
+              PPF, ceramic and correction - photographed panel by panel, tracked live from your phone.
             </motion.p>
 
             {/* primary conversion: slide to book */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.18 }}
               className="mt-9 max-w-sm mx-auto lg:mx-0">
               <SlideToAction label="Slide to book" onComplete={book} />
-              <a href="#services" className="font-mono inline-block mt-4" style={{ fontSize: 10.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.45)' }}>
+              <a href="#services" className="font-mono inline-flex items-center mt-2 tap-target" style={{ fontSize: 10.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.45)' }}>
                 EXPLORE SERVICES ↓
               </a>
             </motion.div>
 
           </div>
 
-          {/* photoreal paint close-up — floating on the light stage */}
+          {/* photoreal paint close-up - floating on the light stage */}
           <motion.div initial={{ opacity: 0, scale: 0.96, x: 24 }} animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 1, ease: EASE, delay: 0.1 }}
             style={{ y: heroParallax }}
@@ -233,12 +233,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── trust strip — proof five seconds in ── */}
+      {/* ── trust strip - proof five seconds in ── */}
       <section aria-label="Why owners trust AutoModz" className="relative z-10 px-6">
         <motion.div {...reveal} className="max-w-5xl mx-auto rounded-2xl px-5 py-4 flex items-center justify-center gap-x-7 gap-y-2 flex-wrap"
           style={glass(0.03)}>
           {[
-            <a key="g" href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" className="hover:opacity-80" style={{ color: '#ffb27a' }}>★★★★★ <span style={{ color: 'rgba(255,255,255,0.55)' }}>ON GOOGLE</span></a>,
+            <a key="g" href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 inline-flex items-center" style={{ color: '#ffb27a', minHeight: 44 }}>★★★★★ <span style={{ color: 'rgba(255,255,255,0.55)' }}>ON GOOGLE</span></a>,
             <span key="p" style={{ color: 'rgba(255,255,255,0.55)' }}>PPF EXPERTS</span>,
             <span key="c" style={{ color: 'rgba(255,255,255,0.55)' }}>CERAMIC SPECIALISTS</span>,
             <span key="v" style={{ color: 'rgba(255,255,255,0.55)' }}>500+ VEHICLES PROTECTED</span>,
@@ -252,7 +252,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ═══ SERVICES — image cards with glass overlay + price/warranty/duration ═══ */}
+      {/* ═══ SERVICES - image cards with glass overlay + price/warranty/duration ═══ */}
       <section id="services" className="relative z-10 px-6 py-20">
         <SectionHead kicker="THE CRAFT" title="Four disciplines. One standard." />
         <div className="grid sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
@@ -295,7 +295,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ MEMBERSHIP — benefit first, plans second ═══ */}
+      {/* ═══ MEMBERSHIP - benefit first, plans second ═══ */}
       <section id="membership" className="relative z-10 px-6 py-20">
         <SectionHead kicker="MEMBERSHIP" title="Protect your car, all year." />
         <motion.div {...reveal} className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap max-w-2xl mx-auto -mt-4 mb-10">
@@ -312,7 +312,7 @@ export default function HomePage() {
               whileHover={{ y: -4 }} whileTap={{ scale: 0.98, y: 0 }}
               className="group relative overflow-hidden rounded-[22px] p-6 text-left flex flex-col justify-between"
               style={{ ...glass(0.04, i === 1), aspectRatio: '1.586' }}>
-              {/* card sheen — a diagonal light pass that travels on hover */}
+              {/* card sheen - a diagonal light pass that travels on hover */}
               <div aria-hidden className="absolute inset-0 pointer-events-none transition-transform duration-[1200ms] ease-out -translate-x-1/3 group-hover:translate-x-1/3"
                 style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.07) 45%, transparent 60%)' }} />
               <div className="flex items-start justify-between">
@@ -335,7 +335,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ BEFORE / AFTER — visual proof, no labels needed ═══ */}
+      {/* ═══ BEFORE / AFTER - visual proof, no labels needed ═══ */}
       <section id="gallery" className="relative z-10 px-6 py-20">
         <SectionHead kicker="THE DIFFERENCE" title="Drag. See for yourself." />
         <motion.div {...reveal} className="relative max-w-3xl mx-auto">
@@ -349,12 +349,12 @@ export default function HomePage() {
               showLabels={false}
               beforeFilter="saturate(0.3) brightness(0.62) contrast(0.88) sepia(0.22) blur(0.6px)"
               afterFilter="saturate(1.18) contrast(1.1) brightness(1.04)"
-              alt="The same car — dirty before, detailed after" />
+              alt="The same car - dirty before, detailed after" />
           </div>
         </motion.div>
       </section>
 
-      {/* ═══ CONTACT — closing ═══ */}
+      {/* ═══ CONTACT - closing ═══ */}
       <section id="contact" className="relative z-10 px-6 py-20">
         <SectionHead kicker="CONTACT" title="Bring it by. We’ll take it from here." />
         <div className="max-w-2xl mx-auto">
@@ -406,9 +406,9 @@ export default function HomePage() {
         <div className="flex flex-col items-center gap-6">
           <Wordmark height="clamp(18px, 5vw, 24px)" variant="white" />
           <div className="flex items-center gap-8 font-mono" style={{ fontSize: 9.5, letterSpacing: '0.16em' }}>
-            <a href="tel:+919512605088" style={{ color: 'rgba(255,255,255,0.45)' }}>CALL</a>
-            <a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.45)' }}>DIRECTIONS</a>
-            <Link href="/auth/login" style={{ color: 'rgba(255,255,255,0.45)' }}>SIGN IN</Link>
+            <a href="tel:+919512605088" className="tap-target inline-flex items-center" style={{ color: 'rgba(255,255,255,0.45)' }}>CALL</a>
+            <a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" className="tap-target inline-flex items-center" style={{ color: 'rgba(255,255,255,0.45)' }}>DIRECTIONS</a>
+            <Link href="/auth/login" className="tap-target inline-flex items-center" style={{ color: 'rgba(255,255,255,0.45)' }}>SIGN IN</Link>
           </div>
           <p className="font-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.28)' }}>
             © {new Date().getFullYear()} AUTOMODZ · CRAFTED IN AHMEDABAD

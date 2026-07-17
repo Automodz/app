@@ -4,7 +4,7 @@ import { useReducedMotion } from 'framer-motion';
 
 /**
  * SSR-safe reduced-motion. `useReducedMotion()` reads matchMedia, which yields
- * `false` on the server but can be `true` on the client's first paint — any DOM
+ * `false` on the server but can be `true` on the client's first paint - any DOM
  * or `initial` style branched on it then triggers a hydration mismatch. Gating
  * behind a mounted flag makes the server and first client render identical
  * (both un-reduced), and the real preference takes effect one tick later.

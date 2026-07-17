@@ -2,12 +2,12 @@ import { Shield, Droplets, Sparkles, Gem, Wrench, Award, Crown, Star, type Lucid
 
 /**
  * Single source of truth for service-category iconography. Replaces the old
- * emoji `getCategoryIcon()` — every surface (bookings, schedule, dashboard,
+ * emoji `getCategoryIcon()` - every surface (bookings, schedule, dashboard,
  * store, recipes, settings) renders the SAME professional Lucide glyph per
  * category, so the language stays consistent across the whole platform.
  */
 const CATEGORY_ICON: Record<string, LucideIcon> = {
-  PPF: Shield,        // paint protection film — armour
+  PPF: Shield,        // paint protection film - armour
   Washing: Droplets,  // wash & care
   Ceramic: Sparkles,  // ceramic gloss
   Coating: Gem,       // detailing / polish depth
@@ -17,7 +17,7 @@ export function serviceIconFor(category?: string): LucideIcon {
   return (category && CATEGORY_ICON[category]) || Wrench;
 }
 
-/** Membership-tier icons — Silver / Gold / Platinum, one source of truth. */
+/** Membership-tier icons - Silver / Gold / Platinum, one source of truth. */
 const PLAN_ICON: Record<string, LucideIcon> = {
   Silver: Award,
   Gold: Crown,

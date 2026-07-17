@@ -1,7 +1,7 @@
 'use client';
 /**
- * Bookings — the operational queue. Each row opens the unified Booking
- * Workspace (/admin/bookings/[id]) — the single source of truth for that job.
+ * Bookings - the operational queue. Each row opens the unified Booking
+ * Workspace (/admin/bookings/[id]) - the single source of truth for that job.
  * No dead-ends, no slide-over: every action happens inside the workspace.
  */
 import { useEffect, useState } from 'react';

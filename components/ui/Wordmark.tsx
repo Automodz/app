@@ -1,5 +1,5 @@
 /**
- * The AutoModz wordmark — the real logo typeface, not text.
+ * The AutoModz wordmark - the real logo typeface, not text.
  * Uses transparent PNGs derived from the brand logo (public/wordmark-*.png).
  *
  *  variant="auto"  → ink in light theme, white in dark theme (default)
@@ -10,8 +10,8 @@
  * logo ratio automatically.
  */
 /**
- * `height` accepts a number (px) OR any CSS length — including responsive
- * values like `clamp(16px, 4.5vw, 22px)` — so the wordmark can size fluidly
+ * `height` accepts a number (px) OR any CSS length - including responsive
+ * values like `clamp(16px, 4.5vw, 22px)` - so the wordmark can size fluidly
  * across the app (header, footer, hero, invoices…). Width follows the logo
  * ratio automatically via CSS (`img { height:100%; width:auto }`).
  */

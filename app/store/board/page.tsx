@@ -37,7 +37,7 @@ export default function StoreBoardPage() {
   const [myShift, setMyShift] = useState<AttendanceRecord | null | undefined>(undefined);
   const [shiftBusy, setShiftBusy] = useState(false);
 
-  // Today's arrivals — booked cars not yet checked in (same source the
+  // Today's arrivals - booked cars not yet checked in (same source the
   // Admin Workspace reads; rendered here so the desk never misses one)
   const [arrivals, setArrivals] = useState<Booking[]>([]);
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function StoreBoardPage() {
               {shiftBusy ? 'Saving…' : onShift ? 'Check Out' : 'Check In'}
             </button>
           )}
-          <Link href="/store/attendance" className="block text-center data-label mt-3 py-2 cursor-pointer"
+          <Link href="/store/attendance" className="flex items-center justify-center text-center data-label mt-2 tap-target cursor-pointer"
             style={{ color: 'var(--steel)' }}>
             <Clock size={11} className="inline mr-1 -mt-0.5" />Whole team →
           </Link>
@@ -194,7 +194,7 @@ export default function StoreBoardPage() {
           )}
         </div>
 
-        {/* Arriving today — booked cars the desk should expect */}
+        {/* Arriving today - booked cars the desk should expect */}
         {arrivals.length > 0 && (
           <div className="card p-4">
             <p className="data-label mb-3 flex items-center gap-1.5" style={{ color: 'var(--steel)' }}>

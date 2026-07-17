@@ -17,7 +17,7 @@ import Wordmark from '@/components/ui/Wordmark';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
 // Navigation is organised around workflows, not Firestore collections.
-// The Front Desk is not a nav item — it is a sibling OPERATING MODE with its
+// The Front Desk is not a nav item - it is a sibling OPERATING MODE with its
 // own chrome (/store), reached through the mode switch at the top of the
 // sidebar. Active Jobs lives inside the Workspace, the single live floor view.
 const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
@@ -156,7 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Operating-mode switch — Admin OS ⇄ Front Desk OS (Shopify-style) */}
+        {/* Operating-mode switch - Admin OS ⇄ Front Desk OS (Shopify-style) */}
         <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
           <span className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg"
             style={{ background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)', fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '0.1em', color: 'var(--ember)' }}>
@@ -229,7 +229,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--void)' }}>
       <aside className="hidden md:flex flex-col w-56 flex-shrink-0 sticky top-0 h-screen"
-        style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)' }}>
+        style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', paddingTop: 'var(--sat)', paddingLeft: 'var(--sal)' }}>
         <SidebarContent />
       </aside>
 
@@ -243,7 +243,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <motion.aside initial={{ x: -240 }} animate={{ x: 0 }} exit={{ x: -240 }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="fixed left-0 top-0 bottom-0 z-50 w-56 flex flex-col md:hidden"
-              style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)' }}>
+              style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)', paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)', paddingLeft: 'var(--sal)' }}>
               <button onClick={() => setSidebarOpen(false)}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg"
                 style={{ background: 'var(--dark)', color: 'var(--steel)' }}>
@@ -256,9 +256,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </AnimatePresence>
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Desktop top bar — page context + command trigger + quick action */}
-        <header className="hidden md:flex items-center gap-4 px-6 sticky top-0 z-30"
-          style={{ height: 60, background: 'color-mix(in srgb, var(--surface) 82%, transparent)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border)' }}>
+        {/* Desktop top bar - page context + command trigger + quick action */}
+        <header className="hidden md:flex items-center gap-4 px-6 safe-header z-30"
+          style={{ height: 'calc(60px + var(--sat))', background: 'color-mix(in srgb, var(--surface) 82%, transparent)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2.5 min-w-0">
             <current.icon size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
             <span className="font-mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' }}>Admin</span>
@@ -280,7 +280,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Mobile top bar */}
-        <header className="md:hidden flex items-center gap-3 px-4 py-3 sticky top-0 z-30"
+        <header className="md:hidden flex items-center gap-3 px-4 py-3 safe-header z-30"
           style={{ background: 'color-mix(in srgb, var(--surface) 88%, transparent)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)' }}>
           <button onClick={() => setSidebarOpen(true)}
             className="w-9 h-9 flex items-center justify-center rounded-xl"
@@ -298,7 +298,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto safe-scroll" style={{ paddingRight: 'var(--sar)' }}>{children}</main>
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />

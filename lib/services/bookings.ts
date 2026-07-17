@@ -58,13 +58,13 @@ export const subscribeUserBookings = (
   );
 };
 
-/** Load a single booking (commercial record) by id — for the workspace route. */
+/** Load a single booking (commercial record) by id - for the workspace route. */
 export const getBooking = async (id: string): Promise<Booking | null> => {
   const snap = await getDoc(doc(db, 'bookings', id));
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Booking) : null;
 };
 
-/** Every booking awaiting admin approval (any date) — the approval queue. */
+/** Every booking awaiting admin approval (any date) - the approval queue. */
 export const getPendingApprovals = async (): Promise<Booking[]> => {
   const snap = await getDocs(query(collection(db, 'bookings'), where('status', '==', 'pending')));
   return snap.docs
@@ -77,7 +77,7 @@ export const getAllBookings = async (): Promise<Booking[]> => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking));
 };
 
-/** Bookings for a set of days (max 10 — Firestore `in` limit). Cancelled excluded. */
+/** Bookings for a set of days (max 10 - Firestore `in` limit). Cancelled excluded. */
 export const getBookingsForDates = async (dates: string[]): Promise<Booking[]> => {
   if (dates.length === 0) return [];
   const snap = await getDocs(query(
@@ -112,7 +112,7 @@ export const rejectBooking = async (
     rejectionReason: reason,
     updatedAt: serverTimestamp(),
   });
-  const body = `We couldn't accept your ${booking.serviceName} booking for ${booking.vehicleName}.${reason ? ` Reason: ${reason}` : ''} Please pick another slot — we'd love to have you in.`;
+  const body = `We couldn't accept your ${booking.serviceName} booking for ${booking.vehicleName}.${reason ? ` Reason: ${reason}` : ''} Please pick another slot - we'd love to have you in.`;
   await writeNotification(booking.userId, 'Booking not accepted', body, 'booking_update', booking.id);
   try {
     const { sendPushToUser } = await import('./push');

@@ -1,7 +1,7 @@
 'use client';
 /**
  * Job Operational Workspace (walk-ins). Same workspace, same components as the
- * booking workspace — a walk-in simply has no commercial booking in front of it,
+ * booking workspace - a walk-in simply has no commercial booking in front of it,
  * so it opens straight into operational mode. Booking-linked jobs redirect to
  * the unified booking workspace so there is ever only ONE place to manage a car.
  */
@@ -48,7 +48,7 @@ export default function JobWorkspace() {
     try {
       const j = await getJob(id);
       if (!j) { setError(true); return; }
-      // booking-linked jobs live in the unified booking workspace — one place only
+      // booking-linked jobs live in the unified booking workspace - one place only
       if (j.bookingId) { router.replace(`/admin/bookings/${j.bookingId}`); return; }
       setJob(j);
       setNotes(j.notes ?? '');
@@ -183,7 +183,7 @@ export default function JobWorkspace() {
 
           <Section title="Internal notes" delay={0.1}>
             <textarea value={notes} maxLength={500} rows={3} onChange={e => setNotes(e.target.value)}
-              placeholder="Staff-only — condition on arrival, special requests…"
+              placeholder="Staff-only - condition on arrival, special requests…"
               className="w-full rounded-xl px-3 py-2.5 font-body resize-none outline-none"
               style={{ fontSize: 13, background: 'var(--fog)', border: '1px solid var(--border-2)', color: 'var(--fg)' }} />
             {notes !== (job.notes ?? '') && (
