@@ -49,25 +49,27 @@ export default function AdminGalleryPage() {
         </p>
       </div>
 
-      <div className="card mb-6">
-        <div className="flex gap-2 flex-wrap mb-3">
+      {/* Upload toolbar — one calm row set; never overflows, never wraps the CTA */}
+      <div className="card mb-6 overflow-hidden">
+        <div className="flex gap-1.5 overflow-x-auto no-scroll pb-3 -mx-1 px-1">
           {CATEGORIES.map(c => (
             <button key={c} onClick={() => setCategory(c)}
-              className="px-3 py-2 rounded-xl data-label"
+              className="shrink-0 px-3.5 rounded-xl data-label transition-colors"
               style={{
+                minHeight: 40,
                 background: category === c ? 'var(--accent-mist)' : 'var(--dark)',
                 border: category === c ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
                 color: category === c ? 'var(--ember)' : 'var(--steel)',
               }}>{c}</button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <input className="input flex-1 text-sm" value={caption} onChange={e => setCaption(e.target.value)}
-            placeholder="Caption (optional) - e.g. Full-body PPF on Thar" />
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <input className="input w-full sm:flex-1 min-w-0 text-sm" value={caption} onChange={e => setCaption(e.target.value)}
+            placeholder="Caption (optional) — e.g. Full-body PPF on Thar" />
           <button onClick={() => inputRef.current?.click()} disabled={uploading}
-            className="btn-ember flex items-center gap-2 px-5 text-sm">
+            className="btn-ember flex items-center justify-center gap-2 px-5 py-3 text-sm shrink-0 whitespace-nowrap">
             {uploading ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}
-            {uploading ? 'Uploading…' : 'Upload'}
+            {uploading ? 'Uploading…' : 'Upload photos'}
           </button>
         </div>
         <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={e => handleFiles(e.target.files)} />
@@ -95,10 +97,10 @@ export default function AdminGalleryPage() {
                   <p className="data-label" style={{ color: 'var(--ember)' }}>{img.category}</p>
                   {img.caption && <p className="text-xs font-body" style={{ color: 'white' }}>{img.caption}</p>}
                 </div>
-                <button onClick={() => remove(img)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                <button onClick={() => remove(img)} aria-label="Remove photo"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: 'color-mix(in srgb, var(--danger) 20%, transparent)', color: 'var(--danger)' }}>
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </motion.div>

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -108,6 +108,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     .filter(i => pathname === i.href || (i.href !== '/admin' && pathname.startsWith(i.href)))
     .sort((a, b) => b.href.length - a.href.length)[0]
     ?? NAV_ITEMS[0];
+
+  // ── Scroll preservation ──────────────────────────────────────────────
+  // <main> is the desktop scroll container. Remember scrollTop per pathname
+  // and restore it when the user returns to that page; entering a DIFFERENT
+  // workflow (nav group / detail route) starts at the top. Mobile scrolls
+  // the window — same policy applied there.
+  const mainRef = useRef<HTMLElement>(null);
+  const scrollMemory = useRef<Map<string, number>>(new Map());
+  const prevPath = useRef(pathname);
+  const groupOf = (p: string) =>
+    NAV_ITEMS.filter(i => p === i.href || (i.href !== '/admin' && p.startsWith(i.href)))
+      .sort((a, b) => b.href.length - a.href.length)[0]?.group ?? p;
+  useEffect(() => {
+    const el = mainRef.current;
+    const before = prevPath.current;
+    if (before !== pathname) {
+      prevPath.current = pathname;
+      const sameWorkflow = groupOf(before) === groupOf(pathname);
+      const remembered = scrollMemory.current.get(pathname) ?? 0;
+      const target = sameWorkflow ? remembered : 0;
+      // defer past Next's own post-navigation scroll reset
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (el) el.scrollTop = target;
+        window.scrollTo(0, target);
+      }));
+    }
+    // record position continuously for the CURRENT page
+    const record = () => scrollMemory.current.set(pathname,
+      el && el.scrollTop > 0 ? el.scrollTop : window.scrollY);
+    el?.addEventListener('scroll', record, { passive: true });
+    window.addEventListener('scroll', record, { passive: true });
+    return () => {
+      el?.removeEventListener('scroll', record);
+      window.removeEventListener('scroll', record);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   if (authLoading || !user || user.role !== 'admin') {
     return (
@@ -298,7 +335,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto safe-scroll" style={{ paddingRight: 'var(--sar)' }}>{children}</main>
+        <main ref={mainRef} className="flex-1 overflow-y-auto safe-scroll" style={{ paddingRight: 'var(--sar)' }}>{children}</main>
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
