@@ -53,7 +53,7 @@ export default function StoreLockScreen() {
           <Wordmark height={24} className="mx-auto" />
           <p className="data-label flex items-center gap-1.5" style={{ color: 'var(--ember)' }}>
             <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: 'var(--ember)' }} />
-            Store Mode · Staff Sign-In
+            Front Desk · Staff Sign-In
           </p>
         </div>
       </div>
@@ -106,7 +106,7 @@ export default function StoreLockScreen() {
         <button onClick={() => router.replace(user?.role === 'admin' ? '/admin' : '/dashboard')}
           className="mt-10 data-label cursor-pointer px-4 py-3 rounded-xl transition-colors"
           style={{ color: 'var(--steel)' }}>
-          ← Exit Store Mode
+          ← Exit Front Desk
         </button>
       )}
     </div>

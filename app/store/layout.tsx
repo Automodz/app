@@ -24,7 +24,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isStaff = user?.role === 'admin' || user?.role === 'employee';
-  // Managers (admin/owner) run Store Mode as a shared front-desk OS — no kiosk PIN.
+  // Managers (admin/owner) run the Front Desk as a shared OS — no kiosk PIN.
   const isManager = user?.role === 'admin';
   // Employees sign in on their own phones; kiosk mode (PIN) rides on the
   // owner's admin session on the shared tablet.
@@ -63,7 +63,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     router.replace('/store');
   }, [setKioskEmployee, router]);
 
-  // Exit Store Mode entirely: kiosk unlocks + leaves for the role's home area.
+  // Exit the Front Desk entirely: kiosk unlocks + leaves for the role's home area.
   const exitStore = useCallback(() => {
     setKioskEmployee(null);
     try { sessionStorage.removeItem('automodz-kiosk'); } catch {}

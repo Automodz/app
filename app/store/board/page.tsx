@@ -4,15 +4,15 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
   PlusCircle, Wrench, UserRound, LogIn, LogOut, Timer,
-  Clock, IndianRupee, Truck, CircleAlert,
+  Clock, IndianRupee, Truck, CircleAlert, CalendarClock, LockKeyhole, Phone,
 } from 'lucide-react';
 import {
-  subscribeTodaysJobs, checkIn, checkOut, getTodayAttendance,
+  subscribeTodaysJobs, checkIn, checkOut, getTodayAttendance, getBookingsForDates,
 } from '@/lib/firebaseService';
 import { formatCurrency, formatTime } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import JobCard from '@/components/store/JobCard';
-import type { Job, AttendanceRecord } from '@/lib/types';
+import type { Booking, Job, AttendanceRecord } from '@/lib/types';
 import { format, differenceInMinutes } from 'date-fns';
 
 const COLUMNS: { status: Job['status']; label: string }[] = [
@@ -36,6 +36,20 @@ export default function StoreBoardPage() {
   // My shift - check-in state for the signed-in employee
   const [myShift, setMyShift] = useState<AttendanceRecord | null | undefined>(undefined);
   const [shiftBusy, setShiftBusy] = useState(false);
+
+  // Today's arrivals — booked cars not yet checked in (same source the
+  // Admin Workspace reads; rendered here so the desk never misses one)
+  const [arrivals, setArrivals] = useState<Booking[]>([]);
+  useEffect(() => {
+    getBookingsForDates([format(new Date(), 'yyyy-MM-dd')])
+      .then(bs => setArrivals(bs
+        .filter(b => ['pending', 'confirmed'].includes(b.status) && !b.jobId)
+        .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))))
+      .catch(() => {});
+  }, []);
+  // Kiosk rides on the owner's admin session, so booking check-in (an /admin
+  // route) is reachable from the shared tablet; personal employee phones are not.
+  const isAdminSession = user?.role === 'admin';
 
   useEffect(() => {
     const unsub = subscribeTodaysJobs(
@@ -180,11 +194,53 @@ export default function StoreBoardPage() {
           )}
         </div>
 
+        {/* Arriving today — booked cars the desk should expect */}
+        {arrivals.length > 0 && (
+          <div className="card p-4">
+            <p className="data-label mb-3 flex items-center gap-1.5" style={{ color: 'var(--steel)' }}>
+              <CalendarClock size={11} /> ARRIVING · {arrivals.length}
+            </p>
+            <div className="space-y-1">
+              {arrivals.slice(0, 6).map(b => {
+                const inner = (
+                  <>
+                    <span className="font-mono text-xs w-12 shrink-0" style={{ color: 'var(--pewter)' }}>
+                      {formatTime(b.scheduledTime)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body font-600 text-sm truncate" style={{ color: 'var(--chrome)' }}>{b.userName}</p>
+                      <p className="text-xs font-body truncate" style={{ color: 'var(--steel)' }}>{b.vehicleName}</p>
+                    </div>
+                    <a href={`tel:+91${b.userPhone}`} onClick={e => e.stopPropagation()}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ border: '1px solid var(--border)' }}>
+                      <Phone size={11} style={{ color: 'var(--pewter)' }} />
+                    </a>
+                  </>
+                );
+                return isAdminSession ? (
+                  <Link key={b.id} href={`/admin/bookings/${b.id}`}
+                    className="flex items-center gap-2.5 py-2 rounded-lg px-1 transition-colors hover:bg-white/[.03]">
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={b.id} className="flex items-center gap-2.5 py-2 px-1">{inner}</div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Quick actions */}
         <div className="hidden lg:block space-y-2">
           <Link href="/store/new" className="btn-ember w-full py-3.5 flex items-center justify-center gap-2">
             <PlusCircle size={16} /> New Walk-In
           </Link>
+          {isAdminSession && (
+            <Link href="/admin/close" className="btn-ghost w-full py-3 flex items-center justify-center gap-2 text-sm">
+              <LockKeyhole size={14} /> Daily Close
+            </Link>
+          )}
         </div>
       </aside>
 

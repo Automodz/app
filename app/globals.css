@@ -971,7 +971,7 @@ body {
   .marquee-track, .hero-sheen { animation: none !important; }
 }
 
-/* Live-mode indicator dot (Store Mode pill) */
+/* Live-mode indicator dot (Front Desk pill) */
 @keyframes dot-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.35; transform: scale(0.75); }

@@ -115,7 +115,7 @@ export default function AdminEmployeesPage() {
         <div>
           <h1 className="font-display font-800 text-2xl" style={{ color: 'var(--chrome)' }}>EMPLOYEES</h1>
           <p className="text-sm font-body" style={{ color: 'var(--steel)' }}>
-            {employees.filter(e => e.active).length} active · PINs unlock Store Mode
+            {employees.filter(e => e.active).length} active · PINs unlock the Front Desk
           </p>
         </div>
         <button onClick={openCreate} className="btn-ember flex items-center gap-2 px-4 py-2.5 text-sm">
@@ -127,7 +127,7 @@ export default function AdminEmployeesPage() {
         <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-20 shimmer rounded-2xl" />)}</div>
       ) : employees.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="font-body" style={{ color: 'var(--steel)' }}>No employees yet. Add your team to enable Store Mode.</p>
+          <p className="font-body" style={{ color: 'var(--steel)' }}>No employees yet. Add your team to enable the Front Desk.</p>
         </div>
       ) : (
         <div className="space-y-3">
