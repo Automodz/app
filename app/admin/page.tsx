@@ -36,6 +36,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { useFloor, type Occupant } from '@/components/studio/useFloor';
 import StudioDrawer, { type DrawerTarget } from '@/components/studio/StudioDrawer';
+import TechnicianDrawer from '@/components/studio/TechnicianDrawer';
 import { formatCurrency, formatTime } from '@/lib/utils';
 import type { AttendanceRecord, Booking, Job, JobStatus } from '@/lib/types';
 
@@ -290,14 +291,21 @@ export default function StudioBoard() {
     wash: { icon: Droplets }, protection: { icon: Shield },
   };
 
-  const bayHeaderState = (r: ResourceKey): { text: string; color: string } => {
+  // ── bay tone engine: the bay's colour IS its status ──
+  //   green running · amber over ETA · red badly late · blue vehicle waiting
+  //   to enter a free bay · grey idle
+  const bayState = (r: ResourceKey): { word: string; color: string } => {
     const occ = bays[r][0];
-    if (!occ) return { text: 'FREE', color: 'var(--success)' };
-    const lc = lateColor(occ.remainingMin);
-    if (lc) return { text: `LATE ${fmtMin(-(occ.remainingMin!))}`, color: lc };
-    if (occ.remainingMin !== null)
-      return { text: `${fmtMin(occ.remainingMin)} left`, color: occ.remainingMin <= 60 ? 'var(--warning)' : 'var(--chrome)' };
-    return { text: 'BUSY', color: 'var(--warning)' };
+    if (occ) {
+      if (occ.remainingMin !== null && occ.remainingMin <= -15)
+        return { word: `LATE ${fmtMin(-occ.remainingMin)}`, color: 'var(--danger)' };
+      if (occ.remainingMin !== null && occ.remainingMin < 0)
+        return { word: `OVER ETA ${fmtMin(-occ.remainingMin)}`, color: 'var(--warning)' };
+      return { word: 'RUNNING', color: 'var(--success)' };
+    }
+    if (waiting.some(o => resourceOf(o.job) === r))
+      return { word: 'VEHICLE WAITING', color: 'var(--info)' };
+    return { word: 'IDLE', color: 'var(--steel)' };
   };
 
   // ── timeline geometry: % of the working day (09:00 → close) ──
@@ -501,17 +509,24 @@ export default function StudioBoard() {
           const occ: Occupant | undefined = bays[r][0];
           const queue = bays[r].length - 1;
           const Icon = bayMeta[r].icon;
-          const st = bayHeaderState(r);
+          const st = bayState(r);
+          const progress = occ && occ.elapsedMin !== null && occ.estMin > 0
+            ? Math.min(100, Math.round((occ.elapsedMin / occ.estMin) * 100)) : null;
           return (
-            <div key={r} className="rounded-2xl p-4"
-              style={{ background: 'var(--fog)', border: `1px solid ${occ ? 'var(--border-strong)' : 'var(--border)'}` }}>
+            <div key={r} className="rounded-2xl p-4 transition-colors"
+              style={{
+                background: `color-mix(in srgb, ${st.color} 3%, var(--fog))`,
+                border: `1px solid color-mix(in srgb, ${st.color} ${occ ? 32 : 18}%, var(--border))`,
+              }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="font-mono inline-flex items-center gap-2" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)' }}>
-                  <Icon size={13} style={{ color: occ ? st.color : 'var(--success)' }} />
+                  <Icon size={13} style={{ color: st.color }} />
                   {RESOURCE_LABELS[r].toUpperCase()}
                 </span>
-                <span className="font-mono font-700" style={{ fontSize: 11, color: st.color }}>
-                  {occ ? 'OCCUPIED' : 'FREE'}
+                <span className="font-mono font-700 inline-flex items-center gap-1.5" style={{ fontSize: 11, color: st.color }}>
+                  <span className={occ ? 'rounded-full pulse-dot' : 'rounded-full'}
+                    style={{ width: 6, height: 6, background: st.color }} />
+                  {st.word}
                 </span>
               </div>
               {occ ? (
@@ -522,6 +537,11 @@ export default function StudioBoard() {
                   <p className="text-sm font-body truncate mt-0.5" style={{ color: 'var(--steel)' }}>
                     {occ.service} · {occ.customer}
                   </p>
+                  {progress !== null && (
+                    <div className="h-1 rounded-full overflow-hidden mt-2.5" style={{ background: 'var(--dark)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${progress}%`, background: st.color }} />
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
                     {[
                       ['Started', occ.startedAt ? timeLabel(occ.startedAt) : '—'],
@@ -620,7 +640,8 @@ export default function StudioBoard() {
         <div className="rounded-2xl px-4 py-3 mb-4 flex items-stretch gap-5 overflow-x-auto"
           style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
           {technicians.map(t => (
-            <Link key={t.id} href={`/admin/employees/${t.id}`} className="flex flex-col gap-0.5 shrink-0 min-w-28">
+            <button key={t.id} onClick={() => setDrawer({ kind: 'tech', id: t.id })}
+              className="flex flex-col gap-0.5 shrink-0 min-w-28 text-left cursor-pointer">
               <span className="font-body font-600 text-sm truncate" style={{ color: 'var(--chrome)' }}>{t.name}</span>
               <span className="font-mono inline-flex items-center gap-1.5" style={{
                 fontSize: 10,
@@ -652,7 +673,7 @@ export default function StudioBoard() {
               <span className="font-mono text-[10px]" style={{ color: 'var(--faint)' }}>
                 {t.jobsToday} job{t.jobsToday === 1 ? '' : 's'} today{t.breakMin > 0 ? ` · ${fmtMin(t.breakMin)} break` : ''}
               </span>
-            </Link>
+            </button>
           ))}
         </div>
       )}
@@ -733,8 +754,13 @@ export default function StudioBoard() {
         </div>
       )}
 
-      {/* the context workspace — walk-ins, jobs, bookings open over the board */}
-      <StudioDrawer target={drawer} onClose={() => setDrawer(null)} onTarget={setDrawer} />
+      {/* the context workspace — walk-ins, jobs, bookings, technicians open over the board */}
+      <StudioDrawer target={drawer} onClose={() => setDrawer(null)} onTarget={setDrawer}
+        renderTech={id => (
+          <TechnicianDrawer employeeId={id} jobs={jobs} attendance={attendance} actor={actor}
+            onChanged={() => getTodayAttendance().then(setAttendance).catch(() => {})}
+            onOpenJob={openJob} />
+        )} />
     </div>
   );
 }

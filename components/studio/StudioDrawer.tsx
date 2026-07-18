@@ -16,12 +16,15 @@ import BookingWorkspace from '@/components/workspace/BookingWorkspace';
 export type DrawerTarget =
   | { kind: 'walkin' }
   | { kind: 'job'; id: string }
-  | { kind: 'booking'; id: string };
+  | { kind: 'booking'; id: string }
+  | { kind: 'tech'; id: string };
 
-export default function StudioDrawer({ target, onClose, onTarget }: {
+export default function StudioDrawer({ target, onClose, onTarget, renderTech }: {
   target: DrawerTarget | null;
   onClose: () => void;
   onTarget: (t: DrawerTarget) => void;
+  /** the board supplies the technician workspace with its own live data */
+  renderTech?: (employeeId: string) => ReactNode;
 }) {
   useEffect(() => {
     if (!target) return;
@@ -39,6 +42,8 @@ export default function StudioDrawer({ target, onClose, onTarget }: {
       onOpenBooking={id => onTarget({ kind: 'booking', id })} />;
   } else if (target?.kind === 'booking') {
     content = <BookingWorkspace id={target.id} onBack={onClose} backLabel="STUDIO BOARD" />;
+  } else if (target?.kind === 'tech') {
+    content = renderTech?.(target.id) ?? null;
   }
 
   return (
