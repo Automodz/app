@@ -5,7 +5,7 @@
  *
  *   header        → date/clock + pipeline counts + operational notifications
  *   live capacity → utilization bar + next-free time per physical bay
- *   waiting queue → every arriving vehicle, oldest first
+ *   waiting queue → auto-prioritized (appointments > wait time > walk-ins)
  *   bay cards     → the two physical resources with full occupant detail
  *   QC / ready    → the tail of the pipeline
  *   tech rail     → who is working / on break / idle, ETA, jobs done today
@@ -177,6 +177,17 @@ export default function StudioBoard() {
   const nowMin = floor.now.getHours() * 60 + floor.now.getMinutes();
   const capacityPlanned = floor.capacity.wash.planned + floor.capacity.protection.planned;
 
+  /**
+   * Auto-priority queue — nobody sorts by hand. Appointments outrank
+   * walk-ins; inside each class the longest wait floats to the top.
+   * (Premium-member boost joins when membership lands on the Job record.)
+   */
+  const queue = useMemo(() => {
+    const score = (o: Occupant) =>
+      (o.job.source === 'booking' ? 100000 : 0) + (o.elapsedMin ?? 0);
+    return [...waiting].sort((a, b) => score(b) - score(a));
+  }, [waiting]);
+
   /** minutes from now until the n-th waiting vehicle of a resource can start */
   const queuePlan = useMemo(() => {
     const cursor: Record<ResourceKey, number> = {
@@ -184,14 +195,14 @@ export default function StudioBoard() {
       protection: freeInMin.protection === null ? 0 : freeInMin.protection + BUFFER_MIN,
     };
     const plan = new Map<string, { inMin: number; bayFreeNow: boolean }>();
-    for (const o of waiting) {
+    for (const o of queue) {
       const r = resourceOf(o.job);
       plan.set(o.job.id, { inMin: cursor[r], bayFreeNow: cursor[r] === 0 });
       cursor[r] += o.estMin + BUFFER_MIN;
     }
     return plan;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waiting, freeInMin]);
+  }, [queue, freeInMin]);
 
   /** next upcoming booking per bay (today's later slots + next 6 days) */
   const nextBooking = useMemo(() => {
@@ -233,13 +244,20 @@ export default function StudioBoard() {
   /** the board tells reception what to do next — one prioritized list */
   const upNext = useMemo(() => {
     const out: { icon: typeof Timer; text: string; sub?: string; color: string; onClick?: () => void }[] = [];
-    // 1 — a bay is open and a vehicle is waiting for it: move it
-    waiting.forEach(o => {
+    // 1 — a bay is open and a vehicle is waiting for it: move it (with reasons)
+    const freeTech = technicians.find(t => t.state === 'idle');
+    queue.forEach(o => {
       const p = queuePlan.get(o.job.id);
       if (p?.bayFreeNow) out.push({
         icon: Play, color: 'var(--success)',
         text: `Move ${o.vehicle} into the ${RESOURCE_LABELS[resourceOf(o.job)]}`,
-        sub: 'Bay is free now', onClick: () => openJob(o.job),
+        sub: [
+          'Bay free now',
+          freeTech ? `${freeTech.name.split(' ')[0]} free` : null,
+          o.job.paymentStatus === 'collected' ? 'Paid' : 'Payment pending',
+          o.job.source === 'booking' ? 'Appointment' : null,
+        ].filter(Boolean).join(' · '),
+        onClick: () => openJob(o.job),
       });
     });
     // 2 — work in a bay with nobody on it
@@ -272,7 +290,7 @@ export default function StudioBoard() {
         text: `${o.vehicle} running late ${fmtMin(-o.remainingMin)}`, onClick: () => openJob(o.job),
       });
     });
-    waiting.forEach(o => {
+    queue.forEach(o => {
       if (o.elapsedMin !== null && o.elapsedMin >= 15 && !queuePlan.get(o.job.id)?.bayFreeNow) out.push({
         icon: UserRound, color: 'var(--warning)',
         text: `${o.customer} waiting ${fmtMin(o.elapsedMin)}`, onClick: () => openJob(o.job),
@@ -285,7 +303,7 @@ export default function StudioBoard() {
     });
     return out.slice(0, 6);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waiting, bays, qc, ready, freeInMin, queuePlan]);
+  }, [queue, bays, qc, ready, freeInMin, queuePlan, technicians]);
 
   const bayMeta: Record<ResourceKey, { icon: typeof Droplets }> = {
     wash: { icon: Droplets }, protection: { icon: Shield },
@@ -458,7 +476,7 @@ export default function StudioBoard() {
           </div>
         ) : (
           <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
-            {waiting.map((o, i) => {
+            {queue.map((o, i) => {
               const p = queuePlan.get(o.job.id);
               const r = resourceOf(o.job);
               return (
@@ -507,7 +525,7 @@ export default function StudioBoard() {
       <div className="grid sm:grid-cols-2 gap-4 mb-5">
         {(['wash', 'protection'] as ResourceKey[]).map(r => {
           const occ: Occupant | undefined = bays[r][0];
-          const queue = bays[r].length - 1;
+          const queuedBehind = bays[r].length - 1;
           const Icon = bayMeta[r].icon;
           const st = bayState(r);
           const progress = occ && occ.elapsedMin !== null && occ.estMin > 0
@@ -571,11 +589,11 @@ export default function StudioBoard() {
                     <span className="font-mono text-[10px]" style={{ color: occ.job.paymentStatus === 'collected' ? 'var(--success)' : 'var(--warning)' }}>
                       {occ.job.paymentStatus === 'collected' ? 'PAID' : 'PAYMENT PENDING'}
                     </span>
-                    {queue > 0 && (
-                      <span className="font-mono text-[10px]" style={{ color: 'var(--faint)' }}>+{queue} queued</span>
+                    {queuedBehind > 0 && (
+                      <span className="font-mono text-[10px]" style={{ color: 'var(--faint)' }}>+{queuedBehind} queued</span>
                     )}
                   </div>
-                  <BayNextLine r={r} waiting={waiting} nextBooking={nextBooking[r]}
+                  <BayNextLine r={r} waiting={queue} nextBooking={nextBooking[r]}
                     bookingDayLabel={bookingDayLabel} resourceOf={resourceOf} />
                 </button>
               ) : (
@@ -583,7 +601,7 @@ export default function StudioBoard() {
                   <p className="font-body text-sm mb-1" style={{ color: 'var(--steel)' }}>
                     Available now{waiting.length > 0 ? ' — assign from the waiting queue.' : '.'}
                   </p>
-                  <BayNextLine r={r} waiting={waiting} nextBooking={nextBooking[r]}
+                  <BayNextLine r={r} waiting={queue} nextBooking={nextBooking[r]}
                     bookingDayLabel={bookingDayLabel} resourceOf={resourceOf} />
                 </div>
               )}
