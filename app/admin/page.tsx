@@ -16,7 +16,6 @@
  * no duplicate listeners, no duplicate logic.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   PlusCircle, Wrench, ChevronRight, Timer, Droplets, Shield,
@@ -32,6 +31,7 @@ import {
   type ResourceKey,
 } from '@/lib/availability';
 import { useFloor, type Occupant } from '@/components/studio/useFloor';
+import StudioDrawer, { type DrawerTarget } from '@/components/studio/StudioDrawer';
 import { formatCurrency, formatTime } from '@/lib/utils';
 import type { AttendanceRecord, Booking, Job, JobStatus } from '@/lib/types';
 
@@ -53,7 +53,8 @@ const FEED_COLOR: Record<JobStatus, string> = {
 };
 
 export default function StudioBoard() {
-  const router = useRouter();
+  // the context workspace: everything opens here, over the board
+  const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsReady, setJobsReady] = useState(false);
@@ -85,7 +86,7 @@ export default function StudioBoard() {
   const { bays, waiting, qc, ready, deliveredToday, freeInMin, bookedMin } = floor;
 
   const openJob = (j: Job) =>
-    router.push(j.bookingId ? `/admin/bookings/${j.bookingId}` : `/admin/jobs/${j.id}`);
+    setDrawer(j.bookingId ? { kind: 'booking', id: j.bookingId } : { kind: 'job', id: j.id });
 
   // ── technician rail: attendance ⨯ live assignments ──
   const technicians = useMemo(() => {
@@ -193,7 +194,7 @@ export default function StudioBoard() {
       lanes[categoryToResource(b.serviceCategory)].push({
         left, width: Math.max(3, Math.min(100 - left, (dur / WORK_DAY_MIN) * 100)),
         label: b.vehicleName, live: false,
-        onClick: () => router.push(`/admin/bookings/${b.id}`),
+        onClick: () => setDrawer({ kind: 'booking', id: b.id }),
       });
     }
     (['wash', 'protection'] as ResourceKey[]).forEach(r => {
@@ -243,9 +244,10 @@ export default function StudioBoard() {
               <span className="text-[10px] font-body" style={{ color: 'var(--pewter)' }}>{s.l}</span>
             </div>
           ))}
-          <Link href="/admin/walkin" className="btn-ember flex md:hidden items-center gap-2 px-4 py-2.5 text-sm shrink-0">
+          <button onClick={() => setDrawer({ kind: 'walkin' })}
+            className="btn-ember flex items-center gap-2 px-4 py-2.5 text-sm shrink-0 cursor-pointer">
             <PlusCircle size={15} /> Walk-in
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -548,6 +550,9 @@ export default function StudioBoard() {
           <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Quiet floor — start a walk-in to get moving.</p>
         </div>
       )}
+
+      {/* the context workspace — walk-ins, jobs, bookings open over the board */}
+      <StudioDrawer target={drawer} onClose={() => setDrawer(null)} onTarget={setDrawer} />
     </div>
   );
 }

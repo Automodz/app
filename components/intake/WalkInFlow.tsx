@@ -19,7 +19,10 @@ import type { Service, User, JobServiceItem, BookingDiscount, Employee, Job, Sub
 
 const CATEGORIES = ['Washing', 'Ceramic', 'Coating', 'PPF'];
 
-export default function WalkInFlow() {
+export default function WalkInFlow({ onDone }: {
+  /** drawer mode: hand the new job id back instead of routing */
+  onDone?: (jobId: string) => void;
+} = {}) {
   const router = useRouter();
   const { kioskEmployee, user } = useAppStore();
   // Kiosk PIN identity wins; otherwise staff act as themselves — managers on
@@ -150,8 +153,8 @@ export default function WalkInFlow() {
         }).catch(() => {});
       }
       toast.success('Job created');
-      // managers land in the admin workspace; kiosk staff stay on the kiosk job card
-      router.replace(`/admin/jobs/${id}`);
+      if (onDone) onDone(id);
+      else router.replace(`/admin/jobs/${id}`);
     } catch (e) {
       console.error(e); toast.error('Could not create job'); setCreating(false);
     }
