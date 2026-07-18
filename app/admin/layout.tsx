@@ -410,11 +410,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="font-body" style={{ fontSize: 12.5 }}>Search…</span>
             <kbd className="inline-flex items-center px-1.5 py-0.5 rounded-md font-mono ml-4" style={{ fontSize: 10, background: 'var(--surface)', border: '1px solid var(--border-2)', color: 'var(--muted)' }}>⌘K</kbd>
           </button>
-          <Link href="/admin/walkin"
-            className="flex items-center gap-1.5 px-3.5 rounded-xl transition-transform active:scale-95"
-            style={{ height: 36, background: 'var(--accent-grad)', color: 'var(--on-accent)', boxShadow: 'var(--ember-glow-sm)' }}>
-            <Plus size={14} /><span className="font-display" style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: '0.01em' }}>New walk-in</span>
-          </Link>
+          {/* the Studio Board has its own drawer-based walk-in button — no duplicate */}
+          {pathname !== '/admin' && (
+            <Link href="/admin/walkin"
+              className="flex items-center gap-1.5 px-3.5 rounded-xl transition-transform active:scale-95"
+              style={{ height: 36, background: 'var(--accent-grad)', color: 'var(--on-accent)', boxShadow: 'var(--ember-glow-sm)' }}>
+              <Plus size={14} /><span className="font-display" style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: '0.01em' }}>New walk-in</span>
+            </Link>
+          )}
         </header>
 
         {/* Mobile top bar */}
