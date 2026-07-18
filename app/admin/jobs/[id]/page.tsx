@@ -18,6 +18,7 @@ import {
   logActivity, listJobActivity, type ActivityEvent, type ActivityType,
 } from '@/lib/firebaseService';
 import { formatCurrency, getStatusLabel } from '@/lib/utils';
+import { categoryToResource, RESOURCE_LABELS } from '@/lib/availability';
 import { useAppStore } from '@/lib/store';
 import type { Job, JobStatus } from '@/lib/types';
 import ServiceIcon from '@/components/ui/ServiceIcon';
@@ -136,7 +137,9 @@ export default function JobWorkspace() {
               <Field icon={UserIcon} label="Customer" value={job.customerName} sub={job.customerPhone} />
               <Field icon={Car} label="Vehicle" value={job.vehicleName} sub={job.vehicleRegNo} />
               <Field icon={serviceIconField(category ?? '')} label="Services" value={services} sub={`${job.serviceItems.length} item${job.serviceItems.length === 1 ? '' : 's'}`} />
-              <Field icon={job.bay ? Car : Clock} label="Bay" value={job.bay ? `Bay ${job.bay}` : 'Unassigned'} sub={`By ${job.createdByEmployeeName}`} />
+              <Field icon={Clock} label="Bay"
+                value={category ? RESOURCE_LABELS[categoryToResource(category)] : '—'}
+                sub={`By ${job.createdByEmployeeName}`} />
             </div>
           </Section>
 

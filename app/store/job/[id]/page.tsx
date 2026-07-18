@@ -200,7 +200,7 @@ export default function StoreJobPage() {
               <Phone size={12} /> {job.customerPhone}
             </p>
             <p className="flex items-center gap-1.5 text-sm font-body" style={{ color: 'var(--steel)' }}>
-              <Car size={12} /> {job.vehicleName} · {job.vehicleRegNo}{job.bay ? ` · Bay ${job.bay}` : ''}
+              <Car size={12} /> {job.vehicleName} · {job.vehicleRegNo}
             </p>
             <p className="flex items-center gap-1.5 text-sm font-body" style={{ color: 'var(--steel)' }}>
               <Users size={12} />

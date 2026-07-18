@@ -24,7 +24,6 @@ export const createWalkInJob = async (data: {
   customerId?: string; customerName: string; customerPhone: string;
   vehicleName: string; vehicleRegNo: string;
   serviceItems: JobServiceItem[];
-  bay?: 1 | 2 | 3;
   discount?: BookingDiscount;
   byEmployee: { id: string; name: string };
   /** Who works this job - defaults to the intake employee as lead. */
@@ -61,7 +60,6 @@ export const createWalkInJob = async (data: {
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   };
   if (data.customerId) job.customerId = data.customerId;
-  if (data.bay) job.bay = data.bay;
   if (data.discount) job.discount = data.discount;
   const r = await addDoc(collection(db, 'jobs'), job);
   // Walk-in CRM record for accountless customers - fire-and-forget
@@ -311,9 +309,6 @@ export const getJobsForEmployee = async (employeeId: string, max = 50): Promise<
     .map(d => ({ id: d.id, ...d.data() } as Job))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 };
-
-export const setJobBay = (jobId: string, bay: 1 | 2 | 3) =>
-  updateDoc(doc(db, 'jobs', jobId), { bay, updatedAt: serverTimestamp() });
 
 /** Admin history/reporting - jobs for a specific date (default: recent). */
 export const getJobsForDate = async (date: string): Promise<Job[]> => {

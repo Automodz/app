@@ -9,9 +9,13 @@ import {
   getEligiblePromos, getUserSubscription, computeBestDiscount, recordPromoRedemption,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
+import { subscribeTodaysJobs } from '@/lib/firebaseService';
+import { fmtMin } from '@/lib/services/washMetrics';
+import { categoryToResource, RESOURCE_LABELS } from '@/lib/availability';
+import { useFloor } from '@/components/studio/useFloor';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 import { useAppStore } from '@/lib/store';
-import type { Service, User, JobServiceItem, BookingDiscount, Employee , Subscription } from '@/lib/types';
+import type { Service, User, JobServiceItem, BookingDiscount, Employee, Job, Subscription } from '@/lib/types';
 
 const CATEGORIES = ['Washing', 'Ceramic', 'Coating', 'PPF'];
 
@@ -44,7 +48,11 @@ export default function WalkInFlow() {
   const [services, setServices] = useState<Service[]>([]);
   const [cat, setCat] = useState('Washing');
   const [selected, setSelected] = useState<Map<string, JobServiceItem>>(new Map());
-  const [bay, setBay] = useState<1 | 2 | 3 | undefined>(undefined);
+  // live floor state — the physical resource (Wash / Protection Bay) is
+  // derived from the chosen services; nobody picks a bay number
+  const [floorJobs, setFloorJobs] = useState<Job[]>([]);
+  useEffect(() => subscribeTodaysJobs(setFloorJobs, () => {}), []);
+  const floor = useFloor(floorJobs);
   const [creating, setCreating] = useState(false);
   const [staff, setStaff] = useState<Employee[]>([]);
   const [assignees, setAssignees] = useState<Map<string, string>>(new Map()); // id -> name
@@ -123,7 +131,7 @@ export default function WalkInFlow() {
         customerId: matched?.uid,
         customerName: name.trim(), customerPhone: phone,
         vehicleName: vehicleName.trim(), vehicleRegNo: regNo,
-        serviceItems: items, bay,
+        serviceItems: items,
         discount: memberWashActive && discount ? undefined : discount,
         byEmployee: operator,
         assignees: [...assignees].map(([id, name]) => ({ id, name })),
@@ -213,20 +221,6 @@ export default function WalkInFlow() {
                   placeholder="GJ01AB1234" />
               </div>
               <div>
-                <label className="data-label block mb-1">Bay (optional)</label>
-                <div className="flex gap-2">
-                  {[1, 2, 3].map(b => (
-                    <button key={b} onClick={() => setBay(bay === b ? undefined : b as 1 | 2 | 3)}
-                      className="w-16 h-16 rounded-2xl font-display font-700 text-xl"
-                      style={{
-                        background: bay === b ? 'var(--accent-mist)' : 'var(--dark)',
-                        border: bay === b ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
-                        color: bay === b ? 'var(--ember)' : 'var(--steel)',
-                      }}>{b}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
                 <label className="data-label block mb-1">Working on this job</label>
                 <div className="flex gap-2 flex-wrap">
                   {staff.map(e => {
@@ -312,8 +306,38 @@ export default function WalkInFlow() {
               </div>
               <div>
                 <p className="data-label" style={{ color: 'var(--steel)' }}>Vehicle</p>
-                <p className="font-body font-600" style={{ color: 'var(--chrome)' }}>{vehicleName} · {regNo}{bay ? ` · Bay ${bay}` : ''}</p>
+                <p className="font-body font-600" style={{ color: 'var(--chrome)' }}>{vehicleName} · {regNo}</p>
               </div>
+              {/* the physical bay this job will occupy, with live state */}
+              {items.length > 0 && (() => {
+                const resource = categoryToResource(items[0].category);
+                const freeIn = floor.freeInMin[resource];
+                const occupied = freeIn !== null;
+                const freeAt = occupied
+                  ? new Date(floor.now.getTime() + freeIn * 60000)
+                    .toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
+                  : null;
+                return (
+                  <div className="rounded-xl px-3 py-2.5" style={{
+                    background: 'var(--dark)',
+                    border: `1px solid ${occupied ? 'color-mix(in srgb, var(--warning) 30%, transparent)' : 'color-mix(in srgb, var(--success) 25%, transparent)'}`,
+                  }}>
+                    <p className="data-label" style={{ color: 'var(--steel)' }}>{RESOURCE_LABELS[resource]}</p>
+                    {occupied ? (
+                      <>
+                        <p className="font-body text-sm font-600" style={{ color: 'var(--warning)' }}>
+                          Occupied · free {freeIn > 0 ? `at ${freeAt} (${fmtMin(freeIn)})` : 'any moment'}
+                        </p>
+                        <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
+                          This vehicle joins the queue and starts when the bay frees up.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="font-body text-sm font-600" style={{ color: 'var(--success)' }}>Free now — work can start immediately.</p>
+                    )}
+                  </div>
+                );
+              })()}
               <div>
                 <p className="data-label mb-1" style={{ color: 'var(--steel)' }}>Services</p>
                 {items.map(i => (
