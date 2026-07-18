@@ -33,18 +33,15 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
       { href: '/admin/gallery',    label: 'Gallery',      icon: Images },
     ],
   },
+  // Office = business management only. Live production, queue, attendance,
+  // schedule and walk-ins live exclusively in Studio. (Suppliers, a vehicles
+  // index and a dedicated accounting module join this list when their pages
+  // exist — no placeholder destinations.)
   {
-    group: 'TODAY',
+    group: 'BUSINESS',
     mode: 'office',
     items: [
       { href: '/admin/office', label: 'Dashboard', icon: LayoutDashboard },
-    ],
-  },
-  {
-    group: 'WORK',
-    mode: 'office',
-    items: [
-      { href: '/admin/quotes', label: 'Quotes', icon: FileSpreadsheet },
     ],
   },
   {
@@ -54,17 +51,30 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
       { href: '/admin/cars/leads',    label: 'Leads',       icon: UserPlus },
       { href: '/admin/customers',     label: 'Customers',   icon: Users },
       { href: '/admin/subscriptions', label: 'Memberships', icon: CreditCard },
+      { href: '/admin/quotes',        label: 'Quotes',      icon: FileSpreadsheet },
     ],
   },
   {
-    group: 'BUSINESS',
+    group: 'ACCOUNTING',
     mode: 'office',
     items: [
-      { href: '/admin/invoices',  label: 'Invoices',    icon: FileText },
-      { href: '/admin/expenses',  label: 'Expenses',    icon: Wallet },
-      { href: '/admin/close',     label: 'Daily Close', icon: LockKeyhole },
-      { href: '/admin/reports',   label: 'Reports',     icon: BarChart3 },
-      { href: '/admin/inventory', label: 'Inventory',   icon: Package },
+      { href: '/admin/invoices', label: 'Invoices',    icon: FileText },
+      { href: '/admin/expenses', label: 'Expenses',    icon: Wallet },
+      { href: '/admin/close',    label: 'Daily Close', icon: LockKeyhole },
+    ],
+  },
+  {
+    group: 'WAREHOUSE',
+    mode: 'office',
+    items: [
+      { href: '/admin/inventory', label: 'Inventory', icon: Package },
+    ],
+  },
+  {
+    group: 'ANALYTICS',
+    mode: 'office',
+    items: [
+      { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
     ],
   },
   {
