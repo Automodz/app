@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,48 +8,48 @@ import {
   Settings, Menu, X, LogOut, Zap, Shield,
   Wrench, UserCog, Package, BadgePercent, Car, FileText, CalendarClock, Clock,
   Images, BarChart3, Wallet, LockKeyhole, FileSpreadsheet, Search, Plus, UserPlus,
-  Store,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAppStore } from '@/lib/store';
+import { KIOSK_LOCK_TIMEOUT_MS } from '@/lib/config/storeConfig';
 import Wordmark from '@/components/ui/Wordmark';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
-// The app is organised around THREE OPERATING MODES, not pages:
-//   STUDIO  → production. The Operations Board is the heart of the business.
-//   DESK    → front desk (/store) - arrivals, check-in, payments, handover.
-//   OWNER   → money & decisions - reports, CRM, payroll, marketing, settings.
-// The Front Desk keeps its own chrome (/store); Studio and Owner share this
-// layout and the sidebar shows only the active mode's destinations.
-type Mode = 'studio' | 'owner';
+// ONE staff shell, TWO operating modes:
+//   STUDIO → run today's work. Open all day. Technicians live here.
+//   OFFICE → run the business. Money & decisions. Owner/manager only.
+// Roles filter what each person sees — there are no other applications.
+type Mode = 'studio' | 'office';
 const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
   {
-    group: 'PRODUCTION',
+    group: 'STUDIO',
     mode: 'studio',
     items: [
-      { href: '/admin',          label: 'Studio Board', icon: Wrench },
-      { href: '/admin/schedule', label: 'Schedule',     icon: CalendarDays },
-      { href: '/admin/bookings', label: 'Bookings',     icon: CalendarClock },
+      { href: '/admin',            label: 'Studio Board', icon: Wrench },
+      { href: '/admin/schedule',   label: 'Schedule',     icon: CalendarDays },
+      { href: '/admin/bookings',   label: 'Bookings',     icon: CalendarClock },
+      { href: '/admin/attendance', label: 'Attendance',   icon: Clock },
+      { href: '/admin/gallery',    label: 'Gallery',      icon: Images },
     ],
   },
   {
     group: 'TODAY',
-    mode: 'owner',
+    mode: 'office',
     items: [
-      { href: '/admin/office', label: 'Office', icon: LayoutDashboard },
+      { href: '/admin/office', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
     group: 'WORK',
-    mode: 'owner',
+    mode: 'office',
     items: [
       { href: '/admin/quotes', label: 'Quotes', icon: FileSpreadsheet },
     ],
   },
   {
     group: 'CUSTOMERS',
-    mode: 'owner',
+    mode: 'office',
     items: [
       { href: '/admin/cars/leads',    label: 'Leads',       icon: UserPlus },
       { href: '/admin/customers',     label: 'Customers',   icon: Users },
@@ -58,7 +58,7 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
   },
   {
     group: 'BUSINESS',
-    mode: 'owner',
+    mode: 'office',
     items: [
       { href: '/admin/invoices',  label: 'Invoices',    icon: FileText },
       { href: '/admin/expenses',  label: 'Expenses',    icon: Wallet },
@@ -69,24 +69,22 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
   },
   {
     group: 'TEAM',
-    mode: 'owner',
+    mode: 'office',
     items: [
-      { href: '/admin/employees',  label: 'Employees',  icon: UserCog },
-      { href: '/store/attendance', label: 'Attendance', icon: Clock },
+      { href: '/admin/employees', label: 'Employees', icon: UserCog },
     ],
   },
   {
     group: 'MARKETING',
-    mode: 'owner',
+    mode: 'office',
     items: [
-      { href: '/admin/promos',  label: 'Promotions',  icon: BadgePercent },
-      { href: '/admin/gallery', label: 'Gallery',     icon: Images },
-      { href: '/admin/cars',    label: 'Marketplace', icon: Car },
+      { href: '/admin/promos', label: 'Promotions',  icon: BadgePercent },
+      { href: '/admin/cars',   label: 'Marketplace', icon: Car },
     ],
   },
   {
     group: 'SETTINGS',
-    mode: 'owner',
+    mode: 'office',
     items: [
       { href: '/admin/settings', label: 'Services', icon: Settings },
     ],
@@ -96,17 +94,62 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
 // flat list of every destination, for the top-bar title + command palette
 const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items.map(i => ({ ...i, group: g.group, mode: g.mode })));
 
+// Studio-floor routes technicians (role: employee) may use; everything else
+// under /admin is Office and needs an admin session. Unlisted /admin routes
+// reached from the floor (job/booking/vehicle detail, walk-in intake) count
+// as Studio.
+const STUDIO_PREFIXES = [
+  '/admin/schedule', '/admin/bookings', '/admin/attendance', '/admin/gallery',
+  '/admin/walkin', '/admin/jobs', '/admin/vehicles',
+];
+const isStudioPath = (p: string) =>
+  p === '/admin' || STUDIO_PREFIXES.some(pre => p === pre || p.startsWith(pre + '/'));
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
-  const { user, authLoading, setUser } = useAppStore();
+  const { user, authLoading, setUser, kioskEmployee, setKioskEmployee } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
+  const isAdmin    = user?.role === 'admin';
+  const isEmployee = user?.role === 'employee';
+  const isStaff    = isAdmin || isEmployee;
+
   useEffect(() => {
     if (authLoading) return;
-    if (!user || user.role !== 'admin') router.replace('/auth/login');
-  }, [user, authLoading, router]);
+    if (!user || !isStaff) { router.replace('/auth/login'); return; }
+    // technicians never see Office routes
+    if (isEmployee && !isStudioPath(pathname)) router.replace('/admin');
+  }, [user, authLoading, isStaff, isEmployee, pathname, router]);
+
+  // ── Kiosk (shared tablet on the owner's session) ────────────────────
+  // Restore the unlocked employee after a reload, and auto-relock to the
+  // PIN screen (/store) after inactivity. Personal sessions never lock.
+  useEffect(() => {
+    if (kioskEmployee) return;
+    try {
+      const saved = sessionStorage.getItem('automodz-kiosk');
+      if (saved) setKioskEmployee(JSON.parse(saved));
+    } catch { /* ignore invalid saved state */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const relock = useCallback(() => {
+    setKioskEmployee(null);
+    router.replace('/store');
+  }, [setKioskEmployee, router]);
+  useEffect(() => {
+    if (!kioskEmployee || !isAdmin) return;
+    let t: ReturnType<typeof setTimeout>;
+    const reset = () => { clearTimeout(t); t = setTimeout(relock, KIOSK_LOCK_TIMEOUT_MS); };
+    reset();
+    const events = ['pointerdown', 'keydown', 'touchstart'] as const;
+    events.forEach(ev => window.addEventListener(ev, reset));
+    return () => {
+      clearTimeout(t);
+      events.forEach(ev => window.removeEventListener(ev, reset));
+    };
+  }, [kioskEmployee, isAdmin, relock]);
 
   // ⌘K / Ctrl-K opens the command palette from anywhere
   useEffect(() => {
@@ -128,7 +171,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // active operating mode follows the route; unlisted /admin routes (job
   // details, walk-in intake) belong to the studio floor
   const mode: Mode = current.href === '/admin' && pathname !== '/admin'
-    ? 'studio' : current.mode;
+    ? (isStudioPath(pathname) ? 'studio' : 'office') : current.mode;
 
   // ── Scroll preservation ──────────────────────────────────────────────
   // <main> is the desktop scroll container. Remember scrollTop per pathname
@@ -167,7 +210,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  if (authLoading || !user || user.role !== 'admin') {
+  if (authLoading || !user || !isStaff || (isEmployee && !isStudioPath(pathname))) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--void)' }}>
         <div className="w-10 h-10 loader-ring" />
@@ -181,23 +224,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.replace('/auth/login');
   };
 
-  // command palette: every destination + key quick actions
+  // nav filtered to what this role may see; palette derives from the same list
+  const visibleGroups = NAV_GROUPS.filter(g => isAdmin || g.mode === 'studio');
+  const visibleItems  = visibleGroups.flatMap(g => g.items.map(i => ({ ...i, group: g.group })));
   const commands: Command[] = [
-    ...NAV_ITEMS.map(i => ({
+    ...visibleItems.map(i => ({
       id: 'nav:' + i.href,
       label: i.label,
       group: 'Go to · ' + i.group.charAt(0) + i.group.slice(1).toLowerCase(),
       icon: i.icon,
       run: () => router.push(i.href),
     })),
-    { id: 'act:studio', label: 'Studio Board', group: 'Quick actions', icon: Wrench, run: () => router.push('/admin') },
-    { id: 'act:frontdesk', label: 'Switch to Front Desk', group: 'Quick actions', icon: Store, run: () => router.push('/store/board') },
-    { id: 'act:owner', label: 'Owner Office', group: 'Quick actions', icon: Shield, run: () => router.push('/admin/office') },
     { id: 'act:walkin', label: 'New walk-in', group: 'Quick actions', icon: Plus, run: () => router.push('/admin/walkin') },
-    { id: 'act:close', label: 'Start daily close', group: 'Quick actions', icon: LockKeyhole, run: () => router.push('/admin/close') },
-    { id: 'act:expense', label: 'Add expense', group: 'Quick actions', icon: Wallet, run: () => router.push('/admin/expenses') },
+    ...(isAdmin ? [
+      { id: 'act:office', label: 'Office', group: 'Quick actions', icon: Shield, run: () => router.push('/admin/office') },
+      { id: 'act:close', label: 'Start daily close', group: 'Quick actions', icon: LockKeyhole, run: () => router.push('/admin/close') },
+      { id: 'act:expense', label: 'Add expense', group: 'Quick actions', icon: Wallet, run: () => router.push('/admin/expenses') },
+    ] : []),
     { id: 'act:signout', label: 'Sign out', group: 'Quick actions', icon: LogOut, run: handleLogout },
   ];
+
+  const displayName = kioskEmployee?.name ?? user.name ?? (isAdmin ? 'Admin' : 'Staff');
+  const displayRole = kioskEmployee?.role ?? (isAdmin ? 'Administrator' : 'Technician');
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -212,38 +260,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-1 mt-0.5">
               <Shield size={9} color="var(--ember)" />
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ember)', textTransform: 'uppercase' }}>
-                {mode === 'studio' ? 'Studio OS' : 'Owner OS'}
+                {mode === 'studio' ? 'Studio' : 'Office'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Operating-mode switch — STUDIO ⇄ DESK ⇄ OWNER */}
-        <div className="mt-4 grid grid-cols-3 gap-1 p-1 rounded-xl" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
-          {([
-            { key: 'studio', label: 'STUDIO', icon: Wrench,  href: '/admin' },
-            { key: 'desk',   label: 'DESK',   icon: Store,   href: '/store/board' },
-            { key: 'owner',  label: 'OWNER',  icon: Shield,  href: '/admin/office' },
-          ] as const).map(m => {
-            const active = m.key === mode;
-            return active ? (
-              <span key={m.key} className="flex items-center justify-center gap-1 py-1.5 rounded-lg"
-                style={{ background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--ember)' }}>
-                <m.icon size={10} /> {m.label}
-              </span>
-            ) : (
-              <Link key={m.key} href={m.href} onClick={() => setSidebarOpen(false)}
-                className="flex items-center justify-center gap-1 py-1.5 rounded-lg transition-colors hover:bg-white/[.04]"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--steel)' }}>
-                <m.icon size={10} /> {m.label}
-              </Link>
-            );
-          })}
-        </div>
+        {/* Operating-mode switch — STUDIO ⇄ OFFICE (owner/manager only) */}
+        {isAdmin && (
+          <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
+            {([
+              { key: 'studio', label: 'STUDIO', icon: Wrench, href: '/admin' },
+              { key: 'office', label: 'OFFICE', icon: Shield, href: '/admin/office' },
+            ] as const).map(m => {
+              const active = m.key === mode;
+              return active ? (
+                <span key={m.key} className="flex items-center justify-center gap-1 py-1.5 rounded-lg"
+                  style={{ background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--ember)' }}>
+                  <m.icon size={10} /> {m.label}
+                </span>
+              ) : (
+                <Link key={m.key} href={m.href} onClick={() => setSidebarOpen(false)}
+                  className="flex items-center justify-center gap-1 py-1.5 rounded-lg transition-colors hover:bg-white/[.04]"
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--steel)' }}>
+                  <m.icon size={10} /> {m.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        {NAV_GROUPS.filter(g => g.mode === mode).map(({ group, items }) => (
+        {visibleGroups.filter(g => g.mode === mode).map(({ group, items }) => (
           <div key={group} className="mb-4">
             <p className="px-3 mb-1.5"
               style={{
@@ -285,10 +334,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Shield size={12} color="var(--ember)" />
           </div>
           <div className="min-w-0">
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--chrome)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name || 'Admin'}</p>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--ember)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Administrator</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--chrome)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--ember)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{displayRole}</p>
           </div>
         </div>
+        {kioskEmployee && isAdmin && (
+          <button onClick={relock}
+            className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl transition-all"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--steel)', background: 'transparent', border: '1px solid transparent' }}>
+            <LockKeyhole size={14} />Lock kiosk
+          </button>
+        )}
         <button onClick={handleLogout}
           className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl transition-all"
           style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--steel)', background: 'transparent', border: '1px solid transparent' }}>

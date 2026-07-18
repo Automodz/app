@@ -1,4 +1,10 @@
 'use client';
+/**
+ * Kiosk PIN lock — the only thing left at /store. The shared studio tablet
+ * rides the owner's admin session; a technician unlocks with their PIN and
+ * lands on the Studio Board (/admin). This is an auth surface, not a mode:
+ * all work happens inside the one Studio shell.
+ */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -11,13 +17,22 @@ import ErrorState from '@/components/ui/ErrorState';
 import Wordmark from '@/components/ui/Wordmark';
 import type { Employee } from '@/lib/types';
 
-export default function StoreLockScreen() {
+export default function KioskLockScreen() {
   const router = useRouter();
-  const { user, kioskEmployee, setKioskEmployee } = useAppStore();
+  const { user, authLoading, kioskEmployee, setKioskEmployee } = useAppStore();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selected, setSelected] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+
+  const isStaff = user?.role === 'admin' || user?.role === 'employee';
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user || !isStaff) { router.replace('/auth/login'); return; }
+    // personal sessions carry their own identity — straight to the Studio
+    if (user.role === 'employee') router.replace('/admin');
+  }, [user, authLoading, isStaff, router]);
 
   const load = () => {
     setLoadError(false);
@@ -30,7 +45,7 @@ export default function StoreLockScreen() {
   useEffect(load, []);
 
   useEffect(() => {
-    if (kioskEmployee) router.replace('/store/board');
+    if (kioskEmployee) router.replace('/admin');
   }, [kioskEmployee, router]);
 
   const handlePin = async (pin: string): Promise<boolean> => {
@@ -38,9 +53,17 @@ export default function StoreLockScreen() {
     const ok = await verifyPin(selected, pin);
     if (!ok) { toast.error('Wrong PIN'); return false; }
     setKioskEmployee({ id: selected.id, name: selected.name, role: selected.role });
-    router.replace('/store/board');
+    router.replace('/admin');
     return true;
   };
+
+  if (authLoading || !user || !isStaff) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--void)' }}>
+        <div className="w-10 h-10 loader-ring" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-mesh safe-page" style={{ overflowX: 'clip', paddingBottom: 'max(var(--sab), 40px)' }}>
@@ -53,7 +76,7 @@ export default function StoreLockScreen() {
           <Wordmark height={24} className="mx-auto" />
           <p className="data-label flex items-center gap-1.5" style={{ color: 'var(--ember)' }}>
             <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: 'var(--ember)' }} />
-            Front Desk · Staff Sign-In
+            Studio · Staff Sign-In
           </p>
         </div>
       </div>
@@ -62,13 +85,13 @@ export default function StoreLockScreen() {
         <div className="w-10 h-10 loader-ring" />
       ) : loadError ? (
         <div className="w-full max-w-md"><ErrorState message="Couldn't load the staff list." onRetry={load} /></div>
-      ) :!selected ? (
+      ) : !selected ? (
         <div className="w-full max-w-2xl">
           <p className="data-label text-center mb-6" style={{ color: 'var(--steel)' }}>Who&apos;s working?</p>
           {employees.length === 0 ? (
             <div className="card text-center py-10">
               <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>
-                No employees yet - add your team in Admin → Employees.
+                No employees yet - add your team in Office → Employees.
               </p>
             </div>
           ) : (
@@ -106,7 +129,7 @@ export default function StoreLockScreen() {
         <button onClick={() => router.replace(user?.role === 'admin' ? '/admin' : '/dashboard')}
           className="mt-10 data-label cursor-pointer px-4 py-3 rounded-xl transition-colors"
           style={{ color: 'var(--steel)' }}>
-          ← Exit Front Desk
+          ← Back to Studio
         </button>
       )}
     </div>

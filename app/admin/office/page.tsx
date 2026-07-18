@@ -4,8 +4,7 @@
  *   intelligence strip  → revenue, outstanding, approvals, staff, stock, leads
  *   approvals           → bookings awaiting a yes
  *   follow-ups          → the owner's action queue
- * Live production lives on the Studio Board (/admin); arrivals and payments
- * live on the Front Desk (/store/board).
+ * Live production lives on the Studio Board (/admin).
  */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -77,7 +76,7 @@ export default function OfficePage() {
     { label: 'collected',   value: formatCurrency(collected),   icon: IndianRupee, href: '/admin/close' },
     { label: 'outstanding', value: formatCurrency(outstanding), icon: CircleAlert, href: '/admin/invoices', alert: outstanding > 0 },
     { label: 'approvals',   value: String(approvals.length),    icon: CalendarCheck, href: '/admin/bookings', alert: approvals.length > 0 },
-    { label: 'staff in',    value: String(staffPresent),        icon: UserCheck, href: '/store/attendance' },
+    { label: 'staff in',    value: String(staffPresent),        icon: UserCheck, href: '/admin/attendance' },
     { label: 'low stock',   value: String(lowStock),            icon: Package,   href: '/admin/inventory', alert: lowStock > 0 },
     { label: 'new leads',   value: String(newLeads),            icon: UserPlus,  href: '/admin/cars/leads', alert: newLeads > 0 },
   ];

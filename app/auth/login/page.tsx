@@ -45,7 +45,7 @@ export default function LoginPage() {
         router.replace('/admin');
       } else if (profile.role === 'employee') {
         toast.success(`Welcome, ${profile.name.split(' ')[0]}!`);
-        router.replace('/store');
+        router.replace('/admin');
       } else {
         toast.success(`Welcome back, ${profile.name.split(' ')[0]}!`);
         router.replace('/dashboard');

@@ -28,7 +28,7 @@ import { format, differenceInMinutes } from 'date-fns';
 
 const fmtMin = (m: number) => m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
 
-export default function StoreAttendancePage() {
+export default function AttendancePage() {
   const { user, kioskEmployee } = useAppStore();
   const isManager = user?.role === 'admin';
   const actorId = kioskEmployee?.id ?? user?.employeeId ?? user?.uid ?? '';

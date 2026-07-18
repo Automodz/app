@@ -22,8 +22,12 @@ const CATEGORIES = ['Washing', 'Ceramic', 'Coating', 'PPF'];
 export default function WalkInFlow() {
   const router = useRouter();
   const { kioskEmployee, user } = useAppStore();
-  // Managers (admin) run the front desk without a kiosk PIN - they act as themselves.
-  const operator = kioskEmployee ?? (user?.role === 'admin' ? { id: user.uid, name: user.name || 'Manager' } : null);
+  // Kiosk PIN identity wins; otherwise staff act as themselves — managers on
+  // their admin session, technicians on their personal employee session.
+  const operator = kioskEmployee
+    ?? (user?.role === 'admin' ? { id: user.uid, name: user.name || 'Manager' }
+      : user?.role === 'employee' ? { id: user.employeeId ?? user.uid, name: user.name || 'Staff' }
+      : null);
   const [step, setStep] = useState(0); // 0 customer, 1 vehicle, 2 services, 3 confirm
 
   useEffect(() => { listEmployees().then(setStaff).catch(() => {}); }, []);
@@ -147,7 +151,7 @@ export default function WalkInFlow() {
       }
       toast.success('Job created');
       // managers land in the admin workspace; kiosk staff stay on the kiosk job card
-      router.replace(kioskEmployee ? `/store/job/${id}` : `/admin/jobs/${id}`);
+      router.replace(`/admin/jobs/${id}`);
     } catch (e) {
       console.error(e); toast.error('Could not create job'); setCreating(false);
     }

@@ -29,6 +29,15 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Front Desk mode was folded into the Studio shell — keep old links working.
+  async redirects() {
+    return [
+      { source: '/store/board', destination: '/admin', permanent: false },
+      { source: '/store/new', destination: '/admin/walkin', permanent: false },
+      { source: '/store/attendance', destination: '/admin/attendance', permanent: false },
+      { source: '/store/job/:id', destination: '/admin/jobs/:id', permanent: false },
+    ];
+  },
   // Reduce bundle size
   compiler: { removeConsole: process.env.NODE_ENV === 'production' },
 };

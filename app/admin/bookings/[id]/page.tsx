@@ -48,8 +48,11 @@ const wa = (phone: string) => `https://wa.me/${phone.startsWith('91') ? phone : 
 export default function BookingWorkspace() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAppStore();
-  const actor = { id: user?.uid ?? 'admin', name: user?.name || 'Admin' };
+  const { user, kioskEmployee } = useAppStore();
+  // shared-tablet sessions attribute work to the PIN-unlocked technician
+  const actor = kioskEmployee
+    ? { id: kioskEmployee.id, name: kioskEmployee.name }
+    : { id: user?.uid ?? 'admin', name: user?.name || 'Admin' };
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [job, setJob] = useState<Job | null>(null);
