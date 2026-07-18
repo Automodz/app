@@ -19,17 +19,21 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   PlusCircle, Wrench, ChevronRight, Timer, Droplets, Shield,
-  AlertTriangle, Phone, BadgeCheck, Truck, Camera, UserRound, IndianRupee,
+  AlertTriangle, BadgeCheck, Truck, Camera, UserRound, IndianRupee,
+  Play, CalendarClock,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import toast from 'react-hot-toast';
+import { format, addDays } from 'date-fns';
 import {
   subscribeTodaysJobs, getBookingsForDates, getTodayAttendance, shiftMath,
+  updateJobStatus,
 } from '@/lib/firebaseService';
 import { fmtMin } from '@/lib/services/washMetrics';
 import {
-  RESOURCE_LABELS, categoryToResource, DAY_OPEN_MIN, WORK_DAY_MIN,
-  type ResourceKey,
+  RESOURCE_LABELS, categoryToResource, DAY_OPEN_MIN, DAY_CLOSE_MIN, WORK_DAY_MIN,
+  BUFFER_MIN, type ResourceKey,
 } from '@/lib/availability';
+import { useAppStore } from '@/lib/store';
 import { useFloor, type Occupant } from '@/components/studio/useFloor';
 import StudioDrawer, { type DrawerTarget } from '@/components/studio/StudioDrawer';
 import { formatCurrency, formatTime } from '@/lib/utils';
@@ -42,6 +46,15 @@ const timeLabel = (d: Date) =>
 const lateColor = (remainingMin: number | null): string | undefined =>
   remainingMin === null || remainingMin >= 0 ? undefined
     : remainingMin > -15 ? 'var(--warning)' : 'var(--danger)';
+
+/** long spans read in working days: 1450min → "2d 2h" (10h working day) */
+const fmtSpan = (m: number | null): string => {
+  if (m === null) return '—';
+  if (m <= WORK_DAY_MIN) return fmtMin(m);
+  const d = Math.floor(m / WORK_DAY_MIN);
+  const rest = m % WORK_DAY_MIN;
+  return `${d}d${rest >= 60 ? ` ${Math.round(rest / 60)}h` : ''}`;
+};
 
 const FEED_LABEL: Record<JobStatus, string> = {
   checked_in: 'arrived', in_progress: 'work started', quality_check: 'in quality check',
@@ -74,10 +87,16 @@ export default function StudioBoard() {
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const [bookings, setBookings] = useState<Booking[]>([]);
+  // next 7 days — feeds "next booking" per bay + tomorrow's capacity
+  const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   useEffect(() => {
-    getBookingsForDates([today])
-      .then(bs => setBookings(bs.filter(b => b.scheduledDate === today)))
+    const week = [...Array(7)].map((_, i) => format(addDays(new Date(), i), 'yyyy-MM-dd'));
+    getBookingsForDates(week)
+      .then(bs => {
+        setBookings(bs.filter(b => b.scheduledDate === today));
+        setUpcoming(bs.filter(b => !['cancelled', 'completed'].includes(b.status)));
+      })
       .catch(() => {});
     getTodayAttendance().then(setAttendance).catch(() => {});
   }, [today]);
@@ -87,6 +106,22 @@ export default function StudioBoard() {
 
   const openJob = (j: Job) =>
     setDrawer(j.bookingId ? { kind: 'booking', id: j.bookingId } : { kind: 'job', id: j.id });
+
+  // ── one-tap dispatch: waiting → bay, no drawer needed ──
+  const { user, kioskEmployee } = useAppStore();
+  const actor = kioskEmployee
+    ? { id: kioskEmployee.id, name: kioskEmployee.name }
+    : { id: user?.uid ?? 'admin', name: user?.name || 'Admin' };
+  const [starting, setStarting] = useState<string | null>(null);
+  const startNow = async (o: Occupant) => {
+    if (starting) return;
+    setStarting(o.job.id);
+    try {
+      await updateJobStatus(o.job.id, 'in_progress', actor);
+      toast.success(`${o.vehicle} → ${RESOURCE_LABELS[categoryToResource(o.job.serviceItems[0]?.category ?? 'Washing')]}`);
+    } catch { toast.error('Could not start the job'); }
+    setStarting(null);
+  };
 
   // ── technician rail: attendance ⨯ live assignments ──
   const technicians = useMemo(() => {
@@ -104,6 +139,9 @@ export default function StudioBoard() {
           id: r.employeeId, name: r.employeeName,
           state: m.onBreak ? 'break' as const : job ? 'working' as const : 'idle' as const,
           service: job?.serviceItems[0]?.serviceName,
+          vehicle: occ?.vehicle,
+          progress: occ && occ.elapsedMin !== null && occ.estMin > 0
+            ? Math.round((occ.elapsedMin / occ.estMin) * 100) : null,
           bay: job ? RESOURCE_LABELS[categoryToResource(job.serviceItems[0]?.category ?? 'Washing')] : null,
           eta: occ?.eta ?? null,
           workMin: occ?.elapsedMin ?? null,
@@ -133,32 +171,120 @@ export default function StudioBoard() {
     return events.sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 20);
   }, [jobs]);
 
-  // ── operational notifications ──
-  const alerts = useMemo(() => {
-    const out: { icon: typeof Timer; text: string; color: string }[] = [];
+  // ── predictive floor intelligence ──
+  const resourceOf = (j: Job): ResourceKey => categoryToResource(j.serviceItems[0]?.category ?? 'Washing');
+  const nowMin = floor.now.getHours() * 60 + floor.now.getMinutes();
+  const capacityPlanned = floor.capacity.wash.planned + floor.capacity.protection.planned;
+
+  /** minutes from now until the n-th waiting vehicle of a resource can start */
+  const queuePlan = useMemo(() => {
+    const cursor: Record<ResourceKey, number> = {
+      wash: freeInMin.wash === null ? 0 : freeInMin.wash + BUFFER_MIN,
+      protection: freeInMin.protection === null ? 0 : freeInMin.protection + BUFFER_MIN,
+    };
+    const plan = new Map<string, { inMin: number; bayFreeNow: boolean }>();
+    for (const o of waiting) {
+      const r = resourceOf(o.job);
+      plan.set(o.job.id, { inMin: cursor[r], bayFreeNow: cursor[r] === 0 });
+      cursor[r] += o.estMin + BUFFER_MIN;
+    }
+    return plan;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waiting, freeInMin]);
+
+  /** next upcoming booking per bay (today's later slots + next 6 days) */
+  const nextBooking = useMemo(() => {
+    const out: Record<ResourceKey, Booking | null> = { wash: null, protection: null };
+    const nowStamp = `${today} ${format(floor.now, 'HH:mm')}`;
+    [...upcoming]
+      .filter(b => !b.jobId && `${b.scheduledDate} ${b.scheduledTime}` >= nowStamp)
+      .sort((a, b) => `${a.scheduledDate} ${a.scheduledTime}`.localeCompare(`${b.scheduledDate} ${b.scheduledTime}`))
+      .forEach(b => {
+        const r = categoryToResource(b.serviceCategory);
+        if (!out[r]) out[r] = b;
+      });
+    return out;
+  }, [upcoming, today, floor.now]);
+  const bookingDayLabel = (b: Booking) =>
+    (b.scheduledDate === today ? 'Today' : format(new Date(b.scheduledDate + 'T12:00:00'), 'EEE')) +
+    ' ' + formatTime(b.scheduledTime);
+
+  /** tomorrow's load per bay: booked minutes + spill-over from live multi-day work */
+  const tomorrowLoad = useMemo(() => {
+    const tmr = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+    const load: Record<ResourceKey, number> = { wash: 0, protection: 0 };
+    for (const b of upcoming) {
+      if (b.scheduledDate !== tmr) continue;
+      load[categoryToResource(b.serviceCategory)] +=
+        Math.min(WORK_DAY_MIN, b.serviceDurationMinutes ?? floor.durationOf(b.serviceCategory));
+    }
+    const leftToday = Math.max(0, DAY_CLOSE_MIN - nowMin);
+    (['wash', 'protection'] as ResourceKey[]).forEach(r => {
+      for (const o of bays[r]) {
+        if (o.remainingMin !== null && o.remainingMin > leftToday)
+          load[r] += Math.min(WORK_DAY_MIN, o.remainingMin - leftToday);
+      }
+    });
+    return load;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [upcoming, bays, nowMin]);
+
+  /** the board tells reception what to do next — one prioritized list */
+  const upNext = useMemo(() => {
+    const out: { icon: typeof Timer; text: string; sub?: string; color: string; onClick?: () => void }[] = [];
+    // 1 — a bay is open and a vehicle is waiting for it: move it
+    waiting.forEach(o => {
+      const p = queuePlan.get(o.job.id);
+      if (p?.bayFreeNow) out.push({
+        icon: Play, color: 'var(--success)',
+        text: `Move ${o.vehicle} into the ${RESOURCE_LABELS[resourceOf(o.job)]}`,
+        sub: 'Bay is free now', onClick: () => openJob(o.job),
+      });
+    });
+    // 2 — work in a bay with nobody on it
+    [...bays.wash, ...bays.protection].forEach(o => {
+      if (!(o.job.assignedIds?.length)) out.push({
+        icon: UserRound, color: 'var(--warning)',
+        text: `Assign a technician — ${o.vehicle}`, onClick: () => openJob(o.job),
+      });
+    });
+    // 3 — QC gate
+    qc.forEach(j => out.push({
+      icon: BadgeCheck, color: 'var(--info)',
+      text: `Quality-check ${j.vehicleName}`, onClick: () => openJob(j),
+    }));
+    // 4 — money before handover
+    ready.filter(j => j.paymentStatus === 'pending').forEach(j => out.push({
+      icon: IndianRupee, color: 'var(--warning)',
+      text: `Collect ${formatCurrency(j.totalAmount - (j.amountPaid ?? 0))} — ${j.vehicleName}`,
+      onClick: () => openJob(j),
+    }));
+    // 5 — paid and ready: hand it over
+    ready.filter(j => j.paymentStatus === 'collected').forEach(j => out.push({
+      icon: Truck, color: 'var(--success)',
+      text: `Deliver ${j.vehicleName} — call ${j.customerName}`, onClick: () => openJob(j),
+    }));
+    // warnings ride below the actions
+    [...bays.wash, ...bays.protection].forEach(o => {
+      if (o.remainingMin !== null && o.remainingMin < 0) out.push({
+        icon: AlertTriangle, color: lateColor(o.remainingMin)!,
+        text: `${o.vehicle} running late ${fmtMin(-o.remainingMin)}`, onClick: () => openJob(o.job),
+      });
+    });
+    waiting.forEach(o => {
+      if (o.elapsedMin !== null && o.elapsedMin >= 15 && !queuePlan.get(o.job.id)?.bayFreeNow) out.push({
+        icon: UserRound, color: 'var(--warning)',
+        text: `${o.customer} waiting ${fmtMin(o.elapsedMin)}`, onClick: () => openJob(o.job),
+      });
+    });
     (['protection', 'wash'] as ResourceKey[]).forEach(r => {
       const f = freeInMin[r];
       if (f !== null && f > 0 && f <= 30)
         out.push({ icon: Timer, text: `${RESOURCE_LABELS[r]} free in ${fmtMin(f)}`, color: 'var(--info)' });
     });
-    [...bays.wash, ...bays.protection].forEach(o => {
-      if (o.remainingMin !== null && o.remainingMin < 0)
-        out.push({ icon: AlertTriangle, text: `${o.vehicle} running late ${fmtMin(-o.remainingMin)}`, color: lateColor(o.remainingMin)! });
-    });
-    waiting.forEach(o => {
-      if (o.elapsedMin !== null && o.elapsedMin >= 15)
-        out.push({ icon: UserRound, text: `${o.customer} waiting ${fmtMin(o.elapsedMin)}`, color: 'var(--warning)' });
-    });
-    ready.forEach(j => {
-      if (j.paymentStatus === 'pending')
-        out.push({ icon: IndianRupee, text: `${j.vehicleName} · payment pending`, color: 'var(--warning)' });
-      else
-        out.push({ icon: Phone, text: `${j.vehicleName} ready — call ${j.customerName}`, color: 'var(--success)' });
-    });
-    technicians.filter(t => t.state === 'idle').forEach(t =>
-      out.push({ icon: UserRound, text: `${t.name} idle`, color: 'var(--steel)' }));
     return out.slice(0, 6);
-  }, [bays, waiting, ready, freeInMin, technicians]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waiting, bays, qc, ready, freeInMin, queuePlan]);
 
   const bayMeta: Record<ResourceKey, { icon: typeof Droplets }> = {
     wash: { icon: Droplets }, protection: { icon: Shield },
@@ -227,20 +353,27 @@ export default function StudioBoard() {
         <div>
           <h1 className="font-display font-800 text-2xl" style={{ color: 'var(--chrome)' }}>Studio</h1>
           <p className="text-sm font-body flex items-center gap-2" style={{ color: 'var(--steel)' }}>
-            <span className="w-1.5 h-1.5 rounded-full pulse-dot" style={{ background: 'var(--success)' }} />
+            <span className="w-1.5 h-1.5 rounded-full pulse-dot"
+              style={{ background: nowMin >= DAY_OPEN_MIN && nowMin < DAY_CLOSE_MIN ? 'var(--success)' : 'var(--steel)' }} />
             {format(floor.now, 'EEEE, dd MMMM')} · {timeLabel(floor.now)}
+            <span className="font-mono" style={{ fontSize: 10, color: 'var(--faint)' }}>
+              {nowMin < DAY_OPEN_MIN ? `OPENS ${formatTime('09:00')}`
+                : nowMin >= DAY_CLOSE_MIN ? 'CLOSED'
+                : `OPEN · CLOSES ${formatTime('19:00')} · ${fmtSpan(DAY_CLOSE_MIN - nowMin)} left`}
+            </span>
           </p>
         </div>
         <div className="flex items-stretch gap-2 overflow-x-auto">
           {[
-            { n: waiting.length, l: 'Waiting', c: 'var(--info)' },
-            { n: qc.length, l: 'QC', c: 'var(--info)' },
-            { n: ready.length, l: 'Ready', c: 'var(--success)' },
-            { n: deliveredToday, l: 'Delivered', c: 'var(--success)' },
+            { n: `${deliveredToday}/${capacityPlanned}`, l: 'Completed', c: 'var(--success)', on: deliveredToday > 0 },
+            { n: String(waiting.length), l: 'Waiting', c: 'var(--info)', on: waiting.length > 0 },
+            { n: String(qc.length), l: 'QC', c: 'var(--info)', on: qc.length > 0 },
+            { n: String(ready.length), l: 'Ready', c: 'var(--success)', on: ready.length > 0 },
+            { n: String(floor.lateCount), l: 'Delayed', c: 'var(--danger)', on: floor.lateCount > 0 },
           ].map(s => (
             <div key={s.l} className="flex flex-col justify-center gap-0.5 px-3.5 py-1.5 rounded-xl shrink-0"
               style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-              <span className="font-mono font-700 text-base leading-none" style={{ color: s.n > 0 ? s.c : 'var(--steel)' }}>{s.n}</span>
+              <span className="font-mono font-700 text-base leading-none" style={{ color: s.on ? s.c : 'var(--steel)' }}>{s.n}</span>
               <span className="text-[10px] font-body" style={{ color: 'var(--pewter)' }}>{s.l}</span>
             </div>
           ))}
@@ -251,14 +384,19 @@ export default function StudioBoard() {
         </div>
       </div>
 
-      {/* ── Operational notifications ── */}
-      {alerts.length > 0 && (
-        <div className="rounded-2xl px-4 py-2.5 mb-4 space-y-1.5"
+      {/* ── Up next: the board tells reception what to do ── */}
+      {upNext.length > 0 && (
+        <div className="rounded-2xl px-2 py-1.5 mb-4"
           style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-          {alerts.map((a, i) => (
-            <p key={i} className="flex items-center gap-2 font-mono" style={{ fontSize: 11, color: a.color }}>
-              <a.icon size={11} className="shrink-0" /> {a.text}
-            </p>
+          <p className="font-mono px-2 pt-1" style={{ fontSize: 9, letterSpacing: '0.16em', color: 'var(--faint)' }}>UP NEXT</p>
+          {upNext.map((a, i) => (
+            <button key={i} onClick={a.onClick} disabled={!a.onClick}
+              className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-white/[.03] cursor-pointer disabled:cursor-default">
+              <a.icon size={12} className="shrink-0" style={{ color: a.color }} />
+              <span className="font-body" style={{ fontSize: 12.5, color: 'var(--chrome)' }}>{a.text}</span>
+              {a.sub && <span className="font-mono text-[10px]" style={{ color: a.color }}>{a.sub}</span>}
+              {a.onClick && <ChevronRight size={13} className="ml-auto shrink-0" style={{ color: 'var(--steel)' }} />}
+            </button>
           ))}
         </div>
       )}
@@ -280,11 +418,17 @@ export default function StudioBoard() {
                 <div className="h-full rounded-full transition-all"
                   style={{ width: `${pct}%`, background: pct >= 90 ? 'var(--warning)' : 'var(--accent-grad)' }} />
               </div>
-              <p className="font-mono text-[10px]" style={{ color: 'var(--pewter)' }}>
-                Next free{' '}
-                <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>
-                  {f === null || f === 0 ? 'now' : timeLabel(new Date(floor.now.getTime() + f * 60000))}
-                </b>
+              <p className="font-mono text-[10px] flex items-center gap-x-3 flex-wrap" style={{ color: 'var(--pewter)' }}>
+                <span>Next free{' '}
+                  <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>
+                    {f === null || f === 0 ? 'now' : f > DAY_CLOSE_MIN - nowMin ? fmtSpan(f) : timeLabel(new Date(floor.now.getTime() + f * 60000))}
+                  </b>
+                </span>
+                <span>Tomorrow{' '}
+                  <b style={{ color: tomorrowLoad[r] >= WORK_DAY_MIN ? 'var(--warning)' : 'var(--chrome)', fontWeight: 700 }}>
+                    {tomorrowLoad[r] === 0 ? 'free' : tomorrowLoad[r] >= WORK_DAY_MIN ? 'full' : `${fmtSpan(tomorrowLoad[r])} booked`}
+                  </b>
+                </span>
               </p>
             </div>
           );
@@ -306,27 +450,47 @@ export default function StudioBoard() {
           </div>
         ) : (
           <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--fog)' }}>
-            {waiting.map((o, i) => (
-              <button key={o.job.id} onClick={() => openJob(o.job)}
-                className="group w-full text-left flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[.03] cursor-pointer"
-                style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
-                <span className="font-mono text-xs w-5 shrink-0" style={{ color: 'var(--faint)' }}>{i + 1}.</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-body font-600 truncate" style={{ fontSize: 13.5, color: 'var(--chrome)' }}>
-                    {o.vehicle}
-                    <span className="font-400" style={{ color: 'var(--steel)' }}> · {o.service}</span>
-                  </p>
-                  <p className="text-xs font-body mt-0.5" style={{ color: 'var(--steel)' }}>
-                    {o.job.source === 'walk_in' ? 'Walk-in' : 'Appointment'} · {o.customer}
-                  </p>
+            {waiting.map((o, i) => {
+              const p = queuePlan.get(o.job.id);
+              const r = resourceOf(o.job);
+              return (
+                <div key={o.job.id} className="group w-full flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[.03]"
+                  style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+                  <button onClick={() => openJob(o.job)} className="flex-1 min-w-0 flex items-center gap-3 text-left cursor-pointer">
+                    <span className="font-mono text-xs w-5 shrink-0" style={{ color: 'var(--faint)' }}>{i + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body font-600 truncate" style={{ fontSize: 13.5, color: 'var(--chrome)' }}>
+                        {o.vehicle}
+                        <span className="font-400" style={{ color: 'var(--steel)' }}> · {o.service}</span>
+                      </p>
+                      <p className="text-xs font-body mt-0.5 truncate" style={{ color: 'var(--steel)' }}>
+                        {o.job.source === 'walk_in' ? 'Walk-in' : 'Appointment'} · {o.customer}
+                        {o.elapsedMin !== null && (
+                          <span style={{ color: (o.elapsedMin ?? 0) >= 15 ? 'var(--warning)' : 'var(--steel)' }}>
+                            {' '}· waiting {fmtMin(o.elapsedMin)}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </button>
+                  {p?.bayFreeNow ? (
+                    <button onClick={() => startNow(o)} disabled={starting === o.job.id}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg shrink-0 cursor-pointer transition-transform active:scale-95"
+                      style={{ background: 'var(--accent-grad)', color: 'var(--on-accent)' }}>
+                      <Play size={11} />
+                      <span className="font-display" style={{ fontSize: 11, fontWeight: 700 }}>
+                        {starting === o.job.id ? 'Starting…' : `Start · ${RESOURCE_LABELS[r].split(' ')[0]}`}
+                      </span>
+                    </button>
+                  ) : (
+                    <span className="font-mono text-[10px] shrink-0 text-right" style={{ color: 'var(--pewter)' }}>
+                      {RESOURCE_LABELS[r].split(' ')[0]} ~{p ? (p.inMin > DAY_CLOSE_MIN - nowMin
+                        ? fmtSpan(p.inMin) : timeLabel(new Date(floor.now.getTime() + p.inMin * 60000))) : '—'}
+                    </span>
+                  )}
                 </div>
-                <span className="font-mono text-xs shrink-0"
-                  style={{ color: (o.elapsedMin ?? 0) >= 15 ? 'var(--warning)' : 'var(--pewter)' }}>
-                  {o.elapsedMin !== null ? `waiting ${fmtMin(o.elapsedMin)}` : ''}
-                </span>
-                <ChevronRight size={15} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: 'var(--steel)' }} />
-              </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -364,7 +528,7 @@ export default function StudioBoard() {
                       ['Ends', occ.eta ? timeLabel(occ.eta) : '—'],
                       ['Elapsed', occ.elapsedMin !== null ? fmtMin(occ.elapsedMin) : '—'],
                       ['Remaining', occ.remainingMin !== null
-                        ? (occ.remainingMin < 0 ? `late ${fmtMin(-occ.remainingMin)}` : fmtMin(occ.remainingMin)) : '—'],
+                        ? (occ.remainingMin < 0 ? `late ${fmtMin(-occ.remainingMin)}` : fmtSpan(occ.remainingMin)) : '—'],
                     ].map(([l, v]) => (
                       <div key={l}>
                         <p className="font-mono" style={{ fontSize: 9, letterSpacing: '0.12em', color: 'var(--faint)' }}>{l.toUpperCase()}</p>
@@ -391,11 +555,17 @@ export default function StudioBoard() {
                       <span className="font-mono text-[10px]" style={{ color: 'var(--faint)' }}>+{queue} queued</span>
                     )}
                   </div>
+                  <BayNextLine r={r} waiting={waiting} nextBooking={nextBooking[r]}
+                    bookingDayLabel={bookingDayLabel} resourceOf={resourceOf} />
                 </button>
               ) : (
-                <p className="font-body text-sm py-4" style={{ color: 'var(--steel)' }}>
-                  Available now{waiting.length > 0 ? ' — assign from the waiting queue.' : '.'}
-                </p>
+                <div className="py-2">
+                  <p className="font-body text-sm mb-1" style={{ color: 'var(--steel)' }}>
+                    Available now{waiting.length > 0 ? ' — assign from the waiting queue.' : '.'}
+                  </p>
+                  <BayNextLine r={r} waiting={waiting} nextBooking={nextBooking[r]}
+                    bookingDayLabel={bookingDayLabel} resourceOf={resourceOf} />
+                </div>
               )}
             </div>
           );
@@ -460,12 +630,24 @@ export default function StudioBoard() {
                   width: 6, height: 6,
                   background: t.state === 'working' ? 'var(--success)' : t.state === 'break' ? 'var(--warning)' : 'var(--steel)',
                 }} />
-                {t.state === 'working' ? (t.service ?? 'Working') : t.state === 'break' ? 'Break' : 'Idle'}
+                {t.state === 'working' ? (t.vehicle ? `${t.vehicle} · ${t.service ?? 'Working'}` : (t.service ?? 'Working'))
+                  : t.state === 'break' ? 'Break' : 'Idle'}
               </span>
               {t.state === 'working' && (
-                <span className="font-mono text-[10px]" style={{ color: 'var(--pewter)' }}>
-                  {t.bay}{t.workMin !== null ? ` · ${fmtMin(t.workMin)}` : ''}{t.eta ? ` · ETA ${timeLabel(t.eta)}` : ''}
-                </span>
+                <>
+                  <span className="font-mono text-[10px]" style={{ color: 'var(--pewter)' }}>
+                    {t.bay}{t.workMin !== null ? ` · ${fmtMin(t.workMin)}` : ''}{t.eta ? ` · ETA ${timeLabel(t.eta)}` : ''}
+                  </span>
+                  {t.progress !== null && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-1 flex-1 rounded-full overflow-hidden" style={{ background: 'var(--dark)' }}>
+                        <span className="block h-full rounded-full"
+                          style={{ width: `${t.progress}%`, background: t.progress > 100 ? 'var(--warning)' : 'var(--success)' }} />
+                      </span>
+                      <span className="font-mono text-[9px]" style={{ color: 'var(--faint)' }}>{Math.min(999, t.progress)}%</span>
+                    </span>
+                  )}
+                </>
               )}
               <span className="font-mono text-[10px]" style={{ color: 'var(--faint)' }}>
                 {t.jobsToday} job{t.jobsToday === 1 ? '' : 's'} today{t.breakMin > 0 ? ` · ${fmtMin(t.breakMin)} break` : ''}
@@ -554,5 +736,31 @@ export default function StudioBoard() {
       {/* the context workspace — walk-ins, jobs, bookings open over the board */}
       <StudioDrawer target={drawer} onClose={() => setDrawer(null)} onTarget={setDrawer} />
     </div>
+  );
+}
+
+/** "Next: …" footer on a bay card — who takes this bay after the current job. */
+function BayNextLine({ r, waiting, nextBooking, bookingDayLabel, resourceOf }: {
+  r: ResourceKey;
+  waiting: Occupant[];
+  nextBooking: Booking | null;
+  bookingDayLabel: (b: Booking) => string;
+  resourceOf: (j: Job) => ResourceKey;
+}) {
+  const inQueue = waiting.find(o => resourceOf(o.job) === r);
+  if (inQueue) return (
+    <p className="font-mono text-[10px] mt-2 flex items-center gap-1.5" style={{ color: 'var(--pewter)' }}>
+      <CalendarClock size={10} className="shrink-0" style={{ color: 'var(--info)' }} />
+      Next: <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{inQueue.vehicle}</b> — waiting on site
+    </p>
+  );
+  if (nextBooking) return (
+    <p className="font-mono text-[10px] mt-2 flex items-center gap-1.5" style={{ color: 'var(--pewter)' }}>
+      <CalendarClock size={10} className="shrink-0" />
+      Next booking: <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{bookingDayLabel(nextBooking)}</b> · {nextBooking.vehicleName}
+    </p>
+  );
+  return (
+    <p className="font-mono text-[10px] mt-2" style={{ color: 'var(--faint)' }}>No upcoming work booked.</p>
   );
 }
