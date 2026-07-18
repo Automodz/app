@@ -16,27 +16,40 @@ import { useAppStore } from '@/lib/store';
 import Wordmark from '@/components/ui/Wordmark';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
-// Navigation is organised around workflows, not Firestore collections.
-// The Front Desk is not a nav item - it is a sibling OPERATING MODE with its
-// own chrome (/store), reached through the mode switch at the top of the
-// sidebar. Active Jobs lives inside the Workspace, the single live floor view.
-const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+// The app is organised around THREE OPERATING MODES, not pages:
+//   STUDIO  → production. The Operations Board is the heart of the business.
+//   DESK    → front desk (/store) - arrivals, check-in, payments, handover.
+//   OWNER   → money & decisions - reports, CRM, payroll, marketing, settings.
+// The Front Desk keeps its own chrome (/store); Studio and Owner share this
+// layout and the sidebar shows only the active mode's destinations.
+type Mode = 'studio' | 'owner';
+const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+  {
+    group: 'PRODUCTION',
+    mode: 'studio',
+    items: [
+      { href: '/admin',          label: 'Studio Board', icon: Wrench },
+      { href: '/admin/schedule', label: 'Schedule',     icon: CalendarDays },
+      { href: '/admin/bookings', label: 'Bookings',     icon: CalendarClock },
+    ],
+  },
   {
     group: 'TODAY',
+    mode: 'owner',
     items: [
-      { href: '/admin',          label: 'Workspace', icon: Wrench },
-      { href: '/admin/schedule', label: 'Schedule',  icon: CalendarDays },
+      { href: '/admin/office', label: 'Office', icon: LayoutDashboard },
     ],
   },
   {
     group: 'WORK',
+    mode: 'owner',
     items: [
-      { href: '/admin/bookings', label: 'Bookings', icon: CalendarClock },
-      { href: '/admin/quotes',   label: 'Quotes',   icon: FileSpreadsheet },
+      { href: '/admin/quotes', label: 'Quotes', icon: FileSpreadsheet },
     ],
   },
   {
     group: 'CUSTOMERS',
+    mode: 'owner',
     items: [
       { href: '/admin/cars/leads',    label: 'Leads',       icon: UserPlus },
       { href: '/admin/customers',     label: 'Customers',   icon: Users },
@@ -45,6 +58,7 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: t
   },
   {
     group: 'BUSINESS',
+    mode: 'owner',
     items: [
       { href: '/admin/invoices',  label: 'Invoices',    icon: FileText },
       { href: '/admin/expenses',  label: 'Expenses',    icon: Wallet },
@@ -55,6 +69,7 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: t
   },
   {
     group: 'TEAM',
+    mode: 'owner',
     items: [
       { href: '/admin/employees',  label: 'Employees',  icon: UserCog },
       { href: '/store/attendance', label: 'Attendance', icon: Clock },
@@ -62,6 +77,7 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: t
   },
   {
     group: 'MARKETING',
+    mode: 'owner',
     items: [
       { href: '/admin/promos',  label: 'Promotions',  icon: BadgePercent },
       { href: '/admin/gallery', label: 'Gallery',     icon: Images },
@@ -70,6 +86,7 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: t
   },
   {
     group: 'SETTINGS',
+    mode: 'owner',
     items: [
       { href: '/admin/settings', label: 'Services', icon: Settings },
     ],
@@ -77,7 +94,7 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; icon: t
 ];
 
 // flat list of every destination, for the top-bar title + command palette
-const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items.map(i => ({ ...i, group: g.group })));
+const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items.map(i => ({ ...i, group: g.group, mode: g.mode })));
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
@@ -108,6 +125,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     .filter(i => pathname === i.href || (i.href !== '/admin' && pathname.startsWith(i.href)))
     .sort((a, b) => b.href.length - a.href.length)[0]
     ?? NAV_ITEMS[0];
+  // active operating mode follows the route; unlisted /admin routes (job
+  // details, walk-in intake) belong to the studio floor
+  const mode: Mode = current.href === '/admin' && pathname !== '/admin'
+    ? 'studio' : current.mode;
 
   // ── Scroll preservation ──────────────────────────────────────────────
   // <main> is the desktop scroll container. Remember scrollTop per pathname
@@ -169,7 +190,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: i.icon,
       run: () => router.push(i.href),
     })),
+    { id: 'act:studio', label: 'Studio Board', group: 'Quick actions', icon: Wrench, run: () => router.push('/admin') },
     { id: 'act:frontdesk', label: 'Switch to Front Desk', group: 'Quick actions', icon: Store, run: () => router.push('/store/board') },
+    { id: 'act:owner', label: 'Owner Office', group: 'Quick actions', icon: Shield, run: () => router.push('/admin/office') },
     { id: 'act:walkin', label: 'New walk-in', group: 'Quick actions', icon: Plus, run: () => router.push('/admin/walkin') },
     { id: 'act:close', label: 'Start daily close', group: 'Quick actions', icon: LockKeyhole, run: () => router.push('/admin/close') },
     { id: 'act:expense', label: 'Add expense', group: 'Quick actions', icon: Wallet, run: () => router.push('/admin/expenses') },
@@ -188,27 +211,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Wordmark height={16} />
             <div className="flex items-center gap-1 mt-0.5">
               <Shield size={9} color="var(--ember)" />
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ember)', textTransform: 'uppercase' }}>Admin OS</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ember)', textTransform: 'uppercase' }}>
+                {mode === 'studio' ? 'Studio OS' : 'Owner OS'}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Operating-mode switch - Admin OS ⇄ Front Desk OS (Shopify-style) */}
-        <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
-          <span className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg"
-            style={{ background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)', fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '0.1em', color: 'var(--ember)' }}>
-            <Shield size={11} /> ADMIN
-          </span>
-          <Link href="/store/board" onClick={() => setSidebarOpen(false)}
-            className="flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-colors hover:bg-white/[.04]"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '0.1em', color: 'var(--steel)' }}>
-            <Store size={11} /> FRONT DESK
-          </Link>
+        {/* Operating-mode switch — STUDIO ⇄ DESK ⇄ OWNER */}
+        <div className="mt-4 grid grid-cols-3 gap-1 p-1 rounded-xl" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
+          {([
+            { key: 'studio', label: 'STUDIO', icon: Wrench,  href: '/admin' },
+            { key: 'desk',   label: 'DESK',   icon: Store,   href: '/store/board' },
+            { key: 'owner',  label: 'OWNER',  icon: Shield,  href: '/admin/office' },
+          ] as const).map(m => {
+            const active = m.key === mode;
+            return active ? (
+              <span key={m.key} className="flex items-center justify-center gap-1 py-1.5 rounded-lg"
+                style={{ background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--ember)' }}>
+                <m.icon size={10} /> {m.label}
+              </span>
+            ) : (
+              <Link key={m.key} href={m.href} onClick={() => setSidebarOpen(false)}
+                className="flex items-center justify-center gap-1 py-1.5 rounded-lg transition-colors hover:bg-white/[.04]"
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--steel)' }}>
+                <m.icon size={10} /> {m.label}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        {NAV_GROUPS.map(({ group, items }) => (
+        {NAV_GROUPS.filter(g => g.mode === mode).map(({ group, items }) => (
           <div key={group} className="mb-4">
             <p className="px-3 mb-1.5"
               style={{
@@ -298,7 +333,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           style={{ height: 'calc(60px + var(--sat))', background: 'color-mix(in srgb, var(--surface) 82%, transparent)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2.5 min-w-0">
             <current.icon size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
-            <span className="font-mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' }}>Admin</span>
+            <span className="font-mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' }}>{mode}</span>
             <span style={{ color: 'var(--border-strong)' }}>/</span>
             <span className="font-display truncate" style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-0.01em' }}>{current.label}</span>
           </div>

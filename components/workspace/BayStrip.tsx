@@ -1,33 +1,21 @@
 'use client';
 /**
- * The physical floor, live — two resources (Wash Bay ×1, Protection Bay ×N=1)
- * with real occupancy, derived time tracking and scheduling intelligence.
- * Shared by the Admin Workspace and Schedule. Reads the jobs/bookings the
- * host already loads + the service catalogue; writes nothing, stores nothing:
- * elapsed / ETA / late are all derived from the automatic job timeline.
+ * BayStrip — the physical floor, compact. Two resources (Wash Bay ×1,
+ * Protection Bay ×1) with live occupancy, derived time tracking and
+ * scheduling intelligence. Used by the Schedule page; the Studio Operations
+ * Board renders the full-size version of the same state. All derivation
+ * lives in useFloor — this component only draws.
  *
- * Colour law:  green = available · orange = ending soon (<60 min) · red = busy
+ * Colour law:  green = available · orange = ending soon (<60 min) · red = late
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Droplets, Timer, Wrench, AlertTriangle } from 'lucide-react';
-import { getResourceConfig, getServices } from '@/lib/firebaseService';
-import { washDayStats, fmtMin, jobTimeline } from '@/lib/services/washMetrics';
+import { washDayStats, fmtMin } from '@/lib/services/washMetrics';
 import {
-  categoryToResource, RESOURCE_DEFAULTS, WORK_DAY_MIN, DAY_OPEN_MIN,
-  type ResourceConfig, type ResourceKey,
+  categoryToResource, WORK_DAY_MIN, resourceCapacity, type ResourceKey,
 } from '@/lib/availability';
-import type { Booking, Job, Service } from '@/lib/types';
-
-const ACTIVE_JOB = ['checked_in', 'in_progress', 'quality_check', 'ready_for_delivery'];
-
-interface LiveOccupant {
-  vehicle: string;
-  technician?: string;
-  startedAt: Date | null;
-  elapsedMin: number | null;
-  etaLabel: string | null;
-  remainingMin: number | null; // negative = late
-}
+import { useFloor, type Occupant } from '@/components/studio/useFloor';
+import type { Booking, Job } from '@/lib/types';
 
 const timeLabel = (d: Date) =>
   d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -40,83 +28,27 @@ export default function BayStrip({
   /** Pass tomorrow's bookings to light up the look-ahead intelligence row. */
   tomorrowBookings?: Booking[];
 }) {
-  const [cfg, setCfg] = useState<ResourceConfig>(RESOURCE_DEFAULTS);
-  const [services, setServices] = useState<Service[]>([]);
-  const [nowTs, setNowTs] = useState(() => Date.now());
-  useEffect(() => {
-    getResourceConfig().then(setCfg).catch(() => {});
-    getServices().then(setServices).catch(() => {});
-    const t = setInterval(() => setNowTs(Date.now()), 60000); // live minutes
-    return () => clearInterval(t);
-  }, []);
+  const floor = useFloor(jobs, bookings);
+  const { bays, waiting, lateCount, bookedMin, remainingDayMin, durationOf, cfg } = floor;
 
-  const durationOf = useMemo(() => {
-    const byName = new Map(services.map(s => [s.name, s.duration]));
-    const byCat = new Map<string, number>();
-    services.forEach(s => byCat.set(s.category, Math.max(byCat.get(s.category) ?? 0, s.duration)));
-    return (cat: string, name?: string) => (name && byName.get(name)) || byCat.get(cat) || 60;
-  }, [services]);
-
-  const now = useMemo(() => new Date(nowTs), [nowTs]);
-
-  // ── live occupants per resource, with derived time tracking ──
-  const { bays, lateCount, waitingCount } = useMemo(() => {
-    const active = jobs.filter(j => ACTIVE_JOB.includes(j.status));
-    const map: Record<ResourceKey, LiveOccupant[]> = { wash: [], protection: [] };
-    let late = 0;
-    for (const j of active) {
-      const cat = j.serviceItems[0]?.category;
-      if (!cat) continue;
-      const t = jobTimeline(j);
-      const start = t.startedAt ?? t.arrivedAt;
-      const estMin = j.serviceItems.reduce((s, it) => s + durationOf(it.category, it.serviceName), 0);
-      const elapsedMin = start ? Math.max(0, Math.round((now.getTime() - start.getTime()) / 60000)) : null;
-      const eta = start ? new Date(start.getTime() + estMin * 60000) : null;
-      const remainingMin = eta ? Math.round((eta.getTime() - now.getTime()) / 60000) : null;
-      if (remainingMin !== null && remainingMin < 0) late += 1;
-      map[categoryToResource(cat)].push({
-        vehicle: j.vehicleName || j.customerName,
-        technician: j.assignments?.filter(a => !a.removedAt).map(a => a.employeeName).join(', ') || undefined,
-        startedAt: start,
-        elapsedMin,
-        etaLabel: eta ? timeLabel(eta) : null,
-        remainingMin,
-      });
-    }
-    const waiting = jobs.filter(j => j.status === 'checked_in').length;
-    return { bays: map, lateCount: late, waitingCount: waiting };
-  }, [jobs, durationOf, now]);
-
-  // ── capacity intelligence: booked minutes today/tomorrow per resource ──
-  const capacity = useMemo(() => {
-    const booked = (bs: Booking[]): Record<ResourceKey, number> => {
-      const m: Record<ResourceKey, number> = { wash: 0, protection: 0 };
-      bs.filter(b => !['cancelled', 'completed'].includes(b.status)).forEach(b => {
+  const tomorrowMin = useMemo(() => {
+    if (!tomorrowBookings) return null;
+    const m: Record<ResourceKey, number> = { wash: 0, protection: 0 };
+    tomorrowBookings
+      .filter(b => !['cancelled', 'completed'].includes(b.status))
+      .forEach(b => {
         m[categoryToResource(b.serviceCategory)] +=
           Math.min(WORK_DAY_MIN, b.serviceDurationMinutes ?? durationOf(b.serviceCategory));
       });
-      return m;
-    };
-    const today = booked(bookings);
-    // live jobs count toward today's load too (walk-ins have no booking)
-    jobs.filter(j => ACTIVE_JOB.includes(j.status) && j.source === 'walk_in').forEach(j => {
-      const cat = j.serviceItems[0]?.category;
-      if (cat) today[categoryToResource(cat)] +=
-        j.serviceItems.reduce((s, it) => s + durationOf(it.category, it.serviceName), 0);
-    });
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const remainingDayMin = Math.max(0, Math.min(WORK_DAY_MIN, (DAY_OPEN_MIN + WORK_DAY_MIN) - nowMin));
-    const pct = (m: number) => Math.min(100, Math.round((m / WORK_DAY_MIN) * 100));
-    const bottleneck: ResourceKey | null =
-      today.wash === 0 && today.protection === 0 ? null
-        : today.protection >= today.wash ? 'protection' : 'wash';
-    return {
-      today, pct, remainingDayMin, bottleneck,
-      tomorrow: tomorrowBookings ? booked(tomorrowBookings) : null,
-    };
-  }, [bookings, tomorrowBookings, jobs, durationOf, now]);
+    return m;
+  }, [tomorrowBookings, durationOf]);
 
-  const bayColor = (occ: LiveOccupant[], cap: number): string => {
+  const pct = (m: number) => Math.min(100, Math.round((m / WORK_DAY_MIN) * 100));
+  const bottleneck: ResourceKey | null =
+    bookedMin.wash === 0 && bookedMin.protection === 0 ? null
+      : bookedMin.protection >= bookedMin.wash ? 'protection' : 'wash';
+
+  const bayColor = (occ: Occupant[], cap: number): string => {
     if (occ.length === 0) return 'var(--success)';
     const worst = Math.min(...occ.map(o => o.remainingMin ?? Infinity));
     if (worst < 0) return 'var(--danger)';
@@ -125,10 +57,9 @@ export default function BayStrip({
   };
 
   const wash = useMemo(() => washDayStats(jobs), [jobs]);
-  const washCap = Math.max(1, cfg.washCapacity);
 
   const bayRows: { key: ResourceKey; label: string; cap: number }[] = [
-    { key: 'wash', label: 'WASH BAY', cap: washCap },
+    { key: 'wash', label: 'WASH BAY', cap: resourceCapacity('wash', cfg) },
     { key: 'protection', label: 'PROTECTION BAY', cap: 1 },
   ];
 
@@ -166,7 +97,7 @@ export default function BayStrip({
                   <p className="font-mono mt-0.5" style={{ fontSize: 10, color: 'var(--pewter)' }}>
                     {first.startedAt && <>started {timeLabel(first.startedAt)} · </>}
                     {first.elapsedMin !== null && <>{fmtMin(first.elapsedMin)} elapsed</>}
-                    {first.etaLabel && <> · ETA {first.etaLabel}</>}
+                    {first.eta && <> · ETA {timeLabel(first.eta)}</>}
                     {first.remainingMin !== null && (first.remainingMin < 0
                       ? <span style={{ color: 'var(--danger)' }}> · late {fmtMin(-first.remainingMin)}</span>
                       : <> · {fmtMin(first.remainingMin)} left</>)}
@@ -188,26 +119,26 @@ export default function BayStrip({
       {/* ── scheduling intelligence: capacity, bottleneck, look-ahead ── */}
       <div className="flex items-center gap-x-5 gap-y-1 flex-wrap mt-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
         <span className="font-mono" style={{ fontSize: 10, color: 'var(--pewter)' }}>
-          today <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.today.protection)}%</b> protection
-          · <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.today.wash)}%</b> wash
+          today <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{pct(bookedMin.protection)}%</b> protection
+          · <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{pct(bookedMin.wash)}%</b> wash
         </span>
         <span className="font-mono" style={{ fontSize: 10, color: 'var(--pewter)' }}>
           <Timer size={10} className="inline mr-1 -mt-0.5" style={{ color: 'var(--steel)' }} />
-          <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{fmtMin(capacity.remainingDayMin)}</b> left today
+          <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{fmtMin(remainingDayMin)}</b> left today
         </span>
-        {capacity.bottleneck && (
+        {bottleneck && (
           <span className="font-mono" style={{ fontSize: 10, color: 'var(--warning)' }}>
-            bottleneck: {capacity.bottleneck}
+            bottleneck: {bottleneck}
           </span>
         )}
-        {capacity.tomorrow && (
+        {tomorrowMin && (
           <span className="font-mono" style={{ fontSize: 10, color: 'var(--pewter)' }}>
-            tomorrow <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.tomorrow.protection)}%</b> / <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.tomorrow.wash)}%</b>
+            tomorrow <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{pct(tomorrowMin.protection)}%</b> / <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{pct(tomorrowMin.wash)}%</b>
           </span>
         )}
-        {waitingCount > 0 && (
+        {waiting.length > 0 && (
           <span className="font-mono" style={{ fontSize: 10, color: 'var(--info)' }}>
-            <Wrench size={10} className="inline mr-1 -mt-0.5" />{waitingCount} waiting
+            <Wrench size={10} className="inline mr-1 -mt-0.5" />{waiting.length} waiting
           </span>
         )}
         {lateCount > 0 && (

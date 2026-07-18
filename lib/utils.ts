@@ -66,9 +66,9 @@ export const getAvailableDates = (count = 14): string[] => {
 };
 
 export const getStatusLabel = (status: string): string => ({
-  pending: 'Pending', confirmed: 'Confirmed', vehicle_received: 'Received',
-  checked_in: 'Checked In', in_progress: 'In Progress', quality_check: 'QC Check',
-  ready_for_delivery: 'Ready', completed: 'Completed', cancelled: 'Cancelled',
+  pending: 'Pending', confirmed: 'Confirmed', vehicle_received: 'Vehicle Arrived',
+  checked_in: 'In Queue', in_progress: 'In Progress', quality_check: 'Quality Check',
+  ready_for_delivery: 'Ready', completed: 'Delivered', cancelled: 'Cancelled',
 }[status] || status);
 
 export const getStatusColor = (status: string): string => ({
