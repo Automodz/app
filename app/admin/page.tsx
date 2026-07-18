@@ -26,8 +26,9 @@ import toast from 'react-hot-toast';
 import { format, addDays } from 'date-fns';
 import {
   subscribeTodaysJobs, getBookingsForDates, getTodayAttendance, shiftMath,
-  updateJobStatus,
+  updateJobStatus, getJobsForDate,
 } from '@/lib/firebaseService';
+import OpsTimeline from '@/components/studio/OpsTimeline';
 import { fmtMin } from '@/lib/services/washMetrics';
 import {
   RESOURCE_LABELS, categoryToResource, DAY_OPEN_MIN, DAY_CLOSE_MIN, WORK_DAY_MIN,
@@ -91,16 +92,21 @@ export default function StudioBoard() {
   // next 7 days — feeds "next booking" per bay + tomorrow's capacity
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  // yesterday's jobs feed the operations timeline only — plain fetch, no listener
+  const [yesterdayJobs, setYesterdayJobs] = useState<Job[]>([]);
   useEffect(() => {
-    const week = [...Array(7)].map((_, i) => format(addDays(new Date(), i), 'yyyy-MM-dd'));
-    getBookingsForDates(week)
+    const range = [...Array(8)].map((_, i) => format(addDays(new Date(), i - 1), 'yyyy-MM-dd'));
+    getBookingsForDates(range)
       .then(bs => {
         setBookings(bs.filter(b => b.scheduledDate === today));
-        setUpcoming(bs.filter(b => !['cancelled', 'completed'].includes(b.status)));
+        setUpcoming(bs.filter(b => b.scheduledDate >= today && !['cancelled', 'completed'].includes(b.status)));
+        setTimelineBookings(bs);
       })
       .catch(() => {});
+    getJobsForDate(range[0]).then(setYesterdayJobs).catch(() => {});
     getTodayAttendance().then(setAttendance).catch(() => {});
   }, [today]);
+  const [timelineBookings, setTimelineBookings] = useState<Booking[]>([]);
 
   const floor = useFloor(jobs, bookings);
   const { bays, waiting, qc, ready, deliveredToday, freeInMin, bookedMin } = floor;
@@ -326,51 +332,22 @@ export default function StudioBoard() {
     return { word: 'IDLE', color: 'var(--steel)' };
   };
 
-  // ── timeline geometry: % of the working day (09:00 → close) ──
-  const dayPct = (d: Date) => {
-    const min = d.getHours() * 60 + d.getMinutes() - DAY_OPEN_MIN;
-    return Math.max(0, Math.min(100, (min / WORK_DAY_MIN) * 100));
-  };
-  const hmPct = (hm: string) => {
-    const [h, m] = hm.split(':').map(Number);
-    return Math.max(0, Math.min(100, ((h * 60 + m - DAY_OPEN_MIN) / WORK_DAY_MIN) * 100));
-  };
-  const timelineBlocks = useMemo(() => {
-    const lanes: Record<ResourceKey, { left: number; width: number; label: string; live: boolean; onClick: () => void }[]> = {
-      wash: [], protection: [],
-    };
-    for (const b of bookings) {
-      if (['cancelled', 'completed'].includes(b.status) || b.jobId) continue;
-      const left = hmPct(b.scheduledTime);
-      const dur = Math.min(WORK_DAY_MIN, b.serviceDurationMinutes ?? floor.durationOf(b.serviceCategory));
-      lanes[categoryToResource(b.serviceCategory)].push({
-        left, width: Math.max(3, Math.min(100 - left, (dur / WORK_DAY_MIN) * 100)),
-        label: b.vehicleName, live: false,
-        onClick: () => setDrawer({ kind: 'booking', id: b.id }),
-      });
-    }
-    (['wash', 'protection'] as ResourceKey[]).forEach(r => {
-      for (const o of bays[r]) {
-        if (!o.startedAt) continue;
-        const left = dayPct(o.startedAt);
-        const end = o.eta ? dayPct(o.eta) : left + 4;
-        lanes[r].push({
-          left, width: Math.max(3, end - left), label: o.vehicle, live: true,
-          onClick: () => openJob(o.job),
-        });
-      }
+  // one derived sentence above the timeline — the studio's current flow
+  const flowLine = useMemo(() => {
+    const parts: string[] = [];
+    (['protection', 'wash'] as ResourceKey[]).forEach(r => {
+      const f = freeInMin[r];
+      if (f === null || f === 0) parts.push(`${RESOURCE_LABELS[r]} free`);
+      else if (f > DAY_CLOSE_MIN - nowMin) parts.push(`${RESOURCE_LABELS[r]} occupied ${fmtSpan(f)}`);
+      else parts.push(`${RESOURCE_LABELS[r]} occupied until ${timeLabel(new Date(floor.now.getTime() + f * 60000))}`);
     });
-    return lanes;
+    if (waiting.length) parts.push(`${waiting.length} waiting`);
+    if (ready.length) parts.push(`${ready.length} deliver${ready.length === 1 ? 'y' : 'ies'} remaining`);
+    const tmrPct = Math.min(100, Math.round(((tomorrowLoad.wash + tomorrowLoad.protection) / (2 * WORK_DAY_MIN)) * 100));
+    if (tmrPct > 0) parts.push(`tomorrow ${tmrPct}% booked`);
+    return parts.join(' · ');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookings, bays, floor.durationOf]);
-  const hourTicks = useMemo(() => {
-    const ticks: { pct: number; label: string }[] = [];
-    for (let m = DAY_OPEN_MIN; m <= DAY_OPEN_MIN + WORK_DAY_MIN; m += 120) {
-      const h = Math.floor(m / 60);
-      ticks.push({ pct: ((m - DAY_OPEN_MIN) / WORK_DAY_MIN) * 100, label: formatTime(`${String(h).padStart(2, '0')}:00`) });
-    }
-    return ticks;
-  }, []);
+  }, [freeInMin, waiting.length, ready.length, tomorrowLoad, nowMin]);
 
   return (
     <div className="p-4 md:p-6 max-w-5xl">
@@ -696,8 +673,8 @@ export default function StudioBoard() {
         </div>
       )}
 
-      {/* ── Studio feed + today's timeline ── */}
-      <div className="grid lg:grid-cols-2 gap-4 mb-5">
+      {/* ── Studio feed ── */}
+      <div className="grid lg:grid-cols-2 gap-4 mb-4">
         <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
           <p className="font-mono mb-2" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)' }}>STUDIO FEED</p>
           {feed.length === 0 ? (
@@ -716,52 +693,17 @@ export default function StudioBoard() {
           )}
         </div>
 
-        <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="font-mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)' }}>TODAY&apos;S TIMELINE</p>
-            <Link href="/admin/schedule" className="font-mono text-[10px] uppercase tracking-wider" style={{ color: 'var(--steel)' }}>
-              Full schedule →
-            </Link>
-          </div>
-          {(['wash', 'protection'] as ResourceKey[]).map(r => (
-            <div key={r} className="mb-2.5">
-              <p className="font-mono text-[9px] mb-1" style={{ letterSpacing: '0.12em', color: 'var(--faint)' }}>
-                {RESOURCE_LABELS[r].toUpperCase()}
-              </p>
-              <div className="relative h-7 rounded-lg overflow-hidden" style={{ background: 'var(--dark)' }}>
-                {hourTicks.map(t => (
-                  <span key={t.pct} className="absolute top-0 bottom-0" style={{ left: `${t.pct}%`, width: 1, background: 'var(--border)' }} />
-                ))}
-                {timelineBlocks[r].map((b, i) => (
-                  <button key={i} onClick={b.onClick} title={b.label}
-                    className="absolute top-1 bottom-1 rounded-md px-1.5 overflow-hidden cursor-pointer"
-                    style={{
-                      left: `${b.left}%`, width: `${b.width}%`,
-                      background: b.live ? 'var(--accent-mist)' : 'var(--smoke)',
-                      border: `1px solid ${b.live ? 'var(--accent-haze)' : 'var(--border-strong)'}`,
-                    }}>
-                    <span className="font-mono block truncate" style={{ fontSize: 8.5, color: b.live ? 'var(--ember)' : 'var(--pewter)', lineHeight: '18px' }}>
-                      {b.label}
-                    </span>
-                  </button>
-                ))}
-                <span className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${dayPct(floor.now)}%`, width: 1.5, background: 'var(--danger)' }} />
-              </div>
-            </div>
-          ))}
-          <div className="relative h-3">
-            {hourTicks.map(t => (
-              <span key={t.pct} className="absolute font-mono whitespace-nowrap" style={{
-                left: `${t.pct}%`,
-                transform: t.pct === 0 ? 'none' : t.pct === 100 ? 'translateX(-100%)' : 'translateX(-50%)',
-                fontSize: 8, color: 'var(--faint)',
-              }}>
-                {t.label}
-              </span>
-            ))}
-          </div>
+        <div className="rounded-2xl px-4 py-3 flex items-center justify-center" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+          <Link href="/admin/schedule" className="font-mono text-[10px] uppercase tracking-wider" style={{ color: 'var(--steel)' }}>
+            Full schedule →
+          </Link>
         </div>
       </div>
+
+      {/* ── Operations timeline: yesterday | today | tomorrow ── */}
+      <OpsTimeline jobs={jobs} yesterdayJobs={yesterdayJobs} bookings={timelineBookings}
+        durationOf={floor.durationOf} now={floor.now} flowLine={flowLine}
+        onOpenJob={openJob} onOpenBooking={b => setDrawer({ kind: 'booking', id: b.id })} />
 
       {!jobsReady ? (
         <div className="space-y-2">{[...Array(2)].map((_, i) => <div key={i} className="h-10 shimmer rounded-xl" />)}</div>
