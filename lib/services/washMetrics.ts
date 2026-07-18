@@ -103,15 +103,13 @@ export const studioThroughput = (jobs: Job[]) => {
   });
   const peakHour = [...hourHist.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
-  const busyMin = { ppf: 0, coating: 0, wash: 0 };
+  const busyMin = { wash: 0, protection: 0 };
   jobs.forEach(j => {
     const t = jobTimeline(j);
     const w = t.workMin;
     if (w === null) return;
-    const cat = j.serviceItems[0]?.category;
-    if (cat === 'PPF') busyMin.ppf += w;
-    else if (cat === 'Washing') busyMin.wash += w;
-    else busyMin.coating += w;
+    if (j.serviceItems[0]?.category === 'Washing') busyMin.wash += w;
+    else busyMin.protection += w;
   });
 
   return {
@@ -127,4 +125,25 @@ export const fmtMin = (m: number | null): string => {
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
   return `${h}h ${m % 60}m`;
+};
+
+/** Per-category average work time for one employee (wash / ceramic / PPF …). */
+export const employeeCategoryStats = (jobs: Job[], employeeId: string) => {
+  const mine = jobs.filter(j =>
+    j.assignedIds?.includes(employeeId) || j.createdByEmployeeId === employeeId);
+  const byCat = new Map<string, number[]>();
+  mine.forEach(j => {
+    const w = jobTimeline(j).workMin;
+    const cat = j.serviceItems[0]?.category;
+    if (w === null || !cat) return;
+    byCat.set(cat, [...(byCat.get(cat) ?? []), w]);
+  });
+  const avg = (arr: number[]) => Math.round(arr.reduce((s, n) => s + n, 0) / arr.length);
+  return {
+    perCategory: [...byCat.entries()].map(([category, works]) => ({
+      category, count: works.length, avgWorkMin: avg(works),
+    })),
+    jobsWorked: mine.length,
+    revenue: mine.filter(j => j.status === 'completed').reduce((s, j) => s + j.totalAmount, 0),
+  };
 };

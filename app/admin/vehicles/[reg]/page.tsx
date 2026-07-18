@@ -45,14 +45,17 @@ export default function VehicleHistoryPage() {
   const photos = jobs.flatMap(j => j.photos ?? []);
   const technicians = [...new Set(jobs.flatMap(j => (j.assignments ?? []).map(a => a.employeeName)))];
 
-  // average wash duration for THIS car - derived from the automatic job timeline
-  const washWorks = jobs
-    .filter(j => isWashJob(j) && ['ready_for_delivery', 'completed'].includes(j.status))
-    .map(j => jobTimeline(j).workMin)
-    .filter((n): n is number => n !== null);
-  const avgWashMin = washWorks.length
-    ? Math.round(washWorks.reduce((s, n) => s + n, 0) / washWorks.length)
-    : null;
+  // per-car service metrics - derived from the automatic job timeline
+  const doneJobs = jobs.filter(j => ['ready_for_delivery', 'completed'].includes(j.status));
+  const avgOf = (arr: number[]) =>
+    arr.length ? Math.round(arr.reduce((s, n) => s + n, 0) / arr.length) : null;
+  const avgWashMin = avgOf(doneJobs.filter(isWashJob)
+    .map(j => jobTimeline(j).workMin).filter((n): n is number => n !== null));
+  const avgProtectionMin = avgOf(doneJobs.filter(j => !isWashJob(j))
+    .map(j => jobTimeline(j).workMin).filter((n): n is number => n !== null));
+  const avgVisitMin = avgOf(jobs
+    .map(j => jobTimeline(j).turnaroundMin).filter((n): n is number => n !== null));
+  const visitCount = jobs.length + bookings.filter(b => !b.jobId).length;
   const turnaroundOf = (j: Job): number | null => jobTimeline(j).turnaroundMin;
 
   const timeline = [
@@ -118,11 +121,12 @@ export default function VehicleHistoryPage() {
         <div className="text-right">
           <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'var(--faint)' }}>Lifetime spend</p>
           <p className="font-display font-800 text-lg" style={{ color: 'var(--chrome)' }}>{formatCurrency(spent)}</p>
-          {avgWashMin !== null && (
-            <p className="text-[10px] font-mono uppercase tracking-wider mt-1" style={{ color: 'var(--pewter)' }}>
-              Avg wash · {fmtMin(avgWashMin)}
-            </p>
-          )}
+          <p className="text-[10px] font-mono uppercase tracking-wider mt-1" style={{ color: 'var(--pewter)' }}>
+            {visitCount} visit{visitCount === 1 ? '' : 's'}
+            {avgWashMin !== null && ` · avg wash ${fmtMin(avgWashMin)}`}
+            {avgProtectionMin !== null && ` · avg protection ${fmtMin(avgProtectionMin)}`}
+            {avgVisitMin !== null && ` · avg visit ${fmtMin(avgVisitMin)}`}
+          </p>
         </div>
       </div>
 

@@ -22,7 +22,7 @@ interface MonthReport {
   purchasesCost: number;
   avgTurnaroundMin: number | null;
   peakHour: number | null;
-  busyMin: { ppf: number; coating: number; wash: number };
+  busyMin: { wash: number; protection: number };
   workingDays: number;
 }
 
@@ -110,7 +110,7 @@ export default function AdminReportsPage() {
     ]);
     setLoading(false);
   }, [month]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load().catch(() => setLoading(false)); }, [load]);
 
   const downloadCsv = () => {
     const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -180,9 +180,9 @@ export default function AdminReportsPage() {
               { l: 'Avg turnaround', v: fmtMin(report.avgTurnaroundMin), c: 'var(--info)' },
               { l: 'Peak hour', v: report.peakHour !== null ? `${report.peakHour}:00` : '—', c: 'var(--info)' },
               // utilization = worked minutes / (working days × 600-min day per bay)
-              { l: 'PPF bay utilization', v: `${Math.min(100, Math.round(report.busyMin.ppf / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },
-              { l: 'Coating bay utilization', v: `${Math.min(100, Math.round(report.busyMin.coating / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },
-              { l: 'Wash line busy time', v: fmtMin(report.busyMin.wash), c: 'var(--chrome)' },
+              { l: 'Wash bay utilization', v: `${Math.min(100, Math.round(report.busyMin.wash / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },
+              { l: 'Protection bay utilization', v: `${Math.min(100, Math.round(report.busyMin.protection / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },
+              { l: 'Idle capacity', v: fmtMin(Math.max(0, report.workingDays * 1200 - report.busyMin.wash - report.busyMin.protection)), c: 'var(--faint)' },
             ].map((s, i) => (
               <motion.div key={s.l} initial={false} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }} className="card-dark py-4 text-center">

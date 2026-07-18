@@ -1,45 +1,53 @@
 'use client';
 /**
- * Live bay occupancy + wash pulse — the physical floor, at a glance.
- * One shared component for the Admin Workspace and Schedule (staff data
- * access). Derives everything from the jobs/bookings already loaded by the
- * host page + the service catalogue; writes nothing.
+ * The physical floor, live — two resources (Wash Bay ×1, Protection Bay ×N=1)
+ * with real occupancy, derived time tracking and scheduling intelligence.
+ * Shared by the Admin Workspace and Schedule. Reads the jobs/bookings the
+ * host already loads + the service catalogue; writes nothing, stores nothing:
+ * elapsed / ETA / late are all derived from the automatic job timeline.
+ *
+ * Colour law:  green = available · orange = ending soon (<60 min) · red = busy
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Wrench, Droplets, Timer } from 'lucide-react';
+import { Droplets, Timer, Wrench, AlertTriangle } from 'lucide-react';
 import { getResourceConfig, getServices } from '@/lib/firebaseService';
-import { washDayStats, fmtMin } from '@/lib/services/washMetrics';
+import { washDayStats, fmtMin, jobTimeline } from '@/lib/services/washMetrics';
 import {
-  categoryToResource, expandIntervals, DAY_OPEN_MIN,
-  RESOURCE_DEFAULTS, type ResourceConfig, type ResourceKey,
+  categoryToResource, RESOURCE_DEFAULTS, WORK_DAY_MIN, DAY_OPEN_MIN,
+  type ResourceConfig, type ResourceKey,
 } from '@/lib/availability';
 import type { Booking, Job, Service } from '@/lib/types';
 
 const ACTIVE_JOB = ['checked_in', 'in_progress', 'quality_check', 'ready_for_delivery'];
 
-interface BayView {
-  key: ResourceKey;
-  label: string;
-  occupants: { vehicle: string; until: string | null }[];
-  capacity: number;
+interface LiveOccupant {
+  vehicle: string;
+  technician?: string;
+  startedAt: Date | null;
+  elapsedMin: number | null;
+  etaLabel: string | null;
+  remainingMin: number | null; // negative = late
 }
 
-const untilLabel = (startDate: string, startMin: number, durationMin: number): string | null => {
-  const ivs = expandIntervals({ date: startDate, startMin, durationMin });
-  const last = ivs[ivs.length - 1];
-  if (!last) return null;
-  const today = new Date().toISOString().slice(0, 10);
-  if (last.date === today) return 'Today';
-  const d = new Date(last.date + 'T12:00:00');
-  return 'Until ' + d.toLocaleDateString('en-IN', { weekday: 'short' });
-};
+const timeLabel = (d: Date) =>
+  d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-export default function BayStrip({ jobs, bookings = [] }: { jobs: Job[]; bookings?: Booking[] }) {
+export default function BayStrip({
+  jobs, bookings = [], tomorrowBookings,
+}: {
+  jobs: Job[];
+  bookings?: Booking[];
+  /** Pass tomorrow's bookings to light up the look-ahead intelligence row. */
+  tomorrowBookings?: Booking[];
+}) {
   const [cfg, setCfg] = useState<ResourceConfig>(RESOURCE_DEFAULTS);
   const [services, setServices] = useState<Service[]>([]);
+  const [nowTs, setNowTs] = useState(() => Date.now());
   useEffect(() => {
     getResourceConfig().then(setCfg).catch(() => {});
     getServices().then(setServices).catch(() => {});
+    const t = setInterval(() => setNowTs(Date.now()), 60000); // live minutes
+    return () => clearInterval(t);
   }, []);
 
   const durationOf = useMemo(() => {
@@ -49,76 +57,168 @@ export default function BayStrip({ jobs, bookings = [] }: { jobs: Job[]; booking
     return (cat: string, name?: string) => (name && byName.get(name)) || byCat.get(cat) || 60;
   }, [services]);
 
-  const bays = useMemo<BayView[]>(() => {
+  const now = useMemo(() => new Date(nowTs), [nowTs]);
+
+  // ── live occupants per resource, with derived time tracking ──
+  const { bays, lateCount, waitingCount } = useMemo(() => {
     const active = jobs.filter(j => ACTIVE_JOB.includes(j.status));
-    const bookedJobIds = new Set(active.map(j => j.bookingId).filter(Boolean));
-    const views: Record<ResourceKey, BayView> = {
-      ppf:     { key: 'ppf', label: 'PPF BAY', occupants: [], capacity: 1 },
-      coating: { key: 'coating', label: 'COATING BAY', occupants: [], capacity: 1 },
-      wash:    { key: 'wash', label: 'WASH', occupants: [], capacity: Math.max(1, cfg.washCapacity) },
-    };
+    const map: Record<ResourceKey, LiveOccupant[]> = { wash: [], protection: [] };
+    let late = 0;
     for (const j of active) {
       const cat = j.serviceItems[0]?.category;
       if (!cat) continue;
-      const r = categoryToResource(cat);
-      const created = j.createdAt?.toDate?.();
-      const startMin = created ? created.getHours() * 60 + created.getMinutes() : DAY_OPEN_MIN;
-      const dur = j.serviceItems.reduce((s, it) => s + durationOf(it.category, it.serviceName), 0);
-      views[r].occupants.push({
+      const t = jobTimeline(j);
+      const start = t.startedAt ?? t.arrivedAt;
+      const estMin = j.serviceItems.reduce((s, it) => s + durationOf(it.category, it.serviceName), 0);
+      const elapsedMin = start ? Math.max(0, Math.round((now.getTime() - start.getTime()) / 60000)) : null;
+      const eta = start ? new Date(start.getTime() + estMin * 60000) : null;
+      const remainingMin = eta ? Math.round((eta.getTime() - now.getTime()) / 60000) : null;
+      if (remainingMin !== null && remainingMin < 0) late += 1;
+      map[categoryToResource(cat)].push({
         vehicle: j.vehicleName || j.customerName,
-        until: untilLabel(j.date, startMin, dur),
+        technician: j.assignments?.filter(a => !a.removedAt).map(a => a.employeeName).join(', ') || undefined,
+        startedAt: start,
+        elapsedMin,
+        etaLabel: eta ? timeLabel(eta) : null,
+        remainingMin,
       });
     }
-    // in-studio bookings that have not spawned a job yet still hold their bay
-    for (const b of bookings) {
-      if (!['vehicle_received', 'in_progress', 'quality_check'].includes(b.status) || (b.jobId && bookedJobIds.has(b.jobId))) continue;
-      const r = categoryToResource(b.serviceCategory);
-      const [h, m] = (b.scheduledTime || '09:00').split(':').map(Number);
-      views[r].occupants.push({
-        vehicle: b.vehicleName,
-        until: untilLabel(b.scheduledDate, h * 60 + m, b.serviceDurationMinutes ?? durationOf(b.serviceCategory)),
+    const waiting = jobs.filter(j => j.status === 'checked_in').length;
+    return { bays: map, lateCount: late, waitingCount: waiting };
+  }, [jobs, durationOf, now]);
+
+  // ── capacity intelligence: booked minutes today/tomorrow per resource ──
+  const capacity = useMemo(() => {
+    const booked = (bs: Booking[]): Record<ResourceKey, number> => {
+      const m: Record<ResourceKey, number> = { wash: 0, protection: 0 };
+      bs.filter(b => !['cancelled', 'completed'].includes(b.status)).forEach(b => {
+        m[categoryToResource(b.serviceCategory)] +=
+          Math.min(WORK_DAY_MIN, b.serviceDurationMinutes ?? durationOf(b.serviceCategory));
       });
-    }
-    return [views.ppf, views.coating, views.wash];
-  }, [jobs, bookings, cfg, durationOf]);
+      return m;
+    };
+    const today = booked(bookings);
+    // live jobs count toward today's load too (walk-ins have no booking)
+    jobs.filter(j => ACTIVE_JOB.includes(j.status) && j.source === 'walk_in').forEach(j => {
+      const cat = j.serviceItems[0]?.category;
+      if (cat) today[categoryToResource(cat)] +=
+        j.serviceItems.reduce((s, it) => s + durationOf(it.category, it.serviceName), 0);
+    });
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const remainingDayMin = Math.max(0, Math.min(WORK_DAY_MIN, (DAY_OPEN_MIN + WORK_DAY_MIN) - nowMin));
+    const pct = (m: number) => Math.min(100, Math.round((m / WORK_DAY_MIN) * 100));
+    const bottleneck: ResourceKey | null =
+      today.wash === 0 && today.protection === 0 ? null
+        : today.protection >= today.wash ? 'protection' : 'wash';
+    return {
+      today, pct, remainingDayMin, bottleneck,
+      tomorrow: tomorrowBookings ? booked(tomorrowBookings) : null,
+    };
+  }, [bookings, tomorrowBookings, jobs, durationOf, now]);
+
+  const bayColor = (occ: LiveOccupant[], cap: number): string => {
+    if (occ.length === 0) return 'var(--success)';
+    const worst = Math.min(...occ.map(o => o.remainingMin ?? Infinity));
+    if (worst < 0) return 'var(--danger)';
+    if (worst <= 60) return 'var(--warning)';
+    return occ.length >= cap ? 'var(--danger)' : 'var(--warning)';
+  };
 
   const wash = useMemo(() => washDayStats(jobs), [jobs]);
+  const washCap = Math.max(1, cfg.washCapacity);
+
+  const bayRows: { key: ResourceKey; label: string; cap: number }[] = [
+    { key: 'wash', label: 'WASH BAY', cap: washCap },
+    { key: 'protection', label: 'PROTECTION BAY', cap: 1 },
+  ];
 
   return (
     <div className="rounded-2xl px-4 py-3 mb-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-      <div className="grid sm:grid-cols-3 gap-x-6 gap-y-2">
-        {bays.map(bay => {
-          const used = bay.occupants.length;
-          const full = used >= bay.capacity;
+      {/* ── the two resources, live ── */}
+      <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+        {bayRows.map(bay => {
+          const occ = bays[bay.key];
+          const color = bayColor(occ, bay.cap);
+          const first = occ[0];
           return (
             <div key={bay.key} className="min-w-0">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'var(--faint)' }}>{bay.label}</span>
-                <span className="font-mono" style={{ fontSize: 10, color: full ? 'var(--warning)' : 'var(--success)' }}>
-                  {used}/{bay.capacity}
+                <span className="font-mono inline-flex items-center gap-1.5" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'var(--faint)' }}>
+                  <span className="rounded-full" style={{ width: 7, height: 7, background: color }} />
+                  {bay.label}
+                </span>
+                <span className="font-mono" style={{ fontSize: 10, color }}>
+                  {occ.length}/{bay.cap}
                 </span>
               </div>
-              {/* occupancy bar */}
               <div className="flex gap-1 mt-1.5">
-                {Array.from({ length: bay.capacity }).map((_, i) => (
+                {Array.from({ length: bay.cap }).map((_, i) => (
                   <span key={i} className="h-1.5 flex-1 rounded-full"
-                    style={{ background: i < used ? (full ? 'var(--warning)' : 'var(--info)') : 'var(--smoke)' }} />
+                    style={{ background: i < occ.length ? color : 'var(--smoke)' }} />
                 ))}
               </div>
-              <p className="font-body truncate mt-1.5" style={{ fontSize: 12, color: used ? 'var(--chrome)' : 'var(--steel)' }}>
-                {bay.key === 'wash'
-                  ? (used ? `${used} washing now` : 'Free')
-                  : bay.occupants[0]
-                    ? <>{bay.occupants[0].vehicle}{bay.occupants[0].until ? <span style={{ color: 'var(--steel)' }}> · {bay.occupants[0].until}</span> : null}</>
-                    : 'Free'}
-              </p>
+              {first ? (
+                <div className="mt-1.5">
+                  <p className="font-body truncate" style={{ fontSize: 12.5, color: 'var(--chrome)' }}>
+                    {first.vehicle}
+                    {first.technician && <span style={{ color: 'var(--steel)' }}> · {first.technician}</span>}
+                  </p>
+                  <p className="font-mono mt-0.5" style={{ fontSize: 10, color: 'var(--pewter)' }}>
+                    {first.startedAt && <>started {timeLabel(first.startedAt)} · </>}
+                    {first.elapsedMin !== null && <>{fmtMin(first.elapsedMin)} elapsed</>}
+                    {first.etaLabel && <> · ETA {first.etaLabel}</>}
+                    {first.remainingMin !== null && (first.remainingMin < 0
+                      ? <span style={{ color: 'var(--danger)' }}> · late {fmtMin(-first.remainingMin)}</span>
+                      : <> · {fmtMin(first.remainingMin)} left</>)}
+                  </p>
+                  {occ.length > 1 && (
+                    <p className="font-mono mt-0.5" style={{ fontSize: 9.5, color: 'var(--faint)' }}>
+                      +{occ.length - 1} more in queue
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="font-body mt-1.5" style={{ fontSize: 12.5, color: 'var(--steel)' }}>Available now</p>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* wash pulse — derived from the automatic job timeline, no manual timers */}
+      {/* ── scheduling intelligence: capacity, bottleneck, look-ahead ── */}
       <div className="flex items-center gap-x-5 gap-y-1 flex-wrap mt-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+        <span className="font-mono" style={{ fontSize: 10, color: 'var(--pewter)' }}>
+          today <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.today.protection)}%</b> protection
+          · <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.today.wash)}%</b> wash
+        </span>
+        <span className="font-mono" style={{ fontSize: 10, color: 'var(--pewter)' }}>
+          <Timer size={10} className="inline mr-1 -mt-0.5" style={{ color: 'var(--steel)' }} />
+          <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{fmtMin(capacity.remainingDayMin)}</b> left today
+        </span>
+        {capacity.bottleneck && (
+          <span className="font-mono" style={{ fontSize: 10, color: 'var(--warning)' }}>
+            bottleneck: {capacity.bottleneck}
+          </span>
+        )}
+        {capacity.tomorrow && (
+          <span className="font-mono" style={{ fontSize: 10, color: 'var(--pewter)' }}>
+            tomorrow <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.tomorrow.protection)}%</b> / <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity.pct(capacity.tomorrow.wash)}%</b>
+          </span>
+        )}
+        {waitingCount > 0 && (
+          <span className="font-mono" style={{ fontSize: 10, color: 'var(--info)' }}>
+            <Wrench size={10} className="inline mr-1 -mt-0.5" />{waitingCount} waiting
+          </span>
+        )}
+        {lateCount > 0 && (
+          <span className="font-mono" style={{ fontSize: 10, color: 'var(--danger)' }}>
+            <AlertTriangle size={10} className="inline mr-1 -mt-0.5" />{lateCount} running late
+          </span>
+        )}
+      </div>
+
+      {/* ── wash pulse — derived from the automatic job timeline ── */}
+      <div className="flex items-center gap-x-5 gap-y-1 flex-wrap mt-2.5 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
         {[
           { icon: Timer, label: 'avg wash', value: fmtMin(wash.avgWorkMin) },
           { icon: Timer, label: 'avg wait', value: fmtMin(wash.avgWaitMin) },
@@ -135,4 +235,3 @@ export default function BayStrip({ jobs, bookings = [] }: { jobs: Job[]; booking
     </div>
   );
 }
-

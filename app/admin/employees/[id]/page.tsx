@@ -8,7 +8,7 @@ import { format, addMonths, getDaysInMonth } from 'date-fns';
 import {
   getEmployee, getAttendanceForMonth, overrideAttendanceStatus,
   computeMonth, netPayable, getPayrollRecord, savePayrollDraft, markPayrollPaid, getPayrollHistory,
-  getJobsForEmployee, employeeWashStats, fmtMin, shiftMath, attendanceCsv,
+  getJobsForEmployee, employeeWashStats, employeeCategoryStats, fmtMin, shiftMath, attendanceCsv,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import type { Employee, AttendanceRecord, PayrollRecord, PayrollAdjustment, AttendanceStatus, Job } from '@/lib/types';
@@ -47,7 +47,7 @@ export default function EmployeePayrollPage() {
     setDeductions(rec?.deductions ?? []);
     setLoading(false);
   }, [id, month]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load().catch(() => setLoading(false)); }, [load]);
 
   const shiftMonth = (delta: number) =>
     setMonth(format(addMonths(new Date(`${month}-01T12:00:00`), delta), 'yyyy-MM'));
@@ -331,19 +331,26 @@ export default function EmployeePayrollPage() {
         </div>
       )}
 
-      {/* Wash performance — derived from the automatic job timeline */}
+      {/* Service performance — one card: per-category averages + wash detail */}
       {(() => {
+        const cs = employeeCategoryStats(jobsWorked, id);
         const w = employeeWashStats(jobsWorked, id);
-        if (!w.washesDone) return null;
+        if (!cs.jobsWorked) return null;
         return (
           <div className="card-dark mt-4">
-            <p className="data-label mb-3" style={{ color: 'var(--steel)' }}>Wash performance · last {jobsWorked.length} jobs</p>
+            <p className="data-label mb-3" style={{ color: 'var(--steel)' }}>Service performance · last {jobsWorked.length} jobs</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Cars washed', value: String(w.washesDone) },
-                { label: 'Avg completion', value: fmtMin(w.avgWorkMin) },
-                { label: 'Active time', value: fmtMin(w.activeWorkMin) },
-                { label: 'Completion rate', value: w.completionRate !== null ? `${w.completionRate}%` : '—' },
+                ...cs.perCategory.map(c => ({
+                  label: `Avg ${c.category.toLowerCase()} (${c.count})`,
+                  value: fmtMin(c.avgWorkMin),
+                })),
+                { label: 'Jobs worked', value: String(cs.jobsWorked) },
+                { label: 'Revenue handled', value: formatCurrency(cs.revenue) },
+                ...(w.washesDone ? [
+                  { label: 'Active wash time', value: fmtMin(w.activeWorkMin) },
+                  { label: 'Completion rate', value: w.completionRate !== null ? `${w.completionRate}%` : '—' },
+                ] : []),
               ].map(s => (
                 <div key={s.label} className="p-3 rounded-xl" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
                   <p className="font-mono font-700 text-base" style={{ color: 'var(--chrome)' }}>{s.value}</p>

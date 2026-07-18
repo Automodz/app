@@ -1,10 +1,11 @@
 /**
  * Resource-aware availability engine — PURE functions, no Firestore.
  *
- * The studio schedules RESOURCES, not time slots:
- *   ppf bay      capacity 1   (PPF, full wraps)
- *   coating bay  capacity 1   (Ceramic / Graphene / Teflon / correction)
- *   wash         capacity N   (configurable, default 3)
+ * The studio has exactly TWO physical resources:
+ *   wash bay        capacity 1   (all washes - no parallel washes)
+ *   protection bay  capacity 1   (PPF / ceramic / graphene / coating /
+ *                                 correction - ONE active protection job;
+ *                                 a 3-day PPF makes ceramic wait)
  *
  * Occupancy is computed from bookings + active jobs, expanded across WORKING
  * days (09:00–19:00): a 3-day PPF starting Monday 9AM blocks the PPF bay
@@ -18,24 +19,24 @@ export const DAY_CLOSE_MIN = 19 * 60;  // 19:00
 export const WORK_DAY_MIN = DAY_CLOSE_MIN - DAY_OPEN_MIN; // 600
 const BUCKET = 30; // occupancy resolution, minutes
 
-export type ResourceKey = 'ppf' | 'coating' | 'wash';
+export type ResourceKey = 'wash' | 'protection';
 
 export interface ResourceConfig {
-  /** Simultaneous wash vehicles (Studio Settings → Resources). */
+  /** Simultaneous wash vehicles (Studio Settings → Resources; the studio runs 1). */
   washCapacity: number;
 }
-export const RESOURCE_DEFAULTS: ResourceConfig = { washCapacity: 3 };
+export const RESOURCE_DEFAULTS: ResourceConfig = { washCapacity: 1 };
+
+/** Turnover buffer between consecutive jobs on the same resource. */
+export const BUFFER_MIN = 15;
 
 export const RESOURCE_LABELS: Record<ResourceKey, string> = {
-  ppf: 'PPF Bay', coating: 'Coating Bay', wash: 'Wash',
+  wash: 'Wash Bay', protection: 'Protection Bay',
 };
 
 /** Which physical resource a service category occupies. */
-export const categoryToResource = (category: string): ResourceKey => {
-  if (category === 'PPF') return 'ppf';
-  if (category === 'Washing') return 'wash';
-  return 'coating'; // Ceramic, Coating (graphene/teflon/correction)
-};
+export const categoryToResource = (category: string): ResourceKey =>
+  category === 'Washing' ? 'wash' : 'protection';
 
 export const resourceCapacity = (r: ResourceKey, cfg: ResourceConfig): number =>
   r === 'wash' ? Math.max(1, cfg.washCapacity) : 1;
@@ -93,7 +94,8 @@ export const buildOccupancy = (occupants: Occupant[], resource: ResourceKey): Oc
   const map: OccupancyMap = new Map();
   for (const o of occupants) {
     if (o.resource !== resource) continue;
-    for (const iv of expandIntervals(o)) {
+    // hold the resource for the job + turnover buffer
+    for (const iv of expandIntervals({ ...o, durationMin: o.durationMin + BUFFER_MIN })) {
       let row = map.get(iv.date);
       if (!row) { row = new Array(bucketsPerDay).fill(0); map.set(iv.date, row); }
       const from = Math.max(0, bucketOf(iv.startMin));
@@ -108,7 +110,9 @@ export const buildOccupancy = (occupants: Occupant[], resource: ResourceKey): Oc
 export const candidateSlots = (durationMin: number): string[] => {
   if (durationMin >= WORK_DAY_MIN) return ['09:00'];
   const slots: string[] = [];
-  const step = Math.max(durationMin, 30);
+  // 30-min start granularity regardless of duration — an 8h ceramic can still
+  // start 09:30 after a buffered handover instead of losing the whole day
+  const step = 30;
   for (let t = DAY_OPEN_MIN; t + durationMin <= DAY_CLOSE_MIN; t += step) {
     slots.push(`${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`);
   }

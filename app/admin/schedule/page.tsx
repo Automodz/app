@@ -13,8 +13,10 @@ import toast from 'react-hot-toast';
 import { Phone, CalendarDays, MessageCircle, GripVertical } from 'lucide-react';
 import {
   getBookingsForDates, rescheduleBooking, getJobsForDate,
-  listEmployees, setJobAssignees,
+  listEmployees, setJobAssignees, getServices,
 } from '@/lib/firebaseService';
+import { categoryToResource, DAY_OPEN_MIN, WORK_DAY_MIN, RESOURCE_LABELS, type ResourceKey } from '@/lib/availability';
+import type { Service } from '@/lib/types';
 import { formatCurrency, formatTime, getStatusColor, getStatusLabel } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import ServiceIcon from '@/components/ui/ServiceIcon';
@@ -23,7 +25,7 @@ import BayStrip from '@/components/workspace/BayStrip';
 import type { Booking, Employee, Job } from '@/lib/types';
 
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 9);
-const VIEWS = ['Day', 'Week', 'Board', 'Technicians'] as const;
+const VIEWS = ['Planner', 'Day', 'Week', 'Board', 'Technicians'] as const;
 type View = typeof VIEWS[number];
 
 const BOARD_COLUMNS: { label: string; statuses: Booking['status'][] }[] = [
@@ -42,11 +44,12 @@ const localDate = (offset = 0) => {
 export default function AdminSchedulePage() {
   const router = useRouter();
   const { user } = useAppStore();
-  const [view, setView] = useState<View>('Day');
+  const [view, setView] = useState<View>('Planner');
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const days = Array.from({ length: 7 }, (_, i) => localDate(i));
 
   const [bookings, setBookings] = useState<Booking[]>([]);   // whole week - all views share it
+  const [services, setServices] = useState<Service[]>([]);   // duration lookup for the planner
   const [jobs, setJobs] = useState<Job[]>([]);               // technician view
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,8 +64,9 @@ export default function AdminSchedulePage() {
       getBookingsForDates(days),
       getJobsForDate(selectedDate).catch(() => [] as Job[]),
       listEmployees().catch(() => [] as Employee[]),
+      getServices().catch(() => [] as Service[]),
     ])
-      .then(([b, j, e]) => { setBookings(b); setJobs(j); setEmployees(e); })
+      .then(([b, j, e, sv]) => { setBookings(b); setJobs(j); setEmployees(e); setServices(sv); })
       .catch(e => { console.error('schedule load failed', e); setLoadError(true); })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,6 +230,100 @@ export default function AdminSchedulePage() {
         <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-12 shimmer rounded-xl" />)}</div>
       ) : loadError ? (
         <ErrorState onRetry={load} />
+      ) : view === 'Planner' ? (
+
+        /* ── PLANNER: the two resources across the working day ── */
+        (() => {
+          const byName = new Map(services.map(sv => [sv.name, sv.duration]));
+          const byCat = new Map<string, number>();
+          services.forEach(sv => byCat.set(sv.category, Math.max(byCat.get(sv.category) ?? 0, sv.duration)));
+          const durOf = (cat: string, name?: string) => (name && byName.get(name)) || byCat.get(cat) || 60;
+          type Block = { id: string; label: string; sub: string; startMin: number; durMin: number; color: string; open: () => void };
+          const lanes: Record<ResourceKey, Block[]> = { wash: [], protection: [] };
+          const colorFor = (st: string) =>
+            st === 'pending' ? 'var(--steel)'
+            : ['vehicle_received', 'in_progress', 'quality_check', 'checked_in'].includes(st) ? 'var(--warning)'
+            : ['ready_for_delivery'].includes(st) ? 'var(--info)'
+            : st === 'completed' ? 'var(--success)'
+            : 'var(--info)';
+          dayBookings.filter(b => b.status !== 'cancelled').forEach(b => {
+            const [h, m] = b.scheduledTime.split(':').map(Number);
+            lanes[categoryToResource(b.serviceCategory)].push({
+              id: 'b' + b.id, label: b.vehicleName, sub: `${formatTime(b.scheduledTime)} · ${b.serviceName}`,
+              startMin: h * 60 + m,
+              durMin: b.serviceDurationMinutes ?? durOf(b.serviceCategory),
+              color: colorFor(b.status), open: () => openBooking(b),
+            });
+          });
+          jobs.filter(j => !j.bookingId && j.status !== 'cancelled').forEach(j => {
+            const created = j.createdAt?.toDate?.();
+            const startMin = created ? Math.max(DAY_OPEN_MIN, created.getHours() * 60 + created.getMinutes()) : DAY_OPEN_MIN;
+            lanes[categoryToResource(j.serviceItems[0]?.category ?? 'Washing')].push({
+              id: 'j' + j.id, label: j.vehicleName || j.customerName,
+              sub: `walk-in · ${j.serviceItems.map(x => x.serviceName).join(', ')}`,
+              startMin,
+              durMin: j.serviceItems.reduce((sum, it) => sum + durOf(it.category, it.serviceName), 0),
+              color: colorFor(j.status), open: () => openJob(j),
+            });
+          });
+          const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+          const pct = (min: number) => `${Math.min(100, Math.max(0, ((min - DAY_OPEN_MIN) / WORK_DAY_MIN) * 100))}%`;
+          return (
+            <div className="overflow-x-auto pb-2">
+              <div style={{ minWidth: 640 }}>
+                {/* hour axis */}
+                <div className="relative h-6 mb-1 ml-28">
+                  {HOURS.map(h => (
+                    <span key={h} className="absolute font-mono" style={{ left: pct(h * 60), fontSize: 9, color: 'var(--faint)', transform: 'translateX(-50%)' }}>
+                      {h > 12 ? h - 12 : h}{h >= 12 ? 'p' : 'a'}
+                    </span>
+                  ))}
+                </div>
+                {(['wash', 'protection'] as ResourceKey[]).map(rk => (
+                  <div key={rk} className="flex items-stretch gap-2 mb-2">
+                    <div className="w-26 shrink-0 flex items-center" style={{ width: 104 }}>
+                      <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.12em', color: 'var(--pewter)' }}>
+                        {RESOURCE_LABELS[rk].toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="relative flex-1 rounded-xl" style={{ height: 56, background: 'var(--fog)', border: '1px solid var(--border)' }}>
+                      {/* hour gridlines */}
+                      {HOURS.slice(1).map(h => (
+                        <span key={h} aria-hidden className="absolute top-0 bottom-0" style={{ left: pct(h * 60), width: 1, background: 'var(--border)' }} />
+                      ))}
+                      {/* occupancy blocks */}
+                      {lanes[rk].sort((a, b) => a.startMin - b.startMin).map(blk => (
+                        <button key={blk.id} onClick={blk.open}
+                          className="absolute top-1.5 bottom-1.5 rounded-lg px-2 text-left overflow-hidden cursor-pointer transition-transform hover:scale-[1.01]"
+                          style={{
+                            left: pct(blk.startMin),
+                            width: `${Math.max(4, Math.min(100, (blk.durMin / WORK_DAY_MIN) * 100))}%`,
+                            background: `color-mix(in srgb, ${blk.color} 18%, var(--dark))`,
+                            border: `1px solid color-mix(in srgb, ${blk.color} 45%, transparent)`,
+                          }}>
+                          <p className="font-body font-600 truncate" style={{ fontSize: 11, color: 'var(--chrome)' }}>{blk.label}</p>
+                          <p className="font-mono truncate" style={{ fontSize: 8.5, color: 'var(--pewter)' }}>{blk.sub}</p>
+                        </button>
+                      ))}
+                      {lanes[rk].length === 0 && (
+                        <span className="absolute inset-0 flex items-center justify-center font-body" style={{ fontSize: 12, color: 'var(--steel)' }}>
+                          Free all day
+                        </span>
+                      )}
+                      {/* now line */}
+                      {isToday && nowMin >= DAY_OPEN_MIN && nowMin <= DAY_OPEN_MIN + WORK_DAY_MIN && (
+                        <span aria-hidden className="absolute top-0 bottom-0 pointer-events-none" style={{ left: pct(nowMin), width: 2, background: 'var(--ember)', boxShadow: '0 0 8px var(--accent-glow)' }} />
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <p className="font-mono ml-28 mt-1" style={{ fontSize: 9, color: 'var(--faint)' }}>
+                  Tap a block to open its workspace · multi-day work continues on following days
+                </p>
+              </div>
+            </div>
+          );
+        })()
       ) : view === 'Day' ? (
 
         /* ── DAY: agenda by hour, drag to reschedule ── */

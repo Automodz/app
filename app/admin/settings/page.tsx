@@ -91,17 +91,13 @@ export default function AdminSettingsPage() {
           <Package size={20} className="text-white" />
           <div>
             <div className="font-display font-800 text-sm text-foreground tracking-wide">Studio Resources</div>
-            <div className="text-muted text-xs font-body">The calendar blocks these — one car per bay, N per wash line</div>
+            <div className="text-muted text-xs font-body">Two physical resources — the calendar blocks around real occupancy</div>
           </div>
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl" style={{ background: 'var(--background-2)' }}>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">PPF Bay</p>
-            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· PPF, wraps</span></p>
-          </div>
-          <div className="p-3 rounded-xl" style={{ background: 'var(--background-2)' }}>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Coating Bay</p>
-            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· ceramic, correction</span></p>
+          <div className="p-3 rounded-xl sm:col-span-2" style={{ background: 'var(--background-2)' }}>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Protection Bay</p>
+            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· PPF, ceramic, graphene, coating, correction — one active job; the rest wait</span></p>
           </div>
           <div className="p-3 rounded-xl flex items-center justify-between gap-2" style={{ background: 'var(--background-2)' }}>
             <div>

@@ -61,12 +61,17 @@ export default function AdminWorkspace() {
 
   // ── Intelligence strip + arrivals (one-shot, each source tolerated) ──
   const [todayBookings, setTodayBookings] = useState<Booking[]>([]);
+  const [tomorrowBookings, setTomorrowBookings] = useState<Booking[]>([]);
   const [approvals, setApprovals] = useState<Booking[]>([]);
   const [staffPresent, setStaffPresent] = useState(0);
   const [lowStock, setLowStock] = useState(0);
   const [newLeads, setNewLeads] = useState(0);
   useEffect(() => {
-    getBookingsForDates([today]).then(setTodayBookings).catch(() => {});
+    const tomorrow = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd');
+    getBookingsForDates([today, tomorrow]).then(bs => {
+      setTodayBookings(bs.filter(b => b.scheduledDate === today));
+      setTomorrowBookings(bs.filter(b => b.scheduledDate === tomorrow));
+    }).catch(() => {});
     getPendingApprovals().then(setApprovals).catch(() => {});
     getPresentTodayCount().then(setStaffPresent).catch(() => {});
     getLowStockItems().then(items => setLowStock(items.length)).catch(() => {});
@@ -164,7 +169,7 @@ export default function AdminWorkspace() {
       </div>
 
       {/* Bay occupancy + wash pulse — the physical floor */}
-      <BayStrip jobs={jobs} bookings={todayBookings} />
+      <BayStrip jobs={jobs} bookings={todayBookings} tomorrowBookings={tomorrowBookings} />
 
       {/* Stage strip */}
       <div className="flex items-stretch gap-2 mb-6 overflow-x-auto pb-1">
