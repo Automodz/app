@@ -1,34 +1,39 @@
 'use client';
 /**
- * Studio Operations Board — the heart of the business. The whole screen
- * answers one question: "what is happening inside my workshop right now?"
+ * Studio Board — the operating system for the working day. Open from morning
+ * to close; the whole day runs on this one screen:
  *
- * No graphs. No revenue. Operations only:
- *   ops header    → clock + live bay states + waiting/QC/ready counts
- *   alerts        → bay freeing, running late, customer waiting, ready to call
+ *   header        → date/clock + pipeline counts + operational notifications
+ *   live capacity → utilization bar + next-free time per physical bay
  *   waiting queue → every arriving vehicle, oldest first
- *   resource cards→ the two physical bays with full occupant detail
+ *   bay cards     → the two physical resources with full occupant detail
  *   QC / ready    → the tail of the pipeline
- *   technicians   → who is working, on break, idle
- *   capacity      → done/planned per bay, average delay, next free bay
+ *   tech rail     → who is working / on break / idle, ETA, jobs done today
+ *   studio feed   → realtime event stream of the day (arrivals → deliveries)
+ *   timeline      → today's bookings + live work on two resource lanes
  *
- * All state derives from useFloor (shared with BayStrip) — no duplicate logic.
+ * All state derives from useFloor + the single subscribeTodaysJobs listener —
+ * no duplicate listeners, no duplicate logic.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   PlusCircle, Wrench, ChevronRight, Timer, Droplets, Shield,
-  AlertTriangle, Phone, BadgeCheck, Truck, Camera, UserRound,
+  AlertTriangle, Phone, BadgeCheck, Truck, Camera, UserRound, IndianRupee,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   subscribeTodaysJobs, getBookingsForDates, getTodayAttendance, shiftMath,
 } from '@/lib/firebaseService';
 import { fmtMin } from '@/lib/services/washMetrics';
-import { RESOURCE_LABELS, type ResourceKey } from '@/lib/availability';
+import {
+  RESOURCE_LABELS, categoryToResource, DAY_OPEN_MIN, WORK_DAY_MIN,
+  type ResourceKey,
+} from '@/lib/availability';
 import { useFloor, type Occupant } from '@/components/studio/useFloor';
-import type { AttendanceRecord, Booking, Job } from '@/lib/types';
+import { formatCurrency, formatTime } from '@/lib/utils';
+import type { AttendanceRecord, Booking, Job, JobStatus } from '@/lib/types';
 
 const timeLabel = (d: Date) =>
   d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -37,6 +42,15 @@ const timeLabel = (d: Date) =>
 const lateColor = (remainingMin: number | null): string | undefined =>
   remainingMin === null || remainingMin >= 0 ? undefined
     : remainingMin > -15 ? 'var(--warning)' : 'var(--danger)';
+
+const FEED_LABEL: Record<JobStatus, string> = {
+  checked_in: 'arrived', in_progress: 'work started', quality_check: 'in quality check',
+  ready_for_delivery: 'ready for delivery', completed: 'delivered', cancelled: 'cancelled',
+};
+const FEED_COLOR: Record<JobStatus, string> = {
+  checked_in: 'var(--info)', in_progress: 'var(--chrome)', quality_check: 'var(--info)',
+  ready_for_delivery: 'var(--success)', completed: 'var(--success)', cancelled: 'var(--danger)',
+};
 
 export default function StudioBoard() {
   const router = useRouter();
@@ -68,38 +82,59 @@ export default function StudioBoard() {
   }, [today]);
 
   const floor = useFloor(jobs, bookings);
-  const { bays, waiting, qc, ready, deliveredToday, freeInMin, capacity } = floor;
+  const { bays, waiting, qc, ready, deliveredToday, freeInMin, bookedMin } = floor;
 
   const openJob = (j: Job) =>
     router.push(j.bookingId ? `/admin/bookings/${j.bookingId}` : `/admin/jobs/${j.id}`);
 
-  // ── technicians: attendance ⨯ live assignments ──
+  // ── technician rail: attendance ⨯ live assignments ──
   const technicians = useMemo(() => {
     const activeJobs = jobs.filter(j => j.status === 'in_progress');
+    const occupants = [...bays.wash, ...bays.protection];
     return attendance
       .filter(r => !r.checkOutAt)
       .map(r => {
         const job = activeJobs.find(j => j.assignedIds?.includes(r.employeeId));
-        const onBreak = shiftMath(r).onBreak;
-        const bay = job ? RESOURCE_LABELS[
-          job.serviceItems[0]?.category === 'Washing' ? 'wash' as const : 'protection' as const
-        ] : null;
-        const started = job ? (job.statusHistory ?? []).find(h => h.status === 'in_progress')?.at?.toDate?.() : null;
-        const workMin = started
-          ? Math.max(0, Math.round((floor.now.getTime() - started.getTime()) / 60000)) : null;
+        const occ = job ? occupants.find(o => o.job.id === job.id) : undefined;
+        const m = shiftMath(r);
+        const jobsToday = jobs.filter(j =>
+          j.status === 'completed' && j.assignedIds?.includes(r.employeeId)).length;
         return {
           id: r.employeeId, name: r.employeeName,
-          state: onBreak ? 'break' as const : job ? 'working' as const : 'idle' as const,
-          service: job?.serviceItems[0]?.serviceName, bay, workMin,
+          state: m.onBreak ? 'break' as const : job ? 'working' as const : 'idle' as const,
+          service: job?.serviceItems[0]?.serviceName,
+          bay: job ? RESOURCE_LABELS[categoryToResource(job.serviceItems[0]?.category ?? 'Washing')] : null,
+          eta: occ?.eta ?? null,
+          workMin: occ?.elapsedMin ?? null,
+          breakMin: m.breakMin,
+          jobsToday,
         };
       })
       .sort((a, b) => (a.state === 'working' ? 0 : a.state === 'break' ? 1 : 2)
         - (b.state === 'working' ? 0 : b.state === 'break' ? 1 : 2));
-  }, [attendance, jobs, floor.now]);
+  }, [attendance, jobs, bays]);
 
-  // ── alerts the board constantly generates ──
+  // ── studio feed: today's events, newest first — derived, never stored ──
+  const feed = useMemo(() => {
+    const events: { at: Date; text: string; color: string; job: Job }[] = [];
+    for (const j of jobs) {
+      for (const h of j.statusHistory ?? []) {
+        const at = h.at?.toDate?.();
+        if (!at || h.note) continue; // assignment notes stay in the workspace
+        events.push({ at, text: `${j.vehicleName || j.customerName} · ${FEED_LABEL[h.status]}`, color: FEED_COLOR[h.status], job: j });
+      }
+      for (const p of j.payments ?? []) {
+        const at = p.at?.toDate?.();
+        if (!at) continue;
+        events.push({ at, text: `${j.vehicleName || j.customerName} · ${formatCurrency(p.amount)} received (${p.method.toUpperCase()})`, color: 'var(--success)', job: j });
+      }
+    }
+    return events.sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 20);
+  }, [jobs]);
+
+  // ── operational notifications ──
   const alerts = useMemo(() => {
-    const out: { icon: typeof Timer; text: string; color: string; href?: string }[] = [];
+    const out: { icon: typeof Timer; text: string; color: string }[] = [];
     (['protection', 'wash'] as ResourceKey[]).forEach(r => {
       const f = freeInMin[r];
       if (f !== null && f > 0 && f <= 30)
@@ -115,12 +150,14 @@ export default function StudioBoard() {
     });
     ready.forEach(j => {
       if (j.paymentStatus === 'pending')
-        out.push({ icon: AlertTriangle, text: `${j.vehicleName} · payment pending`, color: 'var(--warning)' });
+        out.push({ icon: IndianRupee, text: `${j.vehicleName} · payment pending`, color: 'var(--warning)' });
       else
         out.push({ icon: Phone, text: `${j.vehicleName} ready — call ${j.customerName}`, color: 'var(--success)' });
     });
+    technicians.filter(t => t.state === 'idle').forEach(t =>
+      out.push({ icon: UserRound, text: `${t.name} idle`, color: 'var(--steel)' }));
     return out.slice(0, 6);
-  }, [bays, waiting, ready, freeInMin]);
+  }, [bays, waiting, ready, freeInMin, technicians]);
 
   const bayMeta: Record<ResourceKey, { icon: typeof Droplets }> = {
     wash: { icon: Droplets }, protection: { icon: Shield },
@@ -136,9 +173,55 @@ export default function StudioBoard() {
     return { text: 'BUSY', color: 'var(--warning)' };
   };
 
+  // ── timeline geometry: % of the working day (09:00 → close) ──
+  const dayPct = (d: Date) => {
+    const min = d.getHours() * 60 + d.getMinutes() - DAY_OPEN_MIN;
+    return Math.max(0, Math.min(100, (min / WORK_DAY_MIN) * 100));
+  };
+  const hmPct = (hm: string) => {
+    const [h, m] = hm.split(':').map(Number);
+    return Math.max(0, Math.min(100, ((h * 60 + m - DAY_OPEN_MIN) / WORK_DAY_MIN) * 100));
+  };
+  const timelineBlocks = useMemo(() => {
+    const lanes: Record<ResourceKey, { left: number; width: number; label: string; live: boolean; onClick: () => void }[]> = {
+      wash: [], protection: [],
+    };
+    for (const b of bookings) {
+      if (['cancelled', 'completed'].includes(b.status) || b.jobId) continue;
+      const left = hmPct(b.scheduledTime);
+      const dur = Math.min(WORK_DAY_MIN, b.serviceDurationMinutes ?? floor.durationOf(b.serviceCategory));
+      lanes[categoryToResource(b.serviceCategory)].push({
+        left, width: Math.max(3, Math.min(100 - left, (dur / WORK_DAY_MIN) * 100)),
+        label: b.vehicleName, live: false,
+        onClick: () => router.push(`/admin/bookings/${b.id}`),
+      });
+    }
+    (['wash', 'protection'] as ResourceKey[]).forEach(r => {
+      for (const o of bays[r]) {
+        if (!o.startedAt) continue;
+        const left = dayPct(o.startedAt);
+        const end = o.eta ? dayPct(o.eta) : left + 4;
+        lanes[r].push({
+          left, width: Math.max(3, end - left), label: o.vehicle, live: true,
+          onClick: () => openJob(o.job),
+        });
+      }
+    });
+    return lanes;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookings, bays, floor.durationOf]);
+  const hourTicks = useMemo(() => {
+    const ticks: { pct: number; label: string }[] = [];
+    for (let m = DAY_OPEN_MIN; m <= DAY_OPEN_MIN + WORK_DAY_MIN; m += 120) {
+      const h = Math.floor(m / 60);
+      ticks.push({ pct: ((m - DAY_OPEN_MIN) / WORK_DAY_MIN) * 100, label: formatTime(`${String(h).padStart(2, '0')}:00`) });
+    }
+    return ticks;
+  }, []);
+
   return (
     <div className="p-4 md:p-6 max-w-5xl">
-      {/* ── Ops header: the studio at a glance ── */}
+      {/* ── Header: the studio at a glance ── */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
           <h1 className="font-display font-800 text-2xl" style={{ color: 'var(--chrome)' }}>Studio</h1>
@@ -147,43 +230,26 @@ export default function StudioBoard() {
             {format(floor.now, 'EEEE, dd MMMM')} · {timeLabel(floor.now)}
           </p>
         </div>
-        <Link href="/admin/walkin" className="btn-ember flex md:hidden items-center gap-2 px-4 py-2.5 text-sm">
-          <PlusCircle size={15} /> New walk-in
-        </Link>
-      </div>
-
-      <div className="flex items-stretch gap-2 mb-4 overflow-x-auto pb-1">
-        {(['wash', 'protection'] as ResourceKey[]).map(r => {
-          const st = bayHeaderState(r);
-          const occ = bays[r][0];
-          return (
-            <div key={r} className="flex flex-col gap-0.5 px-3.5 py-2 rounded-xl shrink-0"
+        <div className="flex items-stretch gap-2 overflow-x-auto">
+          {[
+            { n: waiting.length, l: 'Waiting', c: 'var(--info)' },
+            { n: qc.length, l: 'QC', c: 'var(--info)' },
+            { n: ready.length, l: 'Ready', c: 'var(--success)' },
+            { n: deliveredToday, l: 'Delivered', c: 'var(--success)' },
+          ].map(s => (
+            <div key={s.l} className="flex flex-col justify-center gap-0.5 px-3.5 py-1.5 rounded-xl shrink-0"
               style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-              <span className="font-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--faint)' }}>
-                {RESOURCE_LABELS[r].toUpperCase()}
-              </span>
-              <span className="font-mono font-700 text-sm" style={{ color: st.color }}>
-                {occ ? occ.service.split(' + ')[0] : st.text}
-              </span>
-              {occ && <span className="font-mono" style={{ fontSize: 10, color: st.color }}>{st.text}</span>}
+              <span className="font-mono font-700 text-base leading-none" style={{ color: s.n > 0 ? s.c : 'var(--steel)' }}>{s.n}</span>
+              <span className="text-[10px] font-body" style={{ color: 'var(--pewter)' }}>{s.l}</span>
             </div>
-          );
-        })}
-        {[
-          { n: waiting.length, l: 'Waiting', c: 'var(--info)' },
-          { n: qc.length, l: 'QC', c: 'var(--info)' },
-          { n: ready.length, l: 'Ready', c: 'var(--success)' },
-          { n: deliveredToday, l: 'Delivered', c: 'var(--success)' },
-        ].map(s => (
-          <div key={s.l} className="flex flex-col justify-center gap-0.5 px-3.5 py-2 rounded-xl shrink-0"
-            style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-            <span className="font-mono font-700 text-base leading-none" style={{ color: s.n > 0 ? s.c : 'var(--steel)' }}>{s.n}</span>
-            <span className="text-[10px] font-body" style={{ color: 'var(--pewter)' }}>{s.l}</span>
-          </div>
-        ))}
+          ))}
+          <Link href="/admin/walkin" className="btn-ember flex md:hidden items-center gap-2 px-4 py-2.5 text-sm shrink-0">
+            <PlusCircle size={15} /> Walk-in
+          </Link>
+        </div>
       </div>
 
-      {/* ── Alerts ── */}
+      {/* ── Operational notifications ── */}
       {alerts.length > 0 && (
         <div className="rounded-2xl px-4 py-2.5 mb-4 space-y-1.5"
           style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
@@ -194,6 +260,34 @@ export default function StudioBoard() {
           ))}
         </div>
       )}
+
+      {/* ── Live capacity: always-visible bay utilization ── */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        {(['wash', 'protection'] as ResourceKey[]).map(r => {
+          const pct = Math.min(100, Math.round((bookedMin[r] / WORK_DAY_MIN) * 100));
+          const f = freeInMin[r];
+          return (
+            <div key={r} className="rounded-2xl px-4 py-3" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'var(--faint)' }}>
+                  {RESOURCE_LABELS[r].toUpperCase()}
+                </span>
+                <span className="font-mono font-700" style={{ fontSize: 11, color: pct >= 90 ? 'var(--warning)' : 'var(--chrome)' }}>{pct}%</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'var(--dark)' }}>
+                <div className="h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, background: pct >= 90 ? 'var(--warning)' : 'var(--accent-grad)' }} />
+              </div>
+              <p className="font-mono text-[10px]" style={{ color: 'var(--pewter)' }}>
+                Next free{' '}
+                <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>
+                  {f === null || f === 0 ? 'now' : timeLabel(new Date(floor.now.getTime() + f * 60000))}
+                </b>
+              </p>
+            </div>
+          );
+        })}
+      </div>
 
       {/* ── Waiting queue ── */}
       <section className="mb-5">
@@ -235,7 +329,7 @@ export default function StudioBoard() {
         )}
       </section>
 
-      {/* ── Resource cards: the two physical bays ── */}
+      {/* ── Bay cards: the two physical resources ── */}
       <div className="grid sm:grid-cols-2 gap-4 mb-5">
         {(['wash', 'protection'] as ResourceKey[]).map(r => {
           const occ: Occupant | undefined = bays[r][0];
@@ -288,6 +382,9 @@ export default function StudioBoard() {
                         <Camera size={11} /> {occ.photoCount} photos
                       </span>
                     )}
+                    <span className="font-mono text-[10px]" style={{ color: occ.job.paymentStatus === 'collected' ? 'var(--success)' : 'var(--warning)' }}>
+                      {occ.job.paymentStatus === 'collected' ? 'PAID' : 'PAYMENT PENDING'}
+                    </span>
                     {queue > 0 && (
                       <span className="font-mono text-[10px]" style={{ color: 'var(--faint)' }}>+{queue} queued</span>
                     )}
@@ -346,44 +443,12 @@ export default function StudioBoard() {
         </div>
       )}
 
-      {/* ── Capacity strip ── */}
-      <div className="rounded-2xl px-4 py-3 mb-5 flex items-center gap-x-5 gap-y-1.5 flex-wrap"
-        style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-        <span className="font-mono" style={{ fontSize: 10, letterSpacing: '0.12em', color: 'var(--faint)' }}>TODAY</span>
-        {(['wash', 'protection'] as ResourceKey[]).map(r => (
-          <span key={r} className="font-mono" style={{ fontSize: 11, color: 'var(--pewter)' }}>
-            {r === 'wash' ? 'Wash' : 'Protection'}{' '}
-            <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{capacity[r].done}/{capacity[r].planned}</b>
-          </span>
-        ))}
-        {floor.avgDelayMin !== null && (
-          <span className="font-mono" style={{ fontSize: 11, color: 'var(--pewter)' }}>
-            Avg delay <b style={{ color: floor.avgDelayMin > 15 ? 'var(--warning)' : 'var(--chrome)', fontWeight: 700 }}>{fmtMin(floor.avgDelayMin)}</b>
-          </span>
-        )}
-        {(['wash', 'protection'] as ResourceKey[]).map(r => {
-          const f = freeInMin[r];
-          if (f === null || f === 0) return null;
-          return (
-            <span key={r + 'free'} className="font-mono" style={{ fontSize: 11, color: 'var(--pewter)' }}>
-              {RESOURCE_LABELS[r]} free at{' '}
-              <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>
-                {timeLabel(new Date(floor.now.getTime() + f * 60000))}
-              </b>
-            </span>
-          );
-        })}
-        <Link href="/admin/schedule" className="ml-auto font-mono text-[10px] uppercase tracking-wider" style={{ color: 'var(--steel)' }}>
-          Timeline →
-        </Link>
-      </div>
-
-      {/* ── Technician strip ── */}
+      {/* ── Technician rail ── */}
       {technicians.length > 0 && (
-        <div className="rounded-2xl px-4 py-3 mb-5 flex items-stretch gap-4 overflow-x-auto"
+        <div className="rounded-2xl px-4 py-3 mb-4 flex items-stretch gap-5 overflow-x-auto"
           style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
           {technicians.map(t => (
-            <Link key={t.id} href={`/admin/employees/${t.id}`} className="flex flex-col gap-0.5 shrink-0 min-w-24">
+            <Link key={t.id} href={`/admin/employees/${t.id}`} className="flex flex-col gap-0.5 shrink-0 min-w-28">
               <span className="font-body font-600 text-sm truncate" style={{ color: 'var(--chrome)' }}>{t.name}</span>
               <span className="font-mono inline-flex items-center gap-1.5" style={{
                 fontSize: 10,
@@ -397,13 +462,83 @@ export default function StudioBoard() {
               </span>
               {t.state === 'working' && (
                 <span className="font-mono text-[10px]" style={{ color: 'var(--pewter)' }}>
-                  {t.bay}{t.workMin !== null ? ` · ${fmtMin(t.workMin)}` : ''}
+                  {t.bay}{t.workMin !== null ? ` · ${fmtMin(t.workMin)}` : ''}{t.eta ? ` · ETA ${timeLabel(t.eta)}` : ''}
                 </span>
               )}
+              <span className="font-mono text-[10px]" style={{ color: 'var(--faint)' }}>
+                {t.jobsToday} job{t.jobsToday === 1 ? '' : 's'} today{t.breakMin > 0 ? ` · ${fmtMin(t.breakMin)} break` : ''}
+              </span>
             </Link>
           ))}
         </div>
       )}
+
+      {/* ── Studio feed + today's timeline ── */}
+      <div className="grid lg:grid-cols-2 gap-4 mb-5">
+        <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+          <p className="font-mono mb-2" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)' }}>STUDIO FEED</p>
+          {feed.length === 0 ? (
+            <p className="text-xs font-body py-3" style={{ color: 'var(--steel)' }}>Nothing yet — events appear as the day unfolds.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+              {feed.map((e, i) => (
+                <button key={i} onClick={() => openJob(e.job)}
+                  className="w-full flex items-center gap-2.5 text-left cursor-pointer group">
+                  <span className="font-mono text-[10px] w-14 shrink-0" style={{ color: 'var(--faint)' }}>{timeLabel(e.at)}</span>
+                  <span className="rounded-full shrink-0" style={{ width: 5, height: 5, background: e.color }} />
+                  <span className="font-body text-xs truncate group-hover:underline" style={{ color: 'var(--pewter)' }}>{e.text}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)' }}>TODAY&apos;S TIMELINE</p>
+            <Link href="/admin/schedule" className="font-mono text-[10px] uppercase tracking-wider" style={{ color: 'var(--steel)' }}>
+              Full schedule →
+            </Link>
+          </div>
+          {(['wash', 'protection'] as ResourceKey[]).map(r => (
+            <div key={r} className="mb-2.5">
+              <p className="font-mono text-[9px] mb-1" style={{ letterSpacing: '0.12em', color: 'var(--faint)' }}>
+                {RESOURCE_LABELS[r].toUpperCase()}
+              </p>
+              <div className="relative h-7 rounded-lg overflow-hidden" style={{ background: 'var(--dark)' }}>
+                {hourTicks.map(t => (
+                  <span key={t.pct} className="absolute top-0 bottom-0" style={{ left: `${t.pct}%`, width: 1, background: 'var(--border)' }} />
+                ))}
+                {timelineBlocks[r].map((b, i) => (
+                  <button key={i} onClick={b.onClick} title={b.label}
+                    className="absolute top-1 bottom-1 rounded-md px-1.5 overflow-hidden cursor-pointer"
+                    style={{
+                      left: `${b.left}%`, width: `${b.width}%`,
+                      background: b.live ? 'var(--accent-mist)' : 'var(--smoke)',
+                      border: `1px solid ${b.live ? 'var(--accent-haze)' : 'var(--border-strong)'}`,
+                    }}>
+                    <span className="font-mono block truncate" style={{ fontSize: 8.5, color: b.live ? 'var(--ember)' : 'var(--pewter)', lineHeight: '18px' }}>
+                      {b.label}
+                    </span>
+                  </button>
+                ))}
+                <span className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${dayPct(floor.now)}%`, width: 1.5, background: 'var(--danger)' }} />
+              </div>
+            </div>
+          ))}
+          <div className="relative h-3">
+            {hourTicks.map(t => (
+              <span key={t.pct} className="absolute font-mono whitespace-nowrap" style={{
+                left: `${t.pct}%`,
+                transform: t.pct === 0 ? 'none' : t.pct === 100 ? 'translateX(-100%)' : 'translateX(-50%)',
+                fontSize: 8, color: 'var(--faint)',
+              }}>
+                {t.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {!jobsReady ? (
         <div className="space-y-2">{[...Array(2)].map((_, i) => <div key={i} className="h-10 shimmer rounded-xl" />)}</div>
