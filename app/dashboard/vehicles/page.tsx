@@ -1,27 +1,74 @@
 'use client';
-import { useState, useEffect } from 'react';
+/**
+ * My Garage — the digital ownership experience for each car.
+ * A vehicle card is a passport: protection state, last visit, lifetime care.
+ * Tapping one opens the vehicle sheet — protection validity (derived from
+ * completed bookings × the service catalog's warranty), a care timeline,
+ * invoices and one-tap rebooking. Everything derives from the customer's
+ * own bookings — nothing invented, nothing fetched twice.
+ */
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Car, Edit3, Trash2, X, Check, Loader2, ChevronLeft } from 'lucide-react';
+import {
+  Plus, Car, Edit3, Trash2, X, Check, Loader2, ChevronLeft, ChevronRight,
+  Shield, Sparkles, FileText, CalendarPlus,
+} from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { addVehicle, updateVehicle, deleteVehicle, getVehicles } from '@/lib/firebaseService';
+import { addVehicle, updateVehicle, deleteVehicle, getVehicles, getServices } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
-import type { Vehicle } from '@/lib/types';
-import { formatDate } from '@/lib/utils';
+import type { Booking, Service, Vehicle } from '@/lib/types';
+import { formatCurrency, formatDate, getStatusLabel } from '@/lib/utils';
 
 const CATEGORIES: Vehicle['category'][] = ['Hatchback', 'Sedan', 'Compact SUV', 'Full SUV', 'Luxury'];
 const COLORS = ['White', 'Black', 'Silver', 'Grey', 'Red', 'Blue', 'Brown', 'Green', 'Orange', 'Yellow', 'Other'];
 const emptyForm = { name: '', registrationNumber: '', category: 'Sedan' as Vehicle['category'], color: '', notes: '' };
+const EASE = [0.22, 1, 0.36, 1] as const;
 
-export default function VehiclesPage() {
+/** "5 Year" / "6 Month" → months; null when no warranty */
+const warrantyMonths = (w: string | null | undefined): number | null => {
+  if (!w) return null;
+  const n = parseInt(w, 10);
+  if (!n) return null;
+  return /month/i.test(w) ? n : n * 12;
+};
+const addMonths = (iso: string, months: number): Date => {
+  const d = new Date(iso + 'T12:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d;
+};
+
+/** Active protection layers on a vehicle, derived from its completed work. */
+type Protection = { kind: 'PPF' | 'Ceramic'; applied: string; until: Date | null; active: boolean; service: string };
+const deriveProtection = (history: Booking[], services: Service[]): Protection[] => {
+  const byName = new Map(services.map(s => [s.name, s]));
+  const out: Protection[] = [];
+  (['PPF', 'Ceramic'] as const).forEach(kind => {
+    const last = history.find(b => b.status === 'completed' && b.serviceCategory === kind);
+    if (!last) return;
+    const months = warrantyMonths(byName.get(last.serviceName)?.warranty);
+    const until = months ? addMonths(last.scheduledDate, months) : null;
+    out.push({
+      kind, applied: last.scheduledDate, until,
+      active: until ? until > new Date() : true,
+      service: last.serviceName,
+    });
+  });
+  return out;
+};
+
+export default function GaragePage() {
   const router = useRouter();
   const { user, vehicles, addVehicleToStore, removeVehicleFromStore, setVehicles, bookings } = useAppStore();
 
-  // Refresh from Firestore every time this page is opened
+  // Refresh vehicles + load the service catalog once (warranty lookup)
+  const [services, setServices] = useState<Service[]>([]);
   useEffect(() => {
     if (!user) return;
     getVehicles(user.uid).then(setVehicles).catch(() => {});
+    getServices().then(setServices).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   const [showForm, setShowForm] = useState(false);
@@ -29,6 +76,7 @@ export default function VehiclesPage() {
   const [form, setForm]         = useState(emptyForm);
   const [loading, setLoading]   = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [detail, setDetail]     = useState<Vehicle | null>(null);
 
   const update   = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
   const openAdd  = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
@@ -37,6 +85,12 @@ export default function VehiclesPage() {
     setForm({ name: v.name, registrationNumber: v.registrationNumber, category: v.category, color: v.color || '', notes: v.notes || '' });
     setShowForm(true);
   };
+
+  const historyOf = useMemo(() => (v: Vehicle) =>
+    bookings
+      .filter(b => b.vehicleId === v.id && b.status !== 'cancelled')
+      .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate)),
+  [bookings]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -64,10 +118,10 @@ export default function VehiclesPage() {
   };
 
   const [confirmDelete, setConfirmDelete] = useState<Vehicle | null>(null);
-
   const handleDelete = async (v: Vehicle) => {
     if (!user) return;
     setConfirmDelete(null);
+    setDetail(null);
     setDeleting(v.id);
     try {
       await deleteVehicle(user.uid, v.id);
@@ -100,8 +154,8 @@ export default function VehiclesPage() {
               </p>
             </div>
           </div>
-          <motion.button whileTap={{ scale: 0.88 }} onClick={openAdd}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center"
+          <motion.button whileTap={{ scale: 0.88 }} onClick={openAdd} aria-label="Add vehicle"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
             style={{ background: 'var(--ember)', boxShadow: '0 4px 18px var(--accent-glow)' }}>
             <Plus size={18} style={{ color: 'var(--on-accent)' }} />
           </motion.button>
@@ -127,65 +181,212 @@ export default function VehiclesPage() {
           </div>
         ) : (
           <motion.div
-            initial="hidden"
-            animate="show"
+            initial="hidden" animate="show"
             variants={{ show: { transition: { staggerChildren: 0.07 } } }}
             className="space-y-3">
             {vehicles.map(v => {
-              const history = bookings
-                .filter(b => b.vehicleId === v.id)
-                .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
+              const history = historyOf(v);
+              const completed = history.filter(b => b.status === 'completed');
               const last = history[0];
-
+              const spend = completed.reduce((s, b) => s + b.totalAmount, 0);
+              const protection = deriveProtection(history, services);
               return (
-              <motion.div
-                key={v.id}
-                variants={{ hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } } }}
-                className="card rounded-2xl p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'var(--smoke)' }}>
-                    <Car size={20} style={{ color: 'var(--ember)' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--chrome)', letterSpacing: '0.03em' }}>
-                      {v.name}
-                    </p>
-                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>
-                      {v.category} · {v.registrationNumber}
-                    </p>
-                    {last && (
-                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--steel)', marginTop: '2px' }}>
-                        Last: {last.serviceName} · {formatDate(last.scheduledDate)}
+                <motion.button
+                  key={v.id}
+                  variants={{ hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } } }}
+                  onClick={() => setDetail(v)}
+                  className="card rounded-2xl p-4 w-full text-left cursor-pointer"
+                  style={{ minHeight: 44 }}>
+                  {/* passport header: the car's name is the hero */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px', letterSpacing: '-0.01em', color: 'var(--chrome)' }}>
+                        {v.name}
                       </p>
-                    )}
-                    {v.color && (
-                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--steel)', marginTop: '2px' }}>
-                        {v.color}{v.notes ? ` · ${v.notes}` : ''}
+                      <p className="font-mono mt-0.5" style={{ fontSize: 11, letterSpacing: '0.1em', color: 'var(--muted)' }}>
+                        {v.registrationNumber} · {v.category.toUpperCase()}{v.color ? ` · ${v.color.toUpperCase()}` : ''}
                       </p>
-                    )}
+                    </div>
+                    <ChevronRight size={16} className="shrink-0 mt-1" style={{ color: 'var(--steel)' }} />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <motion.button whileTap={{ scale: 0.88 }} onClick={() => openEdit(v)}
-                      className="w-9 h-9 rounded-xl flex items-center justify-center"
-                      style={{ background: 'var(--cavern)', border: '1px solid var(--border)' }}>
-                      <Edit3 size={14} style={{ color: 'var(--muted)' }} />
-                    </motion.button>
-                    <motion.button whileTap={{ scale: 0.88 }} onClick={() => setConfirmDelete(v)}
-                      disabled={!!deleting}
-                      className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
-                      style={{ background: 'color-mix(in srgb, var(--danger) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--danger) 15%, transparent)' }}>
-                      {deleting === v.id
-                        ? <div className="w-4 h-4 loader-ring" />
-                        : <Trash2 size={14} style={{ color: 'var(--signal-red)' }} />}
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            );})}
+
+                  {/* protection layers — the reason this page exists */}
+                  {(protection.length > 0 || completed.length > 0) && (
+                    <div className="flex items-center gap-2 mt-3 flex-wrap">
+                      {protection.map(p => (
+                        <span key={p.kind} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono"
+                          style={{
+                            fontSize: 9.5, letterSpacing: '0.1em',
+                            color: p.active ? 'var(--success)' : 'var(--warning)',
+                            background: `color-mix(in srgb, ${p.active ? 'var(--success)' : 'var(--warning)'} 10%, transparent)`,
+                            border: `1px solid color-mix(in srgb, ${p.active ? 'var(--success)' : 'var(--warning)'} 25%, transparent)`,
+                          }}>
+                          {p.kind === 'PPF' ? <Shield size={10} /> : <Sparkles size={10} />}
+                          {p.kind.toUpperCase()} {p.active ? 'PROTECTED' : 'EXPIRED'}
+                        </span>
+                      ))}
+                      {completed.length > 0 && (
+                        <span className="font-mono ml-auto" style={{ fontSize: 10, color: 'var(--steel)' }}>
+                          {completed.length} visit{completed.length === 1 ? '' : 's'} · {formatCurrency(spend)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {last && (
+                    <p className="font-body mt-2" style={{ fontSize: 11.5, color: 'var(--steel)' }}>
+                      Last visit · {last.serviceName} · {formatDate(last.scheduledDate)}
+                    </p>
+                  )}
+                </motion.button>
+              );
+            })}
           </motion.div>
         )}
       </div>
+
+      {/* ── Vehicle sheet: the car's story ── */}
+      <AnimatePresence>
+        {detail && (() => {
+          const history = historyOf(detail);
+          const completed = history.filter(b => b.status === 'completed');
+          const spend = completed.reduce((s, b) => s + b.totalAmount, 0);
+          const protection = deriveProtection(history, services);
+          const lastCat = history[0]?.serviceCategory ?? 'Washing';
+          return (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setDetail(null)} className="fixed inset-0 z-40"
+                style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(8px)' }} />
+              <motion.div
+                initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+                className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl overflow-y-auto safe-sheet max-h-[88vh]"
+                style={{ background: 'var(--deep)', borderTop: '1px solid var(--border-2)' }}>
+                <div className="p-5 pb-8 max-w-lg mx-auto">
+                  <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'var(--border-2)' }} />
+
+                  {/* identity */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="min-w-0">
+                      <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em', color: 'var(--chrome)', lineHeight: 1.05 }}>
+                        {detail.name}
+                      </h2>
+                      <p className="font-mono mt-1" style={{ fontSize: 11.5, letterSpacing: '0.12em', color: 'var(--muted)' }}>
+                        {detail.registrationNumber} · {detail.category.toUpperCase()}{detail.color ? ` · ${detail.color.toUpperCase()}` : ''}
+                      </p>
+                    </div>
+                    <button onClick={() => setDetail(null)} aria-label="Close"
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ background: 'var(--cavern)', border: '1px solid var(--border)' }}>
+                      <X size={16} style={{ color: 'var(--muted)' }} />
+                    </button>
+                  </div>
+
+                  {/* protection — the vehicle's shield status */}
+                  {protection.length > 0 && (
+                    <div className="space-y-2 mb-5">
+                      {protection.map(p => (
+                        <div key={p.kind} className="rounded-2xl px-4 py-3 flex items-center gap-3"
+                          style={{
+                            background: `color-mix(in srgb, ${p.active ? 'var(--success)' : 'var(--warning)'} 6%, var(--cavern))`,
+                            border: `1px solid color-mix(in srgb, ${p.active ? 'var(--success)' : 'var(--warning)'} 22%, transparent)`,
+                          }}>
+                          {p.kind === 'PPF'
+                            ? <Shield size={17} style={{ color: p.active ? 'var(--success)' : 'var(--warning)' }} />
+                            : <Sparkles size={17} style={{ color: p.active ? 'var(--success)' : 'var(--warning)' }} />}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-body font-600 text-sm" style={{ color: 'var(--chrome)' }}>{p.service}</p>
+                            <p className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--steel)' }}>
+                              APPLIED {formatDate(p.applied).toUpperCase()}
+                              {p.until && ` · ${p.active ? 'PROTECTED UNTIL' : 'EXPIRED'} ${p.until.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }).toUpperCase()}`}
+                            </p>
+                          </div>
+                          {!p.active && (
+                            <button onClick={() => router.push(`/dashboard/booking?cat=${p.kind}`)}
+                              className="font-mono text-[10px] px-3 py-2 rounded-lg shrink-0"
+                              style={{ color: 'var(--ember)', background: 'var(--accent-mist)', border: '1px solid var(--accent-haze)' }}>
+                              RENEW
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* the numbers that matter */}
+                  <div className="grid grid-cols-3 gap-2 mb-6">
+                    {[
+                      { v: String(completed.length), l: 'Visits' },
+                      { v: spend >= 100000 ? `₹${(spend / 100000).toFixed(1)}L` : formatCurrency(spend), l: 'Lifetime care' },
+                      { v: history[0] ? formatDate(history[0].scheduledDate) : '—', l: 'Last visit' },
+                    ].map(s => (
+                      <div key={s.l} className="rounded-2xl px-3 py-3 text-center" style={{ background: 'var(--cavern)', border: '1px solid var(--border)' }}>
+                        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--chrome)' }}>{s.v}</p>
+                        <p className="font-body text-[10.5px] mt-0.5" style={{ color: 'var(--muted)' }}>{s.l}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* care timeline */}
+                  <p className="font-mono mb-3" style={{ fontSize: 10, letterSpacing: '0.16em', color: 'var(--faint)' }}>CARE TIMELINE</p>
+                  {history.length === 0 ? (
+                    <p className="font-body text-sm py-4 text-center" style={{ color: 'var(--steel)' }}>
+                      No services yet — its story starts with the first booking.
+                    </p>
+                  ) : (
+                    <div className="relative pl-4 mb-6" style={{ borderLeft: '1px solid var(--border-2)' }}>
+                      {history.slice(0, 12).map((b, i) => (
+                        <motion.div key={b.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.05 + i * 0.04, duration: 0.35, ease: EASE }}
+                          className="relative pb-4 last:pb-0">
+                          <span className="absolute rounded-full" style={{
+                            left: -20.5, top: 5, width: 9, height: 9,
+                            background: b.status === 'completed' ? 'var(--success)' : 'var(--info)',
+                            border: '2px solid var(--deep)',
+                          }} />
+                          <div className="flex items-baseline justify-between gap-3">
+                            <p className="font-body font-600 text-sm truncate" style={{ color: 'var(--chrome)' }}>{b.serviceName}</p>
+                            <p className="font-mono text-[10px] shrink-0" style={{ color: 'var(--faint)' }}>{formatDate(b.scheduledDate)}</p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="font-body text-xs" style={{ color: 'var(--steel)' }}>
+                              {getStatusLabel(b.status)} · {formatCurrency(b.totalAmount)}
+                            </p>
+                            {b.invoiceId && (
+                              <button onClick={() => router.push(`/invoice/${b.invoiceId}`)}
+                                className="inline-flex items-center gap-1 font-mono text-[9.5px] px-2 py-1 rounded-md"
+                                style={{ color: 'var(--ember)', background: 'var(--accent-mist)' }}>
+                                <FileText size={9} /> INVOICE
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* actions */}
+                  <button onClick={() => router.push(`/dashboard/booking?cat=${lastCat}`)}
+                    className="btn-ember w-full py-4 rounded-2xl flex items-center justify-center gap-2 mb-2">
+                    <CalendarPlus size={16} /> BOOK A SERVICE
+                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setDetail(null); openEdit(detail); }}
+                      className="btn-ghost flex-1 py-3 flex items-center justify-center gap-2 text-sm">
+                      <Edit3 size={13} /> Edit
+                    </button>
+                    <button onClick={() => setConfirmDelete(detail)}
+                      className="flex-1 py-3 rounded-xl font-body text-sm flex items-center justify-center gap-2"
+                      style={{ color: 'var(--danger)', border: '1px solid color-mix(in srgb, var(--danger) 25%, transparent)' }}>
+                      {deleting === detail.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Remove
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
 
       {/* Add / Edit bottom sheet */}
       <AnimatePresence>
@@ -217,7 +418,6 @@ export default function VehiclesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Name */}
                   <div>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '6px' }}>
                       Vehicle Name *
@@ -227,7 +427,6 @@ export default function VehiclesPage() {
                       className="input" />
                   </div>
 
-                  {/* Registration */}
                   <div>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '6px' }}>
                       Registration Number *
@@ -239,7 +438,6 @@ export default function VehiclesPage() {
                       style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }} />
                   </div>
 
-                  {/* Category */}
                   <div>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '8px' }}>
                       Category
@@ -247,7 +445,7 @@ export default function VehiclesPage() {
                     <div className="flex flex-wrap gap-2">
                       {CATEGORIES.map(c => (
                         <button key={c} onClick={() => update('category', c)}
-                          className="px-3 py-1.5 rounded-xl transition-all"
+                          className="px-3 py-2 rounded-xl transition-all"
                           style={{
                             background:  form.category === c ? 'var(--ember)' : 'var(--cavern)',
                             color:       form.category === c ? 'var(--on-accent)' : 'var(--muted)',
@@ -263,7 +461,6 @@ export default function VehiclesPage() {
                     </div>
                   </div>
 
-                  {/* Color */}
                   <div>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '8px' }}>
                       Color
@@ -271,7 +468,7 @@ export default function VehiclesPage() {
                     <div className="flex flex-wrap gap-2">
                       {COLORS.map(c => (
                         <button key={c} onClick={() => update('color', c)}
-                          className="px-3 py-1.5 rounded-xl transition-all"
+                          className="px-3 py-2 rounded-xl transition-all"
                           style={{
                             background: form.color === c ? 'var(--ember)' : 'var(--cavern)',
                             color:      form.color === c ? 'var(--on-accent)' : 'var(--muted)',
@@ -287,7 +484,6 @@ export default function VehiclesPage() {
                     </div>
                   </div>
 
-                  {/* Notes */}
                   <div>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '6px' }}>
                       Notes (optional)
@@ -297,7 +493,6 @@ export default function VehiclesPage() {
                       className="input" />
                   </div>
 
-                  {/* Submit */}
                   <div className="pt-2 pb-6">
                     <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={loading}
                       className="btn-ember w-full py-4 rounded-2xl flex items-center justify-center gap-2">
@@ -318,11 +513,11 @@ export default function VehiclesPage() {
         {confirmDelete && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+              className="fixed inset-0 z-[60]" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
               onClick={() => setConfirmDelete(null)} />
             <motion.div initial={false} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92 }}
-              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-sm mx-auto glass-strong rounded-3xl p-6 text-center">
+              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[70] max-w-sm mx-auto glass-strong rounded-3xl p-6 text-center">
               <div className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center"
                 style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)' }}>
                 <Trash2 size={20} style={{ color: 'var(--danger)' }} />
