@@ -22,7 +22,9 @@ import Wordmark from '@/components/ui/Wordmark';
 import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';
 import WhatsAppFloat from '@/components/ui/WhatsAppFloat';
 import SmoothScroll from '@/components/home/SmoothScroll';
-import { SERVICE_SHOWCASE, STOCK } from '@/lib/stockImages';
+import { MEDIA } from '@/lib/media';
+import { SERVICES, SERVICE_ORDER } from '@/lib/catalog';
+import { COMPANY, waLink, telLink } from '@/lib/company';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
 import type { Service } from '@/lib/types';
 
@@ -48,14 +50,7 @@ const glass = (tint = 0.05, warm = false): React.CSSProperties => ({
 
 // photorealistic hero - close-up paint & reflections. Swap this ONE url for the
 // real studio shoot (BMW / Mercedes close-up) when licensed.
-const HERO_CAR = 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=1800&q=85';
 
-const SERVICE_META: Record<string, { warranty?: string; duration: number; line: string }> = {
-  PPF:     { warranty: 'Up to 12 yr', duration: 480, line: 'Self-healing film. Chips hit the film, not your paint.' },
-  Ceramic: { warranty: 'Up to 5 yr',  duration: 300, line: '9H gloss. Water rolls off, dirt gives up.' },
-  Coating: { warranty: '6 months',    duration: 240, line: 'Swirls out, day-one depth back.' },
-  Washing: { duration: 60,            line: 'pH-neutral foam and steam. Zero swirls.' },
-};
 
 const NAV = [
   { label: 'Services', href: '#services' },
@@ -209,7 +204,7 @@ export default function HomePage() {
             <div aria-hidden className="absolute -inset-8 pointer-events-none" style={{ background: 'radial-gradient(60% 55% at 60% 45%, rgba(255,140,60,0.10), transparent 70%)', filter: 'blur(30px)' }} />
             <div className="relative rounded-[28px] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 12px 28px rgba(0,0,0,0.4), 0 48px 130px rgba(0,0,0,0.6), 0 0 110px rgba(255,120,40,0.1)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={HERO_CAR} alt="Close-up of freshly detailed paintwork" className="w-full object-cover max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }} />
+              <img src={MEDIA.hero.homepage} alt="Close-up of freshly detailed paintwork" className="w-full object-cover max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }} />
               <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(8,9,11,0.35) 0%, transparent 30%), linear-gradient(200deg, transparent 40%, rgba(8,9,11,0.6) 100%)' }} />
               {/* glass rim highlight along the top edge */}
               <div aria-hidden className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />
@@ -255,12 +250,12 @@ export default function HomePage() {
       <section id="services" className="relative z-10 px-6 py-14 md:py-20">
         <SectionHead kicker="THE CRAFT" title="Four disciplines. One standard." />
         <div className="grid sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
-          {SERVICE_SHOWCASE.map((s, i) => {
-            const meta = SERVICE_META[s.cat];
+          {SERVICE_ORDER.map((cat, i) => {
+            const s = SERVICES[cat];
             const from = prices[s.cat] ?? s.from;
             const featured = s.cat === 'PPF';
             return (
-              <motion.article key={s.cat} {...reveal} transition={{ ...reveal.transition, delay: (i % 2) * 0.07 }}
+              <motion.article key={cat} {...reveal} transition={{ ...reveal.transition, delay: (i % 2) * 0.07 }}
                 onClick={book}
                 whileHover={{ y: -4 }}
                 className={`group relative rounded-[26px] overflow-hidden cursor-pointer ${featured ? 'sm:col-span-2' : ''}`}
@@ -277,11 +272,11 @@ export default function HomePage() {
                 <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,7,9,0.15) 0%, transparent 30%, transparent 45%, rgba(6,7,9,0.92) 100%)' }} />
                 <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
                   <h3 className="font-display" style={{ fontSize: featured ? 24 : 20, fontWeight: 800, letterSpacing: '-0.015em', color: '#fff', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>{s.name}</h3>
-                  <p className="font-body mt-1 max-w-md" style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)' }}>{meta.line}</p>
+                  <p className="font-body mt-1 max-w-md" style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)' }}>{s.detail}</p>
                   <p className="font-mono mt-3" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)' }}>
                     FROM {formatCurrency(from)}
-                    {meta.warranty ? ` · ${meta.warranty.toUpperCase()} WARRANTY` : ''}
-                    {` · ${getDurationLabel(meta.duration).toUpperCase()}`}
+                    {s.warranty ? ` · ${s.warranty.toUpperCase()} WARRANTY` : ''}
+                    {` · ${getDurationLabel(s.durationMin).toUpperCase()}`}
                   </p>
                 </div>
               </motion.article>
@@ -295,8 +290,8 @@ export default function HomePage() {
         <SectionHead kicker="MARKETPLACE" title="Cars, kept honest." />
         <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
           {[
-            { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: STOCK.carFallback },
-            { title: 'Sell your car', line: 'List it in minutes — we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: STOCK.vehicleFallback },
+            { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: MEDIA.fallbacks.car },
+            { title: 'Sell your car', line: 'List it in minutes — we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: MEDIA.fallbacks.vehicle },
           ].map((t, i) => (
             <motion.div key={t.href} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }}>
               <Link href={t.href}
@@ -375,8 +370,8 @@ export default function HomePage() {
           <div aria-hidden className="absolute -inset-6 pointer-events-none" style={{ background: 'radial-gradient(55% 50% at 50% 60%, rgba(255,140,60,0.08), transparent 70%)', filter: 'blur(24px)' }} />
           <div className="relative rounded-[26px] p-2" style={glass(0.03)}>
             <BeforeAfterSlider
-              before={STOCK.ceramic}
-              after={STOCK.ceramic}
+              before={MEDIA.beforeAfter.ceramic.before}
+              after={MEDIA.beforeAfter.ceramic.after}
               dirtBefore
               showLabels={false}
               beforeFilter="saturate(0.5) brightness(0.82) contrast(0.94) sepia(0.18) blur(0.4px)"
@@ -419,8 +414,8 @@ export default function HomePage() {
               {/* four ways in - every path a customer actually uses */}
               <div className="grid grid-cols-2 gap-2.5 mt-5">
                 {[
-                  { label: 'CALL', icon: <Phone size={13} />, href: 'tel:+919512605088' },
-                  { label: 'WHATSAPP', icon: <WhatsAppMark size={13} />, href: 'https://wa.me/919512605088?text=' + encodeURIComponent("Hi AutoModz! I'd like to book a detailing slot.") },
+                  { label: 'CALL', icon: <Phone size={13} />, href: telLink() },
+                  { label: 'WHATSAPP', icon: <WhatsAppMark size={13} />, href: waLink(`Hi ${COMPANY.name}! I'd like to book a detailing slot.`) },
                   { label: 'REVIEWS', icon: <GoogleG size={13} />, href: 'https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9' },
                   { label: 'DIRECTIONS', icon: <Navigation size={13} />, href: 'https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9', primary: true },
                 ].map(a => (
@@ -447,7 +442,7 @@ export default function HomePage() {
         <div className="flex flex-col items-center gap-6">
           <Wordmark height="clamp(18px, 5vw, 24px)" variant="white" />
           <div className="flex items-center gap-8 font-mono" style={{ fontSize: 9.5, letterSpacing: '0.16em' }}>
-            <a href="tel:+919512605088" className="tap-target inline-flex items-center" style={{ color: 'rgba(255,255,255,0.45)' }}>CALL</a>
+            <a href={telLink()} className="tap-target inline-flex items-center" style={{ color: 'rgba(255,255,255,0.45)' }}>CALL</a>
             <a href="https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9" target="_blank" rel="noopener noreferrer" className="tap-target inline-flex items-center" style={{ color: 'rgba(255,255,255,0.45)' }}>DIRECTIONS</a>
             <Link href="/auth/login" className="tap-target inline-flex items-center" style={{ color: 'rgba(255,255,255,0.45)' }}>SIGN IN</Link>
           </div>

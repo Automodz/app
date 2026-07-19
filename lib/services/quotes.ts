@@ -3,7 +3,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { BUSINESS } from '../config/storeConfig';
+import { COMPANY as BUSINESS } from '../company';
 import type { Quote, QuoteStatus, QuoteLineItem } from '../types';
 
 /** Customer "get me a price" request - lands in the admin pipeline. */

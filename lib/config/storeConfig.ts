@@ -15,16 +15,6 @@ export const GST_ENABLED = false;
 export const GST_RATE = 18;
 export const GSTIN = '';
 
-/** Business identity used on invoices and shares */
-export const BUSINESS = {
-  name: 'AutoModz',
-  tagline: 'Premium Car Detailing Studio',
-  address: 'Bhairavnath Rd, Bhairavnath, Maninagar, Ahmedabad, Gujarat 380028',
-  phone: '9512605088',
-  phoneIntl: '919512605088',
-  mapsUrl: 'https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9',
-} as const;
-
 /** Service bays (mirrors SLOT_CAPACITY in bookingConfig) */
 export const BAYS = [1, 2, 3] as const;
 
@@ -35,6 +25,3 @@ export const REFERRAL = {
   validityDays: 90,
   minOrder: 0,
 } as const;
-
-/** Google review ask - plain Maps link works; a place-id review link is even better */
-export const GOOGLE_REVIEW_URL = 'https://maps.app.goo.gl/S1ZBYHrYYUxezB7g9';

@@ -4,7 +4,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { formatInvoiceNumber, randomToken, formatCurrency } from '../utils';
-import { INVOICE_PREFIX, GST_ENABLED, GST_RATE, GSTIN, BUSINESS, GOOGLE_REVIEW_URL } from '../config/storeConfig';
+import { INVOICE_PREFIX, GST_ENABLED, GST_RATE, GSTIN } from '../config/storeConfig';
+import { COMPANY as BUSINESS } from '../company';
 import type { Invoice, InvoiceLineItem, Job, Booking } from '../types';
 
 /**
@@ -138,7 +139,7 @@ ${invoicePublicUrl(invoice)}
 
 Thank you for choosing ${BUSINESS.name}!
 Loved the work? A quick Google review means the world to us 🙏
-${GOOGLE_REVIEW_URL}
+${BUSINESS.googleReviewUrl}
 
 ${BUSINESS.address}
 ${BUSINESS.phone}`;
@@ -152,7 +153,7 @@ export const buildReviewAskLink = (customerName: string, customerPhone: string) 
 `Hi ${customerName.split(' ')[0]}! Thanks for trusting ${BUSINESS.name} with your car today. 🚗✨
 
 If you're happy with the finish, a quick Google review helps our small Maninagar studio more than you know:
-${GOOGLE_REVIEW_URL}
+${BUSINESS.googleReviewUrl}
 
 - Team ${BUSINESS.name}`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;

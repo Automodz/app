@@ -1,6 +1,6 @@
 'use client';
 import Wordmark from '@/components/ui/Wordmark';
-import { BUSINESS, GOOGLE_REVIEW_URL } from '@/lib/config/storeConfig';
+import { COMPANY as BUSINESS } from '@/lib/company';
 
 export interface InvoiceDocData {
   invoiceNumber: string;
@@ -152,7 +152,7 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
         <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
           {BUSINESS.address} · +91 {BUSINESS.phone}
         </div>
-        <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noreferrer"
+        <a href={BUSINESS.googleReviewUrl} target="_blank" rel="noreferrer"
           style={{ display: 'inline-block', marginTop: 10, fontSize: 12, fontWeight: 600, color: '#17181A', borderBottom: '1px solid #17181A', textDecoration: 'none' }}>
           Happy with the work? Leave us a Google review
         </a>

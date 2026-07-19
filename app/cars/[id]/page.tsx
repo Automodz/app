@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { getCarListing, createCarLead } from '@/lib/firebaseService';
 import { formatCurrency, getAvailableDates, formatDate } from '@/lib/utils';
-import { BUSINESS } from '@/lib/config/storeConfig';
+import { COMPANY as BUSINESS } from '@/lib/company';
 import { useAppStore } from '@/lib/store';
 import type { CarListing } from '@/lib/types';
 

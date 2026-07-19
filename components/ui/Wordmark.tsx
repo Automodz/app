@@ -1,3 +1,4 @@
+import { MEDIA } from '@/lib/media';
 /**
  * The AutoModz wordmark - the real logo typeface, not text.
  * Uses transparent PNGs derived from the brand logo (public/wordmark-*.png).
@@ -35,9 +36,9 @@ export default function Wordmark({
       role="img"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="wm-i" src="/wordmark-ink.png" alt="" />
+      <img className="wm-i" src={MEDIA.branding.wordmarkInk} alt="" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="wm-w" src="/wordmark-white.png" alt="" />
+      <img className="wm-w" src={MEDIA.branding.wordmarkWhite} alt="" />
     </span>
   );
 }

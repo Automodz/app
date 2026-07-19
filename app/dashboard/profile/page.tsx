@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { logoutUser, updateUserProfile } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
+import { waLink } from '@/lib/company';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -195,7 +196,7 @@ export default function ProfilePage() {
               Bhairavnath Rd, Maninagar, Ahmedabad 380028
             </span>
           </a>
-          <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210'}`}
+          <a href={waLink()}
             target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-3 py-2 transition-opacity hover:opacity-80">
             <Phone size={14} style={{ color: 'var(--ember)', flexShrink: 0 }} />

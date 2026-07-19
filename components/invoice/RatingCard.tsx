@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Star } from 'lucide-react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { GOOGLE_REVIEW_URL } from '@/lib/config/storeConfig';
+import { COMPANY } from '@/lib/company';
 
 /**
  * Post-service review capture on the PUBLIC invoice (reaches walk-ins too).
@@ -35,7 +35,7 @@ export default function RatingCard({ invoiceId, customerName, customerPhone }: {
     if (r >= 4) {
       submitFeedback(r);
       setState('done');
-      window.open(GOOGLE_REVIEW_URL, '_blank');
+      window.open(COMPANY.googleReviewUrl, '_blank');
     } else {
       setState('low');
     }

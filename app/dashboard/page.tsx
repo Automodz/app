@@ -22,13 +22,13 @@ import { getUserSubscription, getServices } from '@/lib/firebaseService';
 import { MEMBERSHIP_PLANS, type Subscription } from '@/lib/types';
 import GaugeRing from '@/components/ui/GaugeRing';
 import HeroMedia from '@/components/ui/HeroMedia';
-import { STOCK } from '@/lib/stockImages';
+import { MEDIA } from '@/lib/media';
 
 const SERVICES = [
-  { cat: 'PPF',     img: STOCK.ppf,     label: 'Paint Protection',  sub: 'from ₹1,45,000', href: '/dashboard/booking?cat=PPF' },
-  { cat: 'Ceramic', img: STOCK.ceramic, label: 'Ceramic Coating',   sub: 'from ₹10,000',   href: '/dashboard/booking?cat=Ceramic' },
-  { cat: 'Washing', img: STOCK.washing, label: 'Wash & Detail',     sub: 'from ₹500',      href: '/dashboard/booking?cat=Washing' },
-  { cat: 'Coating', img: STOCK.coating, label: 'Teflon & Glass',    sub: 'from ₹1,200',    href: '/dashboard/booking?cat=Coating' },
+  { cat: 'PPF',     img: MEDIA.services.ppf,     label: 'Paint Protection',  sub: 'from ₹1,45,000', href: '/dashboard/booking?cat=PPF' },
+  { cat: 'Ceramic', img: MEDIA.services.ceramic, label: 'Ceramic Coating',   sub: 'from ₹10,000',   href: '/dashboard/booking?cat=Ceramic' },
+  { cat: 'Washing', img: MEDIA.services.washing, label: 'Wash & Detail',     sub: 'from ₹500',      href: '/dashboard/booking?cat=Washing' },
+  { cat: 'Coating', img: MEDIA.services.coating, label: 'Teflon & Glass',    sub: 'from ₹1,200',    href: '/dashboard/booking?cat=Coating' },
 ];
 
 // Content-first: no hidden initial - content is visible immediately.

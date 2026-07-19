@@ -4,13 +4,12 @@
  * WhatsApp brand green is intentional (like the Google mark) - it's the
  * recognised affordance, not a UI accent. Fixed bottom-right, safe-area aware.
  */
-const PHONE = '919512605088'; // AutoModz WhatsApp (E.164, no +)
-const MSG = encodeURIComponent("Hi AutoModz! I'd like to book a detailing slot.");
+import { COMPANY, waLink } from '@/lib/company';
 
 export default function WhatsAppFloat() {
   return (
     <a
-      href={`https://wa.me/${PHONE}?text=${MSG}`}
+      href={waLink(`Hi ${COMPANY.name}! I'd like to book a detailing slot.`)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat with AutoModz on WhatsApp"
