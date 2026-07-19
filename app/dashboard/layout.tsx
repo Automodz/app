@@ -1,11 +1,23 @@
 'use client';
+/**
+ * Customer shell V3 — CAR · CARE · CLUB + Book.
+ * Three places and one action, replacing the evolved five-tab bar:
+ *   Car   /dashboard               ownership home (garage, marketplace, profile live under it)
+ *   Care  /dashboard/history       every visit — live, upcoming, past
+ *   Club  /dashboard/subscriptions membership, offers, referral
+ *   Book  /dashboard/booking       the accent action, not a fake tab
+ * A Live Activity strip docks above the bar whenever a vehicle is inside
+ * the studio — the visit follows the customer everywhere.
+ */
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Car, Calendar, User, Plus } from 'lucide-react';
+import { Car, Sparkles, Crown, Plus } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import InstallPrompt from '@/components/pwa/InstallPrompt';
+import CxLiveActivity, { activeVisit } from '@/components/cx/CxLiveActivity';
+import { DUR, EASE } from '@/lib/cx/motion';
 import {
   getVehicles,
   getUserBookings,
@@ -13,20 +25,26 @@ import {
   subscribeUserBookings,
 } from '@/lib/firebaseService';
 
-// Exactly 5 tabs - Book is the centre special button
-const NAV = [
-  { href: '/dashboard',          icon: Home,     label: 'Home'    },
-  { href: '/dashboard/history',  icon: Calendar, label: 'History' },
-  { href: '/dashboard/booking',  icon: null,     label: 'Book',   special: true },
-  { href: '/dashboard/vehicles', icon: Car,      label: 'Garage'  },
-  { href: '/dashboard/profile',  icon: User,     label: 'Profile' },
+const TABS = [
+  {
+    href: '/dashboard', icon: Car, label: 'Car',
+    owns: ['/dashboard/vehicles', '/dashboard/cars', '/dashboard/sell-car', '/dashboard/profile', '/dashboard/notifications'],
+  },
+  {
+    href: '/dashboard/history', icon: Sparkles, label: 'Care',
+    owns: [],
+  },
+  {
+    href: '/dashboard/subscriptions', icon: Crown, label: 'Club',
+    owns: ['/dashboard/offers', '/dashboard/refer'],
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
   const {
-    user, authLoading,
+    user, authLoading, bookings,
     setVehicles, setBookings, setNotifications, setUnreadCount,
   } = useAppStore();
 
@@ -40,6 +58,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Load user data once per uid
   useEffect(() => {
     if (authLoading || !user) return;
+
+    // Dev shim (companion to AuthContext's): mock dev users can't read
+    // Firestore, so seed one in-studio visit to exercise the Live Activity.
+    if (process.env.NODE_ENV === 'development' && user.uid.startsWith('dev-')) {
+      setBookings([{
+        id: 'dev-visit', userId: user.uid, vehicleName: 'BMW M340i',
+        serviceName: 'Ceramic Coating', serviceCategory: 'Ceramic',
+        status: 'in_progress', scheduledDate: new Date().toISOString().split('T')[0],
+        scheduledTime: '10:00', totalAmount: 24000,
+      } as never]);
+      return;
+    }
 
     let unsubscribeBookings: (() => void) | undefined;
 
@@ -78,16 +108,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 
+  const visit = activeVisit(bookings);
+  // The tracker screen shows the full story itself — no strip on top of it.
+  const showLive = !!visit && pathname !== '/dashboard/history';
+  const isBooking = pathname.startsWith('/dashboard/booking');
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--void)' }}>
-      <main className="flex-1 safe-page safe-scroll-nav">
+      <main className="flex-1 safe-page safe-scroll-nav"
+        style={showLive ? { paddingBottom: 'calc(var(--bottom-nav-h) + 92px)' } : undefined}>
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname}
             initial={false}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}>
+            transition={{ duration: DUR.fast, ease: EASE }}>
             {children}
           </motion.div>
         </AnimatePresence>
@@ -95,7 +131,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <InstallPrompt />
 
-      {/* Bottom navigation - 5 tabs */}
+      {/* Bottom bar — Live Activity strip + CAR·CARE·CLUB + Book */}
       <nav
         className="fixed bottom-0 inset-x-0 z-50 safe-bottom-bar"
         style={{
@@ -106,39 +142,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}>
         <div className="h-px"
           style={{ background: 'linear-gradient(90deg, transparent, var(--border-2), transparent)' }} />
-        <div className="flex items-center justify-around max-w-lg mx-auto px-2 pt-2 pb-1">
-          {NAV.map(({ href, icon: Icon, label, special }) => {
-            const isActive = pathname === href ||
-              (href !== '/dashboard' && pathname.startsWith(href));
 
-            if (special) return (
-              <Link key={href} href={href}>
-                <motion.div
-                  whileTap={{ scale: 0.84 }}
-                  className="relative -mt-8 w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{
-                    background: 'var(--accent-grad)',
-                    boxShadow: '0 4px 24px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.25)',
-                  }}>
-                  <Plus size={22} style={{ color: 'var(--on-accent)' }} />
-                  <div className="absolute inset-0 rounded-2xl animate-ember-pulse pointer-events-none" />
-                </motion.div>
-              </Link>
+        {showLive && (
+          <div style={{ borderBottom: '1px solid var(--border)' }}>
+            <CxLiveActivity visit={visit} />
+          </div>
+        )}
+
+        <div className="flex items-center max-w-lg mx-auto px-3 pt-2 pb-1 gap-1">
+          {TABS.map(({ href, icon: Icon, label, owns }) => {
+            const isActive = !isBooking && (
+              pathname === href ||
+              (href !== '/dashboard' && pathname.startsWith(href)) ||
+              owns.some(o => pathname.startsWith(o))
             );
 
             return (
-              <Link key={href} href={href}>
+              <Link key={href} href={href} className="flex-1">
                 <motion.div
-                  whileTap={{ scale: 0.84 }}
-                  className="flex flex-col items-center gap-0.5 px-3 py-1 min-w-[52px]">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-                    style={{ background: isActive ? 'var(--accent-mist)' : 'transparent' }}>
-                    {Icon && (
-                      <Icon size={18} style={{ color: isActive ? 'var(--ember)' : 'var(--steel)' }} />
-                    )}
-                  </div>
-                  <span style={{
+                  whileTap={{ scale: 0.96 }}
+                  className="relative flex flex-col items-center gap-0.5 py-1.5 rounded-xl">
+                  {isActive && (
+                    <motion.div
+                      layoutId="cx-tab-pill"
+                      className="absolute inset-0 rounded-xl"
+                      style={{ background: 'var(--accent-mist)' }}
+                      transition={{ duration: DUR.base, ease: EASE }}
+                    />
+                  )}
+                  <Icon size={17} className="relative z-10"
+                    style={{ color: isActive ? 'var(--ember)' : 'var(--steel)' }} />
+                  <span className="relative z-10" style={{
                     fontFamily:    'var(--font-body)',
                     fontSize:      '10px',
                     fontWeight:    500,
@@ -151,6 +185,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             );
           })}
+
+          {/* Book — the one action */}
+          <Link href="/dashboard/booking" className="flex-1">
+            <motion.div
+              whileTap={{ scale: 0.96 }}
+              className="mx-1 h-11 rounded-xl flex items-center justify-center gap-1.5"
+              style={{
+                background: 'var(--accent-grad)',
+                boxShadow: isBooking ? '0 4px 20px var(--accent-glow)' : 'none',
+              }}>
+              <Plus size={15} style={{ color: 'var(--on-accent)' }} />
+              <span style={{
+                fontFamily: 'var(--font-display)', fontWeight: 700,
+                fontSize: '11.5px', letterSpacing: '0.05em', color: 'var(--on-accent)',
+              }}>
+                Book
+              </span>
+            </motion.div>
+          </Link>
         </div>
       </nav>
     </div>

@@ -14,7 +14,6 @@ import {
   formatTime,
   getStatusColor,
   getStatusLabel,
-  getStatusStep,
 } from '@/lib/utils';
 import ServiceIcon, { PlanIcon } from '@/components/ui/ServiceIcon';
 
@@ -78,22 +77,16 @@ export default function DashboardPage() {
       .finally(() => setMembershipLoading(false));
   }, [user]);
 
-  const { upcoming, inProgress, completed } = useMemo(() => {
+  const { upcoming, completed } = useMemo(() => {
     const upcoming = bookings
       .filter(b => ['pending', 'confirmed'].includes(b.status))
-      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
-
-    const inProgress = bookings
-      .filter(b =>
-        ['vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery'].includes(b.status),
-      )
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
 
     const completed = bookings
       .filter(b => b.status === 'completed')
       .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
 
-    return { upcoming, inProgress, completed };
+    return { upcoming, completed };
   }, [bookings]);
 
   const totalSpent = completed.reduce((s, b) => s + b.totalAmount, 0);
@@ -151,8 +144,8 @@ export default function DashboardPage() {
                 )}
               </motion.button>
 
-              {/* Avatar */}
-              <motion.div {...stagger(0.08)}>
+              {/* Avatar → profile (profile lives under Car now) */}
+              <motion.button {...stagger(0.08)} onClick={() => router.push('/dashboard/profile')} aria-label="Profile">
                 {user?.photoURL ? (
                   <div className="relative w-11 h-11 rounded-xl overflow-hidden"
                     style={{ border: '1.5px solid var(--border-2)' }}>
@@ -166,7 +159,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
                 )}
-              </motion.div>
+              </motion.button>
             </div>
           </div>
 
@@ -270,46 +263,6 @@ export default function DashboardPage() {
           BOOK A SERVICE
         </motion.button>
 
-        {/* In-progress live banner */}
-        {inProgress.length > 0 && (
-          <motion.button
-            {...stagger(0.04)}
-            onClick={() => router.push('/dashboard/history')}
-            className="w-full rounded-xl p-4 text-left"
-            style={{ background: 'var(--smoke)', border: '1px solid var(--border-strong)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: 'var(--smoke)' }}>
-                <ServiceIcon category={inProgress[0].serviceCategory} size={16} style={{ color: 'var(--chrome)' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="animate-ember-pulse inline-block w-1.5 h-1.5 rounded-full"
-                    style={{ background: 'var(--ember)' }} />
-                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ember)' }}>
-                    LIVE · {getStatusLabel(inProgress[0].status).toUpperCase()}
-                  </p>
-                </div>
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--chrome)' }}>
-                  {inProgress[0].serviceName}
-                </p>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted)' }}>
-                  {inProgress[0].vehicleName}
-                </p>
-                {/* live stage progress - streams via subscribeUserBookings */}
-                <div className="flex items-center gap-1 mt-2">
-                  {[...Array(6)].map((_, idx) => (
-                    <div key={idx} className="flex-1 h-1 rounded-full"
-                      style={{ background: idx <= getStatusStep(inProgress[0].status) ? 'var(--ember)' : 'var(--border-2)' }} />
-                  ))}
-                </div>
-              </div>
-              <ChevronRight size={16} style={{ color: 'var(--ember)', flexShrink: 0 }} />
-            </div>
-          </motion.button>
-        )}
-
         {/* Upcoming bookings */}
         {upcoming.length > 0 && (
           <motion.div {...stagger(0.06)}>
@@ -391,8 +344,8 @@ export default function DashboardPage() {
         {/* Cars & Offers quick links */}
         <motion.div {...stagger(0.09)} className="grid grid-cols-2 gap-2.5">
           {[
-            { href: '/dashboard/cars', icon: Car, title: 'Cars for Sale', sub: 'Buy & sell with AutoModz' },
-            { href: '/dashboard/offers', icon: Tag, title: 'Offers', sub: 'Your discounts & promos' },
+            { href: '/dashboard/vehicles', icon: Car, title: 'My Garage', sub: `${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'} on file` },
+            { href: '/dashboard/cars', icon: Tag, title: 'Cars for Sale', sub: 'Buy & sell with AutoModz' },
           ].map(q => (
             <Link key={q.href} href={q.href} className="card rounded-2xl p-4 block">
               <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl mb-3"
