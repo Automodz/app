@@ -136,6 +136,26 @@ export const getJob = async (id: string): Promise<Job | null> => {
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Job) : null;
 };
 
+/** Live listener for ONE customer's job behind a booking — powers the
+ *  Live Care tracker. The customerId equality keeps the query inside the
+ *  customer-reads-their-own security rule. */
+export const subscribeJobForBooking = (
+  bookingId: string,
+  customerId: string,
+  cb: (job: Job | null) => void,
+) => {
+  const q = query(
+    collection(db, 'jobs'),
+    where('bookingId', '==', bookingId),
+    where('customerId', '==', customerId),
+  );
+  return onSnapshot(
+    q,
+    (snap) => cb(snap.empty ? null : ({ id: snap.docs[0].id, ...snap.docs[0].data() } as Job)),
+    () => cb(null),
+  );
+};
+
 /** Live listener for the kiosk job board (today's jobs). */
 export const subscribeTodaysJobs = (
   cb: (jobs: Job[]) => void,

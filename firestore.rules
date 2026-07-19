@@ -183,7 +183,10 @@ service cloud.firestore {
     // Jobs: staff see the whole board; only ASSIGNED employees may write, and
     // only operational fields - amounts, discounts, assignments stay admin-only.
     match /jobs/{id} {
-      allow read: if request.auth != null && isStaff();
+      // Staff see the board; a customer may follow their OWN job (the Live
+      // Care tracker) - same "reads their own" pattern as invoices.
+      allow read: if request.auth != null &&
+        (isStaff() || resource.data.customerId == request.auth.uid);
       // Employees may create jobs; any discount must be system-computed
       // (membership/promo) - there is no manual discount path for staff.
       allow create: if request.auth != null &&
@@ -270,7 +273,9 @@ service cloud.firestore {
     // ── Activity - the operational event log (the workspace timeline).
     //    Append-only: staff create + read; admin may amend/prune. ────────
     match /activity/{id} {
-      allow read:   if request.auth != null && isStaff();
+      // Customers may read events on their own record (tracker timeline).
+      allow read:   if request.auth != null &&
+        (isStaff() || resource.data.customerId == request.auth.uid);
       allow create: if request.auth != null && isStaff();
       allow update, delete: if request.auth != null && isAdmin();
     }

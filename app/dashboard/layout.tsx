@@ -18,6 +18,7 @@ import { useAppStore } from '@/lib/store';
 import InstallPrompt from '@/components/pwa/InstallPrompt';
 import CxLiveActivity, { activeVisit } from '@/components/cx/CxLiveActivity';
 import { DUR, EASE } from '@/lib/cx/motion';
+import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING } from '@/lib/cx/devseed';
 import {
   getVehicles,
   getUserBookings,
@@ -60,19 +61,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (authLoading || !user) return;
 
     // Dev shim (companion to AuthContext's): mock dev users can't read
-    // Firestore, so seed a garage + one in-studio visit so the Live Activity
-    // and booking flow are exercisable locally.
-    if (process.env.NODE_ENV === 'development' && user.uid.startsWith('dev-')) {
-      setVehicles([{
-        id: 'dev-car', name: 'BMW M340i', registrationNumber: 'GJ01AB1234',
-        category: 'Luxury', color: 'Grey',
-      } as never]);
-      setBookings([{
-        id: 'dev-visit', userId: user.uid, vehicleName: 'BMW M340i',
-        serviceName: 'Ceramic Coating', serviceCategory: 'Ceramic',
-        status: 'in_progress', scheduledDate: new Date().toISOString().split('T')[0],
-        scheduledTime: '10:00', totalAmount: 24000,
-      } as never]);
+    // Firestore, so seed a garage + visits so the Live Activity, booking
+    // flow and Care tracker are exercisable locally.
+    if (isDevUser(user.uid)) {
+      setVehicles([DEV_VEHICLE]);
+      setBookings([DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING]);
       return;
     }
 
@@ -115,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const visit = activeVisit(bookings);
   // The tracker screen shows the full story itself — no strip on top of it.
-  const showLive = !!visit && pathname !== '/dashboard/history';
+  const showLive = !!visit && !pathname.startsWith('/dashboard/care');
   const isBooking = pathname.startsWith('/dashboard/booking');
 
   return (
