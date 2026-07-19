@@ -13,6 +13,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAppStore } from '@/lib/store';
 import { KIOSK_LOCK_TIMEOUT_MS } from '@/lib/config/storeConfig';
+import { isStudioPath } from '@/lib/permissions';
 import Wordmark from '@/components/ui/Wordmark';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
@@ -95,16 +96,7 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
 // flat list of every destination, for the top-bar title + command palette
 const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items.map(i => ({ ...i, group: g.group, mode: g.mode })));
 
-// Studio-floor routes technicians (role: employee) may use; everything else
-// under /admin is Office and needs an admin session. Unlisted /admin routes
-// reached from the floor (job/booking/vehicle detail, walk-in intake) count
-// as Studio.
-const STUDIO_PREFIXES = [
-  '/admin/schedule', '/admin/bookings', '/admin/attendance', '/admin/gallery',
-  '/admin/walkin', '/admin/jobs', '/admin/vehicles',
-];
-const isStudioPath = (p: string) =>
-  p === '/admin' || STUDIO_PREFIXES.some(pre => p === pre || p.startsWith(pre + '/'));
+// Role access rules live in ONE place — lib/permissions.ts.
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();

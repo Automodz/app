@@ -36,6 +36,9 @@ const nextConfig = {
       { source: '/store/new', destination: '/admin/walkin', permanent: false },
       { source: '/store/attendance', destination: '/admin/attendance', permanent: false },
       { source: '/store/job/:id', destination: '/admin/jobs/:id', permanent: false },
+      // pre-Studio-OS destinations, folded into the board
+      { source: '/admin/workspace', destination: '/admin', permanent: false },
+      { source: '/admin/jobs', destination: '/admin', permanent: false },
     ];
   },
   // Reduce bundle size
