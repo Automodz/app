@@ -8,7 +8,9 @@
  * own bookings — nothing invented, nothing fetched twice.
  */
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import CxSheet from '@/components/cx/CxSheet';
+import CxButton from '@/components/cx/CxButton';
 import {
   Plus, Car, Edit3, Trash2, X, Check, Loader2, ChevronLeft, ChevronRight,
   Shield, Sparkles, FileText, CalendarPlus,
@@ -245,7 +247,7 @@ export default function GaragePage() {
       </div>
 
       {/* ── Vehicle sheet: the car's story ── */}
-      <AnimatePresence>
+      <CxSheet open={!!detail} onClose={() => setDetail(null)} tall title={detail ? detail.name : 'Vehicle'}>
         {detail && (() => {
           const history = historyOf(detail);
           const completed = history.filter(b => b.status === 'completed');
@@ -253,17 +255,7 @@ export default function GaragePage() {
           const protection = deriveProtection(history, services);
           const lastCat = history[0]?.serviceCategory ?? 'Washing';
           return (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={() => setDetail(null)} className="fixed inset-0 z-40"
-                style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(8px)' }} />
-              <motion.div
-                initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-                className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl overflow-y-auto safe-sheet max-h-[88vh]"
-                style={{ background: 'var(--deep)', borderTop: '1px solid var(--border-2)' }}>
-                <div className="p-5 pb-8 max-w-lg mx-auto">
-                  <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'var(--border-2)' }} />
+            <div>
 
                   {/* identity */}
                   <div className="flex items-start justify-between mb-5">
@@ -366,10 +358,9 @@ export default function GaragePage() {
                   )}
 
                   {/* actions */}
-                  <button onClick={() => router.push(`/dashboard/booking?cat=${lastCat}`)}
-                    className="btn-ember w-full py-4 rounded-2xl flex items-center justify-center gap-2 mb-2">
+                  <CxButton onClick={() => router.push(`/dashboard/booking?cat=${lastCat}`)} className="mb-2">
                     <CalendarPlus size={16} /> BOOK A SERVICE
-                  </button>
+                  </CxButton>
                   <div className="flex gap-2">
                     <button onClick={() => { setDetail(null); openEdit(detail); }}
                       className="btn-ghost flex-1 py-3 flex items-center justify-center gap-2 text-sm">
@@ -381,31 +372,14 @@ export default function GaragePage() {
                       {deleting === detail.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Remove
                     </button>
                   </div>
-                </div>
-              </motion.div>
-            </>
+            </div>
           );
         })()}
-      </AnimatePresence>
+      </CxSheet>
 
       {/* Add / Edit bottom sheet */}
-      <AnimatePresence>
-        {showForm && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowForm(false)}
-              className="fixed inset-0 z-40"
-              style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(8px)' }} />
-
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="fixed bottom-0 inset-x-0 z-50 rounded-t-3xl overflow-y-auto safe-sheet"
-              style={{ background: 'var(--deep)', borderTop: '1px solid var(--border-2)' }}>
-
-              <div className="p-5">
-                <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'var(--border-2)' }} />
+      <CxSheet open={showForm} onClose={() => setShowForm(false)} tall title={editing ? 'Edit vehicle' : 'Add vehicle'}>
+        <div>
                 <div className="flex items-center justify-between mb-6">
                   <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--chrome)', letterSpacing: '0.06em' }}>
                     {editing ? 'EDIT VEHICLE' : 'ADD VEHICLE'}
@@ -494,52 +468,37 @@ export default function GaragePage() {
                   </div>
 
                   <div className="pt-2 pb-6">
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={loading}
-                      className="btn-ember w-full py-4 rounded-2xl flex items-center justify-center gap-2">
+                    <CxButton onClick={handleSave} disabled={loading}>
                       {loading
                         ? <Loader2 size={16} className="animate-spin" />
                         : <><Check size={16} /> {editing ? 'UPDATE VEHICLE' : 'ADD TO GARAGE'}</>}
-                    </motion.button>
+                    </CxButton>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+        </div>
+      </CxSheet>
 
       {/* Delete confirmation */}
-      <AnimatePresence>
+      <CxSheet open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Remove vehicle">
         {confirmDelete && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60]" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
-              onClick={() => setConfirmDelete(null)} />
-            <motion.div initial={false} animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[70] max-w-sm mx-auto glass-strong rounded-3xl p-6 text-center">
-              <div className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-                style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)' }}>
-                <Trash2 size={20} style={{ color: 'var(--danger)' }} />
-              </div>
-              <p className="font-display font-700 text-[16px] mb-1" style={{ color: 'var(--chrome)' }}>
-                Remove {confirmDelete.name}?
-              </p>
-              <p className="font-body text-[13px] mb-5" style={{ color: 'var(--muted)' }}>
-                Its service history stays saved, but the vehicle leaves your garage.
-              </p>
-              <div className="flex gap-2">
-                <button onClick={() => setConfirmDelete(null)} className="btn-ghost flex-1 py-3 text-sm">Keep it</button>
-                <button onClick={() => handleDelete(confirmDelete)}
-                  className="flex-1 py-3 rounded-xl font-display font-600 text-sm uppercase tracking-wide"
-                  style={{ background: 'color-mix(in srgb, var(--danger) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)', color: 'var(--danger)' }}>
-                  Remove
-                </button>
-              </div>
-            </motion.div>
-          </>
+          <div className="text-center pt-2">
+            <div className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center"
+              style={{ background: 'color-mix(in srgb, var(--danger) 12%, transparent)' }}>
+              <Trash2 size={20} style={{ color: 'var(--danger)' }} />
+            </div>
+            <p className="font-display font-700 text-[16px] mb-1" style={{ color: 'var(--chrome)' }}>
+              Remove {confirmDelete.name}?
+            </p>
+            <p className="font-body text-[13px] mb-5" style={{ color: 'var(--muted)' }}>
+              Its service history stays saved, but the vehicle leaves your garage.
+            </p>
+            <div className="flex gap-2">
+              <CxButton intent="secondary" onClick={() => setConfirmDelete(null)}>Keep it</CxButton>
+              <CxButton intent="danger" onClick={() => handleDelete(confirmDelete)}>Remove</CxButton>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </CxSheet>
     </div>
   );
 }
