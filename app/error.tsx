@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import Wordmark from '@/components/ui/Wordmark';
 
 /** Branded crash screen — recoverable, never a stack trace in the user's face. */
@@ -22,11 +23,11 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
           style={{ minHeight: 48, fontSize: 14.5, fontWeight: 700, background: '#fff', color: '#0b0c0e' }}>
           Try again
         </button>
-        <a href="/"
+        <Link href="/"
           className="inline-flex items-center justify-center px-6 rounded-2xl font-display tap-target"
           style={{ minHeight: 48, fontSize: 14.5, fontWeight: 700, color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)' }}>
           Home
-        </a>
+        </Link>
       </div>
     </div>
   );

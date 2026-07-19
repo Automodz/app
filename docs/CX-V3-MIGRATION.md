@@ -31,7 +31,7 @@ price formatting patterns (`₹x.xL` logic in profile + vehicles) · progress/st
 |---|---|---|
 | Phase 0 | `components/cx/` design system: `CxSheet` (vaul), `CxButton`, `CxAction`, `lib/cx/motion.ts` tokens, `lib/cx/status.ts` tones. Migrate the Garage's 3 sheets as proof. | vaul-as-zombie, EASE copies begin dying |
 | Phase 1 ✅ | Shell rebuilt in place (`/dashboard` layout): CAR·CARE·CLUB tabs + Book pill + `CxLiveActivity` strip. Care=history, Club=subscriptions(+offers/refer links) until their rebuild phases. Home's inline live banner deleted; profile moved to avatar; garage to a Car quick link. Dev shim seeds one mock in-studio visit for local Live Activity testing. | 5-tab layout, home's in-progress banner |
-| Phase 2 | Booking panes rebuild (new `features` of the flow consume CxSheet/CxButton natively) | 1,085-line wizard + its inline overlays |
+| Phase 2 ✅ | Booking → car onboarding: 6 horizontal panes (vehicle → goal → plan → date → arrival → review), one decision per pane, concierge copy, "Schedule Care" CTA. New shared: `lib/cx/goals.ts` (goal→service recommendation), `lib/cx/protection.ts` (extracted from Garage), `CxVehicleForm` (shared add/edit sheet, Garage migrated onto it). Engine untouched: availability, discounts, membership washes, createBooking, WhatsApp, quotes. | 1,085-line wizard, its inline overlays + quote card, Garage's inline form + local protection helpers |
 | Phase 3 | Tracker + concierge notifications | history detail sheet's status timeline |
 | Phase 4 | CAR passport home (merges dashboard home + garage) | dashboard home, GaugeRing, SlideToAction |
 | Phase 5 | Journey (story history) | history list + filters |

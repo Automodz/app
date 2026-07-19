@@ -11,58 +11,23 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import CxSheet from '@/components/cx/CxSheet';
 import CxButton from '@/components/cx/CxButton';
+import CxVehicleForm from '@/components/cx/CxVehicleForm';
 import {
-  Plus, Car, Edit3, Trash2, X, Check, Loader2, ChevronLeft, ChevronRight,
+  Plus, Car, Edit3, Trash2, X, Loader2, ChevronLeft, ChevronRight,
   Shield, Sparkles, FileText, CalendarPlus,
 } from 'lucide-react';
-import { Timestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { addVehicle, updateVehicle, deleteVehicle, getVehicles, getServices } from '@/lib/firebaseService';
+import { deleteVehicle, getVehicles, getServices } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
-import type { Booking, Service, Vehicle } from '@/lib/types';
+import type { Service, Vehicle } from '@/lib/types';
 import { formatCurrency, formatDate, getStatusLabel } from '@/lib/utils';
-
-const CATEGORIES: Vehicle['category'][] = ['Hatchback', 'Sedan', 'Compact SUV', 'Full SUV', 'Luxury'];
-const COLORS = ['White', 'Black', 'Silver', 'Grey', 'Red', 'Blue', 'Brown', 'Green', 'Orange', 'Yellow', 'Other'];
-const emptyForm = { name: '', registrationNumber: '', category: 'Sedan' as Vehicle['category'], color: '', notes: '' };
-const EASE = [0.22, 1, 0.36, 1] as const;
-
-/** "5 Year" / "6 Month" → months; null when no warranty */
-const warrantyMonths = (w: string | null | undefined): number | null => {
-  if (!w) return null;
-  const n = parseInt(w, 10);
-  if (!n) return null;
-  return /month/i.test(w) ? n : n * 12;
-};
-const addMonths = (iso: string, months: number): Date => {
-  const d = new Date(iso + 'T12:00:00');
-  d.setMonth(d.getMonth() + months);
-  return d;
-};
-
-/** Active protection layers on a vehicle, derived from its completed work. */
-type Protection = { kind: 'PPF' | 'Ceramic'; applied: string; until: Date | null; active: boolean; service: string };
-const deriveProtection = (history: Booking[], services: Service[]): Protection[] => {
-  const byName = new Map(services.map(s => [s.name, s]));
-  const out: Protection[] = [];
-  (['PPF', 'Ceramic'] as const).forEach(kind => {
-    const last = history.find(b => b.status === 'completed' && b.serviceCategory === kind);
-    if (!last) return;
-    const months = warrantyMonths(byName.get(last.serviceName)?.warranty);
-    const until = months ? addMonths(last.scheduledDate, months) : null;
-    out.push({
-      kind, applied: last.scheduledDate, until,
-      active: until ? until > new Date() : true,
-      service: last.serviceName,
-    });
-  });
-  return out;
-};
+import { deriveProtection } from '@/lib/cx/protection';
+import { EASE } from '@/lib/cx/motion';
 
 export default function GaragePage() {
   const router = useRouter();
-  const { user, vehicles, addVehicleToStore, removeVehicleFromStore, setVehicles, bookings } = useAppStore();
+  const { user, vehicles, removeVehicleFromStore, setVehicles, bookings } = useAppStore();
 
   // Refresh vehicles + load the service catalog once (warranty lookup)
   const [services, setServices] = useState<Service[]>([]);
@@ -75,49 +40,17 @@ export default function GaragePage() {
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing]   = useState<Vehicle | null>(null);
-  const [form, setForm]         = useState(emptyForm);
-  const [loading, setLoading]   = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [detail, setDetail]     = useState<Vehicle | null>(null);
 
-  const update   = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
-  const openAdd  = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
-  const openEdit = (v: Vehicle) => {
-    setEditing(v);
-    setForm({ name: v.name, registrationNumber: v.registrationNumber, category: v.category, color: v.color || '', notes: v.notes || '' });
-    setShowForm(true);
-  };
+  const openAdd  = () => { setEditing(null); setShowForm(true); };
+  const openEdit = (v: Vehicle) => { setEditing(v); setShowForm(true); };
 
   const historyOf = useMemo(() => (v: Vehicle) =>
     bookings
       .filter(b => b.vehicleId === v.id && b.status !== 'cancelled')
       .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate)),
   [bookings]);
-
-  const handleSave = async () => {
-    if (!user) return;
-    if (!form.name.trim() || !form.registrationNumber.trim()) {
-      toast.error('Vehicle name and registration are required.');
-      return;
-    }
-    setLoading(true);
-    try {
-      if (editing) {
-        await updateVehicle(user.uid, editing.id, form);
-        setVehicles(vehicles.map(v => v.id === editing.id ? { ...v, ...form } : v));
-        toast.success('Vehicle updated');
-      } else {
-        const id = await addVehicle(user.uid, form);
-        addVehicleToStore({ id, ...form, createdAt: Timestamp.fromDate(new Date()) });
-        toast.success('Vehicle added!');
-      }
-      setShowForm(false);
-    } catch {
-      toast.error('Failed to save vehicle. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const [confirmDelete, setConfirmDelete] = useState<Vehicle | null>(null);
   const handleDelete = async (v: Vehicle) => {
@@ -379,103 +312,11 @@ export default function GaragePage() {
 
       {/* Add / Edit bottom sheet */}
       <CxSheet open={showForm} onClose={() => setShowForm(false)} tall title={editing ? 'Edit vehicle' : 'Add vehicle'}>
-        <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--chrome)', letterSpacing: '0.06em' }}>
-                    {editing ? 'EDIT VEHICLE' : 'ADD VEHICLE'}
-                  </h2>
-                  <button onClick={() => setShowForm(false)}
-                    className="w-9 h-9 rounded-2xl flex items-center justify-center"
-                    style={{ background: 'var(--cavern)', border: '1px solid var(--border)' }}>
-                    <X size={16} style={{ color: 'var(--muted)' }} />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Vehicle Name *
-                    </p>
-                    <input type="text" placeholder="e.g. My Maruti Swift"
-                      value={form.name} onChange={e => update('name', e.target.value)}
-                      className="input" />
-                  </div>
-
-                  <div>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Registration Number *
-                    </p>
-                    <input type="text" placeholder="e.g. GJ01AB1234"
-                      value={form.registrationNumber}
-                      onChange={e => update('registrationNumber', e.target.value.toUpperCase())}
-                      className="input"
-                      style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }} />
-                  </div>
-
-                  <div>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                      Category
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {CATEGORIES.map(c => (
-                        <button key={c} onClick={() => update('category', c)}
-                          className="px-3 py-2 rounded-xl transition-all"
-                          style={{
-                            background:  form.category === c ? 'var(--ember)' : 'var(--cavern)',
-                            color:       form.category === c ? 'var(--on-accent)' : 'var(--muted)',
-                            border:      `1px solid ${form.category === c ? 'var(--ember)' : 'var(--border-2)'}`,
-                            fontFamily:  'var(--font-body)',
-                            fontSize:    '12px',
-                            fontWeight:  500,
-                            boxShadow:   form.category === c ? '0 2px 10px var(--accent-glow)' : 'none',
-                          }}>
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                      Color
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {COLORS.map(c => (
-                        <button key={c} onClick={() => update('color', c)}
-                          className="px-3 py-2 rounded-xl transition-all"
-                          style={{
-                            background: form.color === c ? 'var(--ember)' : 'var(--cavern)',
-                            color:      form.color === c ? 'var(--on-accent)' : 'var(--muted)',
-                            border:     `1px solid ${form.color === c ? 'var(--ember)' : 'var(--border-2)'}`,
-                            fontFamily: 'var(--font-body)',
-                            fontSize:   '12px',
-                            fontWeight:  500,
-                            boxShadow:  form.color === c ? '0 2px 10px var(--accent-glow)' : 'none',
-                          }}>
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: '6px' }}>
-                      Notes (optional)
-                    </p>
-                    <input type="text" placeholder="e.g. Daily driver"
-                      value={form.notes} onChange={e => update('notes', e.target.value)}
-                      className="input" />
-                  </div>
-
-                  <div className="pt-2 pb-6">
-                    <CxButton onClick={handleSave} disabled={loading}>
-                      {loading
-                        ? <Loader2 size={16} className="animate-spin" />
-                        : <><Check size={16} /> {editing ? 'UPDATE VEHICLE' : 'ADD TO GARAGE'}</>}
-                    </CxButton>
-                  </div>
-                </div>
-        </div>
+        <CxVehicleForm
+          editing={editing}
+          onSaved={() => setShowForm(false)}
+          onClose={() => setShowForm(false)}
+        />
       </CxSheet>
 
       {/* Delete confirmation */}

@@ -60,8 +60,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (authLoading || !user) return;
 
     // Dev shim (companion to AuthContext's): mock dev users can't read
-    // Firestore, so seed one in-studio visit to exercise the Live Activity.
+    // Firestore, so seed a garage + one in-studio visit so the Live Activity
+    // and booking flow are exercisable locally.
     if (process.env.NODE_ENV === 'development' && user.uid.startsWith('dev-')) {
+      setVehicles([{
+        id: 'dev-car', name: 'BMW M340i', registrationNumber: 'GJ01AB1234',
+        category: 'Luxury', color: 'Grey',
+      } as never]);
       setBookings([{
         id: 'dev-visit', userId: user.uid, vehicleName: 'BMW M340i',
         serviceName: 'Ceramic Coating', serviceCategory: 'Ceramic',
