@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CalendarDays, Users, CreditCard,
   Settings, Menu, X, LogOut, Zap, Shield,
-  Wrench, UserCog, Package, BadgePercent, Car, FileText, CalendarClock, Clock,
-  Images, BarChart3, Wallet, LockKeyhole, FileSpreadsheet, Search, Plus, UserPlus,
+  Wrench, UserCog, Package, FileText, CalendarClock, Clock,
+  Images, BarChart3, Wallet, LockKeyhole, FileSpreadsheet, Search, Plus,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -48,7 +48,6 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
     group: 'CUSTOMERS',
     mode: 'office',
     items: [
-      { href: '/admin/cars/leads',    label: 'Leads',       icon: UserPlus },
       { href: '/admin/customers',     label: 'Customers',   icon: Users },
       { href: '/admin/subscriptions', label: 'Memberships', icon: CreditCard },
       { href: '/admin/quotes',        label: 'Quotes',      icon: FileSpreadsheet },
@@ -82,14 +81,6 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
     mode: 'office',
     items: [
       { href: '/admin/employees', label: 'Employees', icon: UserCog },
-    ],
-  },
-  {
-    group: 'MARKETING',
-    mode: 'office',
-    items: [
-      { href: '/admin/promos', label: 'Promotions',  icon: BadgePercent },
-      { href: '/admin/cars',   label: 'Marketplace', icon: Car },
     ],
   },
   {
