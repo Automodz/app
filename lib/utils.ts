@@ -82,9 +82,6 @@ export const getStatusColor = (status: string): string => ({
   cancelled:          'text-red-400 bg-red-400/10',
 }[status] || 'text-gray-400 bg-gray-400/10');
 
-export const getStatusStep = (status: string): number =>
-  ['pending','confirmed','vehicle_received','in_progress','quality_check','ready_for_delivery','completed'].indexOf(status);
-
 // Service-category icons now come from the shared <ServiceIcon /> component
 // (components/ui/ServiceIcon.tsx) - a single Lucide source of truth. The old
 // emoji map was removed to keep the platform emoji-free and consistent.

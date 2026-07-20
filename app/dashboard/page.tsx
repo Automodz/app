@@ -1,45 +1,43 @@
 'use client';
-
-import { useEffect, useState, useMemo } from 'react';
+/**
+ * Home — "How is my car?" answered in one screen. Not a dashboard.
+ *
+ * Hero: the primary vehicle, full-bleed. If a visit is live, the hero IS
+ * the tracker preview (the Live Activity strip stays hidden here — one
+ * surface, never two). Otherwise it shows the ownership state derived
+ * from the passport: Protected / Needs attention / All good.
+ *
+ * Below: today's recommendation (only when a record justifies it), recent
+ * memories, a passport preview, and the next visit — upcoming or a Book
+ * CTA. Everything derives from bookings × jobs × catalog via passport.ts.
+ */
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Plus, ChevronRight, Zap, Bell, Clock, CheckCircle, Car, Tag, Gift } from 'lucide-react';
-import Link from 'next/link';
 import Image from 'next/image';
+import { Bell, ChevronRight, Plus, Shield, Sparkles, Gem, Tag, CalendarPlus } from 'lucide-react';
+import Link from 'next/link';
 
 import { useAppStore } from '@/lib/store';
-import {
-  formatCurrency,
-  formatDate,
-  formatTime,
-  getStatusColor,
-  getStatusLabel,
-} from '@/lib/utils';
-import ServiceIcon, { PlanIcon } from '@/components/ui/ServiceIcon';
-
-import { getUserSubscription, getServices } from '@/lib/firebaseService';
-import { MEMBERSHIP_PLANS, type Subscription } from '@/lib/types';
-import GaugeRing from '@/components/ui/GaugeRing';
-import HeroMedia from '@/components/ui/HeroMedia';
+import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
+import { getUserSubscription, getJobsForCustomer, getServices, STATIC_SERVICES } from '@/lib/firebaseService';
+import type { Job, Service, Subscription } from '@/lib/types';
+import { derivePassport, type Recommendation } from '@/lib/cx/passport';
+import type { ProtectionKind } from '@/lib/cx/protection';
+import { deriveCare, etaLine, BOOKING_STAGE } from '@/lib/cx/care';
+import { activeVisit } from '@/components/cx/CxLiveActivity';
+import { useVisitJob } from '@/components/cx/useVisitJob';
+import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
+import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
 import { MEDIA } from '@/lib/media';
 
-const SERVICES = [
-  { cat: 'PPF',     img: MEDIA.services.ppf,     label: 'Paint Protection',  sub: 'from ₹1,45,000', href: '/dashboard/booking?cat=PPF' },
-  { cat: 'Ceramic', img: MEDIA.services.ceramic, label: 'Ceramic Coating',   sub: 'from ₹10,000',   href: '/dashboard/booking?cat=Ceramic' },
-  { cat: 'Washing', img: MEDIA.services.washing, label: 'Wash & Detail',     sub: 'from ₹500',      href: '/dashboard/booking?cat=Washing' },
-  { cat: 'Coating', img: MEDIA.services.coating, label: 'Teflon & Glass',    sub: 'from ₹1,200',    href: '/dashboard/booking?cat=Coating' },
-];
+const mono10 = { fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
+const body12 = { fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)' };
 
-// Content-first: no hidden initial - content is visible immediately.
-const stagger = (_i: number) => ({
-  initial: false as const,
-  animate: { opacity: 1, y: 0 },
-});
+const KIND_ICON: Record<ProtectionKind, typeof Shield> = { PPF: Shield, Ceramic: Sparkles, Coating: Gem };
 
-const daysLeft = (endDate: string) => {
-  const diff = new Date(endDate + 'T23:59:59').getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / 86400000));
-};
+const mediaFor = (category: string | undefined): string =>
+  (MEDIA.services as Record<string, string>)[(category ?? 'ceramic').toLowerCase()] ?? MEDIA.services.ceramic;
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -48,375 +46,345 @@ const greeting = () => {
   return 'Good evening';
 };
 
-export default function DashboardPage() {
+const daysLeftISO = (endDate: string) =>
+  Math.max(0, Math.ceil((new Date(endDate + 'T23:59:59').getTime() - Date.now()) / 86400000));
+
+const rise = (delay = 0) => ({
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: DUR.base, ease: EASE, delay },
+});
+
+export default function HomePage() {
   const router = useRouter();
   const { user, vehicles, bookings, unreadCount } = useAppStore();
 
   const [membership, setMembership] = useState<Subscription | null>(null);
-  const [membershipLoading, setMembershipLoading] = useState(false);
-  const [liveMin, setLiveMin] = useState<Record<string, number>>({});
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [services, setServices] = useState<Service[]>(STATIC_SERVICES);
 
-  // Live "from ₹" prices per category (fallback: static copy in SERVICES)
-  useEffect(() => {
-    if (!user) return;
-    getServices().then(list => {
-      const min: Record<string, number> = {};
-      list.filter(s => s.active).forEach(s => {
-        if (!min[s.category] || s.price < min[s.category]) min[s.category] = s.price;
-      });
-      setLiveMin(min);
-    }).catch(() => {});
-  }, [user]);
+  useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
 
   useEffect(() => {
     if (!user) return;
-    setMembershipLoading(true);
     getUserSubscription(user.uid)
-      .then(setMembership)
-      .catch(() => setMembership(null))
-      .finally(() => setMembershipLoading(false));
-  }, [user]);
+      .then(sub => setMembership(sub?.status === 'active' ? sub : null))
+      .catch(() => setMembership(null));
+    if (isDevUser(user.uid)) { setJobs(Object.values(DEV_JOBS)); return; }
+    getJobsForCustomer(user.uid).then(setJobs).catch(() => setJobs([]));
+  }, [user?.uid]);
 
-  const { upcoming, completed } = useMemo(() => {
-    const upcoming = bookings
+  const visit = activeVisit(bookings);
+  const job = useVisitJob(visit);
+
+  // Primary vehicle: the one in the studio, else the first in the garage.
+  const primary = useMemo(() => {
+    if (visit) return vehicles.find(v => v.id === visit.vehicleId) ?? vehicles[0] ?? null;
+    return vehicles[0] ?? null;
+  }, [visit, vehicles]);
+
+  const passport = useMemo(
+    () => primary ? derivePassport(primary, bookings, jobs, services) : null,
+    [primary, bookings, jobs, services],
+  );
+
+  const care = visit ? deriveCare(visit, job) : null;
+  const eta = care ? etaLine(care) : null;
+
+  const upcoming = useMemo(() =>
+    bookings
       .filter(b => ['pending', 'confirmed'].includes(b.status))
-      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null,
+  [bookings]);
 
-    const completed = bookings
-      .filter(b => b.status === 'completed')
-      .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
+  // Today's recommendation — one card, only when a record justifies it.
+  const todayRec: Recommendation | null = useMemo(() => {
+    if (passport?.recommendations[0]) return passport.recommendations[0];
+    if (membership) {
+      const washesLeft = membership.washesTotal - membership.washesUsed;
+      if (washesLeft > 0) return {
+        id: 'member-wash', title: 'Your monthly wash is available',
+        why: `${washesLeft} of ${membership.washesTotal} ${membership.plan} washes left this period — already paid for.`,
+        category: 'Washing', urgent: false,
+      };
+      const left = daysLeftISO(membership.endDate);
+      if (left <= 30) return {
+        id: 'member-renew', title: `Your membership renews in ${left} days`,
+        why: `The ${membership.plan} plan ends ${formatDate(membership.endDate)}.`,
+        category: 'Washing', urgent: false,
+      };
+    }
+    return null;
+  }, [passport, membership]);
 
-    return { upcoming, completed };
-  }, [bookings]);
+  const memories = (passport?.memories ?? []).filter(m => m.photos.length > 0).slice(0, 4);
 
-  const totalSpent = completed.reduce((s, b) => s + b.totalAmount, 0);
-
-  const planConfig = membership
-    ? MEMBERSHIP_PLANS.find(p => p.id === membership.plan) ?? null
+  // Ownership state, when nothing is live
+  const ownership = passport
+    ? passport.recommendations.some(r => r.urgent)
+      ? { label: 'Needs attention', line: 'A little care would go a long way.', color: '#E8C476' }
+      : passport.protection.some(p => p.active)
+      ? { label: 'Protected', line: 'Resting easy under its protection.', color: '#7ED9A0' }
+      : { label: 'All good', line: 'Ready whenever you are.', color: '#fff' }
     : null;
 
-  const washesRemaining = membership
-    ? membership.washesTotal - membership.washesUsed
-    : 0;
-
-  const daysRemaining = membership ? daysLeft(membership.endDate) : 0;
-  const isMemberActive = membership?.status === 'active' && daysRemaining > 0;
-
-  const lastCompleted = completed[0] ?? null;
-  const daysSinceLastVisit = lastCompleted
-    ? daysLeft(lastCompleted.scheduledDate) * -1
-    : null;
+  const heroImg = memories[0]?.photos.find(p => p.kind === 'after')?.url
+    ?? mediaFor(passport?.completed[0]?.serviceCategory);
 
   return (
-    <div className="min-h-screen pb-6" style={{ background: 'var(--void)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--void)' }}>
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden px-4 pt-14 pb-6">
-        <div className="absolute inset-0 bg-grid opacity-[0.025]" />
-        <div className="absolute top-0 inset-x-0 h-48 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 80% 100% at 50% -20%, rgba(255,255,255,0.10) 0%, transparent 70%)' }} />
+      {/* ── HERO ─────────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ minHeight: primary ? 430 : 360 }}>
+        <div className="absolute inset-0">
+          <Image src={primary ? heroImg : MEDIA.services.ppf} alt="" fill priority className="object-cover" sizes="100vw" />
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(to top, rgba(6,7,9,0.95) 0%, rgba(6,7,9,0.45) 55%, rgba(6,7,9,0.5) 100%)',
+          }} />
+        </div>
 
-        <div className="relative z-10">
-
-          {/* Top row */}
-          <div className="flex items-center justify-between mb-5">
-            <motion.div {...stagger(0)} className="flex-1 min-w-0">
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted)' }}>
+        <div className="relative z-10 px-4 pt-5 pb-7 flex flex-col max-w-lg mx-auto w-full" style={{ minHeight: 'inherit' }}>
+          {/* top row */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>
                 {greeting()},
               </p>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', color: 'var(--chrome)', letterSpacing: '0.02em' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px', color: '#fff', letterSpacing: '0.01em' }}>
                 {user?.name?.split(' ')[0] || 'Driver'}
-              </h1>
-            </motion.div>
-
+              </p>
+            </div>
             <div className="flex items-center gap-2">
-              {/* Notifications */}
-              <motion.button
-                {...stagger(0.05)}
-                onClick={() => router.push('/dashboard/notifications')}
-                className="relative w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: 'var(--cavern)', border: '1px solid var(--border)' }}
-              >
-                <Bell size={18} style={{ color: 'var(--pewter)' }} />
+              <button onClick={() => router.push('/dashboard/notifications')} aria-label="Notifications"
+                className="relative w-10 h-10 rounded-2xl flex items-center justify-center"
+                style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)' }}>
+                <Bell size={16} style={{ color: '#fff' }} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full"
-                    style={{ background: 'var(--ember)' }} />
+                  <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full" style={{ background: '#7ED9A0' }} />
                 )}
-              </motion.button>
-
-              {/* Avatar → profile (profile lives under Car now) */}
-              <motion.button {...stagger(0.08)} onClick={() => router.push('/dashboard/profile')} aria-label="Profile">
-                {user?.photoURL ? (
-                  <div className="relative w-11 h-11 rounded-xl overflow-hidden"
-                    style={{ border: '1.5px solid var(--border-2)' }}>
-                    <Image src={user.photoURL} alt={user.name} fill className="object-cover" referrerPolicy="no-referrer" />
-                  </div>
-                ) : (
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center"
-                    style={{ background: 'var(--accent-grad)' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: 'var(--on-accent)' }}>
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                )}
-              </motion.button>
+              </button>
+              <button onClick={() => router.push('/dashboard/profile')} aria-label="Profile"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden"
+                style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: '#fff' }}>
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </button>
             </div>
           </div>
 
-          {/* Stats row */}
-          <motion.div {...stagger(0.1)} className="grid grid-cols-3 gap-2.5 mb-4">
-            {[
-              { label: 'SERVICES', value: completed.length },
-              { label: 'VEHICLES', value: vehicles.length },
-              {
-                label: 'SPENT',
-                value: totalSpent >= 100000
-                  ? `₹${(totalSpent / 100000).toFixed(1)}L`
-                  : totalSpent >= 1000
-                  ? `₹${(totalSpent / 1000).toFixed(0)}K`
-                  : `₹${totalSpent}`,
-              },
-            ].map(s => (
-              <div key={s.label} className="rounded-xl p-3 text-center"
-                style={{ background: 'var(--cavern)', border: '1px solid var(--border)' }}>
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--chrome)' }}>
-                  {s.value}
-                </p>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.10em', color: 'var(--faint)', marginTop: '2px' }}>
-                  {s.label}
-                </p>
-              </div>
-            ))}
-          </motion.div>
+          <div className="flex-1" />
 
-          {/* Membership instrument cluster - twin gauges (washes · validity) */}
-          {isMemberActive && planConfig && !membershipLoading && (
-            <motion.button
-              {...stagger(0.12)}
-              onClick={() => router.push('/dashboard/subscriptions')}
-              className="card-ember glass w-full p-4 text-left overflow-hidden relative"
-              style={{ borderRadius: 20 }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <PlanIcon plan={planConfig.id} size={18} style={{ color: 'var(--chrome)' }} />
-                  <span className="font-display font-700 text-sm text-ember">{planConfig.label} Membership</span>
-                </div>
-                <ChevronRight size={16} style={{ color: 'var(--ember)' }} />
+          {!primary ? (
+            /* garage empty — the beginning, not an error */
+            <motion.div {...rise(0)}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '30px', letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.1 }}>
+                Your garage<br />starts here.
+              </h1>
+              <p style={{ ...body12, fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '8px' }}>
+                Add your car and it gets a passport of its own.
+              </p>
+              <button onClick={() => router.push('/dashboard/vehicles')}
+                className="mt-5 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl"
+                style={{ background: '#fff', color: '#0b0c0e', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px' }}>
+                <Plus size={16} /> Add your car
+              </button>
+            </motion.div>
+          ) : visit && care ? (
+            /* live visit — the hero IS the tracker preview */
+            <motion.button {...rise(0)} onClick={() => router.push(`/dashboard/care/${visit.id}`)}
+              className="text-left w-full">
+              <p className="flex items-center gap-2 mb-2" style={{ ...mono10, color: 'rgba(255,255,255,0.75)' }}>
+                <span className="relative flex w-1.5 h-1.5">
+                  <span className="absolute inline-flex w-full h-full rounded-full animate-ping opacity-70" style={{ background: '#7ED9A0' }} />
+                  <span className="relative inline-flex w-1.5 h-1.5 rounded-full" style={{ background: '#7ED9A0' }} />
+                </span>
+                LIVE FROM THE STUDIO
+              </p>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '30px', letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.05 }}>
+                {visit.vehicleName}
+              </h1>
+              <p className="mt-2.5" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: '#fff' }}>
+                {care.stage.line}
+              </p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
+                {care.technician && (
+                  <span style={{ ...body12, color: 'rgba(255,255,255,0.7)' }}>With {care.technician}</span>
+                )}
+                {eta && <span style={{ ...body12, color: 'rgba(255,255,255,0.7)' }}>{eta}</span>}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3">
-                  <GaugeRing
-                    size={78} stroke={7}
-                    value={membership.washesTotal ? (washesRemaining / membership.washesTotal) * 100 : 0}
-                    label={washesRemaining}
-                    caption="LEFT"
-                  />
-                  <div>
-                    <p className="data-label">WASHES</p>
-                    <p className="font-body text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                      of {membership.washesTotal}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <GaugeRing
-                    size={78} stroke={7}
-                    value={Math.min(100, (daysRemaining / 30) * 100)}
-                    danger={daysRemaining <= 5}
-                    label={daysRemaining}
-                    caption="DAYS"
-                  />
-                  <div>
-                    <p className="data-label">VALIDITY</p>
-                    <p className="font-body text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                      renews soon
-                    </p>
-                  </div>
-                </div>
+              <div className="mt-4 h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.18)' }}>
+                <motion.div className="h-full rounded-full"
+                  initial={false}
+                  animate={{ width: `${Math.round(care.progress * 100)}%` }}
+                  transition={{ duration: DUR.slow, ease: EASE }}
+                  style={{ background: '#7ED9A0' }} />
+              </div>
+              <p className="mt-3 inline-flex items-center gap-1" style={{ ...body12, color: 'rgba(255,255,255,0.75)' }}>
+                Follow the visit <ChevronRight size={13} />
+              </p>
+            </motion.button>
+          ) : (
+            /* ownership state */
+            <motion.button {...rise(0)} onClick={() => router.push(`/dashboard/vehicles/${primary.id}`)}
+              className="text-left w-full">
+              {ownership && (
+                <p className="flex items-center gap-2 mb-2" style={{ ...mono10, color: ownership.color }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: ownership.color }} />
+                  {ownership.label.toUpperCase()}
+                </p>
+              )}
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '30px', letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.05 }}>
+                {primary.name}
+              </h1>
+              <p className="font-mono mt-1.5" style={{ fontSize: 11, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.6)' }}>
+                {primary.registrationNumber}
+              </p>
+              {ownership && (
+                <p className="mt-2.5" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'rgba(255,255,255,0.9)' }}>
+                  {ownership.line}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {passport?.protection.map(p => {
+                  const Icon = KIND_ICON[p.kind];
+                  return (
+                    <span key={p.kind} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono"
+                      style={{
+                        fontSize: 9.5, letterSpacing: '0.1em',
+                        color: p.active ? '#7ED9A0' : '#E8C476',
+                        background: 'rgba(6,7,9,0.5)', backdropFilter: 'blur(8px)',
+                        border: `1px solid ${p.active ? 'rgba(126,217,160,0.4)' : 'rgba(232,196,118,0.4)'}`,
+                      }}>
+                      <Icon size={10} /> {p.kind.toUpperCase()}
+                    </span>
+                  );
+                })}
               </div>
             </motion.button>
           )}
         </div>
       </div>
 
-      {/* ── Body ───────────────────────────────────────────────────────── */}
-      <div className="px-4 space-y-5">
+      {/* ── BODY ─────────────────────────────────────────────────────── */}
+      <div className="px-4 py-6 max-w-lg mx-auto space-y-7">
 
-        {/* Book CTA */}
-        <motion.button
-          {...stagger(0)}
-          onClick={() => router.push('/dashboard/booking')}
-          className="w-full py-4 rounded-xl flex items-center justify-center gap-2"
-          style={{
-            background: 'var(--accent-grad)',
-            backgroundSize: '200% auto',
-            boxShadow: '0 4px 24px var(--accent-glow)',
-            fontFamily: 'var(--font-display)',
-            fontWeight: 700,
-            fontSize: '14px',
-            letterSpacing: '0.09em',
-            color: 'var(--on-accent)',
-          }}
-        >
-          <Plus size={18} />
-          BOOK A SERVICE
-        </motion.button>
+        {/* Today's recommendation */}
+        {todayRec && (
+          <motion.button {...rise(0)}
+            onClick={() => router.push(`/dashboard/booking?cat=${todayRec.category}${primary ? `&vehicleId=${primary.id}` : ''}`)}
+            className={`w-full rounded-3xl p-5 text-left flex items-start gap-3 ${todayRec.urgent ? 'card-ember' : 'card'}`}>
+            <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-2"
+              style={{ background: todayRec.urgent ? 'var(--warning)' : 'var(--success)' }} />
+            <span className="flex-1 min-w-0">
+              <p style={{ ...mono10, marginBottom: '6px' }}>Today</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--chrome)' }}>
+                {todayRec.title}
+              </p>
+              <p style={{ ...body12, marginTop: '4px', lineHeight: 1.5 }}>{todayRec.why}</p>
+            </span>
+            <ChevronRight size={15} className="shrink-0 mt-1" style={{ color: 'var(--steel)' }} />
+          </motion.button>
+        )}
 
-        {/* Upcoming bookings */}
-        {upcoming.length > 0 && (
-          <motion.div {...stagger(0.06)}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Clock size={14} style={{ color: 'var(--ember)' }} />
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.10em', color: 'var(--faint)' }}>
-                  UPCOMING
-                </p>
-              </div>
-              <Link href="/dashboard/history" className="tap-target"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ember)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px' }}>
-                All <ChevronRight size={12} />
-              </Link>
-            </div>
-            <div className="space-y-2.5">
-              {upcoming.slice(0, 2).map(b => (
-                <div key={b.id} className="card rounded-xl p-3.5 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'var(--cavern)' }}>
-                    <ServiceIcon category={b.serviceCategory} size={15} style={{ color: 'var(--chrome)' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                      {b.serviceName}
-                    </p>
-                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '1px' }}>
-                      {b.vehicleName} · {formatDate(b.scheduledDate)} at {formatTime(b.scheduledTime)}
-                    </p>
-                  </div>
-                  <span className="status-badge" style={{ background: 'var(--smoke)', color: 'var(--chrome)', border: '1px solid var(--border-strong)', fontSize: '9px' }}>
-                    {getStatusLabel(b.status)}
-                  </span>
-                </div>
-              ))}
+        {/* Recent memories */}
+        {memories.length > 0 && (
+          <motion.div {...rise(0.05)}>
+            <p style={{ ...mono10, marginBottom: '12px' }}>Recent memories</p>
+            <div className="space-y-3">
+              {memories.map((m, i) => {
+                const cover = m.photos.find(p => p.kind === 'after') ?? m.photos[0];
+                return (
+                  <motion.button key={m.booking.id}
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 + i * STAGGER, duration: DUR.base, ease: EASE }}
+                    onClick={() => router.push(`/dashboard/care/${m.booking.id}`)}
+                    className="relative w-full rounded-3xl overflow-hidden text-left -mx-0"
+                    style={{ height: 210, border: '1px solid var(--border)' }}>
+                    <Image src={cover.url} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 512px" />
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,7,9,0.88) 0%, rgba(6,7,9,0.1) 55%)' }} />
+                    <div className="absolute bottom-0 inset-x-0 p-5">
+                      <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: '#fff' }}>
+                        {m.booking.serviceName}
+                      </p>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '11.5px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>
+                        {formatDate(m.booking.scheduledDate)}{m.technician ? ` · by ${m.technician}` : ''} · {formatCurrency(m.booking.totalAmount)}
+                      </p>
+                    </div>
+                  </motion.button>
+                );
+              })}
             </div>
           </motion.div>
         )}
 
-        {/* Services grid */}
-        <motion.div {...stagger(0.08)}>
-          <div className="flex items-center justify-between mb-3">
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.10em', color: 'var(--faint)' }}>
-              SERVICES
-            </p>
-            <Link href="/dashboard/booking" className="tap-target"
-              style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ember)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px' }}>
-              All <ChevronRight size={12} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {SERVICES.map((s, i) => (
-              <motion.button
-                key={s.cat}
-                initial={false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.07 }}
-                onClick={() => router.push(s.href)}
-                className="relative rounded-2xl overflow-hidden text-left h-32 flex flex-col justify-end p-3.5"
-                style={{ border: '1px solid var(--border)' }}
-              >
-                <div aria-hidden className="absolute inset-0">
-                  <HeroMedia src={s.img} alt="" scrim="none"
-                    overlay="linear-gradient(to top, rgba(6,7,9,0.86) 0%, rgba(6,7,9,0.34) 46%, rgba(6,7,9,0.08) 100%)" />
-                </div>
-                <div className="relative z-10">
-                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: '#FFFFFF' }}>
-                    {s.label}
-                  </p>
-                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,0.82)', marginTop: '2px' }}>
-                    {liveMin[s.cat] ? `from ${formatCurrency(liveMin[s.cat])}` : s.sub}
-                  </p>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Cars & Offers quick links */}
-        <motion.div {...stagger(0.09)} className="grid grid-cols-2 gap-2.5">
-          {[
-            { href: '/dashboard/vehicles', icon: Car, title: 'My Garage', sub: `${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'} on file` },
-            { href: '/dashboard/cars', icon: Tag, title: 'Cars for Sale', sub: 'Buy & sell with AutoModz' },
-          ].map(q => (
-            <Link key={q.href} href={q.href} className="card rounded-2xl p-4 block">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl mb-3"
-                style={{ background: 'var(--accent-mist)', border: '1px solid var(--border)' }}>
-                <q.icon size={17} style={{ color: 'var(--accent)' }} />
+        {/* Passport preview */}
+        {primary && passport && (
+          <motion.button {...rise(0.1)}
+            onClick={() => router.push(`/dashboard/vehicles/${primary.id}`)}
+            className="card w-full rounded-3xl p-5 text-left flex items-center gap-4">
+            <span className="text-center shrink-0 w-14">
+              <span style={{
+                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', display: 'block',
+                color: passport.score.grade === 'Excellent' || passport.score.grade === 'Good' ? 'var(--chrome)' : 'var(--warning)',
+              }}>
+                {passport.score.value}
               </span>
-              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                {q.title}
+              <span style={{ ...mono10, fontSize: '7.5px' }}>Care Score</span>
+            </span>
+            <span className="flex-1 min-w-0">
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--chrome)' }}>
+                {primary.name}’s passport
               </p>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-                {q.sub}
+              <p style={{ ...body12, marginTop: '3px' }}>
+                {passport.protection.filter(p => p.active).length > 0
+                  ? `${passport.protection.filter(p => p.active).length} protection layer${passport.protection.filter(p => p.active).length > 1 ? 's' : ''} active`
+                  : 'Protection, history and documents'}
+                {vehicles.length > 1 ? ` · ${vehicles.length} cars in the garage` : ''}
               </p>
-            </Link>
-          ))}
-          <Link href="/dashboard/refer" className="card rounded-2xl p-4 block col-span-2">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
-                style={{ background: 'var(--accent-mist)', border: '1px solid var(--border)' }}>
-                <Gift size={18} style={{ color: 'var(--accent)' }} />
-              </span>
-              <div>
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                  Refer a friend - give ₹200, get ₹200
-                </p>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-                  Share your link on WhatsApp, both of you save
-                </p>
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Recent completed */}
-        {completed.length > 0 && (
-          <motion.div {...stagger(0.10)}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle size={14} style={{ color: 'var(--ember)' }} />
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.10em', color: 'var(--faint)' }}>
-                  RECENT
-                </p>
-              </div>
-              <Link href="/dashboard/history"
-                style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ember)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                History <ChevronRight size={12} />
-              </Link>
-            </div>
-            <div className="space-y-2.5">
-              {completed.slice(0, 2).map(b => (
-                <div key={b.id} className="card rounded-xl p-3.5 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'var(--cavern)' }}>
-                    <ServiceIcon category={b.serviceCategory} size={15} style={{ color: 'var(--chrome)' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                      {b.serviceName}
-                    </p>
-                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '1px' }}>
-                      {b.vehicleName} · {formatDate(b.scheduledDate)}
-                    </p>
-                  </div>
-                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--ember)', flexShrink: 0 }}>
-                    {formatCurrency(b.totalAmount)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+            </span>
+            <ChevronRight size={15} className="shrink-0" style={{ color: 'var(--steel)' }} />
+          </motion.button>
         )}
 
+        {/* Next visit */}
+        <motion.div {...rise(0.15)}>
+          {upcoming ? (
+            <button onClick={() => router.push(`/dashboard/care/${upcoming.id}`)}
+              className="card-ember w-full rounded-3xl p-5 text-left flex items-center gap-4">
+              <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'var(--cavern)' }}>
+                <CalendarPlus size={18} style={{ color: 'var(--chrome)' }} />
+              </span>
+              <span className="flex-1 min-w-0">
+                <p style={{ ...mono10, marginBottom: '4px' }}>{BOOKING_STAGE[upcoming.status].label}</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--chrome)' }}>
+                  {upcoming.serviceName}
+                </p>
+                <p style={{ ...body12, marginTop: '2px' }}>
+                  {upcoming.vehicleName} · {formatDate(upcoming.scheduledDate)} at {formatTime(upcoming.scheduledTime)}
+                </p>
+              </span>
+              <ChevronRight size={15} className="shrink-0" style={{ color: 'var(--steel)' }} />
+            </button>
+          ) : primary && (
+            <button onClick={() => router.push('/dashboard/booking')}
+              className="w-full py-4 rounded-2xl flex items-center justify-center gap-2"
+              style={{
+                background: 'var(--accent-grad)', boxShadow: '0 4px 24px var(--accent-glow)',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px',
+                letterSpacing: '0.04em', color: 'var(--on-accent)',
+              }}>
+              <Plus size={17} /> Book your next visit
+            </button>
+          )}
+        </motion.div>
+
+        {/* quiet explore row */}
+        <Link href="/dashboard/cars" className="flex items-center gap-3 px-1 py-1">
+          <Tag size={14} style={{ color: 'var(--steel)' }} />
+          <span style={{ ...body12, flex: 1 }}>Cars for sale — hand-picked, detailed by us</span>
+          <ChevronRight size={13} style={{ color: 'var(--steel)' }} />
+        </Link>
       </div>
     </div>
   );

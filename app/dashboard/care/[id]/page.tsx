@@ -17,20 +17,21 @@ import Image from 'next/image';
 import {
   ChevronLeft, Check, Camera, MapPin, Phone, Star, FileText,
   CalendarClock, XCircle, RefreshCw, Truck, Wrench, Shield,
+  Car, Droplets, SearchCheck, Flag, Home,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppStore } from '@/lib/store';
 import {
-  subscribeJobForBooking, cancelBooking, rescheduleBooking,
+  cancelBooking, rescheduleBooking,
   getAvailability, fireOpsEvent, logActivity,
 } from '@/lib/firebaseService';
+import { useVisitJob } from '@/components/cx/useVisitJob';
 import {
   formatCurrency, formatDate, formatTime, canCancelBooking,
   generateTimeSlots, getAvailableDates, getDurationLabel,
 } from '@/lib/utils';
-import type { Job, JobPhoto } from '@/lib/types';
+import type { JobPhoto } from '@/lib/types';
 import { deriveCare, etaLine, eventLine, fmtClock, fmtElapsed, markCareSeen } from '@/lib/cx/care';
-import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
 import CxSheet from '@/components/cx/CxSheet';
 import CxButton from '@/components/cx/CxButton';
@@ -55,7 +56,7 @@ export default function CarePage() {
   const { user, bookings, cancelBookingInStore } = useAppStore();
 
   const booking = bookings.find(b => b.id === id) ?? null;
-  const [job, setJob] = useState<Job | null>(null);
+  const job = useVisitJob(booking);
   const [now, setNow] = useState(new Date());
   const [photoOpen, setPhotoOpen] = useState<number | null>(null);
 
@@ -67,12 +68,6 @@ export default function CarePage() {
   const [reschedBusy, setReschedBusy] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-
-  useEffect(() => {
-    if (!booking || !user) return;
-    if (isDevUser(user.uid)) { setJob(DEV_JOBS[booking.id] ?? null); return; }
-    return subscribeJobForBooking(booking.id, user.uid, setJob);
-  }, [booking?.id, user?.uid]);
 
   // The strip's unread dot clears when the tracker is actually seen.
   useEffect(() => { if (booking) markCareSeen(booking.id, job); }, [booking?.id, job]);
@@ -260,7 +255,53 @@ export default function CarePage() {
       </div>
 
       {/* ── BODY ─────────────────────────────────────────────────────────── */}
-      <div className="px-4 py-6 max-w-lg mx-auto space-y-6">
+      <div className="px-4 py-7 max-w-lg mx-auto space-y-7">
+
+        {/* Journey rail — the car moves through the studio (real stages only) */}
+        {(liveMode || ready || delivered) && (
+          <motion.div {...rise(0)} className="card rounded-3xl px-5 pt-5 pb-6">
+            <p style={{ ...mono10, marginBottom: '18px' }}>The visit</p>
+            <div className="relative">
+              <div className="absolute left-0 right-0 h-[3px] rounded-full" style={{ top: 15, background: 'var(--border-2)' }} />
+              <motion.div className="absolute left-0 h-[3px] rounded-full" style={{ top: 15, background: 'var(--success)' }}
+                initial={false}
+                animate={{ width: `${Math.round(care.progress * 100)}%` }}
+                transition={{ duration: DUR.slow, ease: EASE }} />
+              {/* the vehicle itself, travelling the rail */}
+              <motion.div className="absolute -translate-x-1/2" style={{ top: -2 }}
+                initial={false}
+                animate={{ left: `${Math.round(care.progress * 100)}%` }}
+                transition={{ duration: DUR.slow, ease: EASE }}>
+                <span className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--chrome)', boxShadow: '0 2px 12px rgba(0,0,0,0.35)' }}>
+                  <Car size={15} style={{ color: 'var(--void)' }} />
+                </span>
+              </motion.div>
+              <div className="flex justify-between pt-10">
+                {([
+                  { Icon: Flag,        label: 'Arrival',    at: 0.15 },
+                  { Icon: Droplets,    label: 'Care',       at: 0.45 },
+                  { Icon: SearchCheck, label: 'Inspection', at: 0.82 },
+                  { Icon: Check,       label: 'Ready',      at: 0.97 },
+                  { Icon: Home,        label: 'Home',       at: 1 },
+                ] as const).map(s => {
+                  const reached = care.progress >= s.at - 0.02;
+                  return (
+                    <div key={s.label} className="flex flex-col items-center gap-1.5" style={{ width: 52 }}>
+                      <s.Icon size={13} style={{ color: reached ? 'var(--chrome)' : 'var(--faint)' }} />
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.08em',
+                        textTransform: 'uppercase', color: reached ? 'var(--pewter)' : 'var(--faint)',
+                      }}>
+                        {s.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Delivery experience */}
         {(ready || delivered) && (

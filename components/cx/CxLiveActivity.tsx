@@ -8,16 +8,13 @@
  *
  * One live surface. Screens must not render their own in-progress banners.
  */
-import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
-import type { Booking, Job } from '@/lib/types';
-import { useAppStore } from '@/lib/store';
-import { subscribeJobForBooking } from '@/lib/firebaseService';
+import type { Booking } from '@/lib/types';
 import { deriveCare, etaLine, hasUnseenUpdates } from '@/lib/cx/care';
 import { DUR, EASE } from '@/lib/cx/motion';
-import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
+import { useVisitJob } from '@/components/cx/useVisitJob';
 
 const ACTIVE = ['vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery'];
 
@@ -29,14 +26,7 @@ export function activeVisit(bookings: Booking[]): Booking | null {
 
 export default function CxLiveActivity({ visit }: { visit: Booking | null }) {
   const router = useRouter();
-  const { user } = useAppStore();
-  const [job, setJob] = useState<Job | null>(null);
-
-  useEffect(() => {
-    if (!visit || !user) { setJob(null); return; }
-    if (isDevUser(user.uid)) { setJob(DEV_JOBS[visit.id] ?? null); return; }
-    return subscribeJobForBooking(visit.id, user.uid, setJob);
-  }, [visit?.id, user?.uid]);
+  const job = useVisitJob(visit);
 
   if (!visit) return null;
   const care = deriveCare(visit, job);

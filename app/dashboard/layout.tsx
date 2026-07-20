@@ -107,8 +107,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   const visit = activeVisit(bookings);
-  // The tracker screen shows the full story itself — no strip on top of it.
-  const showLive = !!visit && !pathname.startsWith('/dashboard/care');
+  // One live surface per screen: the tracker shows the full story, and the
+  // home hero IS the live preview — the strip only follows elsewhere.
+  const showLive = !!visit && !pathname.startsWith('/dashboard/care') && pathname !== '/dashboard';
   const isBooking = pathname.startsWith('/dashboard/booking');
 
   return (

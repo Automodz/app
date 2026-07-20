@@ -518,10 +518,10 @@ export default function SubscriptionsPage() {
             <Shield size={36} style={{ color: 'var(--ember)' }} />
           </div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', color: 'var(--chrome)', letterSpacing: '-0.01em', marginBottom: '8px' }}>
-            AutoModz Membership
+            Unlock priority care.
           </h2>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--steel)', lineHeight: 1.6 }}>
-            Monthly wash plans + exclusive discounts.{'\n'}Your car, always show-ready.
+            Monthly washes, member pricing, and a car{'\n'}that never waits in line.
           </p>
         </div>
 

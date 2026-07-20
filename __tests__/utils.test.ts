@@ -1,8 +1,6 @@
 import {
   formatCurrency, formatDate, formatTime,
-  canCancelBooking, minutesUntilCancelDeadline,
-  generateTimeSlots, getAvailableDates,
-  getStatusLabel, getStatusColor, getStatusStep,
+  canCancelBooking,
 } from '../lib/utils';
 
 test('formatCurrency displays INR correctly', () => {

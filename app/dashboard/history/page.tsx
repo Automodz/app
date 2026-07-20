@@ -1,165 +1,206 @@
 'use client';
 /**
- * Care — every visit, past and present. The list is an index; tapping a
- * visit opens the Live Care tracker (/dashboard/care/[id]), which owns all
- * detail, actions and the live experience. No detail sheet lives here.
+ * Care — the story of every visit, not a transaction log.
+ * "Now" holds anything live or upcoming; below it each completed visit is
+ * a photo-first story card (image, service, technician, protection earned,
+ * investment) grouped by year. Tap enters the Live Care tracker.
  */
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, CheckCircle2, Truck } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronRight, Shield } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
+import { getJobsForCustomer, getServices, STATIC_SERVICES } from '@/lib/firebaseService';
+import type { Booking, Job, Service } from '@/lib/types';
 import { BOOKING_STAGE, TONE_COLOR } from '@/lib/cx/care';
-import ServiceIcon from '@/components/ui/ServiceIcon';
-import { EASE } from '@/lib/cx/motion';
+import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
+import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
+import { MEDIA } from '@/lib/media';
 
-const FILTERS = ['All', 'Upcoming', 'Active', 'Completed', 'Cancelled'];
+const mono10 = { fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
+const body12 = { fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)' };
 
-export default function CareListPage() {
+const mediaFor = (category: string): string =>
+  (MEDIA.services as Record<string, string>)[category.toLowerCase()] ?? MEDIA.services.washing;
+
+const LIVE = ['pending', 'confirmed', 'vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery'];
+
+export default function CarePage() {
   const router = useRouter();
-  const { bookings } = useAppStore();
-  const [filter, setFilter] = useState('All');
+  const { user, bookings } = useAppStore();
 
-  const filtered = bookings.filter(b => {
-    if (filter === 'All')       return true;
-    if (filter === 'Upcoming')  return ['pending', 'confirmed'].includes(b.status);
-    if (filter === 'Active')    return ['vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery'].includes(b.status);
-    if (filter === 'Completed') return b.status === 'completed';
-    if (filter === 'Cancelled') return b.status === 'cancelled';
-    return true;
-  });
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [services, setServices] = useState<Service[]>(STATIC_SERVICES);
+
+  useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
+  useEffect(() => {
+    if (!user) return;
+    if (isDevUser(user.uid)) { setJobs(Object.values(DEV_JOBS)); return; }
+    getJobsForCustomer(user.uid).then(setJobs).catch(() => setJobs([]));
+  }, [user?.uid]);
+
+  const jobByBooking = useMemo(
+    () => new Map(jobs.filter(j => j.bookingId).map(j => [j.bookingId!, j])),
+    [jobs],
+  );
+  const warrantyByName = useMemo(
+    () => new Map(services.map(s => [s.name, s.warranty])),
+    [services],
+  );
+
+  const now = useMemo(() =>
+    bookings
+      .filter(b => LIVE.includes(b.status))
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)),
+  [bookings]);
+
+  const storiesByYear = useMemo(() => {
+    const done = bookings
+      .filter(b => ['completed', 'cancelled'].includes(b.status))
+      .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
+    const years = new Map<string, Booking[]>();
+    done.forEach(b => {
+      const y = b.scheduledDate.slice(0, 4);
+      years.set(y, [...(years.get(y) ?? []), b]);
+    });
+    return [...years.entries()];
+  }, [bookings]);
+
+  const empty = now.length === 0 && storiesByYear.length === 0;
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--void)' }}>
 
       {/* Header */}
       <div className="sticky top-0 z-20 glass-nav px-4 py-4">
-        <div className="mb-4">
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--chrome)', letterSpacing: '0.06em' }}>
-            CARE
-          </h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted)', marginTop: '1px' }}>
-            Every visit, past and present
-          </p>
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex gap-2 overflow-x-auto no-scroll pb-1">
-          {FILTERS.map(f => (
-            <motion.button key={f} whileTap={{ scale: 0.92 }} onClick={() => setFilter(f)}
-              className="flex-shrink-0 px-4 py-2.5 rounded-xl transition-all"
-              style={{
-                background:    filter === f ? 'var(--ember)' : 'var(--cavern)',
-                color:         filter === f ? 'var(--on-accent)' : 'var(--muted)',
-                border:        `1px solid ${filter === f ? 'var(--ember)' : 'var(--border-2)'}`,
-                fontFamily:    'var(--font-mono)',
-                fontSize:      '10px',
-                fontWeight:    700,
-                letterSpacing: '0.10em',
-                textTransform: 'uppercase',
-              }}>
-              {f}
-            </motion.button>
-          ))}
-        </div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--chrome)', letterSpacing: '0.06em' }}>
+          CARE
+        </h1>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted)', marginTop: '1px' }}>
+          Every visit, told as it happened
+        </p>
       </div>
 
-      <div className="px-4 py-6 max-w-lg mx-auto">
-        {filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float"
-              style={{ background: 'var(--smoke)' }}>
-              <Calendar size={36} style={{ color: 'var(--ember)' }} />
+      <div className="px-4 py-6 max-w-lg mx-auto space-y-8">
+        {empty && (
+          <div className="relative rounded-3xl overflow-hidden" style={{ height: 300 }}>
+            <Image src={MEDIA.services.ceramic} alt="" fill className="object-cover" sizes="100vw" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,7,9,0.92) 0%, rgba(6,7,9,0.35) 60%)' }} />
+            <div className="absolute bottom-0 inset-x-0 p-6">
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: '#fff', lineHeight: 1.15 }}>
+                We’re looking forward to<br />caring for your vehicle.
+              </p>
+              <button onClick={() => router.push('/dashboard/booking')}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-3 rounded-2xl"
+                style={{ background: '#fff', color: '#0b0c0e', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13.5px' }}>
+                Book its first visit
+              </button>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--chrome)', letterSpacing: '0.06em', marginBottom: '8px' }}>
-              NOTHING HERE YET
-            </h2>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted)', marginBottom: '32px' }}>
-              Your car’s visits will live here
-            </p>
-            <button onClick={() => router.push('/dashboard/booking')} className="btn-ember rounded-xl px-8 py-3">
-              BOOK A SERVICE
-            </button>
           </div>
-        ) : (
-          <motion.div
-            initial="hidden" animate="show"
-            variants={{ show: { transition: { staggerChildren: 0.055 } } }}
-            className="space-y-3">
-            {filtered.map(b => {
-              const cx = BOOKING_STAGE[b.status];
-              const active = !['completed', 'cancelled', 'pending', 'confirmed'].includes(b.status);
-              return (
-                <motion.button
-                  key={b.id}
-                  variants={{ hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE } } }}
-                  onClick={() => router.push(`/dashboard/care/${b.id}`)}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full card rounded-2xl p-4 text-left">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ background: 'var(--smoke)', color: 'var(--chrome)' }}>
-                      <ServiceIcon category={b.serviceCategory} size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)', letterSpacing: '0.03em', lineHeight: 1.3 }}>
-                          {b.serviceName}
-                        </p>
-                        <span className="shrink-0 px-2.5 py-1 rounded-full font-mono inline-flex items-center gap-1.5"
-                          style={{
-                            fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase',
-                            color: TONE_COLOR[cx.tone],
-                            background: `color-mix(in srgb, ${TONE_COLOR[cx.tone]} 10%, transparent)`,
-                            border: `1px solid color-mix(in srgb, ${TONE_COLOR[cx.tone]} 25%, transparent)`,
-                          }}>
-                          {active && <span className="w-1 h-1 rounded-full animate-ping" style={{ background: TONE_COLOR[cx.tone] }} />}
-                          {cx.label}
-                        </span>
-                      </div>
-                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted)' }} className="truncate">
-                        {b.vehicleName} · {b.vehicleRegNo}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className="flex items-center gap-1" style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--steel)' }}>
-                          <Calendar size={9} /> {formatDate(b.scheduledDate)}
-                        </span>
-                        <span className="flex items-center gap-1" style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--steel)' }}>
-                          <Clock size={9} /> {formatTime(b.scheduledTime)}
-                        </span>
-                        {b.pickupDropRequired && <Truck size={9} style={{ color: 'var(--ember)' }} />}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-                        {formatCurrency(b.totalAmount)}
-                      </p>
-                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', marginTop: '2px', color: b.paymentStatus === 'verified' ? 'var(--success)' : 'var(--warning)' }}>
-                        <span className="inline-flex items-center gap-1">
-                          {b.paymentStatus === 'verified' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                          {b.paymentStatus === 'verified' ? 'Paid' : 'Pending'}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
+        )}
 
-                  {/* Live progress for active visits — same model as the tracker */}
-                  {active && (
-                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-                      <div className="h-[3px] rounded-full overflow-hidden" style={{ background: 'var(--border-2)' }}>
+        {/* Now */}
+        {now.length > 0 && (
+          <div>
+            <p style={{ ...mono10, marginBottom: '12px' }}>Now</p>
+            <div className="space-y-2.5">
+              {now.map((b, i) => {
+                const stage = BOOKING_STAGE[b.status];
+                const active = !['pending', 'confirmed'].includes(b.status);
+                return (
+                  <motion.button key={b.id}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * STAGGER, duration: DUR.base, ease: EASE }}
+                    onClick={() => router.push(`/dashboard/care/${b.id}`)}
+                    className={`w-full rounded-2xl p-4 text-left ${active ? 'card-ember' : 'card'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="relative flex w-2 h-2 shrink-0">
+                        {active && (
+                          <span className="absolute inline-flex w-full h-full rounded-full animate-ping opacity-60"
+                            style={{ background: TONE_COLOR[stage.tone] }} />
+                        )}
+                        <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: TONE_COLOR[stage.tone] }} />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--chrome)' }}>
+                          {b.vehicleName} · {stage.label}
+                        </p>
+                        <p style={{ ...body12, marginTop: '2px' }}>
+                          {b.serviceName} · {formatDate(b.scheduledDate)} at {formatTime(b.scheduledTime)}
+                        </p>
+                      </span>
+                      <ChevronRight size={15} className="shrink-0" style={{ color: 'var(--steel)' }} />
+                    </div>
+                    {active && (
+                      <div className="mt-3 h-[3px] rounded-full overflow-hidden" style={{ background: 'var(--border-2)' }}>
                         <div className="h-full rounded-full" style={{
-                          width: `${Math.round(BOOKING_STAGE[b.status].base * 100)}%`,
-                          background: TONE_COLOR[cx.tone],
+                          width: `${Math.round(stage.base * 100)}%`, background: TONE_COLOR[stage.tone],
                         }} />
                       </div>
-                    </div>
-                  )}
-                </motion.button>
-              );
-            })}
-          </motion.div>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
         )}
+
+        {/* The story, year by year */}
+        {storiesByYear.map(([year, visits]) => (
+          <div key={year}>
+            <p style={{ ...mono10, marginBottom: '14px' }}>{year}</p>
+            <div className="space-y-4">
+              {visits.map((b, i) => {
+                if (b.status === 'cancelled') return (
+                  <p key={b.id} className="px-1" style={{ ...body12, color: 'var(--faint)' }}>
+                    {formatDate(b.scheduledDate)} — {b.serviceName} was cancelled.
+                  </p>
+                );
+                const job = jobByBooking.get(b.id);
+                const photo = job?.photos?.find(p => p.kind === 'after') ?? job?.photos?.[0];
+                const tech = job?.assignments?.filter(a => !a.removedAt && a.role === 'lead')[0]?.employeeName;
+                const warranty = warrantyByName.get(b.serviceName);
+                return (
+                  <motion.button key={b.id}
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * STAGGER, duration: DUR.base, ease: EASE }}
+                    onClick={() => router.push(`/dashboard/care/${b.id}`)}
+                    className="relative w-full rounded-3xl overflow-hidden text-left"
+                    style={{ height: 230, border: '1px solid var(--border)' }}>
+                    <Image src={photo?.url ?? mediaFor(b.serviceCategory)} alt="" fill className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 512px" />
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,7,9,0.9) 0%, rgba(6,7,9,0.12) 55%)' }} />
+                    <div className="absolute bottom-0 inset-x-0 p-5">
+                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.6)' }}>
+                        {formatDate(b.scheduledDate).toUpperCase()} · {b.vehicleName.toUpperCase()}
+                      </p>
+                      <p className="mt-1" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px', color: '#fff' }}>
+                        {b.serviceName}
+                      </p>
+                      <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mt-1.5">
+                        {tech && (
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'rgba(255,255,255,0.72)' }}>
+                            by {tech}
+                          </span>
+                        )}
+                        {warranty && (
+                          <span className="inline-flex items-center gap-1" style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: '#7ED9A0' }}>
+                            <Shield size={10} /> {warranty} protection earned
+                          </span>
+                        )}
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'rgba(255,255,255,0.72)' }}>
+                          {formatCurrency(b.totalAmount)}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

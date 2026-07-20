@@ -9,7 +9,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Plus, Car, ChevronLeft, Shield, Sparkles, Gem } from 'lucide-react';
+import { Plus, ChevronLeft, Shield, Sparkles, Gem } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getVehicles, getServices, STATIC_SERVICES } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
@@ -84,20 +84,22 @@ export default function GaragePage() {
 
       <div className="px-4 py-6 max-w-lg mx-auto">
         {vehicles.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float"
-              style={{ background: 'var(--smoke)' }}>
-              <Car size={36} style={{ color: 'var(--ember)' }} />
+          <div className="relative rounded-3xl overflow-hidden" style={{ height: 320 }}>
+            <Image src={MEDIA.services.ppf} alt="" fill className="object-cover" sizes="100vw" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,7,9,0.92) 0%, rgba(6,7,9,0.35) 60%)' }} />
+            <div className="absolute bottom-0 inset-x-0 p-6">
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: '#fff', lineHeight: 1.15 }}>
+                Your garage starts here.
+              </p>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '6px' }}>
+                Add your car — it gets a passport of its own.
+              </p>
+              <button onClick={() => setShowAdd(true)}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-3 rounded-2xl"
+                style={{ background: '#fff', color: '#0b0c0e', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13.5px' }}>
+                <Plus size={15} /> Add your car
+              </button>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--chrome)', letterSpacing: '0.06em', marginBottom: '8px' }}>
-              EMPTY GARAGE
-            </h2>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted)', marginBottom: '32px' }}>
-              Add your car — it gets a passport of its own
-            </p>
-            <button onClick={() => setShowAdd(true)} className="btn-ember rounded-xl px-8 py-3">
-              ADD VEHICLE
-            </button>
           </div>
         ) : (
           <div className="space-y-4">
