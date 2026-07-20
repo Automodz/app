@@ -10,8 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Clock, CheckCircle2, Truck } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
-import { BOOKING_STAGE } from '@/lib/cx/care';
-import { STATUS_CX, TONE_COLOR } from '@/lib/cx/status';
+import { BOOKING_STAGE, TONE_COLOR } from '@/lib/cx/care';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 import { EASE } from '@/lib/cx/motion';
 
@@ -89,7 +88,7 @@ export default function CareListPage() {
             variants={{ show: { transition: { staggerChildren: 0.055 } } }}
             className="space-y-3">
             {filtered.map(b => {
-              const cx = STATUS_CX[b.status];
+              const cx = BOOKING_STAGE[b.status];
               const active = !['completed', 'cancelled', 'pending', 'confirmed'].includes(b.status);
               return (
                 <motion.button

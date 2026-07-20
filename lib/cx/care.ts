@@ -8,6 +8,17 @@ import type { Booking, Job, JobStatus, JobStatusEntry } from '@/lib/types';
 
 /* ── concierge voice, per stage ─────────────────────────────────────────── */
 
+/** Status tones — one colour language for every customer surface. */
+export type Tone = 'waiting' | 'live' | 'good' | 'done' | 'stopped';
+
+export const TONE_COLOR: Record<Tone, string> = {
+  waiting: 'var(--info)',
+  live: 'var(--success)',
+  good: 'var(--success)',
+  done: 'var(--steel)',
+  stopped: 'var(--danger)',
+};
+
 export type CareStage = {
   /** short label for the hero + Live Activity */
   label: string;
@@ -15,21 +26,22 @@ export type CareStage = {
   line: string;
   /** baseline progress fraction for this stage */
   base: number;
+  tone: Tone;
 };
 
 export const JOB_STAGE: Record<JobStatus, CareStage> = {
-  checked_in:         { label: 'Arrived',          line: 'Your vehicle has arrived safely.',            base: 0.15 },
-  in_progress:        { label: 'In care',          line: 'Our team is caring for your vehicle.',        base: 0.45 },
-  quality_check:      { label: 'Final inspection', line: 'Final inspection underway.',                  base: 0.82 },
-  ready_for_delivery: { label: 'Ready',            line: 'Your vehicle is ready to come home.',         base: 0.97 },
-  completed:          { label: 'Home',             line: 'Delivered. Thank you for trusting us.',       base: 1 },
-  cancelled:          { label: 'Cancelled',        line: 'This visit was cancelled.',                   base: 0 },
+  checked_in:         { label: 'Arrived',          line: 'Your vehicle has arrived safely.',            base: 0.15, tone: 'live' },
+  in_progress:        { label: 'In care',          line: 'Our team is caring for your vehicle.',        base: 0.45, tone: 'live' },
+  quality_check:      { label: 'Final inspection', line: 'Final inspection underway.',                  base: 0.82, tone: 'live' },
+  ready_for_delivery: { label: 'Ready',            line: 'Your vehicle is ready to come home.',         base: 0.97, tone: 'good' },
+  completed:          { label: 'Home',             line: 'Delivered. Thank you for trusting us.',       base: 1,    tone: 'done' },
+  cancelled:          { label: 'Cancelled',        line: 'This visit was cancelled.',                   base: 0,    tone: 'stopped' },
 };
 
 /** Booking statuses before a job exists (and after, for terminal states). */
 export const BOOKING_STAGE: Record<Booking['status'], CareStage> = {
-  pending:            { label: 'Requested',  line: 'The studio is confirming your slot.',          base: 0.03 },
-  confirmed:          { label: 'Reserved',   line: 'A bay is reserved. See you soon.',              base: 0.08 },
+  pending:            { label: 'Requested',  line: 'The studio is confirming your slot.',          base: 0.03, tone: 'waiting' },
+  confirmed:          { label: 'Reserved',   line: 'A bay is reserved. See you soon.',              base: 0.08, tone: 'waiting' },
   vehicle_received:   JOB_STAGE.checked_in,
   in_progress:        JOB_STAGE.in_progress,
   quality_check:      JOB_STAGE.quality_check,

@@ -20,12 +20,22 @@ const addMonths = (iso: string, months: number): Date => {
   return d;
 };
 
+export type ProtectionKind = 'PPF' | 'Ceramic' | 'Coating';
+
+export const PROTECTION_LABEL: Record<ProtectionKind, string> = {
+  PPF: 'Paint Protection Film',
+  Ceramic: 'Ceramic Coating',
+  Coating: 'Glass & Teflon',
+};
+
 export type Protection = {
-  kind: 'PPF' | 'Ceramic';
+  kind: ProtectionKind;
   applied: string;
   until: Date | null;
   active: boolean;
   service: string;
+  /** raw warranty string from the catalog, when known */
+  warranty: string | null;
 };
 
 /** Active protection layers on a vehicle, derived from its completed work.
@@ -33,15 +43,17 @@ export type Protection = {
 export const deriveProtection = (history: Booking[], services: Service[]): Protection[] => {
   const byName = new Map(services.map(s => [s.name, s]));
   const out: Protection[] = [];
-  (['PPF', 'Ceramic'] as const).forEach(kind => {
+  (['PPF', 'Ceramic', 'Coating'] as const).forEach(kind => {
     const last = history.find(b => b.status === 'completed' && b.serviceCategory === kind);
     if (!last) return;
-    const months = warrantyMonths(byName.get(last.serviceName)?.warranty);
+    const warranty = byName.get(last.serviceName)?.warranty ?? null;
+    const months = warrantyMonths(warranty);
     const until = months ? addMonths(last.scheduledDate, months) : null;
     out.push({
       kind, applied: last.scheduledDate, until,
       active: until ? until > new Date() : true,
       service: last.serviceName,
+      warranty,
     });
   });
   return out;

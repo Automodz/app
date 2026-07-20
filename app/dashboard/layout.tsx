@@ -18,7 +18,7 @@ import { useAppStore } from '@/lib/store';
 import InstallPrompt from '@/components/pwa/InstallPrompt';
 import CxLiveActivity, { activeVisit } from '@/components/cx/CxLiveActivity';
 import { DUR, EASE } from '@/lib/cx/motion';
-import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING } from '@/lib/cx/devseed';
+import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING } from '@/lib/cx/devseed';
 import {
   getVehicles,
   getUserBookings,
@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // flow and Care tracker are exercisable locally.
     if (isDevUser(user.uid)) {
       setVehicles([DEV_VEHICLE]);
-      setBookings([DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING]);
+      setBookings([DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING]);
       return;
     }
 

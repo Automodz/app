@@ -17,7 +17,19 @@ const tsMinAgo = (min: number) => Timestamp.fromDate(new Date(Date.now() - min *
 export const DEV_VEHICLE = {
   id: 'dev-car', name: 'BMW M340i', registrationNumber: 'GJ01AB1234',
   category: 'Luxury', color: 'Grey',
+  createdAt: Timestamp.fromDate(new Date('2026-03-01T12:00:00')),
 } as unknown as Vehicle;
+
+/** Completed ceramic from April — makes protection ACTIVE on the passport. */
+export const DEV_CERAMIC_BOOKING = {
+  id: 'dev-ceramic', userId: 'dev-customer', vehicleId: 'dev-car',
+  vehicleName: 'BMW M340i', vehicleRegNo: 'GJ01AB1234',
+  serviceName: 'Kovalent Graphene', serviceCategory: 'Ceramic',
+  serviceDurationMinutes: 480, status: 'completed',
+  scheduledDate: '2026-04-20', scheduledTime: '09:00',
+  totalAmount: 12000, paymentMethod: 'upi', paymentStatus: 'verified',
+  jobId: 'dev-job-ceramic', invoiceId: 'dev-inv-1',
+} as unknown as Booking;
 
 export const DEV_ACTIVE_BOOKING = {
   id: 'dev-visit', userId: 'dev-customer', vehicleId: 'dev-car',
@@ -40,6 +52,34 @@ export const DEV_COMPLETED_BOOKING = {
 } as unknown as Booking;
 
 export const DEV_JOBS: Record<string, Job> = {
+  'dev-ceramic': {
+    id: 'dev-job-ceramic', source: 'booking', bookingId: 'dev-ceramic',
+    customerId: 'dev-customer', customerName: 'Aarav Mehta', customerPhone: '',
+    vehicleName: 'BMW M340i', vehicleRegNo: 'GJ01AB1234',
+    serviceItems: [{ serviceId: 's11', serviceName: 'Kovalent Graphene', category: 'Ceramic', price: 12000 }],
+    bay: 2, status: 'completed', subtotal: 12000, totalAmount: 12000,
+    paymentStatus: 'collected', amountPaid: 12000, invoiceId: 'dev-inv-1',
+    createdByEmployeeId: 'e1', createdByEmployeeName: 'Bay Detailer',
+    assignments: [{
+      employeeId: 'e1', employeeName: 'Ravi Sharma', role: 'lead',
+      assignedAt: Timestamp.fromDate(new Date('2026-04-20T09:00:00')),
+      assignedById: 'a1', assignedByName: 'Studio Owner',
+    }],
+    assignedIds: ['e1'],
+    statusHistory: [
+      { status: 'checked_in', at: Timestamp.fromDate(new Date('2026-04-20T09:05:00')), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma' },
+      { status: 'in_progress', at: Timestamp.fromDate(new Date('2026-04-20T09:40:00')), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma', note: 'Two-stage paint correction before the coat.' },
+      { status: 'completed', at: Timestamp.fromDate(new Date('2026-04-20T17:30:00')), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma' },
+    ],
+    photos: [
+      { url: MEDIA.services.washing, path: 'dev/c1', kind: 'before' },
+      { url: MEDIA.services.ceramic, path: 'dev/c2', kind: 'after' },
+    ],
+    date: '2026-04-20',
+    createdAt: Timestamp.fromDate(new Date('2026-04-20T09:00:00')),
+    updatedAt: Timestamp.fromDate(new Date('2026-04-20T17:30:00')),
+    completedAt: Timestamp.fromDate(new Date('2026-04-20T17:30:00')),
+  } as unknown as Job,
   'dev-visit': {
     id: 'dev-job-active', source: 'booking', bookingId: 'dev-visit',
     customerId: 'dev-customer', customerName: 'Aarav Mehta', customerPhone: '',
