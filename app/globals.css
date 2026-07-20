@@ -1016,3 +1016,53 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 .pulse-dot { animation: dot-pulse 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   STUDIO — the customer product's design tokens (design system §1–3).
+   Scoped: applies only under `.studio` (the /app tree + styleguide).
+   Admin & store remain always-dark and never use these.
+   ═══════════════════════════════════════════════════════════════════ */
+.studio {
+  /* surfaces */
+  --st-paper:    #FBFBF9;
+  --st-gallery:  #F1F1EE;
+  --st-linen:    #E7E7E3;
+  --st-stage:    #0C0D0E;
+  /* ink */
+  --st-ink:      #141517;
+  --st-ink-2:    rgba(20,21,23,0.62);
+  --st-ink-3:    rgba(20,21,23,0.38);
+  --st-hairline: rgba(20,21,23,0.08);
+  /* on photography */
+  --st-over:     #F7F7F5;
+  --st-over-2:   rgba(247,247,245,0.70);
+  /* accents (ink-dark, never backgrounds) */
+  --st-assent:   #2E5E48;
+  --st-caution:  #8A5A2E;
+  /* elevation */
+  --st-lift:     0 12px 40px rgba(12,13,14,0.10);
+  --st-hold:     0 2px 12px rgba(12,13,14,0.08);
+  /* type */
+  --st-display:  var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  --st-text:     var(--font-body, ui-sans-serif, system-ui, sans-serif);
+  --st-data:     var(--font-mono, ui-monospace, monospace);
+
+  background: var(--st-paper);
+  color: var(--st-ink);
+  font-family: var(--st-text);
+}
+
+/* dark rendering: chrome inverts; photography, stage, scrim, accents identical */
+@media (prefers-color-scheme: dark) {
+  .studio {
+    --st-paper:    #111214;
+    --st-gallery:  #191A1C;
+    --st-linen:    #212325;
+    --st-ink:      #F2F2EF;
+    --st-ink-2:    rgba(242,242,239,0.62);
+    --st-ink-3:    rgba(242,242,239,0.38);
+    --st-hairline: rgba(242,242,239,0.08);
+  }
+}
+
+.studio ::selection { background: var(--st-linen); }

@@ -1,6 +1,5 @@
 'use client';
 import Sheet from './Sheet';
-import GradientButton from './GradientButton';
 
 /**
  * Confirmation prompt on Sheet. `danger` styles the confirm action with the
@@ -31,17 +30,17 @@ export default function ConfirmDialog({
     <Sheet open={open} onClose={onClose} title={title}>
       {message && <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>{message}</p>}
       <div className="flex gap-3">
-        <GradientButton variant="ghost" fullWidth onClick={onClose} disabled={loading}>
+        <button className="btn-ghost flex-1 py-3" onClick={onClose} disabled={loading}>
           {cancelLabel}
-        </GradientButton>
-        <GradientButton
-          fullWidth
-          loading={loading}
+        </button>
+        <button
+          className="btn-primary flex-1 py-3"
           onClick={onConfirm}
+          disabled={loading}
           style={danger ? { background: 'var(--danger)', color: 'var(--bg)' } : undefined}
         >
-          {confirmLabel}
-        </GradientButton>
+          {loading ? '…' : confirmLabel}
+        </button>
       </div>
     </Sheet>
   );
