@@ -47,10 +47,10 @@ export async function POST(req: NextRequest) {
   const res = await messaging.sendEachForMulticast({
     tokens,
     notification: { title, body },
-    data: { url: url ?? '/dashboard/notifications' },
+    data: { url: url ?? '/app' },
     webpush: {
       notification: { icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' },
-      fcmOptions: { link: url ?? '/dashboard/notifications' },
+      fcmOptions: { link: url ?? '/app' },
     },
   });
 

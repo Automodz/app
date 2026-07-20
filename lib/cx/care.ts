@@ -163,23 +163,6 @@ export const etaLine = (care: CareState): string | null => {
   return `Ready around ${fmtClock(care.eta)}`;
 };
 
-/* ── unread updates (Live Activity dot) — dies with the strip (P1) ─────── */
-
-const seenKey = (bookingId: string) => `automodz-care-seen-${bookingId}`;
-
-const careUpdateCount = (job: Job | null): number =>
-  (job?.statusHistory?.length ?? 0) + (job?.photos?.length ?? 0);
-
-export const hasUnseenUpdates = (bookingId: string, job: Job | null): boolean => {
-  if (typeof window === 'undefined' || !job) return false;
-  const seen = parseInt(localStorage.getItem(seenKey(bookingId)) ?? '0', 10);
-  return careUpdateCount(job) > seen;
-};
-
-export const markCareSeen = (bookingId: string, job: Job | null): void => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(seenKey(bookingId), String(careUpdateCount(job)));
-};
 
 /* re-export the boundary for consumers that only need phase checks */
 export { visitPhase, careAct, actIndex, ACT_ORDER };

@@ -48,7 +48,7 @@ export default function LoginPage() {
         router.replace('/admin');
       } else {
         toast.success(`Welcome back, ${profile.name.split(' ')[0]}!`);
-        router.replace('/dashboard');
+        router.replace('/app');
       }
     } catch (err: unknown) {
       const authError = err as { code?: string };

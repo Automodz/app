@@ -31,7 +31,7 @@ import {
   generateTimeSlots, getAvailableDates, getDurationLabel,
 } from '@/lib/utils';
 import type { JobPhoto } from '@/lib/types';
-import { deriveCare, etaLine, eventLine, fmtClock, fmtElapsed, markCareSeen, visitPhase, careAct } from '@/lib/cx/care';
+import { deriveCare, etaLine, eventLine, fmtClock, fmtElapsed, visitPhase, careAct } from '@/lib/cx/care';
 import { actFromJobStatus } from '@/lib/os/visit';
 import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
 import CxSheet from '@/components/cx/CxSheet';
@@ -66,9 +66,6 @@ export default function CarePage() {
   const [reschedBusy, setReschedBusy] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-
-  // The strip's unread dot clears when the tracker is actually seen.
-  useEffect(() => { if (booking) markCareSeen(booking.id, job); }, [booking?.id, job]);
 
   // elapsed / ETA tick
   useEffect(() => {

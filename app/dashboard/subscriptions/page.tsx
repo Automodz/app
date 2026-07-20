@@ -1,14 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Timestamp } from 'firebase/firestore';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   ChevronLeft, Check, Loader2, Copy, Shield,
   Droplets, Zap, Clock, AlertTriangle, ChevronRight,
   Calendar, CalendarClock, Smartphone, Banknote,
-  Tag, Gift,
 } from 'lucide-react';
 import { PlanIcon } from '@/components/ui/ServiceIcon';
 import toast from 'react-hot-toast';
@@ -70,29 +67,6 @@ function WashBar({ used, total, color }: { used: number; total: number; color: s
       <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)', marginTop: '6px' }}>
         {remaining > 0 ? `${remaining} wash${remaining !== 1 ? 'es' : ''} remaining` : 'All washes used this period'}
       </p>
-    </div>
-  );
-}
-
-/* Club owns offers + referral in the V3 IA — these keep them one tap away */
-function ClubLinks() {
-  return (
-    <div className="grid grid-cols-2 gap-2.5">
-      {[
-        { href: '/dashboard/offers', Icon: Tag,  title: 'Offers',   sub: 'Discounts & promos' },
-        { href: '/dashboard/refer',  Icon: Gift, title: 'Refer',    sub: 'Give ₹200, get ₹200' },
-      ].map(q => (
-        <Link key={q.href} href={q.href} className="rounded-2xl p-4 block"
-          style={{ background: 'var(--card)', border: '1px solid var(--border-2)' }}>
-          <q.Icon size={17} style={{ color: 'var(--accent)' }} className="mb-2.5" />
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--chrome)' }}>
-            {q.title}
-          </p>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-            {q.sub}
-          </p>
-        </Link>
-      ))}
     </div>
   );
 }
@@ -554,9 +528,6 @@ export default function SubscriptionsPage() {
           {isExpired ? 'RENEW MEMBERSHIP' : 'JOIN NOW'}
         </button>
 
-        <div className="mt-4">
-          <ClubLinks />
-        </div>
       </div>
     </div>
   );
@@ -724,7 +695,6 @@ export default function SubscriptionsPage() {
           BOOK A WASH
         </motion.button>
 
-        <ClubLinks />
 
         {/* Cancel membership */}
         {!cancelOpen ? (

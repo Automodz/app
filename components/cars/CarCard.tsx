@@ -10,7 +10,7 @@ interface CarCardProps {
   car: CarListing;
   saved?: boolean;
   onToggleSave?: (car: CarListing) => void;
-  hrefBase?: string; // '/cars' (public) or '/dashboard/cars'
+  hrefBase?: string; // '/cars'
 }
 
 export default function CarCard({ car, saved, onToggleSave, hrefBase = '/cars' }: CarCardProps) {

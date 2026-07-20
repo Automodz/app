@@ -29,7 +29,7 @@ messaging.onBackgroundMessage((payload) => {
     body: n.body || '',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    data: { url: data.url || '/dashboard/notifications' },
+    data: { url: data.url || '/app' },
   });
 });
 

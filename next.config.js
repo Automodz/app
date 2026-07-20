@@ -32,6 +32,13 @@ const nextConfig = {
   // Front Desk mode was folded into the Studio shell — keep old links working.
   async redirects() {
     return [
+      // IA §1.2 — deleted V2 customer routes 301 to their successors.
+      { source: '/dashboard', destination: '/app', permanent: true },
+      { source: '/dashboard/profile', destination: '/app?sheet=you', permanent: true },
+      { source: '/dashboard/notifications', destination: '/app', permanent: true },
+      { source: '/dashboard/offers', destination: '/app', permanent: true },
+      { source: '/dashboard/refer', destination: '/app', permanent: true },
+      { source: '/dashboard/cars', destination: '/cars', permanent: true },
       { source: '/store/board', destination: '/admin', permanent: false },
       { source: '/store/new', destination: '/admin/walkin', permanent: false },
       { source: '/store/attendance', destination: '/admin/attendance', permanent: false },

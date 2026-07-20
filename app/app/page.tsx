@@ -1,0 +1,533 @@
+'use client';
+/**
+ * The Glance — `/app` (Product Design Part B). One vertical composition:
+ * portrait region → Now → Protection → The story → Papers → The Club →
+ * signature. Layers render only when true (silence law). The Capsule is
+ * the only fixed element. Vehicle switching is a horizontal pager; the
+ * last page is the add-a-car invitation.
+ *
+ * P1 interim targets (tracked; each dies with its phase):
+ *   TODO(P2): capsule quiet-tap → Desk; arrange/adjust/car-form/join sheets
+ *   TODO(P3): capsule live-tap → the Stay (interim: legacy tracker route)
+ *   TODO(P4): story taps → Chapter; records → Record view (interim: legacy)
+ *   TODO(P6): "Have a look" → join-club sheet (interim: legacy club page)
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { useAppStore } from '@/lib/store';
+import {
+  getServices, getJobsForCustomer, getUserSubscription,
+  updateUserProfile, logoutUser, STATIC_SERVICES,
+} from '@/lib/firebaseService';
+import type { Job, Service, Subscription, Vehicle } from '@/lib/types';
+import { truthOf, type ProtectionFact } from '@/lib/os/truth';
+import { visitPhase, careAct, ACT_TITLE } from '@/lib/os/visit';
+import { termState, daysLeft } from '@/lib/os/term';
+import { deriveProtection, type Protection } from '@/lib/cx/protection';
+import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
+import Portrait from '@/components/os/Portrait';
+import Capsule from '@/components/os/Capsule';
+import Layer from '@/components/os/Layer';
+import PhotoBand from '@/components/os/PhotoBand';
+import MomentEntry from '@/components/os/MomentEntry';
+import MemberCard from '@/components/os/MemberCard';
+import StudioSheet from '@/components/os/StudioSheet';
+import Field from '@/components/os/Field';
+import Action from '@/components/os/Action';
+import { Display, Title, Body, Data, Whisper } from '@/components/os/text';
+import CxVehicleForm from '@/components/cx/CxVehicleForm'; // TODO(P2): replaced by the car-form sheet
+import { COMPANY } from '@/lib/company';
+
+/* protection label per design voice ("Ceramic coat", not catalog names) */
+const PROTECTION_WORD: Record<Protection['kind'], string> = {
+  PPF: 'Paint protection film', Ceramic: 'Ceramic coat', Coating: 'Glass coat',
+};
+
+const fmtLong = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+const fmtMonthYear = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+const fmtDayDate = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+export default function GlancePage() {
+  return (
+    <Suspense fallback={null}>
+      <Glance />
+    </Suspense>
+  );
+}
+
+function Glance() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const { user, vehicles, bookings, setUser } = useAppStore();
+
+  const [services, setServices] = useState<Service[]>(STATIC_SERVICES);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [membership, setMembership] = useState<Subscription | null>(null);
+  const [page, setPage] = useState(0);
+  const pagerRef = useRef<HTMLDivElement>(null);
+
+  const youOpen = params.get('sheet') === 'you';
+  const [carFormOpen, setCarFormOpen] = useState(false);
+
+  useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
+  useEffect(() => {
+    if (!user) return;
+    if (isDevUser(user.uid)) { setJobs(Object.values(DEV_JOBS)); return; }
+    getJobsForCustomer(user.uid).then(setJobs).catch(() => setJobs([]));
+    getUserSubscription(user.uid)
+      .then(s => setMembership(s ?? null)).catch(() => setMembership(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
+
+  // ?car= deep link → pager position
+  useEffect(() => {
+    const carId = params.get('car');
+    if (!carId) return;
+    const i = vehicles.findIndex(v => v.id === carId);
+    if (i >= 0) {
+      setPage(i);
+      pagerRef.current?.scrollTo({ left: i * (pagerRef.current?.clientWidth ?? 0) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicles.length]);
+
+  const vehicle: Vehicle | null = vehicles[Math.min(page, vehicles.length - 1)] ?? null;
+  const onAddPage = vehicles.length > 0 && page >= vehicles.length;
+
+  /* ── derivations for the visible vehicle (objects own truth) ── */
+  const model = useMemo(() => {
+    if (!vehicle) return null;
+    const visits = bookings
+      .filter(b => b.vehicleId === vehicle.id && b.status !== 'cancelled')
+      .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
+    const completed = visits.filter(b => visitPhase(b.status) === 'archived');
+    const protections = deriveProtection(visits, services);
+    const facts: ProtectionFact[] = protections
+      .filter(p => p.until)
+      .map(p => ({ label: PROTECTION_WORD[p.kind], expiresOn: p.until!.toISOString().split('T')[0] }));
+    const live = visits.find(v => visitPhase(v.status) === 'live') ?? null;
+    const agreed = visits
+      .filter(v => ['proposed', 'agreed'].includes(visitPhase(v.status)))
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null;
+    const jobByBooking = new Map(jobs.filter(j => j.bookingId).map(j => [j.bookingId!, j]));
+    return {
+      visits, completed, protections, live, agreed, jobByBooking,
+      truth: truthOf({
+        visits,
+        protections: facts,
+        lastCaredOn: completed[0]?.scheduledDate,
+      }),
+    };
+  }, [vehicle, bookings, services, jobs]);
+
+  /* ── capsule state (design B2) ── */
+  const capsule = useMemo(() => {
+    if (!model || !vehicle) return { line: '', tap: () => router.push('/dashboard/booking') };
+    const modelWord = vehicle.name;
+    if (model.live) {
+      const act = careAct(model.live.status);
+      if (act === 'ready') {
+        return { line: `The ${modelWord} is ready.`, tap: () => router.push(`/dashboard/care/${model.live!.id}`) };
+      }
+      return {
+        line: act ? `${ACT_TITLE[act]} — the ${modelWord} is with us.` : 'In the studio.',
+        tap: () => router.push(`/dashboard/care/${model.live!.id}`), // TODO(P3): the Stay
+      };
+    }
+    if (model.agreed) {
+      return {
+        line: `${fmtDay(model.agreed.scheduledDate)} ${model.agreed.scheduledTime} · confirmed`,
+        tap: () => router.push(`/dashboard/care/${model.agreed!.id}`), // TODO(P2): Desk
+      };
+    }
+    return { line: '', tap: () => router.push('/dashboard/booking') }; // TODO(P2): Desk
+  }, [model, vehicle, router]);
+
+  if (!user) return null;
+
+  /* first-run without a vehicle: the invitation is the whole glance */
+  if (vehicles.length === 0) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex' }}>
+        <AddCarInvitation onAdd={() => setCarFormOpen(true)} full />
+        <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
+        <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* ── portrait pager ── */}
+      <div
+        ref={pagerRef}
+        onScroll={e => {
+          const el = e.currentTarget;
+          setPage(Math.round(el.scrollLeft / el.clientWidth));
+        }}
+        style={{
+          display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory',
+          scrollbarWidth: 'none',
+        }}
+      >
+        {vehicles.map(v => (
+          <div key={v.id} style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
+            <Portrait
+              name={v.name}
+              plate={v.registrationNumber}
+              truth={v.id === vehicle?.id && model ? model.truth : ''}
+              minHeight="92vh"
+            >
+              {/* avatar → you sheet */}
+              <button
+                onClick={() => router.replace('/app?sheet=you')}
+                aria-label="You"
+                style={{
+                  position: 'absolute', top: 'calc(env(safe-area-inset-top) + 16px)', right: 24,
+                  width: 36, height: 36, borderRadius: 999, border: 'none', cursor: 'pointer',
+                  background: 'var(--st-linen)', color: 'var(--st-ink)',
+                  fontFamily: 'var(--st-text)', fontWeight: 520, fontSize: 14, zIndex: 2,
+                }}
+              >
+                {user.name?.charAt(0).toUpperCase() || 'Y'}
+              </button>
+
+              {/* page dots — only when vehicles ≥ 2 (◆R4) */}
+              {vehicles.length >= 2 && (
+                <div aria-hidden style={{
+                  position: 'absolute', bottom: 96, left: 0, right: 0,
+                  display: 'flex', justifyContent: 'center', gap: 8, zIndex: 2,
+                }}>
+                  {[...vehicles, null].map((_, i) => (
+                    <span key={i} style={{
+                      width: 4, height: 4, borderRadius: 999,
+                      background: i === page ? 'var(--st-over)' : 'var(--st-over-2)',
+                    }} />
+                  ))}
+                </div>
+              )}
+            </Portrait>
+          </div>
+        ))}
+        {/* last page: add-a-car (◆R14) */}
+        <div style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
+          <AddCarInvitation onAdd={() => setCarFormOpen(true)} />
+        </div>
+      </div>
+
+      {/* ── layers for the visible vehicle ── */}
+      {!onAddPage && vehicle && model && (
+        <div style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 96px)' }}>
+
+          {/* B3 · Now — only when a visit is agreed (live lives in the capsule until P3) */}
+          {model.agreed && (
+            <Layer>
+              <Title>{fmtDayDate(model.agreed.scheduledDate)} · {model.agreed.scheduledTime}</Title>
+              <Body tone="ink-2" style={{ marginTop: 12 }}>
+                {model.agreed.serviceName} · ₹{model.agreed.totalAmount.toLocaleString('en-IN')}
+                {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
+              </Body>
+              <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
+                {/* TODO(P2): visit-adjust sheet */}
+                <Action variant="quiet" onClick={() => router.push(`/dashboard/care/${model.agreed!.id}`)}>Change</Action>
+                <Action variant="quiet" onClick={() => router.push(`/dashboard/care/${model.agreed!.id}`)}>Cancel</Action>
+              </div>
+            </Layer>
+          )}
+
+          {/* B4 · Protection */}
+          {model.protections.length > 0 && (
+            <Layer title="Protection">
+              <div style={{ display: 'grid', gap: 24 }}>
+                {model.protections.map(p => {
+                  const untilISO = p.until ? p.until.toISOString().split('T')[0] : null;
+                  const state = untilISO ? termState(untilISO) : 'active';
+                  const left = untilISO ? daysLeft(untilISO) : null;
+                  const srcJob = model.visits.find(v => v.serviceName === p.service && visitPhase(v.status) === 'archived');
+                  const photo = srcJob ? model.jobByBooking.get(srcJob.id)?.photos?.find(x => x.kind === 'after')?.url : undefined;
+
+                  if (!p.active) {
+                    /* ◆R13 — expired converts to typographic gallery band */
+                    return (
+                      <div key={p.kind} style={{ background: 'var(--st-gallery)', borderRadius: 24, padding: 24 }}>
+                        <Body>
+                          {PROTECTION_WORD[p.kind]} · {new Date(p.applied + 'T12:00:00').getFullYear()}
+                          {p.until ? `–${p.until.getFullYear()}` : ''} · ran its course.
+                        </Body>
+                        <div style={{ marginTop: 12 }}>
+                          {/* TODO(P2): renewal is an authored proposal in the thread */}
+                          <Action variant="quiet" onClick={() => router.push(`/dashboard/booking?cat=${p.kind}&vehicleId=${vehicle.id}`)}>Renew</Action>
+                        </div>
+                      </div>
+                    );
+                  }
+                  const capLine = state === 'waning' || state === 'expiring'
+                    ? `Renewal window open — ${left} day${left === 1 ? '' : 's'} left`
+                    : `Applied ${fmtMonthYear(p.applied)}${left !== null ? ` · ${left} days left` : ''}`;
+                  return (
+                    <PhotoBand
+                      key={p.kind}
+                      src={photo}
+                      alt={`${PROTECTION_WORD[p.kind]} — detail of the ${vehicle.name}`}
+                      ratio="band"
+                      overTitle={photo ? PROTECTION_WORD[p.kind] : undefined}
+                      overCaption={photo ? capLine : undefined}
+                      caption={photo ? undefined : PROTECTION_WORD[p.kind]}
+                      whisper={photo ? undefined : capLine}
+                    />
+                  );
+                })}
+              </div>
+            </Layer>
+          )}
+
+          {/* B5 · The story */}
+          <Layer title="The story">
+            {model.completed.length === 0 ? (
+              <div>
+                <Body tone="ink-2" style={{ fontSize: 19 }}>
+                  The {vehicle.name}’s story starts with its first visit.
+                </Body>
+                <div style={{ marginTop: 12 }}>
+                  {/* TODO(P2): visit-arrange sheet */}
+                  <Action variant="quiet" onClick={() => router.push(`/dashboard/booking?vehicleId=${vehicle.id}`)}>Arrange one</Action>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 48 }}>
+                {model.completed.map(b => {
+                  const job = model.jobByBooking.get(b.id);
+                  const photos = job?.photos ?? [];
+                  const best = photos.find(x => x.kind === 'after') ?? photos[0];
+                  const tech = job?.assignments?.filter(a => !a.removedAt && a.role === 'lead')[0]?.employeeName;
+                  return (
+                    <MomentEntry
+                      key={b.id}
+                      photo={best?.url}
+                      caption={`${b.serviceName} · ${fmtLong(b.scheduledDate)}`}
+                      whisper={best
+                        ? `${photos.length} photo${photos.length === 1 ? '' : 's'}${tech ? ` · ${tech}` : ''}`
+                        : `₹${b.totalAmount.toLocaleString('en-IN')}`}
+                      onTap={() => router.push(`/dashboard/care/${b.id}`)} // TODO(P4): chapter
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </Layer>
+
+          {/* B6 · Papers */}
+          <Layer title="Papers">
+            <Data tone="ink-2" style={{ display: 'block' }}>{vehicle.registrationNumber}</Data>
+            {model.completed.filter(b => b.invoiceId).length > 0 && (
+              <div style={{ marginTop: 24, display: 'grid', gap: 12 }}>
+                {model.completed.filter(b => b.invoiceId).map(b => (
+                  <button key={b.id} onClick={() => router.push(`/invoice/${b.invoiceId}`)} /* TODO(P4): record view */
+                    style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
+                    <Body>Care record — {fmtLong(b.scheduledDate)}</Body>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ marginTop: 24 }}>
+              <Action variant="quiet" onClick={() => setCarFormOpen(true)}>Edit details</Action>
+            </div>
+          </Layer>
+
+          {/* B7 · The Club */}
+          {(membership || model.completed.length >= 2) && (
+            <Layer title="The Club">
+              {membership && membership.status !== 'cancelled' ? (
+                <div>
+                  <MemberCard
+                    name={user.name}
+                    tier={`Club · since ${fmtMonthYear(membership.startDate)}`}
+                    since={membership.plan}
+                    state={membership.status === 'active' && daysLeft(membership.endDate) > 0
+                      ? 'active' : membership.status === 'pending' ? 'pending' : 'lapsed'}
+                  />
+                  {membership.status === 'active' && daysLeft(membership.endDate) > 0 ? (
+                    <Body tone="ink-2" style={{ marginTop: 16 }}>
+                      {membership.washesTotal - membership.washesUsed} washes left this cycle · renews {fmtLong(membership.endDate)}
+                    </Body>
+                  ) : membership.status === 'pending' ? (
+                    <Whisper style={{ marginTop: 16, display: 'block' }}>
+                      The studio is confirming — your card goes live within hours.
+                    </Whisper>
+                  ) : (
+                    <div style={{ marginTop: 16 }}>
+                      <Body tone="ink-2">Rejoin any time — your history holds.</Body>
+                      {/* TODO(P6): join-club sheet */}
+                      <div style={{ marginTop: 8 }}>
+                        <Action variant="quiet" onClick={() => router.push('/dashboard/subscriptions')}>Rejoin</Action>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <Body style={{ fontSize: 19 }}>
+                    You wash often. The Club would suit the {vehicle.name}.
+                  </Body>
+                  <div style={{ marginTop: 12 }}>
+                    {/* TODO(P6): join-club sheet */}
+                    <Action variant="quiet" onClick={() => router.push('/dashboard/subscriptions')}>Have a look</Action>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: 48 }}>
+                <Body>A friend’s first detail is on us.</Body>
+                <div style={{ marginTop: 8 }}>
+                  <Action variant="quiet" onClick={() => {
+                    const url = typeof window !== 'undefined' ? window.location.origin : '';
+                    if (navigator.share) navigator.share({ text: `My car lives at AutoModz — first detail's on me. ${url}` }).catch(() => {});
+                  }}>Share</Action>
+                </div>
+              </div>
+            </Layer>
+          )}
+
+          {/* the signature */}
+          <div style={{ marginTop: 96, padding: '0 24px' }}>
+            <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em', display: 'block' }}>AUTOMODZ</Whisper>
+            <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 8 }}>{COMPANY.address}</Data>
+            <div style={{ marginTop: 12 }}>
+              {/* TODO(P2): the Desk */}
+              <Action variant="quiet" onClick={() => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank')}>
+                Message the studio
+              </Action>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Capsule line={capsule.line} onTap={capsule.tap} onPhoto={false} />
+
+      <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
+      <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />
+    </div>
+  );
+}
+
+const fmtDay = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
+
+/* ── the add-a-car page (B1 last page / first-run) ── */
+function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: boolean }) {
+  return (
+    <div style={{
+      minWidth: '100%', minHeight: full ? '100vh' : '92vh',
+      background: 'var(--st-stage)', scrollSnapAlign: 'start',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 12, padding: 24, textAlign: 'center',
+    }}>
+      <Display tone="over">Another car?</Display>
+      <Body tone="over-2">The garage has room.</Body>
+      <div style={{ marginTop: 24 }}>
+        <Action variant="on-photo" onClick={onAdd}>Add a car</Action>
+      </div>
+    </div>
+  );
+}
+
+/* TODO(P2): replaced by the car-form sheet (make/model/year/plate + portrait) */
+function AddCarSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="The car">
+      <CxVehicleForm onSaved={onClose} onClose={onClose} />
+    </StudioSheet>
+  );
+}
+
+/* ── the You sheet (design E1) ── */
+function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const router = useRouter();
+  const { user, setUser } = useAppStore();
+  const [name, setName] = useState(user?.name ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
+  const [installEvent, setInstallEvent] = useState<Event | null>(null);
+
+  useEffect(() => { setName(user?.name ?? ''); setPhone(user?.phone ?? ''); }, [user?.uid, open]);
+
+  useEffect(() => {
+    const onPrompt = (e: Event) => { e.preventDefault(); setInstallEvent(e); };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+  }, []);
+
+  const prefs = {
+    whatsapp: true, serviceReminders: true, membershipReminders: true, promotions: true,
+    ...(user?.notificationPrefs ?? {}),
+  };
+
+  const save = async () => {
+    if (!user) return;
+    const dirty = name !== user.name || phone !== (user.phone ?? '');
+    if (dirty && name.trim()) {
+      setUser({ ...user, name: name.trim(), phone: phone.trim() });
+      try { await updateUserProfile(user.uid, { name: name.trim(), phone: phone.trim() }); } catch {}
+    }
+    onClose();
+  };
+
+  const togglePref = async (key: keyof typeof prefs) => {
+    if (!user) return;
+    const next = { ...prefs, [key]: !prefs[key] };
+    setUser({ ...user, notificationPrefs: next });
+    try { await updateUserProfile(user.uid, { notificationPrefs: next }); } catch {}
+  };
+
+  const rows: { key: keyof typeof prefs; line: string }[] = [
+    { key: 'whatsapp',            line: 'Message me on WhatsApp about my visits.' },
+    { key: 'serviceReminders',    line: 'Tell me when the car’s care is due.' },
+    { key: 'membershipReminders', line: 'Tell me about my membership.' },
+    { key: 'promotions',          line: 'Occasionally, a word about offers.' },
+  ];
+
+  return (
+    <StudioSheet open={open} onOpenChange={o => { if (!o) save(); }} label="You">
+      <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
+        <Title>You</Title>
+
+        <Field label="Name" value={name} onChange={setName} />
+        <Field label="Phone" value={phone} onChange={setPhone} kind="phone" />
+
+        <div>
+          <Body tone="ink-2" style={{ marginBottom: 12 }}>Notifications</Body>
+          <div style={{ display: 'grid', gap: 16 }}>
+            {rows.map(r => (
+              <label key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
+                <span style={{ flex: 1 }}><Body>{r.line}</Body></span>
+                <input
+                  type="checkbox"
+                  checked={prefs[r.key]}
+                  onChange={() => togglePref(r.key)}
+                  style={{ width: 44, height: 24, accentColor: 'var(--st-ink)' }}
+                />
+              </label>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ flex: 1 }}><Body>Message me while the car’s in care.</Body></span>
+              <Whisper>Always — it’s your car.</Whisper>
+            </div>
+          </div>
+        </div>
+
+        {installEvent && (
+          <Action variant="quiet" onClick={() => (installEvent as { prompt?: () => void }).prompt?.()}>
+            Install AutoModz
+          </Action>
+        )}
+
+        <Action variant="quiet" onClick={async () => { await logoutUser(); router.replace('/auth/login'); }}>
+          Sign out
+        </Action>
+      </div>
+    </StudioSheet>
+  );
+}
