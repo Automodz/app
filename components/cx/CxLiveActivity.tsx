@@ -12,15 +12,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import type { Booking } from '@/lib/types';
-import { deriveCare, etaLine, hasUnseenUpdates } from '@/lib/cx/care';
+import { deriveCare, etaLine, hasUnseenUpdates, visitPhase } from '@/lib/cx/care';
 import { DUR, EASE } from '@/lib/cx/motion';
 import { useVisitJob } from '@/components/cx/useVisitJob';
 
-const ACTIVE = ['vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery'];
-
 export function activeVisit(bookings: Booking[]): Booking | null {
   return bookings
-    .filter(b => ACTIVE.includes(b.status))
+    .filter(b => visitPhase(b.status) === 'live')
     .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null;
 }
 

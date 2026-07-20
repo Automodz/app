@@ -1,17 +1,18 @@
 /**
- * Vehicle Passport model — everything the passport shows, derived from the
- * vehicle's own bookings, its jobs (statusHistory, assignments, photos) and
- * the service catalog. No stored duplicates, no fake metrics: every number
- * traces back to a real record, and every recommendation explains why.
+ * TEMPORARY ADAPTER (PRE-1) — Vehicle Passport model for Generation-A
+ * surfaces. Everything derives from real records; term truth (expiry
+ * windows, urgency) comes exclusively from the ONE Term Engine.
+ *
+ * TODO(P5): Terms replaces this with Protection/Record objects; the stats
+ * and memories derivations migrate into Timeline (P4) and Terms (P5).
  */
 import type { Booking, Job, JobPhoto, Service, Vehicle } from '@/lib/types';
 import { deriveProtection, type Protection } from '@/lib/cx/protection';
+import { daysLeft } from '@/lib/os/term';
 
 const DAY = 86400000;
 const daysSince = (iso: string, now: Date) =>
   Math.floor((now.getTime() - new Date(iso + 'T12:00:00').getTime()) / DAY);
-const daysUntil = (d: Date, now: Date) =>
-  Math.ceil((d.getTime() - now.getTime()) / DAY);
 
 /* ── life timeline: the story, not the invoices ─────────────────────────── */
 
@@ -145,15 +146,16 @@ export function derivePassport(
   const recommendations: Recommendation[] = [];
   activeLayers.forEach(p => {
     if (!p.until) return;
-    const left = daysUntil(p.until, now);
-    if (left > 0 && left <= 60) {
-      recommendations.push({
-        id: `${p.kind}-expiring`,
-        title: `Your ${p.kind === 'Coating' ? 'coating' : p.kind} protection ends in ${left} days`,
-        why: `${p.service} was applied ${new Date(p.applied + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} with ${p.warranty ?? 'limited'} cover.`,
-        category: p.kind, urgent: left <= 21,
-      });
-    }
+    // Term Engine edges are the only expiry windows: waning → suggest,
+    // expiring → urgent. No ad-hoc day thresholds.
+    if (p.term !== 'waning' && p.term !== 'expiring') return;
+    const left = daysLeft(p.until.toISOString().split('T')[0], now);
+    recommendations.push({
+      id: `${p.kind}-expiring`,
+      title: `Your ${p.kind === 'Coating' ? 'coating' : p.kind} protection ends in ${left} days`,
+      why: `${p.service} was applied ${new Date(p.applied + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} with ${p.warranty ?? 'limited'} cover.`,
+      category: p.kind, urgent: p.term === 'expiring',
+    });
   });
   protection.filter(p => !p.active).forEach(p => {
     recommendations.push({

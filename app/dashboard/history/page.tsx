@@ -14,18 +14,13 @@ import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate, formatTime } from '@/lib/utils';
 import { getJobsForCustomer, getServices, STATIC_SERVICES } from '@/lib/firebaseService';
 import type { Booking, Job, Service } from '@/lib/types';
-import { BOOKING_STAGE, TONE_COLOR } from '@/lib/cx/care';
+import { BOOKING_STAGE, TONE_COLOR, visitPhase } from '@/lib/cx/care';
 import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
-import { MEDIA } from '@/lib/media';
+import { MEDIA, serviceMedia } from '@/lib/media';
 
 const mono10 = { fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
 const body12 = { fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)' };
-
-const mediaFor = (category: string): string =>
-  (MEDIA.services as Record<string, string>)[category.toLowerCase()] ?? MEDIA.services.washing;
-
-const LIVE = ['pending', 'confirmed', 'vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery'];
 
 export default function CarePage() {
   const router = useRouter();
@@ -52,13 +47,13 @@ export default function CarePage() {
 
   const now = useMemo(() =>
     bookings
-      .filter(b => LIVE.includes(b.status))
+      .filter(b => ['proposed', 'agreed', 'live'].includes(visitPhase(b.status)))
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)),
   [bookings]);
 
   const storiesByYear = useMemo(() => {
     const done = bookings
-      .filter(b => ['completed', 'cancelled'].includes(b.status))
+      .filter(b => ['archived', 'cancelled'].includes(visitPhase(b.status)))
       .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
     const years = new Map<string, Booking[]>();
     done.forEach(b => {
@@ -108,7 +103,7 @@ export default function CarePage() {
             <div className="space-y-2.5">
               {now.map((b, i) => {
                 const stage = BOOKING_STAGE[b.status];
-                const active = !['pending', 'confirmed'].includes(b.status);
+                const active = visitPhase(b.status) === 'live';
                 return (
                   <motion.button key={b.id}
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -169,7 +164,7 @@ export default function CarePage() {
                     onClick={() => router.push(`/dashboard/care/${b.id}`)}
                     className="relative w-full rounded-3xl overflow-hidden text-left"
                     style={{ height: 230, border: '1px solid var(--border)' }}>
-                    <Image src={photo?.url ?? mediaFor(b.serviceCategory)} alt="" fill className="object-cover"
+                    <Image src={photo?.url ?? serviceMedia(b.serviceCategory)} alt="" fill className="object-cover"
                       sizes="(max-width: 768px) 100vw, 512px" />
                     <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,7,9,0.9) 0%, rgba(6,7,9,0.12) 55%)' }} />
                     <div className="absolute bottom-0 inset-x-0 p-5">

@@ -27,15 +27,12 @@ import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
 import CxSheet from '@/components/cx/CxSheet';
 import CxButton from '@/components/cx/CxButton';
 import CxVehicleForm from '@/components/cx/CxVehicleForm';
-import { MEDIA } from '@/lib/media';
+import { serviceMedia } from '@/lib/media';
 
 const mono10 = { fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
 const body12 = { fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)' };
 
 const KIND_ICON: Record<ProtectionKind, typeof Shield> = { PPF: Shield, Ceramic: Sparkles, Coating: Gem };
-
-const heroFor = (category: string | undefined): string =>
-  (MEDIA.services as Record<string, string>)[(category ?? 'washing').toLowerCase()] ?? MEDIA.services.washing;
 
 const rise = (delay = 0) => ({
   initial: { opacity: 0, y: 10 },
@@ -122,7 +119,7 @@ export default function PassportPage() {
       {/* ── HERO: the pass ─────────────────────────────────────────────── */}
       <div className="relative overflow-hidden" style={{ minHeight: 360 }}>
         <div className="absolute inset-0">
-          <Image src={heroFor(lastDone?.serviceCategory)} alt="" fill priority className="object-cover" sizes="100vw" />
+          <Image src={serviceMedia(lastDone?.serviceCategory)} alt="" fill priority className="object-cover" sizes="100vw" />
           <div className="absolute inset-0" style={{
             background: 'linear-gradient(to top, rgba(6,7,9,0.95) 0%, rgba(6,7,9,0.5) 55%, rgba(6,7,9,0.35) 100%)',
           }} />

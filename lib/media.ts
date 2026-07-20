@@ -61,3 +61,8 @@ export const MEDIA = {
     wordmarkWhite: '/wordmark-white.png',
   },
 } as const;
+
+/** The one category → photograph mapping. Customer surfaces must use this
+ *  instead of indexing MEDIA.services locally (PRE-1 consolidation). */
+export const serviceMedia = (category?: string, fallback: keyof typeof MEDIA.services = 'washing'): string =>
+  (MEDIA.services as Record<string, string>)[(category ?? '').toLowerCase()] ?? MEDIA.services[fallback];

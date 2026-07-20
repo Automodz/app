@@ -18,14 +18,12 @@ import { formatDate } from '@/lib/utils';
 import { derivePassport } from '@/lib/cx/passport';
 import type { ProtectionKind } from '@/lib/cx/protection';
 import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
+import { isDevUser } from '@/lib/cx/devseed';
 import CxSheet from '@/components/cx/CxSheet';
 import CxVehicleForm from '@/components/cx/CxVehicleForm';
-import { MEDIA } from '@/lib/media';
+import { MEDIA, serviceMedia } from '@/lib/media';
 
 const KIND_ICON: Record<ProtectionKind, typeof Shield> = { PPF: Shield, Ceramic: Sparkles, Coating: Gem };
-
-const passMedia = (category: string | undefined): string =>
-  (MEDIA.services as Record<string, string>)[(category ?? 'washing').toLowerCase()] ?? MEDIA.services.washing;
 
 const gradeColor = (grade: string) =>
   grade === 'Excellent' ? '#7ED9A0'
@@ -42,7 +40,8 @@ export default function GaragePage() {
 
   useEffect(() => {
     if (!user) return;
-    getVehicles(user.uid).then(setVehicles).catch(() => {});
+    // Dev shim: the layout seeds the garage; a refetch would clobber it.
+    if (!isDevUser(user.uid)) getVehicles(user.uid).then(setVehicles).catch(() => {});
     getServices().then(setServices).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
@@ -113,7 +112,7 @@ export default function GaragePage() {
                 onClick={() => router.push(`/dashboard/vehicles/${v.id}`)}
                 className="relative w-full rounded-3xl overflow-hidden text-left"
                 style={{ height: 200, border: '1px solid var(--border)' }}>
-                <Image src={passMedia(lastCat)} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 512px" />
+                <Image src={serviceMedia(lastCat)} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 512px" />
                 <div className="absolute inset-0" style={{
                   background: 'linear-gradient(to top, rgba(6,7,9,0.92) 0%, rgba(6,7,9,0.35) 55%, rgba(6,7,9,0.25) 100%)',
                 }} />

@@ -11,9 +11,16 @@ interface StudioSheetProps {
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
   label: string; // accessibility name
+  /** PRE-1 legacy overrides — used only by the CxSheet adapter while
+   *  Generation-A surfaces await replacement. TODO(P7): remove both. */
+  ground?: string;
+  maxHeight?: string;
 }
 
-export default function StudioSheet({ open, onOpenChange, children, label }: StudioSheetProps) {
+export default function StudioSheet({
+  open, onOpenChange, children, label,
+  ground = 'var(--st-gallery)', maxHeight = '88vh',
+}: StudioSheetProps) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
@@ -22,18 +29,18 @@ export default function StudioSheet({ open, onOpenChange, children, label }: Stu
           style={{ position: 'fixed', inset: 0, background: 'rgba(12,13,14,0.40)', zIndex: 60 }}
         />
         <Drawer.Content
-          aria-label={label}
           className="studio"
           style={{
             position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 61,
-            background: 'var(--st-gallery)',
+            background: ground,
             borderRadius: '24px 24px 0 0',
             boxShadow: 'var(--st-lift)',
-            maxHeight: '88vh',
+            maxHeight,
             display: 'flex', flexDirection: 'column',
             outline: 'none',
           }}
         >
+          <Drawer.Title className="sr-only">{label}</Drawer.Title>
           <div aria-hidden style={{
             width: 40, height: 4, borderRadius: 2, background: 'var(--st-hairline)',
             margin: '12px auto 0',

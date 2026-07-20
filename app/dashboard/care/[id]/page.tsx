@@ -31,18 +31,16 @@ import {
   generateTimeSlots, getAvailableDates, getDurationLabel,
 } from '@/lib/utils';
 import type { JobPhoto } from '@/lib/types';
-import { deriveCare, etaLine, eventLine, fmtClock, fmtElapsed, markCareSeen } from '@/lib/cx/care';
+import { deriveCare, etaLine, eventLine, fmtClock, fmtElapsed, markCareSeen, visitPhase, careAct } from '@/lib/cx/care';
+import { actFromJobStatus } from '@/lib/os/visit';
 import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
 import CxSheet from '@/components/cx/CxSheet';
 import CxButton from '@/components/cx/CxButton';
 import { COMPANY, telLink } from '@/lib/company';
-import { MEDIA } from '@/lib/media';
+import { serviceMedia } from '@/lib/media';
 
 const mono10 = { fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
 const body12 = { fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)' };
-
-const heroMedia = (category: string): string =>
-  (MEDIA.services as Record<string, string>)[category.toLowerCase()] ?? MEDIA.services.washing;
 
 const rise = (delay = 0) => ({
   initial: { opacity: 0, y: 10 },
@@ -156,10 +154,11 @@ export default function CarePage() {
     </div>
   );
 
-  const upcoming  = ['pending', 'confirmed'].includes(booking.status);
-  const delivered = booking.status === 'completed' || job?.status === 'completed';
-  const ready     = !delivered && (job?.status === 'ready_for_delivery' || booking.status === 'ready_for_delivery');
-  const cancelled = booking.status === 'cancelled';
+  const phase     = visitPhase(booking.status);
+  const upcoming  = phase === 'proposed' || phase === 'agreed';
+  const delivered = phase === 'archived' || job?.status === 'completed';
+  const ready     = !delivered && ((job ? actFromJobStatus(job.status) : careAct(booking.status)) === 'ready');
+  const cancelled = phase === 'cancelled';
   const liveMode  = !upcoming && !delivered && !ready && !cancelled;
   const cancelAllowed = upcoming && canCancelBooking(booking.scheduledDate, booking.scheduledTime);
   const invoiceId = job?.invoiceId ?? booking.invoiceId;
@@ -174,7 +173,7 @@ export default function CarePage() {
       <div className="relative overflow-hidden" style={{ minHeight: ready || delivered ? 380 : 340 }}>
         <div className="absolute inset-0">
           <Image
-            src={ready || delivered ? (afterPhoto?.url ?? heroMedia(booking.serviceCategory)) : heroMedia(booking.serviceCategory)}
+            src={ready || delivered ? (afterPhoto?.url ?? serviceMedia(booking.serviceCategory)) : serviceMedia(booking.serviceCategory)}
             alt="" fill priority className="object-cover" sizes="100vw" />
           <div className="absolute inset-0" style={{
             background: 'linear-gradient(to top, rgba(6,7,9,0.94) 0%, rgba(6,7,9,0.55) 55%, rgba(6,7,9,0.35) 100%)',

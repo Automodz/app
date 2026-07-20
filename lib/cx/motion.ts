@@ -1,21 +1,22 @@
 /**
- * CX motion tokens — the ONE motion language of the customer app.
- * Nothing bounces, spins or overshoots. Motion exists because information
- * changed, focus changed, or the user acted.
+ * TEMPORARY ADAPTER (PRE-1) — re-exports the Studio motion constants for
+ * Generation-A surfaces. lib/os/motion.ts is the ONE motion system; no
+ * motion value may be defined here.
  *
- * arrival    fade + 8px rise   (content entering)
- * departure  fade + 4px fall   (content leaving)
- * state      colour cross-fade + a single pulse (live data changing)
+ * TODO(P7): delete this file once the last cx surface is replaced; each of
+ * P1–P6 removes its consumers.
  */
-export const EASE = [0.22, 1, 0.36, 1] as const;
+import { studioEase, tick, move, scene } from '@/lib/os/motion';
+
+export const EASE = studioEase;
 
 export const DUR = {
   /** taps, toggles, chips */
-  fast: 0.15,
+  fast: tick,
   /** sheets, cards, list items */
-  base: 0.35,
-  /** signature moments only (ticket stamp, reveal) */
-  slow: 0.7,
+  base: move,
+  /** signature moments only */
+  slow: scene,
 } as const;
 
 /** standard content arrival — use with motion.* initial/animate */
@@ -23,11 +24,6 @@ export const arrive = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: DUR.base, ease: EASE },
-} as const;
-
-/** standard departure */
-export const depart = {
-  exit: { opacity: 0, y: 4, transition: { duration: DUR.fast, ease: EASE } },
 } as const;
 
 /** staggered list arrival — spread children by this step */

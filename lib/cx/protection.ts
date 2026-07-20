@@ -1,13 +1,16 @@
 /**
- * Protection derivation — a vehicle's shield status, computed from its own
- * completed bookings × the service catalog's warranties. Shared by the
- * Garage passport and the booking flow's vehicle cards. Nothing invented,
- * nothing stored twice.
+ * TEMPORARY ADAPTER (PRE-1) — protection derivation for Generation-A
+ * surfaces. Expiry truth now comes from the ONE Term Engine (lib/os/term);
+ * this file only maps completed work × catalog warranties into facts.
+ *
+ * TODO(P5): Terms replaces this with Protection objects on the Term Engine;
+ * delete this file with the passport derivations.
  */
 import type { Booking, Service } from '@/lib/types';
+import { termState, termAlive, type TermState } from '@/lib/os/term';
 
 /** "5 Year" / "6 Month" → months; null when no warranty */
-export const warrantyMonths = (w: string | null | undefined): number | null => {
+const warrantyMonths = (w: string | null | undefined): number | null => {
   if (!w) return null;
   const n = parseInt(w, 10);
   if (!n) return null;
@@ -33,6 +36,8 @@ export type Protection = {
   applied: string;
   until: Date | null;
   active: boolean;
+  /** Term Engine state — the one lifecycle (active/waning/expiring/lapsed) */
+  term: TermState;
   service: string;
   /** raw warranty string from the catalog, when known */
   warranty: string | null;
@@ -49,9 +54,13 @@ export const deriveProtection = (history: Booking[], services: Service[]): Prote
     const warranty = byName.get(last.serviceName)?.warranty ?? null;
     const months = warrantyMonths(warranty);
     const until = months ? addMonths(last.scheduledDate, months) : null;
+    const term: TermState = until
+      ? termState(until.toISOString().split('T')[0])
+      : 'active';
     out.push({
       kind, applied: last.scheduledDate, until,
-      active: until ? until > new Date() : true,
+      active: termAlive(term),
+      term,
       service: last.serviceName,
       warranty,
     });

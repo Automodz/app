@@ -22,6 +22,7 @@ import {
   MEMBERSHIP_PLANS, type Subscription, type MembershipPlan,
   type MembershipPlanConfig,
 } from '@/lib/types';
+import { daysLeft as termDaysLeft } from '@/lib/os/term';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const today = () => new Date().toISOString().split('T')[0];
@@ -30,10 +31,7 @@ const addDays = (d: string, n: number) => {
   dt.setDate(dt.getDate() + n);
   return dt.toISOString().split('T')[0];
 };
-const daysLeft = (endDate: string) => {
-  const diff = new Date(endDate + 'T23:59:59').getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / 86400000));
-};
+const daysLeft = (endDate: string) => Math.max(0, termDaysLeft(endDate));
 
 
 // Law 1 (Liquid Chrome): tier identity is a chrome ramp, never a colored

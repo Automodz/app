@@ -24,20 +24,18 @@ import { getUserSubscription, getJobsForCustomer, getServices, STATIC_SERVICES }
 import type { Job, Service, Subscription } from '@/lib/types';
 import { derivePassport, type Recommendation } from '@/lib/cx/passport';
 import type { ProtectionKind } from '@/lib/cx/protection';
-import { deriveCare, etaLine, BOOKING_STAGE } from '@/lib/cx/care';
+import { deriveCare, etaLine, BOOKING_STAGE, visitPhase } from '@/lib/cx/care';
+import { daysLeft, WANING_DAYS } from '@/lib/os/term';
 import { activeVisit } from '@/components/cx/CxLiveActivity';
 import { useVisitJob } from '@/components/cx/useVisitJob';
 import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import { DUR, EASE, STAGGER } from '@/lib/cx/motion';
-import { MEDIA } from '@/lib/media';
+import { MEDIA, serviceMedia } from '@/lib/media';
 
 const mono10 = { fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.14em', color: 'var(--faint)', textTransform: 'uppercase' as const };
 const body12 = { fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--steel)' };
 
 const KIND_ICON: Record<ProtectionKind, typeof Shield> = { PPF: Shield, Ceramic: Sparkles, Coating: Gem };
-
-const mediaFor = (category: string | undefined): string =>
-  (MEDIA.services as Record<string, string>)[(category ?? 'ceramic').toLowerCase()] ?? MEDIA.services.ceramic;
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -45,9 +43,6 @@ const greeting = () => {
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
 };
-
-const daysLeftISO = (endDate: string) =>
-  Math.max(0, Math.ceil((new Date(endDate + 'T23:59:59').getTime() - Date.now()) / 86400000));
 
 const rise = (delay = 0) => ({
   initial: { opacity: 0, y: 10 },
@@ -93,7 +88,7 @@ export default function HomePage() {
 
   const upcoming = useMemo(() =>
     bookings
-      .filter(b => ['pending', 'confirmed'].includes(b.status))
+      .filter(b => ['proposed', 'agreed'].includes(visitPhase(b.status)))
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null,
   [bookings]);
 
@@ -107,8 +102,8 @@ export default function HomePage() {
         why: `${washesLeft} of ${membership.washesTotal} ${membership.plan} washes left this period — already paid for.`,
         category: 'Washing', urgent: false,
       };
-      const left = daysLeftISO(membership.endDate);
-      if (left <= 30) return {
+      const left = Math.max(0, daysLeft(membership.endDate));
+      if (left <= WANING_DAYS) return {
         id: 'member-renew', title: `Your membership renews in ${left} days`,
         why: `The ${membership.plan} plan ends ${formatDate(membership.endDate)}.`,
         category: 'Washing', urgent: false,
@@ -129,7 +124,7 @@ export default function HomePage() {
     : null;
 
   const heroImg = memories[0]?.photos.find(p => p.kind === 'after')?.url
-    ?? mediaFor(passport?.completed[0]?.serviceCategory);
+    ?? serviceMedia(passport?.completed[0]?.serviceCategory, 'ceramic');
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--void)' }}>

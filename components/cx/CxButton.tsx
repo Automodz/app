@@ -1,8 +1,12 @@
 'use client';
 /**
- * CxButton — the customer app's button. Three intents, one size discipline:
- * primary actions are full-width, bottom-anchored, 52px. Press feedback is
- * a 150ms scale — never a bounce.
+ * TEMPORARY (PRE-1) — Generation-A button. components/os/Action is the ONE
+ * button primitive; this legacy style survives only because its surfaces
+ * await replacement — visually delegating to Action now would restyle every
+ * live CTA mid-flight. No motion constants are defined here (press feedback
+ * is the tick duration via Tailwind's duration-150 utility class).
+ *
+ * TODO(P1–P6): each phase replaces its consumers with Action; P7 deletes.
  */
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
