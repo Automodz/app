@@ -32,6 +32,7 @@ import Layer from '@/components/os/Layer';
 import PhotoBand from '@/components/os/PhotoBand';
 import MomentEntry from '@/components/os/MomentEntry';
 import MemberCard from '@/components/os/MemberCard';
+import Desk, { type ShelfRow } from '@/components/os/Desk';
 import StudioSheet from '@/components/os/StudioSheet';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
@@ -62,7 +63,7 @@ export default function GlancePage() {
 function Glance() {
   const router = useRouter();
   const params = useSearchParams();
-  const { user, vehicles, bookings, setUser } = useAppStore();
+  const { user, vehicles, bookings } = useAppStore();
 
   const [services, setServices] = useState<Service[]>(STATIC_SERVICES);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -71,6 +72,7 @@ function Glance() {
   const pagerRef = useRef<HTMLDivElement>(null);
 
   const youOpen = params.get('sheet') === 'you';
+  const deskOpen = params.get('sheet') === 'desk';
   const [carFormOpen, setCarFormOpen] = useState(false);
 
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
@@ -126,7 +128,8 @@ function Glance() {
 
   /* ── capsule state (design B2) ── */
   const capsule = useMemo(() => {
-    if (!model || !vehicle) return { line: '', tap: () => router.push('/dashboard/booking') };
+    // quiet state (line: '') opens the Desk — the concierge's index
+    if (!model || !vehicle) return { line: '', tap: () => router.replace('/app?sheet=desk') };
     const modelWord = vehicle.name;
     if (model.live) {
       const act = careAct(model.live.status);
@@ -144,8 +147,25 @@ function Glance() {
         tap: () => router.push(`/dashboard/care/${model.agreed!.id}`), // TODO(P2): Desk
       };
     }
-    return { line: '', tap: () => router.push('/dashboard/booking') }; // TODO(P2): Desk
+    return { line: '', tap: () => router.replace('/app?sheet=desk') }; // quiet → Desk
   }, [model, vehicle, router]);
+
+  /* ── the Desk shelf (design system §7.4 · IA D2) — adaptive: a row exists
+     only when its object does. Thread & search land in P2. ── */
+  const deskRows: ShelfRow[] = useMemo(() => {
+    if (!vehicle) return [];
+    const rows: ShelfRow[] = [];
+    rows.push({ label: `The ${vehicle.name}’s care`, onTap: () => router.push('/dashboard/booking') }); // TODO(P2): visit-arrange sheet
+    if (model && model.protections.length)
+      rows.push({ label: 'Protection', detail: String(model.protections.length), onTap: () => router.replace('/app') }); // on the Glance
+    if (model && model.completed.some(b => b.invoiceId))
+      rows.push({ label: 'Papers & records', onTap: () => router.replace('/app') }); // on the Glance
+    if (membership || (model && model.completed.length >= 2))
+      rows.push({ label: 'The Club', onTap: () => router.push('/dashboard/subscriptions') }); // TODO(P6): join-club sheet
+    rows.push({ label: 'The studio', onTap: () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank') }); // WhatsApp thread at launch
+    rows.push({ label: 'You', onTap: () => router.replace('/app?sheet=you') });
+    return rows;
+  }, [vehicle, model, membership, router]);
 
   if (!user) return null;
 
@@ -407,6 +427,13 @@ function Glance() {
       )}
 
       <Capsule line={capsule.line} onTap={capsule.tap} onPhoto={false} />
+
+      <StudioSheet open={deskOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="The studio">
+        <div style={{ display: 'grid', gap: 8, paddingBottom: 8 }}>
+          <Title>The studio</Title>
+          <Desk rows={deskRows} />
+        </div>
+      </StudioSheet>
 
       <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
       <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />
