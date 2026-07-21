@@ -1,6 +1,7 @@
 import { termState, daysLeft, termAlive } from '@/lib/os/term';
 import { visitPhase, careAct, actIndex } from '@/lib/os/visit';
 import { truthOf } from '@/lib/os/truth';
+import { proposalFor } from '@/lib/os/proposal';
 import type { Booking } from '@/lib/types';
 
 const NOW = new Date('2026-07-20T10:00:00');
@@ -82,5 +83,31 @@ describe('truthOf priority', () => {
     for (const s of ['pending', 'in_progress', 'quality_check', 'ready_for_delivery'] as const) {
       expect(truthOf({ visits: [visit(s)], protections: [], now: NOW })).not.toMatch(/_|pending|progress|quality/);
     }
+  });
+});
+
+describe('proposal engine', () => {
+  const P = (until: number | null, kind: 'Ceramic' | 'PPF' = 'Ceramic') => ({
+    kind, applied: iso(-300), until: until === null ? null : new Date(`${iso(until)}T12:00:00`),
+    active: true, term: 'active' as const, service: 'x', warranty: '1 Year',
+  });
+  it('proposes protection renewal when a coat is waning/expiring, citing it', () => {
+    const p = proposalFor({ vehicleId: 'v1', protections: [P(5)], now: NOW });
+    expect(p).not.toBeNull();
+    expect(p!.serviceCategory).toBe('Ceramic');
+    expect(p!.reason.toLowerCase()).toContain('ceramic coat');
+  });
+  it('prefers the sooner-expiring protection', () => {
+    const p = proposalFor({ vehicleId: 'v1', protections: [P(20, 'PPF'), P(3, 'Ceramic')], now: NOW });
+    expect(p!.serviceCategory).toBe('Ceramic');
+  });
+  it('falls back to a wash when cadence is exceeded, citing last care', () => {
+    const p = proposalFor({ vehicleId: 'v1', protections: [P(200)], lastCaredOn: iso(-45), now: NOW });
+    expect(p!.serviceCategory).toBe('Washing');
+    expect(p!.reason).toMatch(/\d+ days since the last wash/);
+  });
+  it('is silent when protected and recently cared for (one-or-none per vehicle)', () => {
+    expect(proposalFor({ vehicleId: 'v1', protections: [P(200)], lastCaredOn: iso(-5), now: NOW })).toBeNull();
+    expect(proposalFor({ vehicleId: 'v1', protections: [], now: NOW })).toBeNull();
   });
 });

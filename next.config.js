@@ -39,6 +39,7 @@ const nextConfig = {
       { source: '/dashboard/offers', destination: '/app', permanent: true },
       { source: '/dashboard/refer', destination: '/app', permanent: true },
       { source: '/dashboard/cars', destination: '/cars', permanent: true },
+      { source: '/dashboard/booking', destination: '/app?sheet=arrange', permanent: true },
       { source: '/store/board', destination: '/admin', permanent: false },
       { source: '/store/new', destination: '/admin/walkin', permanent: false },
       { source: '/store/attendance', destination: '/admin/attendance', permanent: false },

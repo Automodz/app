@@ -31,6 +31,13 @@ export const PROTECTION_LABEL: Record<ProtectionKind, string> = {
   Coating: 'Glass & Teflon',
 };
 
+/** Voice label for customer surfaces ("Ceramic coat", not catalog names). */
+export const PROTECTION_WORD: Record<ProtectionKind, string> = {
+  PPF: 'Paint protection film',
+  Ceramic: 'Ceramic coat',
+  Coating: 'Glass coat',
+};
+
 export type Protection = {
   kind: ProtectionKind;
   applied: string;

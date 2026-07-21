@@ -123,7 +123,7 @@ export const markNoShow = async (
   await writeNotification(booking.userId, 'Missed appointment', body, 'booking_update', booking.id);
   try {
     const { sendPushToUser } = await import('./push');
-    sendPushToUser({ userId: booking.userId, title: 'Missed appointment', body, url: '/dashboard/booking' });
+    sendPushToUser({ userId: booking.userId, title: 'Missed appointment', body, url: '/app?sheet=arrange' });
   } catch { /* best-effort */ }
 };
 

@@ -76,12 +76,24 @@ export default function StyleguidePage() {
       </Layer>
 
       <Layer title="The desk">
-        <Desk rows={[
-          { label: "The C 43's care", detail: 'Thursday 10:00', onTap: () => setSheet(true) },
-          { label: 'Protection', detail: '2 live', onTap: () => setSheet(true) },
-          { label: 'Papers & records', onTap: () => setSheet(true) },
-          { label: 'The Club', onTap: () => setSheet(true) },
-        ]} />
+        <Desk
+          rows={[
+            { label: "The C 43's care", onTap: () => setSheet(true) },
+            { label: 'Protection', detail: '2 live', onTap: () => setSheet(true) },
+            { label: 'Papers & records', onTap: () => setSheet(true) },
+            { label: 'The Club', onTap: () => setSheet(true) },
+          ]}
+          proposal={{ reason: 'The ceramic coat has 24 days of protection left — time to renew it.', onAccept: () => setSheet(true) }}
+          visits={[
+            { id: 'a', line: 'Thursday, 10 July · 10:00 · confirmed', onTap: () => setSheet(true) },
+            { id: 'b', line: 'Full detail · 14 June 2026', sub: '₹8,400', onTap: () => setSheet(true) },
+          ]}
+          searchItems={[
+            { label: 'Care record — 14 June 2026', group: 'Records', onTap: () => setSheet(true) },
+            { label: 'Ceramic coat', group: 'Protection', onTap: () => setSheet(true) },
+          ]}
+          onMessage={() => setSheet(true)}
+        />
       </Layer>
 
       <Layer title="The stay">

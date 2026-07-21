@@ -6,25 +6,29 @@
  * the only fixed element. Vehicle switching is a horizontal pager; the
  * last page is the add-a-car invitation.
  *
- * P1 interim targets (tracked; each dies with its phase):
- *   TODO(P2): capsule quiet-tap → Desk; arrange/adjust/car-form/join sheets
- *   TODO(P3): capsule live-tap → the Stay (interim: legacy tracker route)
- *   TODO(P4): story taps → Chapter; records → Record view (interim: legacy)
+ * Interim targets (tracked; each dies with its phase):
+ *   TODO(P3): capsule/visit-card live-tap → the Stay (interim: legacy tracker route)
+ *   TODO(P4): story/record taps → Chapter; records → Record view (interim: legacy)
  *   TODO(P6): "Have a look" → join-club sheet (interim: legacy club page)
+ *   TODO(P7): CxVehicleForm → the car-form + portrait-capture sheet (onboarding)
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import { useAppStore } from '@/lib/store';
 import {
   getServices, getJobsForCustomer, getUserSubscription,
   updateUserProfile, logoutUser, STATIC_SERVICES,
+  createBooking, getAvailability,
 } from '@/lib/firebaseService';
-import type { Job, Service, Subscription, Vehicle } from '@/lib/types';
+import { generateTimeSlots, getAvailableDates } from '@/lib/utils';
+import type { Booking, Job, Service, Subscription, Vehicle } from '@/lib/types';
 import { truthOf, type ProtectionFact } from '@/lib/os/truth';
 import { visitPhase, careAct, ACT_TITLE } from '@/lib/os/visit';
 import { termState, daysLeft } from '@/lib/os/term';
-import { deriveProtection, type Protection } from '@/lib/cx/protection';
+import { proposalFor } from '@/lib/os/proposal';
+import { deriveProtection, PROTECTION_WORD } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
 import Capsule from '@/components/os/Capsule';
@@ -32,18 +36,13 @@ import Layer from '@/components/os/Layer';
 import PhotoBand from '@/components/os/PhotoBand';
 import MomentEntry from '@/components/os/MomentEntry';
 import MemberCard from '@/components/os/MemberCard';
-import Desk, { type ShelfRow } from '@/components/os/Desk';
+import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/components/os/Desk';
 import StudioSheet from '@/components/os/StudioSheet';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
 import { Display, Title, Body, Data, Whisper } from '@/components/os/text';
-import CxVehicleForm from '@/components/cx/CxVehicleForm'; // TODO(P2): replaced by the car-form sheet
+import CxVehicleForm from '@/components/cx/CxVehicleForm'; // TODO(P7): replaced by the car-form sheet
 import { COMPANY } from '@/lib/company';
-
-/* protection label per design voice ("Ceramic coat", not catalog names) */
-const PROTECTION_WORD: Record<Protection['kind'], string> = {
-  PPF: 'Paint protection film', Ceramic: 'Ceramic coat', Coating: 'Glass coat',
-};
 
 const fmtLong = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -73,6 +72,8 @@ function Glance() {
 
   const youOpen = params.get('sheet') === 'you';
   const deskOpen = params.get('sheet') === 'desk';
+  const arrangeOpen = params.get('sheet') === 'arrange';
+  const prefillCat = params.get('cat');
   const [carFormOpen, setCarFormOpen] = useState(false);
 
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
@@ -116,8 +117,12 @@ function Glance() {
       .filter(v => ['proposed', 'agreed'].includes(visitPhase(v.status)))
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null;
     const jobByBooking = new Map(jobs.filter(j => j.bookingId).map(j => [j.bookingId!, j]));
+    // one open proposal per vehicle — suppressed while a visit is already in flight
+    const proposal = (live || agreed) ? null : proposalFor({
+      vehicleId: vehicle.id, protections, lastCaredOn: completed[0]?.scheduledDate,
+    });
     return {
-      visits, completed, protections, live, agreed, jobByBooking,
+      visits, completed, protections, live, agreed, jobByBooking, proposal,
       truth: truthOf({
         visits,
         protections: facts,
@@ -127,7 +132,7 @@ function Glance() {
   }, [vehicle, bookings, services, jobs]);
 
   /* ── capsule state (design B2) ── */
-  const capsule = useMemo(() => {
+  const capsule = useMemo<{ line: string; tap: () => void; actionWord?: string; onAction?: () => void }>(() => {
     // quiet state (line: '') opens the Desk — the concierge's index
     if (!model || !vehicle) return { line: '', tap: () => router.replace('/app?sheet=desk') };
     const modelWord = vehicle.name;
@@ -144,7 +149,15 @@ function Glance() {
     if (model.agreed) {
       return {
         line: `${fmtDay(model.agreed.scheduledDate)} ${model.agreed.scheduledTime} · confirmed`,
-        tap: () => router.push(`/dashboard/care/${model.agreed!.id}`), // TODO(P2): Desk
+        tap: () => router.replace('/app?sheet=desk'),
+      };
+    }
+    if (model.proposal) {
+      return {
+        line: model.proposal.headline,
+        actionWord: 'Yes',
+        onAction: () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`),
+        tap: () => router.replace('/app?sheet=desk'),
       };
     }
     return { line: '', tap: () => router.replace('/app?sheet=desk') }; // quiet → Desk
@@ -155,17 +168,47 @@ function Glance() {
   const deskRows: ShelfRow[] = useMemo(() => {
     if (!vehicle) return [];
     const rows: ShelfRow[] = [];
-    rows.push({ label: `The ${vehicle.name}’s care`, onTap: () => router.push('/dashboard/booking') }); // TODO(P2): visit-arrange sheet
+    rows.push({ label: `The ${vehicle.name}’s care`, onTap: () => router.replace('/app?sheet=arrange') });
     if (model && model.protections.length)
       rows.push({ label: 'Protection', detail: String(model.protections.length), onTap: () => router.replace('/app') }); // on the Glance
     if (model && model.completed.some(b => b.invoiceId))
       rows.push({ label: 'Papers & records', onTap: () => router.replace('/app') }); // on the Glance
     if (membership || (model && model.completed.length >= 2))
       rows.push({ label: 'The Club', onTap: () => router.push('/dashboard/subscriptions') }); // TODO(P6): join-club sheet
-    rows.push({ label: 'The studio', onTap: () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank') }); // WhatsApp thread at launch
+    rows.push({ label: 'The studio', onTap: () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank') });
     rows.push({ label: 'You', onTap: () => router.replace('/app?sheet=you') });
     return rows;
   }, [vehicle, model, membership, router]);
+
+  /* ── the conversation feed: real visits + a global search index (IA D) ── */
+  const messageStudio = () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank');
+
+  const deskFeed = useMemo(() => {
+    if (!model || !vehicle) return { visits: [] as ThreadVisit[], search: [] as SearchItem[] };
+    const line = (b: Booking): string => {
+      const ph = visitPhase(b.status);
+      if (ph === 'live') { const a = careAct(b.status); return a ? `${ACT_TITLE[a]} — the ${vehicle.name} is with us` : 'In the studio'; }
+      if (ph === 'agreed') return `${fmtDayDate(b.scheduledDate)} · ${b.scheduledTime} · confirmed`;
+      if (ph === 'proposed') return `${b.serviceName} · requested`;
+      return `${b.serviceName} · ${fmtLong(b.scheduledDate)}`;
+    };
+    const visitsFeed: ThreadVisit[] = model.visits.slice(0, 6).reverse().map(b => ({
+      id: b.id,
+      line: line(b),
+      sub: visitPhase(b.status) === 'archived' ? `₹${b.totalAmount.toLocaleString('en-IN')}` : undefined,
+      onTap: () => router.push(`/dashboard/care/${b.id}`), // TODO(P3/P4): the Stay / Chapter
+    }));
+    const search: SearchItem[] = [
+      ...model.visits.map(b => ({ label: line(b), group: 'Visits', onTap: () => router.push(`/dashboard/care/${b.id}`) })),
+      ...model.completed.filter(b => b.invoiceId).map(b => ({
+        label: `Care record — ${fmtLong(b.scheduledDate)}`, group: 'Records',
+        onTap: () => router.push(`/invoice/${b.invoiceId}`), // TODO(P4): Chapter
+      })),
+      ...model.protections.map(p => ({ label: PROTECTION_WORD[p.kind], group: 'Protection', onTap: () => router.replace('/app') })),
+      ...(membership ? [{ label: `Club · ${membership.plan}`, group: 'Club', onTap: () => router.replace('/app') }] : []),
+    ];
+    return { visits: visitsFeed, search };
+  }, [model, vehicle, membership, router]);
 
   if (!user) return null;
 
@@ -252,9 +295,8 @@ function Glance() {
                 {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
               </Body>
               <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
-                {/* TODO(P2): visit-adjust sheet */}
-                <Action variant="quiet" onClick={() => router.push(`/dashboard/care/${model.agreed!.id}`)}>Change</Action>
-                <Action variant="quiet" onClick={() => router.push(`/dashboard/care/${model.agreed!.id}`)}>Cancel</Action>
+                {/* changes to an agreed visit go through the conversation */}
+                <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>Change or cancel</Action>
               </div>
             </Layer>
           )}
@@ -279,8 +321,7 @@ function Glance() {
                           {p.until ? `–${p.until.getFullYear()}` : ''} · ran its course.
                         </Body>
                         <div style={{ marginTop: 12 }}>
-                          {/* TODO(P2): renewal is an authored proposal in the thread */}
-                          <Action variant="quiet" onClick={() => router.push(`/dashboard/booking?cat=${p.kind}&vehicleId=${vehicle.id}`)}>Renew</Action>
+                          <Action variant="quiet" onClick={() => router.replace(`/app?sheet=arrange&cat=${p.kind}`)}>Renew</Action>
                         </div>
                       </div>
                     );
@@ -313,8 +354,7 @@ function Glance() {
                   The {vehicle.name}’s story starts with its first visit.
                 </Body>
                 <div style={{ marginTop: 12 }}>
-                  {/* TODO(P2): visit-arrange sheet */}
-                  <Action variant="quiet" onClick={() => router.push(`/dashboard/booking?vehicleId=${vehicle.id}`)}>Arrange one</Action>
+                  <Action variant="quiet" onClick={() => router.replace('/app?sheet=arrange')}>Arrange one</Action>
                 </div>
               </div>
             ) : (
@@ -417,8 +457,7 @@ function Glance() {
             <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em', display: 'block' }}>AUTOMODZ</Whisper>
             <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 8 }}>{COMPANY.address}</Data>
             <div style={{ marginTop: 12 }}>
-              {/* TODO(P2): the Desk */}
-              <Action variant="quiet" onClick={() => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank')}>
+              <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>
                 Message the studio
               </Action>
             </div>
@@ -426,14 +465,37 @@ function Glance() {
         </div>
       )}
 
-      <Capsule line={capsule.line} onTap={capsule.tap} onPhoto={false} />
+      <Capsule
+        line={capsule.line}
+        actionWord={capsule.actionWord}
+        onActionTap={capsule.onAction}
+        onTap={capsule.tap}
+        onPhoto={false}
+      />
 
       <StudioSheet open={deskOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="The studio">
-        <div style={{ display: 'grid', gap: 8, paddingBottom: 8 }}>
-          <Title>The studio</Title>
-          <Desk rows={deskRows} />
-        </div>
+        <Desk
+          rows={deskRows}
+          visits={deskFeed.visits}
+          searchItems={deskFeed.search}
+          proposal={model?.proposal ? {
+            reason: model.proposal.reason,
+            onAccept: () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`),
+          } : undefined}
+          onMessage={messageStudio}
+        />
       </StudioSheet>
+
+      {vehicle && (
+        <ArrangeSheet
+          open={arrangeOpen}
+          vehicle={vehicle}
+          services={services}
+          membership={membership}
+          prefillCat={prefillCat}
+          onClose={() => router.replace('/app')}
+        />
+      )}
 
       <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
       <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />
@@ -462,7 +524,7 @@ function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: b
   );
 }
 
-/* TODO(P2): replaced by the car-form sheet (make/model/year/plate + portrait) */
+/* TODO(P7): replaced by the car-form sheet (make/model/year/plate + portrait) */
 function AddCarSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="The car">
@@ -554,6 +616,156 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         <Action variant="quiet" onClick={async () => { await logoutUser(); router.replace('/auth/login'); }}>
           Sign out
         </Action>
+      </div>
+    </StudioSheet>
+  );
+}
+
+/* ── the arrange sheet (design E1) — care is agreed, not filed. Three
+   pre-answered questions; reuses the booking engine (createBooking +
+   availability + membership-wash) untouched. A visit is born `pending`
+   (= proposed); the studio confirms. ── */
+function ArrangeSheet({
+  open, vehicle, services, membership, prefillCat, onClose,
+}: {
+  open: boolean; vehicle: Vehicle; services: Service[];
+  membership: Subscription | null; prefillCat: string | null; onClose: () => void;
+}) {
+  const { user, addBookingToStore } = useAppStore();
+  const active = useMemo(() => services.filter(s => s.active !== false), [services]);
+
+  const [service, setService] = useState<Service | null>(null);
+  const [date, setDate] = useState<string | null>(null);
+  const [time, setTime] = useState<string | null>(null);
+  const [full, setFull] = useState<{ fullDates: string[]; fullSlots: Record<string, string[]> }>({ fullDates: [], fullSlots: {} });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const dates = useMemo(() => getAvailableDates(), []);
+
+  // reset + prefill each time the sheet opens
+  useEffect(() => {
+    if (!open) return;
+    setError(null); setDate(null); setTime(null); setBusy(false);
+    const pick = prefillCat ? active.find(s => s.category === prefillCat) ?? null : null;
+    setService(pick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, prefillCat]);
+
+  // availability for the chosen service (degrades to all-open when unauthorised)
+  useEffect(() => {
+    if (!open || !service) return;
+    getAvailability(dates, service.category, service.duration)
+      .then(setFull).catch(() => setFull({ fullDates: [], fullSlots: {} }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, service?.id]);
+
+  const washCovered = !!service && service.category === 'Washing' && !!membership
+    && membership.status === 'active' && (membership.washesTotal - membership.washesUsed) > 0;
+  const total = washCovered ? 0 : (service?.price ?? 0);
+
+  const times = service && date
+    ? generateTimeSlots(service.duration).filter(t => !(full.fullSlots[date] ?? []).includes(t))
+    : [];
+
+  const confirm = async () => {
+    if (!user || !service || !date || !time) return;
+    setBusy(true); setError(null);
+    const now = Timestamp.now();
+    const payload: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
+      userId: user.uid, userName: user.name, userPhone: user.phone || '', userEmail: user.email,
+      vehicleId: vehicle.id, vehicleName: vehicle.name, vehicleRegNo: vehicle.registrationNumber,
+      serviceId: service.id, serviceName: service.name, serviceCategory: service.category,
+      serviceBasePrice: service.price, serviceDurationMinutes: service.duration,
+      pickupDropRequired: false, pickupRequired: false, dropRequired: false, pickupDropFee: 0, pickupAddress: '',
+      totalAmount: total, scheduledDate: date, scheduledTime: time,
+      status: 'pending', paymentMethod: 'cash', paymentStatus: 'pending', transactionId: '',
+      usedMembershipWash: washCovered, membershipId: washCovered ? membership!.id : undefined,
+    };
+    try {
+      const id = await createBooking(payload);
+      addBookingToStore({ ...payload, id, createdAt: now, updatedAt: now });
+    } catch {
+      if (isDevUser(user.uid)) addBookingToStore({ ...payload, id: `dev-${Date.now()}`, createdAt: now, updatedAt: now });
+      else { setError('That didn’t reach us — try again.'); setBusy(false); return; }
+    }
+    onClose();
+  };
+
+  return (
+    <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="Arrange a visit">
+      <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
+        <Title>Arrange a visit</Title>
+        <Body tone="ink-2">For the {vehicle.name}.</Body>
+
+        {/* 1 · the care */}
+        {!service ? (
+          <div style={{ display: 'grid', gap: 16 }}>
+            {active.map(s => (
+              <button key={s.id} onClick={() => setService(s)}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
+                <Body style={{ fontSize: 19 }}>{s.name}</Body>
+                <Data>from ₹{s.price.toLocaleString('en-IN')}</Data>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <button onClick={() => { setService(null); setDate(null); setTime(null); }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', background: 'var(--st-gallery)', borderRadius: 16, padding: 16, width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+              <Body>{service.name}</Body>
+              <Data tone="ink-3">change</Data>
+            </button>
+
+            {/* 2 · the day */}
+            <div>
+              <Body tone="ink-2" style={{ marginBottom: 12 }}>When suits you?</Body>
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+                {dates.map(d => {
+                  const isFull = full.fullDates.includes(d);
+                  const sel = d === date;
+                  return (
+                    <button key={d} disabled={isFull} onClick={() => { setDate(d); setTime(null); }}
+                      style={{
+                        flex: '0 0 auto', padding: '10px 14px', borderRadius: 12, border: 'none', cursor: isFull ? 'default' : 'pointer',
+                        background: sel ? 'var(--st-linen)' : 'transparent', opacity: isFull ? 0.35 : 1,
+                        fontFamily: 'var(--st-text)', fontSize: 14, color: 'var(--st-ink)', whiteSpace: 'nowrap',
+                      }}>
+                      {new Date(`${d}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3 · the time */}
+            {date && (
+              <div>
+                <Body tone="ink-2" style={{ marginBottom: 12 }}>At?</Body>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {times.length ? times.map(t => (
+                    <button key={t} onClick={() => setTime(t)}
+                      style={{
+                        padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                        background: t === time ? 'var(--st-linen)' : 'transparent',
+                        fontFamily: 'var(--st-text)', fontSize: 14, color: 'var(--st-ink)',
+                      }}>{t}</button>
+                  )) : <Whisper>No room that day — try another.</Whisper>}
+                </div>
+              </div>
+            )}
+
+            {error && <Body tone="caution">{error}</Body>}
+
+            {date && time && (
+              <Action variant="primary" onClick={confirm} loading={busy}>
+                {washCovered
+                  ? `Confirm ${new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' })} ${time} · covered by the Club`
+                  : `Confirm ${new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' })} ${time}`}
+              </Action>
+            )}
+          </>
+        )}
       </div>
     </StudioSheet>
   );
