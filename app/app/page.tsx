@@ -40,7 +40,8 @@ import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/compon
 import StudioSheet from '@/components/os/StudioSheet';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
-import { Display, Title, Body, Data, Whisper } from '@/components/os/text';
+import EmptyState from '@/components/os/EmptyState';
+import { Display, Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
 import CxVehicleForm from '@/components/cx/CxVehicleForm'; // TODO(P7): replaced by the car-form sheet
 import { COMPANY } from '@/lib/company';
 
@@ -284,22 +285,36 @@ function Glance() {
 
       {/* ── layers for the visible vehicle ── */}
       {!onAddPage && vehicle && model && (
-        <div style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 96px)' }}>
+        <div style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement))' }}>
 
-          {/* B3 · Now — only when a visit is agreed (live lives in the capsule until P3) */}
-          {model.agreed && (
+          {/* B3 · Now — the next thing for this car. An agreed visit takes the
+              floor; otherwise the studio's one standing suggestion (live lives
+              in the capsule until P3). The two are mutually exclusive. */}
+          {model.agreed ? (
             <Layer>
+              <Whisper as="p" style={{ marginBottom: 'var(--st-breath)' }}>Your next visit</Whisper>
               <Title>{fmtDayDate(model.agreed.scheduledDate)} · {model.agreed.scheduledTime}</Title>
-              <Body tone="ink-2" style={{ marginTop: 12 }}>
+              <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }}>
                 {model.agreed.serviceName} · ₹{model.agreed.totalAmount.toLocaleString('en-IN')}
                 {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
               </Body>
-              <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
+              <div style={{ marginTop: 'var(--st-gap)' }}>
                 {/* changes to an agreed visit go through the conversation */}
                 <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>Change or cancel</Action>
               </div>
             </Layer>
-          )}
+          ) : model.proposal ? (
+            <Layer>
+              <Whisper as="p" style={{ marginBottom: 'var(--st-breath)' }}>A suggestion from the studio</Whisper>
+              <Emphasis>{model.proposal.reason}</Emphasis>
+              <div style={{ marginTop: 'var(--st-gap)' }}>
+                <Action variant="quiet"
+                  onClick={() => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`)}>
+                  Arrange it
+                </Action>
+              </div>
+            </Layer>
+          ) : null}
 
           {/* B4 · Protection */}
           {model.protections.length > 0 && (
@@ -315,12 +330,12 @@ function Glance() {
                   if (!p.active) {
                     /* ◆R13 — expired converts to typographic gallery band */
                     return (
-                      <div key={p.kind} style={{ background: 'var(--st-gallery)', borderRadius: 24, padding: 24 }}>
+                      <div key={p.kind} style={{ background: 'var(--st-gallery)', borderRadius: 'var(--st-r-sheet)', padding: 'var(--st-inset)' }}>
                         <Body>
                           {PROTECTION_WORD[p.kind]} · {new Date(p.applied + 'T12:00:00').getFullYear()}
                           {p.until ? `–${p.until.getFullYear()}` : ''} · ran its course.
                         </Body>
-                        <div style={{ marginTop: 12 }}>
+                        <div style={{ marginTop: 'var(--st-line)' }}>
                           <Action variant="quiet" onClick={() => router.replace(`/app?sheet=arrange&cat=${p.kind}`)}>Renew</Action>
                         </div>
                       </div>
@@ -349,14 +364,11 @@ function Glance() {
           {/* B5 · The story */}
           <Layer title="The story">
             {model.completed.length === 0 ? (
-              <div>
-                <Body tone="ink-2" style={{ fontSize: 19 }}>
-                  The {vehicle.name}’s story starts with its first visit.
-                </Body>
-                <div style={{ marginTop: 12 }}>
-                  <Action variant="quiet" onClick={() => router.replace('/app?sheet=arrange')}>Arrange one</Action>
-                </div>
-              </div>
+              <EmptyState
+                line={`The ${vehicle.name}’s story starts with its first visit.`}
+                actionLabel="Arrange one"
+                onAction={() => router.replace('/app?sheet=arrange')}
+              />
             ) : (
               <div style={{ display: 'grid', gap: 48 }}>
                 {model.completed.map(b => {
@@ -384,7 +396,7 @@ function Glance() {
           <Layer title="Papers">
             <Data tone="ink-2" style={{ display: 'block' }}>{vehicle.registrationNumber}</Data>
             {model.completed.filter(b => b.invoiceId).length > 0 && (
-              <div style={{ marginTop: 24, display: 'grid', gap: 12 }}>
+              <div style={{ marginTop: 'var(--st-inset)', display: 'grid', gap: 'var(--st-line)' }}>
                 {model.completed.filter(b => b.invoiceId).map(b => (
                   <button key={b.id} onClick={() => router.push(`/invoice/${b.invoiceId}`)} /* TODO(P4): record view */
                     style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
@@ -393,7 +405,7 @@ function Glance() {
                 ))}
               </div>
             )}
-            <div style={{ marginTop: 24 }}>
+            <div style={{ marginTop: 'var(--st-inset)' }}>
               <Action variant="quiet" onClick={() => setCarFormOpen(true)}>Edit details</Action>
             </div>
           </Layer>
@@ -429,20 +441,17 @@ function Glance() {
                   )}
                 </div>
               ) : (
-                <div>
-                  <Body style={{ fontSize: 19 }}>
-                    You wash often. The Club would suit the {vehicle.name}.
-                  </Body>
-                  <div style={{ marginTop: 12 }}>
-                    {/* TODO(P6): join-club sheet */}
-                    <Action variant="quiet" onClick={() => router.push('/dashboard/subscriptions')}>Have a look</Action>
-                  </div>
-                </div>
+                /* TODO(P6): "Have a look" → join-club sheet */
+                <EmptyState
+                  line={`You wash often. The Club would suit the ${vehicle.name}.`}
+                  actionLabel="Have a look"
+                  onAction={() => router.push('/dashboard/subscriptions')}
+                />
               )}
 
-              <div style={{ marginTop: 48 }}>
+              <div style={{ marginTop: 'var(--st-rest)' }}>
                 <Body>A friend’s first detail is on us.</Body>
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: 'var(--st-breath)' }}>
                   <Action variant="quiet" onClick={() => {
                     const url = typeof window !== 'undefined' ? window.location.origin : '';
                     if (navigator.share) navigator.share({ text: `My car lives at AutoModz — first detail's on me. ${url}` }).catch(() => {});
@@ -453,10 +462,10 @@ function Glance() {
           )}
 
           {/* the signature */}
-          <div style={{ marginTop: 96, padding: '0 24px' }}>
+          <div style={{ marginTop: 'var(--st-movement)', padding: '0 var(--st-inset)' }}>
             <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em', display: 'block' }}>AUTOMODZ</Whisper>
-            <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 8 }}>{COMPANY.address}</Data>
-            <div style={{ marginTop: 12 }}>
+            <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 'var(--st-breath)' }}>{COMPANY.address}</Data>
+            <div style={{ marginTop: 'var(--st-line)' }}>
               <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>
                 Message the studio
               </Action>
