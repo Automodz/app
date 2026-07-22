@@ -76,6 +76,10 @@ function Glance() {
   const arrangeOpen = params.get('sheet') === 'arrange';
   const prefillCat = params.get('cat');
   const [carFormOpen, setCarFormOpen] = useState(false);
+  const [showAllStory, setShowAllStory] = useState(false);
+
+  // the story summarises to its most recent chapters; the rest reveal on demand
+  const STORY_PREVIEW = 3;
 
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
   useEffect(() => {
@@ -231,7 +235,8 @@ function Glance() {
         ref={pagerRef}
         onScroll={e => {
           const el = e.currentTarget;
-          setPage(Math.round(el.scrollLeft / el.clientWidth));
+          const next = Math.round(el.scrollLeft / el.clientWidth);
+          if (next !== page) { setPage(next); setShowAllStory(false); }
         }}
         style={{
           display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory',
@@ -344,7 +349,9 @@ function Glance() {
                   }
                   const capLine = state === 'waning' || state === 'expiring'
                     ? `Renewal window open — ${left} day${left === 1 ? '' : 's'} left`
-                    : `Applied ${fmtMonthYear(p.applied)}${left !== null ? ` · ${left} days left` : ''}`;
+                    : untilISO
+                    ? `Protected until ${fmtMonthYear(untilISO)}`
+                    : `Applied ${fmtMonthYear(p.applied)}`;
                   return (
                     <PhotoBand
                       key={p.kind}
@@ -371,8 +378,8 @@ function Glance() {
                 onAction={() => router.replace('/app?sheet=arrange')}
               />
             ) : (
-              <div style={{ display: 'grid', gap: 48 }}>
-                {model.completed.map(b => {
+              <div style={{ display: 'grid', gap: 'var(--st-rest)' }}>
+                {(showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)).map(b => {
                   const job = model.jobByBooking.get(b.id);
                   const photos = job?.photos ?? [];
                   const best = photos.find(x => x.kind === 'after') ?? photos[0];
@@ -389,6 +396,11 @@ function Glance() {
                     />
                   );
                 })}
+                {!showAllStory && model.completed.length > STORY_PREVIEW && (
+                  <Action variant="quiet" onClick={() => setShowAllStory(true)}>
+                    Show earlier visits ({model.completed.length - STORY_PREVIEW})
+                  </Action>
+                )}
               </div>
             )}
           </Layer>
