@@ -11,6 +11,8 @@ import { motion } from 'framer-motion';
 import { press } from '@/lib/os/motion';
 import { Title, Body, Whisper } from './text';
 import Action from './Action';
+import type { LogEntry } from '@/lib/os/log';
+import { logDay } from '@/lib/os/log';
 
 export interface ShelfRow {
   label: string;            // "The C 43's care"
@@ -41,6 +43,9 @@ export interface DeskProps {
   visits: ThreadVisit[];
   proposal?: DeskProposal;
   searchItems: SearchItem[];
+  /** what the studio has already told you — a projection, not an inbox */
+  log?: LogEntry[];
+  onOpenLogEntry?: (entry: LogEntry) => void;
   onMessage: () => void;    // composer → studio (WhatsApp at launch)
 }
 
@@ -49,7 +54,7 @@ const CARD: React.CSSProperties = {
   width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
 };
 
-export default function Desk({ rows, visits, proposal, searchItems, onMessage }: DeskProps) {
+export default function Desk({ rows, visits, proposal, searchItems, log = [], onOpenLogEntry, onMessage }: DeskProps) {
   const [q, setQ] = useState('');
   const query = q.trim().toLowerCase();
   const results = query
@@ -125,6 +130,38 @@ export default function Desk({ rows, visits, proposal, searchItems, onMessage }:
               </motion.button>
             ))}
           </nav>
+
+          {/* what the studio has said — the same objects, in the order they
+              happened. No bell, no badge, no second store (audit #6). */}
+          {log.length > 0 && (
+            <section aria-label="What the studio has told you" style={{ display: 'grid', gap: 'var(--st-line)' }}>
+              {log.map((entry, i) => {
+                const day = logDay(entry.at);
+                const newDay = i === 0 || logDay(log[i - 1].at) !== day;
+                const line = (
+                  <>
+                    <Body tone="ink-2">{entry.line}</Body>
+                  </>
+                );
+                return (
+                  <div key={entry.id} style={{ display: 'grid', gap: 'var(--st-hair)' }}>
+                    {newDay && (
+                      <Whisper style={{ marginTop: i === 0 ? 0 : 'var(--st-line)' }}>{day}</Whisper>
+                    )}
+                    {entry.target && onOpenLogEntry ? (
+                      <button
+                        onClick={() => onOpenLogEntry(entry)}
+                        className="st-tap"
+                        style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                      >
+                        {line}
+                      </button>
+                    ) : line}
+                  </div>
+                );
+              })}
+            </section>
+          )}
 
           {/* the thread — real visits, newest last */}
           {visits.length > 0 && (

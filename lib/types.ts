@@ -29,8 +29,11 @@ export interface Vehicle {
   id: string;
   name: string;
   registrationNumber: string;
-  category: 'Hatchback' | 'Sedan' | 'Compact SUV' | 'Full SUV' | 'Luxury';
-  color: string;
+  /** the owner's portrait of the car — the Glance's hero when it exists */
+  photo?: string;
+  /** legacy descriptors; the photograph replaced the pickers that set them */
+  category?: 'Hatchback' | 'Sedan' | 'Compact SUV' | 'Full SUV' | 'Luxury';
+  color?: string;
   notes?: string;
   createdAt: Timestamp;
 }

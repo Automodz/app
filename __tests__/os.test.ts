@@ -6,8 +6,9 @@ import { deriveStay } from '@/lib/os/stay';
 import { deriveChapter, timeInCare } from '@/lib/os/chapter';
 import { papersFor } from '@/lib/os/papers';
 import { clubModel, cycleDaysLeft, cadenceLine } from '@/lib/os/club';
+import { conciergeLog, logDay } from '@/lib/os/log';
 import type { Protection } from '@/lib/cx/protection';
-import type { Booking, Subscription } from '@/lib/types';
+import type { Booking, Job, Subscription } from '@/lib/types';
 
 const NOW = new Date('2026-07-20T10:00:00');
 const iso = (d: number) => {
@@ -379,5 +380,87 @@ describe('the Club model', () => {
     expect(cadenceLine({ washesPerMonth: 4, washes: [wash(-2), wash(-20)], now: NOW })).toBeNull();
     expect(cadenceLine({ washesPerMonth: 4, washes: [wash(-5), wash(-35), wash(-65)], now: NOW }))
       .toBe('You wash about 1.4 times a month · this covers 4.');
+  });
+});
+
+describe('the concierge log', () => {
+  const ts = (d: Date) => ({ toDate: () => d }) as unknown as import('firebase/firestore').Timestamp;
+  const LOG_NOW = new Date('2026-07-20T18:00:00');
+
+  const visit = (over: Partial<Booking> = {}) => ({
+    id: 'v1', serviceName: 'Kovalent Graphene', scheduledDate: '2026-07-18',
+    status: 'completed',
+    createdAt: ts(new Date('2026-07-10T09:00:00')),
+    updatedAt: ts(new Date('2026-07-11T09:00:00')),
+    ...over,
+  }) as unknown as Booking;
+
+  const job = (over: Record<string, unknown> = {}) => ({
+    id: 'j1', status: 'completed',
+    statusHistory: [
+      { status: 'checked_in', at: ts(new Date('2026-07-18T09:05:00')), byEmployeeId: 'e', byEmployeeName: 'R' },
+      { status: 'in_progress', at: ts(new Date('2026-07-18T09:40:00')), byEmployeeId: 'e', byEmployeeName: 'R' },
+    ],
+    completedAt: ts(new Date('2026-07-18T17:00:00')),
+    ...over,
+  }) as unknown as Job;
+
+  const log = (over: Partial<Parameters<typeof conciergeLog>[0]> = {}) => conciergeLog({
+    visits: [visit()],
+    jobByBooking: new Map([['v1', job()]]),
+    membership: null, protections: [], vehicleName: 'BMW M340i', now: LOG_NOW,
+    ...over,
+  });
+
+  it('writes only what happened, newest first', () => {
+    const entries = log();
+    expect(entries.map(e => e.line)).toEqual([
+      'Kovalent Graphene was finished and filed to the BMW M340i’s story.',
+      'Work began on the BMW M340i.',
+      'The BMW M340i arrived at the studio.',
+      'The studio confirmed 18 July 2026 for the BMW M340i.',
+      'You asked for Kovalent Graphene on 18 July 2026.',
+    ]);
+  });
+
+  it('does not claim a confirmation the studio has not given', () => {
+    const entries = log({ visits: [visit({ status: 'pending' })], jobByBooking: new Map() });
+    expect(entries.map(e => e.line)).toEqual(['You asked for Kovalent Graphene on 18 July 2026.']);
+  });
+
+  it('records a cancellation plainly and files nothing after it', () => {
+    const entries = log({ visits: [visit({ status: 'cancelled' })], jobByBooking: new Map() });
+    expect(entries.some(e => /was cancelled/.test(e.line))).toBe(true);
+    expect(entries.some(e => /finished and filed/.test(e.line))).toBe(false);
+  });
+
+  it('sends live visits to the Stay and finished ones to their Chapter', () => {
+    expect(log()[0].target).toEqual({ kind: 'chapter', bookingId: 'v1' });
+    const live = log({ visits: [visit({ status: 'in_progress' })], jobByBooking: new Map() });
+    expect(live[0].target).toEqual({ kind: 'visit', bookingId: 'v1' });
+  });
+
+  it('carries protection and membership only when they exist', () => {
+    expect(log().some(e => /applied/.test(e.line))).toBe(false);
+    const rich = log({
+      protections: [{
+        kind: 'Ceramic', applied: '2026-07-12', until: new Date('2029-07-12T12:00:00'),
+        active: true, term: 'active', service: 'Kovalent Graphene', warranty: '3 Year',
+      } as unknown as Protection],
+      membership: { id: 'm1', plan: 'Silver', status: 'active', startDate: '2026-07-05' } as unknown as Subscription,
+    });
+    expect(rich.some(e => e.line === 'Ceramic coat applied — protected until July 2029.')).toBe(true);
+    expect(rich.some(e => e.line === 'The studio confirmed your Club membership on Silver.')).toBe(true);
+  });
+
+  it('never writes the future', () => {
+    const entries = log({ visits: [visit({ status: 'confirmed', scheduledDate: '2026-08-01', createdAt: ts(new Date('2026-07-25T09:00:00')), updatedAt: ts(new Date('2026-07-25T09:00:00')) })], jobByBooking: new Map() });
+    expect(entries).toEqual([]);
+  });
+
+  it('groups by day in plain words', () => {
+    expect(logDay(new Date('2026-07-20T08:00:00'), LOG_NOW)).toBe('Today');
+    expect(logDay(new Date('2026-07-19T08:00:00'), LOG_NOW)).toBe('Yesterday');
+    expect(logDay(new Date('2026-07-12T08:00:00'), LOG_NOW)).toBe('12 July 2026');
   });
 });

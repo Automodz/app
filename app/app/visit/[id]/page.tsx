@@ -18,7 +18,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion, useReducedMotion, type PanInfo } from 'framer-motion';
 import { COMPANY } from '@/lib/company';
 import { useAppStore } from '@/lib/store';
-import { useVisitJob } from '@/components/cx/useVisitJob';
+import { useVisitJob } from '@/components/os/useVisitJob';
 import { deriveStay, fmtClock } from '@/lib/os/stay';
 import { scene, studioEase, rise } from '@/lib/os/motion';
 import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';

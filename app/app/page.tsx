@@ -8,7 +8,6 @@
  *
  * Interim targets (tracked; each dies with its phase):
  *   TODO(P6): "Have a look" → join-club sheet (interim: legacy club page)
- *   TODO(P7): CxVehicleForm → the car-form + portrait-capture sheet (onboarding)
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -28,6 +27,7 @@ import { daysLeft } from '@/lib/os/term';
 import { proposalFor } from '@/lib/os/proposal';
 import { papersFor } from '@/lib/os/papers';
 import { clubModel } from '@/lib/os/club';
+import { conciergeLog } from '@/lib/os/log';
 import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS, DEV_MEMBERSHIP } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
@@ -35,6 +35,8 @@ import IdentityPlate, { plateSurface } from '@/components/os/IdentityPlate';
 import StudioIntro from '@/components/os/StudioIntro';
 import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
 import JoinClub from '@/components/os/JoinClub';
+import CarForm from '@/components/os/CarForm';
+import { markWelcomed, hasBeenWelcomed } from '@/lib/os/welcome';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
 import ProtectionRecord from '@/components/os/ProtectionRecord';
@@ -47,7 +49,6 @@ import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
 import EmptyState from '@/components/os/EmptyState';
 import { Display, Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
-import CxVehicleForm from '@/components/cx/CxVehicleForm'; // TODO(P7): replaced by the car-form sheet
 import { COMPANY } from '@/lib/company';
 
 const fmtLong = (iso: string) =>
@@ -99,11 +100,26 @@ function Glance() {
   const protectionOpen = params.get('focus') === 'protection';
   const joinClubOpen = params.get('sheet') === 'join-club';
   const prefillCat = params.get('cat');
-  const [carFormOpen, setCarFormOpen] = useState(false);
+  // every sheet is addressable (design D1), the car form included
+  const carFormOpen = params.get('sheet') === 'car-form';
+  const editingCarId = params.get('car-id');
   const [showAllStory, setShowAllStory] = useState(false);
 
   // the story summarises to its most recent chapters; the rest reveal on demand
   const STORY_PREVIEW = 3;
+
+  const openCarForm = (v?: Vehicle) =>
+    router.replace(`/app?sheet=car-form${v ? `&car-id=${v.id}` : ''}`);
+
+  /* a first authenticated open with an empty garage belongs to the welcome;
+     a customer who skipped the car keeps the garage invitation instead */
+  useEffect(() => {
+    if (!user || vehicles.length > 0) return;
+    if (!hasBeenWelcomed()) router.replace('/app/welcome');
+  }, [user, vehicles.length, router]);
+
+  // a garage with a car in it has met the welcome
+  useEffect(() => { if (vehicles.length > 0) markWelcomed(); }, [vehicles.length]);
 
   // reaching the Desk *is* the lesson — the nudge retires the moment it opens
   useEffect(() => { if (deskOpen) markCoachSeen(); }, [deskOpen]);
@@ -183,6 +199,18 @@ function Glance() {
     () => (model ? papersFor({ completed: model.completed, protections: model.protections }) : []),
     [model],
   );
+
+  /* what the studio has already told this customer — one timeline, no inbox */
+  const log = useMemo(() => {
+    if (!vehicle || !model) return [];
+    return conciergeLog({
+      visits: bookings.filter(b => b.vehicleId === vehicle.id),
+      jobByBooking: model.jobByBooking,
+      membership,
+      protections: model.protections,
+      vehicleName: vehicle.name,
+    });
+  }, [vehicle, model, bookings, membership]);
 
   /* ── capsule state (design B2) ── */
   const capsule = useMemo<{ line: string; tap: () => void; actionWord?: string; onAction?: () => void }>(() => {
@@ -296,28 +324,14 @@ function Glance() {
 
   if (!user) return null;
 
-  /* first-run without a vehicle: the invitation is the whole glance */
+  /* an empty garage: the invitation is the whole Glance (a customer who met
+     the welcome and chose to add the car later) */
   if (vehicles.length === 0) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex' }}>
-        <AddCarInvitation onAdd={() => setCarFormOpen(true)} full />
-        <StudioSheet open={joinClubOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="The Club">
-        {vehicle && (
-          <JoinClub
-            vehicleName={vehicle.name}
-            washes={washHistory}
-            rejoining={club.state === 'lapsed' || club.state === 'grace'}
-            onJoined={() => {
-              // the membership is now pending; the Club layer says so itself
-              if (user) getUserSubscription(user.uid).then(s => setMembership(s ?? null)).catch(() => {});
-              router.replace('/app');
-            }}
-          />
-        )}
-      </StudioSheet>
-
-      <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
-        <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />
+      <div style={{ minHeight: '100vh' }}>
+        <AddCarInvitation onAdd={() => openCarForm()} full />
+        <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
+        <CarFormSheet open={carFormOpen} editing={null} onClose={() => router.replace('/app')} />
       </div>
     );
   }
@@ -342,6 +356,7 @@ function Glance() {
             <Portrait
               name={v.name}
               plate={v.registrationNumber}
+              photo={v.photo}
               truth={v.id === vehicle?.id && model ? model.truth : ''}
               minHeight="92vh"
             >
@@ -379,7 +394,7 @@ function Glance() {
         ))}
         {/* last page: add-a-car (◆R14) */}
         <div style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
-          <AddCarInvitation onAdd={() => setCarFormOpen(true)} />
+          <AddCarInvitation onAdd={() => openCarForm()} />
         </div>
       </div>
 
@@ -530,7 +545,7 @@ function Glance() {
               </div>
             )}
             <div style={{ marginTop: 'var(--st-inset)' }}>
-              <Action variant="quiet" onClick={() => setCarFormOpen(true)}>Edit details</Action>
+              <Action variant="quiet" onClick={() => openCarForm(vehicle)}>Edit details</Action>
             </div>
           </Layer>
 
@@ -638,6 +653,12 @@ function Glance() {
           rows={deskRows}
           visits={deskFeed.visits}
           searchItems={deskFeed.search}
+          log={log}
+          onOpenLogEntry={entry => router.push(
+            entry.target!.kind === 'chapter'
+              ? `/app/chapter/${entry.target!.bookingId}`
+              : `/app/visit/${entry.target!.bookingId}`,
+          )}
           proposal={model?.proposal ? {
             reason: model.proposal.reason,
             onAccept: () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`),
@@ -673,7 +694,11 @@ function Glance() {
       </StudioSheet>
 
       <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
-      <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />
+      <CarFormSheet
+        open={carFormOpen}
+        editing={vehicles.find(v => v.id === editingCarId) ?? null}
+        onClose={() => router.replace('/app')}
+      />
     </div>
   );
 }
@@ -700,11 +725,13 @@ function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: b
   );
 }
 
-/* TODO(P7): replaced by the car-form sheet (make/model/year/plate + portrait) */
-function AddCarSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** Add or edit a car — the one form, in the Studio's own language. */
+function CarFormSheet({ open, editing, onClose }: {
+  open: boolean; editing?: Vehicle | null; onClose: () => void;
+}) {
   return (
     <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="The car">
-      <CxVehicleForm onSaved={onClose} onClose={onClose} />
+      <CarForm editing={editing} onSaved={onClose} />
     </StudioSheet>
   );
 }
