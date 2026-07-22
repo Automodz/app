@@ -117,7 +117,8 @@ export default function IdentityPlate({
       {/* the marque rests on the light - a soft shadow grounds it (hero only) */}
       {hero && (
         <div aria-hidden style={{
-          position: 'absolute', bottom: '33%', width: '58%', height: 76,
+          position: 'absolute', bottom: '33%', left: '50%', transform: 'translateX(-50%)',
+          width: 'min(58%, 260px)', height: 76,
           borderRadius: '50%', filter: 'blur(8px)',
           background: 'radial-gradient(ellipse at center, var(--st-hairline) 0%, transparent 72%)',
         }} />
