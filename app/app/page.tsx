@@ -25,7 +25,7 @@ import {
 import { generateTimeSlots, getAvailableDates } from '@/lib/utils';
 import type { Booking, Job, Service, Subscription, Vehicle } from '@/lib/types';
 import { truthOf, type ProtectionFact } from '@/lib/os/truth';
-import { visitPhase, careAct, ACT_TITLE } from '@/lib/os/visit';
+import { visitPhase, careAct, ACT_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import { termState, daysLeft } from '@/lib/os/term';
 import { proposalFor } from '@/lib/os/proposal';
 import { deriveProtection, PROTECTION_WORD } from '@/lib/cx/protection';
@@ -152,8 +152,10 @@ function Glance() {
       };
     }
     if (model.agreed) {
+      // a just-arranged visit is `proposed` (pending) until the studio confirms
+      const stateWord = visitPhase(model.agreed.status) === 'agreed' ? 'confirmed' : 'requested';
       return {
-        line: `${fmtDay(model.agreed.scheduledDate)} ${model.agreed.scheduledTime} · confirmed`,
+        line: `${fmtDay(model.agreed.scheduledDate)} ${model.agreed.scheduledTime} · ${stateWord}`,
         tap: () => router.replace('/app?sheet=desk'),
       };
     }
@@ -298,14 +300,19 @@ function Glance() {
               in the capsule until P3). The two are mutually exclusive. */}
           {model.agreed ? (
             <Layer>
-              <Whisper as="p" style={{ marginBottom: 'var(--st-breath)' }}>Your next visit</Whisper>
+              <Whisper as="p" style={{ marginBottom: 'var(--st-breath)' }}>
+                {visitPhase(model.agreed.status) === 'agreed' ? 'Your next visit' : 'Requested'}
+              </Whisper>
               <Title>{fmtDayDate(model.agreed.scheduledDate)} · {model.agreed.scheduledTime}</Title>
               <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }}>
                 {model.agreed.serviceName} · ₹{model.agreed.totalAmount.toLocaleString('en-IN')}
                 {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
               </Body>
+              {visitPhase(model.agreed.status) === 'proposed' && (
+                <Whisper as="p" style={{ marginTop: 'var(--st-breath)' }}>{PHASE_LINE.proposed}</Whisper>
+              )}
               <div style={{ marginTop: 'var(--st-gap)' }}>
-                {/* changes to an agreed visit go through the conversation */}
+                {/* changes to a visit go through the conversation */}
                 <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>Change or cancel</Action>
               </div>
             </Layer>
@@ -441,9 +448,8 @@ function Glance() {
                       {membership.washesTotal - membership.washesUsed} washes left this cycle · renews {fmtLong(membership.endDate)}
                     </Body>
                   ) : membership.status === 'pending' ? (
-                    <Whisper style={{ marginTop: 16, display: 'block' }}>
-                      The studio is confirming — your card goes live within hours.
-                    </Whisper>
+                    /* the pending line lives inside MemberCard — no repeat here */
+                    null
                   ) : (
                     <div style={{ marginTop: 16 }}>
                       <Body tone="ink-2">Rejoin any time — your history holds.</Body>

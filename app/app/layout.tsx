@@ -5,6 +5,7 @@
  * belongs to the page. This layout only guards auth and loads the objects.
  */
 import { useEffect } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import {
@@ -56,8 +57,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="studio" style={{ minHeight: '100vh', background: 'var(--st-paper)' }}>
-      {children}
-    </div>
+    // reducedMotion="user" makes every framer animation under the customer
+    // tree honour the OS setting (transform/reveal off, opacity kept) — one
+    // reusable guard instead of per-component checks.
+    <MotionConfig reducedMotion="user">
+      <div className="studio" style={{ minHeight: '100vh', background: 'var(--st-paper)' }}>
+        {children}
+      </div>
+    </MotionConfig>
   );
 }
