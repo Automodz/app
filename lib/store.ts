@@ -8,12 +8,6 @@ interface AppState {
   setUser: (u: User | null) => void;
   setAuthLoading: (v: boolean) => void;
 
-  /** True once the first vehicles+bookings load for the signed-in user has
-   *  settled (success or failure). The shell holds on the loading frame until
-   *  this flips, so an owner never sees an empty garage against unloaded data. */
-  initialDataLoaded: boolean;
-  setInitialDataLoaded: (v: boolean) => void;
-
   vehicles: Vehicle[];
   setVehicles: (v: Vehicle[]) => void;
   addVehicleToStore: (v: Vehicle) => void;
@@ -44,9 +38,6 @@ export const useAppStore = create<AppState>()(
       user: null, authLoading: true,
       setUser: (user) => set({ user }),
       setAuthLoading: (authLoading) => set({ authLoading }),
-
-      initialDataLoaded: false,
-      setInitialDataLoaded: (initialDataLoaded) => set({ initialDataLoaded }),
 
       vehicles: [],
       setVehicles: (vehicles) => set({ vehicles }),
