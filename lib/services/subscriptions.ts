@@ -75,12 +75,6 @@ export const updateSubscriptionStatus = async (
   await updateDoc(doc(db, 'subscriptions', id), data);
 };
 
-/** Client-side computed check only - no writes (see withComputedExpiry). */
-export const checkAndExpireSubscription = async (uid: string): Promise<Subscription | null> => {
-  const sub = await getUserSubscription(uid);
-  return sub && sub.status === 'expired' ? sub : null;
-};
-
 /**
  * ADMIN ONLY: persist expiry for all lapsed-but-still-'active' subscriptions.
  * Called from the admin subscriptions page on load (admin may write per rules).

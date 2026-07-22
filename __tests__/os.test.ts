@@ -5,8 +5,9 @@ import { proposalFor } from '@/lib/os/proposal';
 import { deriveStay } from '@/lib/os/stay';
 import { deriveChapter, timeInCare } from '@/lib/os/chapter';
 import { papersFor } from '@/lib/os/papers';
+import { clubModel, cycleDaysLeft, cadenceLine } from '@/lib/os/club';
 import type { Protection } from '@/lib/cx/protection';
-import type { Booking } from '@/lib/types';
+import type { Booking, Subscription } from '@/lib/types';
 
 const NOW = new Date('2026-07-20T10:00:00');
 const iso = (d: number) => {
@@ -320,5 +321,63 @@ describe('the papers vault', () => {
 
   it('is silent for a car that owns nothing yet', () => {
     expect(papersFor({ completed: [], protections: [] })).toEqual([]);
+  });
+});
+
+describe('the Club model', () => {
+  const sub = (over: Record<string, unknown> = {}) => ({
+    id: 'm1', plan: 'Silver', status: 'active',
+    startDate: iso(-20), endDate: iso(10),
+    washesTotal: 4, washesUsed: 1, ...over,
+  }) as unknown as Subscription;
+
+  const wash = (day: number) => ({
+    id: `w${day}`, status: 'completed', serviceCategory: 'Washing',
+    scheduledDate: iso(day),
+  }) as unknown as Booking;
+
+  it('is silent about the Club for a car that has barely visited', () => {
+    const c = clubModel({ membership: null, completed: [wash(-10)], now: NOW });
+    expect(c.state).toBe('none');
+    expect(c.invited).toBe(false);
+  });
+
+  it('earns the invitation after the second visit', () => {
+    expect(clubModel({ membership: null, completed: [wash(-10), wash(-40)], now: NOW }).invited).toBe(true);
+  });
+
+  it('counts the cycle off the membership, never recomputing it', () => {
+    const c = clubModel({ membership: sub(), completed: [], now: NOW });
+    expect(c.state).toBe('active');
+    expect([c.washesUsed, c.washesLeft, c.washesTotal]).toEqual([1, 3, 4]);
+    expect(c.context).toBe(`3 washes left this cycle · renews ${new Date(`${iso(10)}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`);
+    expect(cycleDaysLeft(c, NOW)).toBe(11);
+  });
+
+  it('holds a pending join without a context line — the card says it', () => {
+    const c = clubModel({ membership: sub({ status: 'pending' }), completed: [], now: NOW });
+    expect(c.state).toBe('pending');
+    expect(c.awaitingPayment).toBe(true);
+    expect(c.context).toBeNull();
+  });
+
+  it('gives membership its grace, then lets it lapse with dignity', () => {
+    expect(clubModel({ membership: sub({ endDate: iso(-3) }), completed: [], now: NOW }).state).toBe('grace');
+    const lapsed = clubModel({ membership: sub({ endDate: iso(-40) }), completed: [], now: NOW });
+    expect(lapsed.state).toBe('lapsed');
+    expect(lapsed.context).toBe('Rejoin any time — your history holds.');
+    expect(clubModel({ membership: sub({ status: 'expired' }), completed: [], now: NOW }).state).toBe('lapsed');
+  });
+
+  it('treats a cancelled membership as no membership', () => {
+    expect(clubModel({ membership: sub({ status: 'cancelled' }), completed: [], now: NOW }).state).toBe('none');
+  });
+
+  it('states the customer’s own cadence, and says nothing when it cannot', () => {
+    expect(cadenceLine({ washesPerMonth: 4, washes: [wash(-5)], now: NOW })).toBeNull();
+    // less than a month of history says nothing at all
+    expect(cadenceLine({ washesPerMonth: 4, washes: [wash(-2), wash(-20)], now: NOW })).toBeNull();
+    expect(cadenceLine({ washesPerMonth: 4, washes: [wash(-5), wash(-35), wash(-65)], now: NOW }))
+      .toBe('You wash about 1.4 times a month · this covers 4.');
   });
 });

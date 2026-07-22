@@ -27,12 +27,14 @@ import { visitPhase, careAct, ACT_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import { daysLeft } from '@/lib/os/term';
 import { proposalFor } from '@/lib/os/proposal';
 import { papersFor } from '@/lib/os/papers';
+import { clubModel } from '@/lib/os/club';
 import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
-import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
+import { isDevUser, DEV_JOBS, DEV_MEMBERSHIP } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
 import IdentityPlate, { plateSurface } from '@/components/os/IdentityPlate';
 import StudioIntro from '@/components/os/StudioIntro';
 import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
+import JoinClub from '@/components/os/JoinClub';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
 import ProtectionRecord from '@/components/os/ProtectionRecord';
@@ -95,6 +97,7 @@ function Glance() {
   const deskOpen = params.get('sheet') === 'desk';
   const arrangeOpen = params.get('sheet') === 'arrange';
   const protectionOpen = params.get('focus') === 'protection';
+  const joinClubOpen = params.get('sheet') === 'join-club';
   const prefillCat = params.get('cat');
   const [carFormOpen, setCarFormOpen] = useState(false);
   const [showAllStory, setShowAllStory] = useState(false);
@@ -108,7 +111,7 @@ function Glance() {
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
   useEffect(() => {
     if (!user) return;
-    if (isDevUser(user.uid)) { setJobs(Object.values(DEV_JOBS)); return; }
+    if (isDevUser(user.uid)) { setJobs(Object.values(DEV_JOBS)); setMembership(DEV_MEMBERSHIP); return; }
     getJobsForCustomer(user.uid).then(setJobs).catch(() => setJobs([]));
     getUserSubscription(user.uid)
       .then(s => setMembership(s ?? null)).catch(() => setMembership(null));
@@ -159,6 +162,21 @@ function Glance() {
       }),
     };
   }, [vehicle, bookings, services, jobs]);
+
+  /* the relationship, derived once — the Club layer, the Desk and the join
+     sheet all read the same model */
+  const club = useMemo(
+    () => clubModel({ membership, completed: bookings.filter(b => visitPhase(b.status) === 'archived') }),
+    [membership, bookings],
+  );
+
+  /* this customer's own wash cadence — the join sheet's honest arithmetic */
+  const washHistory = useMemo(
+    () => bookings
+      .filter(b => visitPhase(b.status) === 'archived' && b.serviceCategory === 'Washing')
+      .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate)),
+    [bookings],
+  );
 
   /* the car's own papers — warranties that still protect, receipts that exist */
   const papers = useMemo(
@@ -212,12 +230,18 @@ function Glance() {
       rows.push({ label: 'Protection', detail: String(model.protections.length), onTap: () => router.replace('/app?focus=protection') });
     if (model && model.completed.some(b => b.invoiceId))
       rows.push({ label: 'Papers & records', onTap: () => router.replace('/app') }); // the vault is a Glance layer
-    if (membership || (model && model.completed.length >= 2))
-      rows.push({ label: 'The Club', onTap: () => router.push('/dashboard/subscriptions') }); // TODO(P6): join-club sheet
+    if (club.state !== 'none' || club.invited)
+      rows.push({
+        label: 'The Club',
+        detail: club.state === 'active' || club.state === 'grace'
+          ? `${club.washesLeft} wash${club.washesLeft === 1 ? '' : 'es'} left` : undefined,
+        onTap: () => router.replace(club.state === 'none' || club.state === 'lapsed'
+          ? '/app?sheet=join-club' : '/app'),
+      });
     rows.push({ label: 'The studio', onTap: () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank') });
     rows.push({ label: 'You', onTap: () => router.replace('/app?sheet=you') });
     return rows;
-  }, [vehicle, model, membership, router]);
+  }, [vehicle, model, club, router]);
 
   /* ── the conversation feed: real visits + a global search index (IA D) ── */
   const messageStudio = () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank');
@@ -247,10 +271,28 @@ function Glance() {
         onTap: () => router.push(`/app/chapter/${b.id}`),
       })),
       ...model.protections.map(p => ({ label: PROTECTION_WORD[p.kind], group: 'Protection', onTap: () => router.replace('/app?focus=protection') })),
-      ...(membership ? [{ label: `Club · ${membership.plan}`, group: 'Club', onTap: () => router.replace('/app') }] : []),
+      /* the Conversation answers membership from the same model — real
+         sentences about a real cycle, never a scripted reply */
+      ...(club.state !== 'none' ? [
+        {
+          label: `Club · ${club.plan}${club.state === 'pending' ? ' · confirming' : ''}`,
+          group: 'Club', onTap: () => router.replace('/app'),
+        },
+        ...(club.context ? [{ label: club.context, group: 'Club', onTap: () => router.replace('/app') }] : []),
+        ...(club.washesUsed > 0 ? [{
+          label: `${club.washesUsed} of ${club.washesTotal} washes used this cycle`,
+          group: 'Club', onTap: () => router.replace('/app'),
+        }] : []),
+        ...(club.state === 'lapsed' || club.state === 'grace' ? [{
+          label: club.state === 'grace' ? 'Renew the Club' : 'Rejoin the Club',
+          group: 'Club', onTap: () => router.replace('/app?sheet=join-club'),
+        }] : []),
+      ] : club.invited ? [
+        { label: 'The Club — have a look', group: 'Club', onTap: () => router.replace('/app?sheet=join-club') },
+      ] : []),
     ];
     return { visits: visitsFeed, search };
-  }, [model, vehicle, membership, router]);
+  }, [model, vehicle, club, router]);
 
   if (!user) return null;
 
@@ -259,7 +301,22 @@ function Glance() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex' }}>
         <AddCarInvitation onAdd={() => setCarFormOpen(true)} full />
-        <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
+        <StudioSheet open={joinClubOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="The Club">
+        {vehicle && (
+          <JoinClub
+            vehicleName={vehicle.name}
+            washes={washHistory}
+            rejoining={club.state === 'lapsed' || club.state === 'grace'}
+            onJoined={() => {
+              // the membership is now pending; the Club layer says so itself
+              if (user) getUserSubscription(user.uid).then(s => setMembership(s ?? null)).catch(() => {});
+              router.replace('/app');
+            }}
+          />
+        )}
+      </StudioSheet>
+
+      <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
         <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />
       </div>
     );
@@ -477,41 +534,35 @@ function Glance() {
             </div>
           </Layer>
 
-          {/* B7 · The Club */}
-          {(membership || model.completed.length >= 2) && (
+          {/* B7 · The Club — the relationship, told by the club model. The
+              card is the object; one true line sits under it. */}
+          {(club.state !== 'none' || club.invited) && (
             <Layer title="The Club">
-              {membership && membership.status !== 'cancelled' ? (
+              {club.state !== 'none' ? (
                 <div>
                   <MemberCard
                     name={user.name}
-                    tier={`Club · since ${fmtMonthYear(membership.startDate)}`}
-                    since={membership.plan}
-                    state={membership.status === 'active' && daysLeft(membership.endDate) > 0
-                      ? 'active' : membership.status === 'pending' ? 'pending' : 'lapsed'}
+                    tier={`Club · since ${fmtMonthYear(club.since!)}`}
+                    since={club.plan!}
+                    state={club.state === 'pending' ? 'pending'
+                      : club.state === 'lapsed' ? 'lapsed' : 'active'}
                   />
-                  {membership.status === 'active' && daysLeft(membership.endDate) > 0 ? (
-                    <Body tone="ink-2" style={{ marginTop: 16 }}>
-                      {membership.washesTotal - membership.washesUsed} washes left this cycle · renews {fmtLong(membership.endDate)}
-                    </Body>
-                  ) : membership.status === 'pending' ? (
-                    /* the pending line lives inside MemberCard — no repeat here */
-                    null
-                  ) : (
-                    <div style={{ marginTop: 16 }}>
-                      <Body tone="ink-2">Rejoin any time — your history holds.</Body>
-                      {/* TODO(P6): join-club sheet */}
-                      <div style={{ marginTop: 8 }}>
-                        <Action variant="quiet" onClick={() => router.push('/dashboard/subscriptions')}>Rejoin</Action>
-                      </div>
+                  {club.context && (
+                    <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>{club.context}</Body>
+                  )}
+                  {(club.state === 'lapsed' || club.state === 'grace') && (
+                    <div style={{ marginTop: 'var(--st-breath)' }}>
+                      <Action variant="quiet" onClick={() => router.replace('/app?sheet=join-club')}>
+                        {club.state === 'grace' ? 'Renew' : 'Rejoin'}
+                      </Action>
                     </div>
                   )}
                 </div>
               ) : (
-                /* TODO(P6): "Have a look" → join-club sheet */
                 <EmptyState
                   line={`You wash often. The Club would suit the ${vehicle.name}.`}
                   actionLabel="Have a look"
-                  onAction={() => router.push('/dashboard/subscriptions')}
+                  onAction={() => router.replace('/app?sheet=join-club')}
                 />
               )}
 
@@ -541,7 +592,7 @@ function Glance() {
       )}
 
       {/* the one-time nudge at the capsule — never over a sheet (◆audit #5) */}
-      <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen && !protectionOpen} />
+      <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen && !protectionOpen && !joinClubOpen} />
 
       <Capsule
         line={capsule.line}
@@ -605,6 +656,21 @@ function Glance() {
           onClose={() => router.replace('/app')}
         />
       )}
+
+      <StudioSheet open={joinClubOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="The Club">
+        {vehicle && (
+          <JoinClub
+            vehicleName={vehicle.name}
+            washes={washHistory}
+            rejoining={club.state === 'lapsed' || club.state === 'grace'}
+            onJoined={() => {
+              // the membership is now pending; the Club layer says so itself
+              if (user) getUserSubscription(user.uid).then(s => setMembership(s ?? null)).catch(() => {});
+              router.replace('/app');
+            }}
+          />
+        )}
+      </StudioSheet>
 
       <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
       <AddCarSheet open={carFormOpen} onClose={() => setCarFormOpen(false)} />

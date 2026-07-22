@@ -1,4 +1,4 @@
-import { Shield, Droplets, Sparkles, Gem, Wrench, Award, Crown, Star, type LucideIcon } from 'lucide-react';
+import { Shield, Droplets, Sparkles, Gem, Wrench, type LucideIcon } from 'lucide-react';
 
 /**
  * Single source of truth for service-category iconography. Replaces the old
@@ -15,32 +15,6 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
 
 export function serviceIconFor(category?: string): LucideIcon {
   return (category && CATEGORY_ICON[category]) || Wrench;
-}
-
-/** Membership-tier icons - Silver / Gold / Platinum, one source of truth. */
-const PLAN_ICON: Record<string, LucideIcon> = {
-  Silver: Award,
-  Gold: Crown,
-  Platinum: Gem,
-};
-
-export function planIconFor(plan?: string): LucideIcon {
-  return (plan && PLAN_ICON[plan]) || Star;
-}
-
-export function PlanIcon({
-  plan,
-  size = 18,
-  className,
-  style,
-}: {
-  plan?: string;
-  size?: number;
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  const Icon = planIconFor(plan);
-  return <Icon size={size} className={className} style={style} aria-hidden />;
 }
 
 export default function ServiceIcon({

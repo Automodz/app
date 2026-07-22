@@ -5,7 +5,7 @@
  * Never imported into any production path without the dev-uid guard.
  */
 import { Timestamp } from 'firebase/firestore';
-import type { Booking, Job, Vehicle } from '@/lib/types';
+import type { Booking, Job, Subscription, Vehicle } from '@/lib/types';
 import { MEDIA } from '@/lib/media';
 
 export const isDevUser = (uid: string | undefined): boolean =>
@@ -50,6 +50,16 @@ export const DEV_COMPLETED_BOOKING = {
   totalAmount: 1200, paymentMethod: 'cash', paymentStatus: 'verified',
   jobId: 'dev-job-done',
 } as unknown as Booking;
+
+/** An active Club membership, mid-cycle — the Club layer needs a real one. */
+export const DEV_MEMBERSHIP = {
+  id: 'dev-sub', userId: 'dev-customer', userName: 'Aarav Mehta',
+  userEmail: 'customer@dev.automodz.local', userPhone: '',
+  plan: 'Silver', status: 'active',
+  startDate: new Date(Date.now() - 12 * 86400000).toISOString().split('T')[0],
+  endDate: new Date(Date.now() + 18 * 86400000).toISOString().split('T')[0],
+  washesTotal: 4, washesUsed: 1, paymentMethod: 'upi',
+} as unknown as Subscription;
 
 export const DEV_JOBS: Record<string, Job> = {
   'dev-ceramic': {
