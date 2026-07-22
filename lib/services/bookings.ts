@@ -105,7 +105,7 @@ export const rejectBooking = async (
   await writeNotification(booking.userId, 'Booking not accepted', body, 'booking_update', booking.id);
   try {
     const { sendPushToUser } = await import('./push');
-    sendPushToUser({ userId: booking.userId, title: 'Booking not accepted', body, url: '/dashboard/history' });
+    sendPushToUser({ userId: booking.userId, title: 'Booking not accepted', body, url: '/app' });
   } catch { /* best-effort */ }
 };
 
@@ -218,7 +218,7 @@ export const updateBookingStatusWithNotification = async (
     // Web push to the customer's devices - fire-and-forget, never blocks the update
     try {
       const { sendPushToUser } = await import('./push');
-      sendPushToUser({ userId: booking.userId, title: msg.title, body: msg.body, url: '/dashboard/history' });
+      sendPushToUser({ userId: booking.userId, title: msg.title, body: msg.body, url: '/app' });
     } catch { /* push is best-effort */ }
   }
 

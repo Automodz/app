@@ -11,16 +11,11 @@ interface StudioSheetProps {
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
   label: string; // accessibility name
-  /** PRE-1 legacy overrides — used only by the CxSheet adapter while
-   *  Generation-A surfaces await replacement. TODO(P7): remove both. */
-  ground?: string;
-  maxHeight?: string;
 }
 
-export default function StudioSheet({
-  open, onOpenChange, children, label,
-  ground = 'var(--st-gallery)', maxHeight = '88vh',
-}: StudioSheetProps) {
+export default function StudioSheet({ open, onOpenChange, children, label }: StudioSheetProps) {
+  const ground = 'var(--st-gallery)';
+  const maxHeight = '88vh';
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>

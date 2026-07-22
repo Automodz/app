@@ -24,9 +24,10 @@ import { generateTimeSlots, getAvailableDates } from '@/lib/utils';
 import type { Booking, Job, Service, Subscription, Vehicle } from '@/lib/types';
 import { truthOf, type ProtectionFact } from '@/lib/os/truth';
 import { visitPhase, careAct, ACT_TITLE, PHASE_LINE } from '@/lib/os/visit';
-import { termState, daysLeft } from '@/lib/os/term';
+import { daysLeft } from '@/lib/os/term';
 import { proposalFor } from '@/lib/os/proposal';
-import { deriveProtection, PROTECTION_WORD } from '@/lib/cx/protection';
+import { papersFor } from '@/lib/os/papers';
+import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
 import IdentityPlate, { plateSurface } from '@/components/os/IdentityPlate';
@@ -34,7 +35,8 @@ import StudioIntro from '@/components/os/StudioIntro';
 import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
-import PhotoBand from '@/components/os/PhotoBand';
+import ProtectionRecord from '@/components/os/ProtectionRecord';
+import DocumentCard, { DocumentGrid } from '@/components/os/DocumentCard';
 import MomentEntry from '@/components/os/MomentEntry';
 import MemberCard from '@/components/os/MemberCard';
 import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/components/os/Desk';
@@ -52,6 +54,23 @@ const fmtMonthYear = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 const fmtDayDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+/** The visit a protection came from — its photograph, its craftsman, its Chapter. */
+function protectionSource(
+  model: { visits: Booking[]; jobByBooking: Map<string, Job> },
+  p: Protection,
+): { bookingId?: string; photo?: string; installer?: string | null } {
+  const source = model.visits.find(
+    v => v.serviceName === p.service && visitPhase(v.status) === 'archived',
+  );
+  if (!source) return {};
+  const job = model.jobByBooking.get(source.id);
+  return {
+    bookingId: source.id,
+    photo: job?.photos?.find(x => x.kind === 'after')?.url,
+    installer: job?.assignments?.filter(a => !a.removedAt).find(a => a.role === 'lead')?.employeeName ?? null,
+  };
+}
 
 export default function GlancePage() {
   return (
@@ -75,6 +94,7 @@ function Glance() {
   const youOpen = params.get('sheet') === 'you';
   const deskOpen = params.get('sheet') === 'desk';
   const arrangeOpen = params.get('sheet') === 'arrange';
+  const protectionOpen = params.get('focus') === 'protection';
   const prefillCat = params.get('cat');
   const [carFormOpen, setCarFormOpen] = useState(false);
   const [showAllStory, setShowAllStory] = useState(false);
@@ -140,6 +160,12 @@ function Glance() {
     };
   }, [vehicle, bookings, services, jobs]);
 
+  /* the car's own papers — warranties that still protect, receipts that exist */
+  const papers = useMemo(
+    () => (model ? papersFor({ completed: model.completed, protections: model.protections }) : []),
+    [model],
+  );
+
   /* ── capsule state (design B2) ── */
   const capsule = useMemo<{ line: string; tap: () => void; actionWord?: string; onAction?: () => void }>(() => {
     // quiet state (line: '') opens the Desk — the concierge's index
@@ -183,9 +209,9 @@ function Glance() {
     const rows: ShelfRow[] = [];
     rows.push({ label: `The ${vehicle.name}’s care`, onTap: () => router.replace('/app?sheet=arrange') });
     if (model && model.protections.length)
-      rows.push({ label: 'Protection', detail: String(model.protections.length), onTap: () => router.replace('/app') }); // on the Glance
+      rows.push({ label: 'Protection', detail: String(model.protections.length), onTap: () => router.replace('/app?focus=protection') });
     if (model && model.completed.some(b => b.invoiceId))
-      rows.push({ label: 'Papers & records', onTap: () => router.replace('/app') }); // on the Glance
+      rows.push({ label: 'Papers & records', onTap: () => router.replace('/app') }); // the vault is a Glance layer
     if (membership || (model && model.completed.length >= 2))
       rows.push({ label: 'The Club', onTap: () => router.push('/dashboard/subscriptions') }); // TODO(P6): join-club sheet
     rows.push({ label: 'The studio', onTap: () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank') });
@@ -220,7 +246,7 @@ function Glance() {
         label: `Care record — ${fmtLong(b.scheduledDate)}`, group: 'Records',
         onTap: () => router.push(`/app/chapter/${b.id}`),
       })),
-      ...model.protections.map(p => ({ label: PROTECTION_WORD[p.kind], group: 'Protection', onTap: () => router.replace('/app') })),
+      ...model.protections.map(p => ({ label: PROTECTION_WORD[p.kind], group: 'Protection', onTap: () => router.replace('/app?focus=protection') })),
       ...(membership ? [{ label: `Club · ${membership.plan}`, group: 'Club', onTap: () => router.replace('/app') }] : []),
     ];
     return { visits: visitsFeed, search };
@@ -346,52 +372,47 @@ function Glance() {
             </Layer>
           )}
 
-          {/* B4 · Protection */}
-          {model.protections.length > 0 && (
-            <Layer title="Protection">
-              <div style={{ display: 'grid', gap: 24 }}>
+          {/* B4 · Protection — one record per layer, told by the protection
+              engine; renewal appears only when the studio's proposal cites it */}
+          {model.protections.length > 0 ? (
+            <Layer
+              title="Protection"
+              action={model.protections.length > 1
+                ? { label: 'All protection', onClick: () => router.replace('/app?focus=protection') }
+                : undefined}
+            >
+              <div style={{ display: 'grid', gap: 'var(--st-rest)' }}>
                 {model.protections.map(p => {
-                  const untilISO = p.until ? p.until.toISOString().split('T')[0] : null;
-                  const state = untilISO ? termState(untilISO) : 'active';
-                  const left = untilISO ? daysLeft(untilISO) : null;
-                  const srcJob = model.visits.find(v => v.serviceName === p.service && visitPhase(v.status) === 'archived');
-                  const photo = srcJob ? model.jobByBooking.get(srcJob.id)?.photos?.find(x => x.kind === 'after')?.url : undefined;
-
-                  if (!p.active) {
-                    /* ◆R13 — expired converts to typographic gallery band */
-                    return (
-                      <div key={p.kind} style={{ background: 'var(--st-gallery)', borderRadius: 'var(--st-r-sheet)', padding: 'var(--st-inset)' }}>
-                        <Body>
-                          {PROTECTION_WORD[p.kind]} · {new Date(p.applied + 'T12:00:00').getFullYear()}
-                          {p.until ? `–${p.until.getFullYear()}` : ''} · ran its course.
-                        </Body>
-                        <div style={{ marginTop: 'var(--st-line)' }}>
-                          <Action variant="quiet" onClick={() => router.replace(`/app?sheet=arrange&cat=${p.kind}`)}>Renew</Action>
-                        </div>
-                      </div>
-                    );
-                  }
-                  const capLine = state === 'waning' || state === 'expiring'
-                    ? `Renewal window open — ${left} day${left === 1 ? '' : 's'} left`
-                    : untilISO
-                    ? `Protected until ${fmtMonthYear(untilISO)}`
-                    : `Applied ${fmtMonthYear(p.applied)}`;
+                  const src = protectionSource(model, p);
                   return (
-                    <PhotoBand
+                    <ProtectionRecord
                       key={p.kind}
-                      src={photo}
-                      alt={`${PROTECTION_WORD[p.kind]} — detail of the ${vehicle.name}`}
-                      ratio="band"
-                      overTitle={photo ? PROTECTION_WORD[p.kind] : undefined}
-                      overCaption={photo ? capLine : undefined}
-                      caption={photo ? undefined : PROTECTION_WORD[p.kind]}
-                      whisper={photo ? undefined : capLine}
+                      protection={p}
+                      vehicleName={vehicle.name}
+                      daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
+                      photo={src.photo}
+                      installer={src.installer}
+                      onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
+                      onRenew={model.proposal?.serviceCategory === p.kind
+                        ? () => router.replace(`/app?sheet=arrange&cat=${p.kind}`)
+                        : undefined}
                     />
                   );
                 })}
               </div>
             </Layer>
-          )}
+          ) : model.completed.length > 0 ? (
+            /* the car has a story but nothing shields it — say so plainly */
+            <Layer title="Protection">
+              <EmptyState
+                line={`Nothing protects the ${vehicle.name} yet.`}
+                actionLabel={model.proposal ? 'Arrange it' : undefined}
+                onAction={model.proposal
+                  ? () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`)
+                  : undefined}
+              />
+            </Layer>
+          ) : null}
 
           {/* B5 · The story */}
           <Layer title="The story">
@@ -429,18 +450,26 @@ function Glance() {
             )}
           </Layer>
 
-          {/* B6 · Papers */}
+          {/* B6 · Papers — the vault. The plate is the permanent header; each
+              paper opens the Chapter that holds it (no second record). */}
           <Layer title="Papers">
-            <Data tone="ink-2" style={{ display: 'block' }}>{vehicle.registrationNumber}</Data>
-            {model.completed.filter(b => b.invoiceId).length > 0 && (
-              <div style={{ marginTop: 'var(--st-inset)', display: 'grid', gap: 'var(--st-line)' }}>
-                {model.completed.filter(b => b.invoiceId).map(b => (
-                  <button key={b.id} onClick={() => router.push(`/app/chapter/${b.id}`)}
-                    className="st-tap"
-                    style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
-                    <Body>Care record — {fmtLong(b.scheduledDate)}</Body>
-                  </button>
-                ))}
+            <IdentityPlate
+              name={vehicle.name}
+              registration={vehicle.registrationNumber}
+              variant="row"
+            />
+            {papers.length > 0 && (
+              <div style={{ marginTop: 'var(--st-inset)' }}>
+                <DocumentGrid>
+                  {papers.map(paper => (
+                    <DocumentCard
+                      key={paper.id}
+                      title={paper.title}
+                      detail={paper.detail}
+                      onOpen={() => router.push(`/app/chapter/${paper.bookingId}`)}
+                    />
+                  ))}
+                </DocumentGrid>
               </div>
             )}
             <div style={{ marginTop: 'var(--st-inset)' }}>
@@ -512,7 +541,7 @@ function Glance() {
       )}
 
       {/* the one-time nudge at the capsule — never over a sheet (◆audit #5) */}
-      <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen} />
+      <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen && !protectionOpen} />
 
       <Capsule
         line={capsule.line}
@@ -521,6 +550,37 @@ function Glance() {
         onTap={capsule.tap}
         onPhoto={false}
       />
+
+      {/* the protection panel — the Desk's focus reading of every layer (§C6) */}
+      <StudioSheet open={protectionOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="Protection">
+        {vehicle && model && (
+          <div style={{ display: 'grid', gap: 'var(--st-rest)', paddingBottom: 'var(--st-breath)' }}>
+            <Title>Protection</Title>
+            <IdentityPlate
+              name={vehicle.name}
+              registration={vehicle.registrationNumber}
+              variant="row"
+            />
+            {model.protections.map(p => {
+              const src = protectionSource(model, p);
+              return (
+                <ProtectionRecord
+                  key={p.kind}
+                  protection={p}
+                  vehicleName={vehicle.name}
+                  daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
+                  photo={src.photo}
+                  installer={src.installer}
+                  onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
+                  onRenew={model.proposal?.serviceCategory === p.kind
+                    ? () => router.replace(`/app?sheet=arrange&cat=${p.kind}`)
+                    : undefined}
+                />
+              );
+            })}
+          </div>
+        )}
+      </StudioSheet>
 
       <StudioSheet open={deskOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="The studio">
         <Desk

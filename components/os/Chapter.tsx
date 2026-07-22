@@ -18,6 +18,7 @@ import { PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import IdentityPlate from './IdentityPlate';
 import Layer from './Layer';
 import PhotoBand from './PhotoBand';
+import DocumentCard, { DocumentGrid } from './DocumentCard';
 import Action from './Action';
 import { Display, Emphasis, Body, Data, Whisper } from './text';
 
@@ -168,25 +169,11 @@ export default function Chapter({ chapter, protections, owner, shareUrl, onBack 
 
           {chapter.documents.length > 0 && (
             <Layer title="The papers">
-              <div style={{
-                display: 'grid', gap: 'var(--st-gap)',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              }}>
+              <DocumentGrid>
                 {chapter.documents.map(doc => (
-                  <a
-                    key={doc.href} href={doc.href} target="_blank" rel="noopener noreferrer"
-                    className="st-tap st-card"
-                    style={{
-                      display: 'block', textDecoration: 'none',
-                      background: 'var(--st-gallery)', borderRadius: 'var(--st-r-card)',
-                      padding: 'var(--st-gap)', minHeight: 96,
-                    }}
-                  >
-                    <Emphasis as="p">{doc.title}</Emphasis>
-                    <Data style={{ display: 'block', marginTop: 'var(--st-hair)' }}>{doc.detail}</Data>
-                  </a>
+                  <DocumentCard key={doc.href} title={doc.title} detail={doc.detail} href={doc.href} />
                 ))}
-              </div>
+              </DocumentGrid>
             </Layer>
           )}
         </>

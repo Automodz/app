@@ -4,6 +4,8 @@ import { truthOf } from '@/lib/os/truth';
 import { proposalFor } from '@/lib/os/proposal';
 import { deriveStay } from '@/lib/os/stay';
 import { deriveChapter, timeInCare } from '@/lib/os/chapter';
+import { papersFor } from '@/lib/os/papers';
+import type { Protection } from '@/lib/cx/protection';
 import type { Booking } from '@/lib/types';
 
 const NOW = new Date('2026-07-20T10:00:00');
@@ -271,5 +273,52 @@ describe('the Chapter model', () => {
     expect(c.evidence).toEqual([]);
     expect(c.hero).toBeUndefined();
     expect(c.amount).toBe(12000);
+  });
+});
+
+describe('the papers vault', () => {
+  const visit = (over: Partial<Booking> = {}) => ({
+    id: 'v1', serviceName: 'Kovalent Graphene', scheduledDate: '2026-04-20',
+    status: 'completed', paymentStatus: 'verified', ...over,
+  }) as unknown as Booking;
+
+  const layer = (over: Record<string, unknown> = {}) => ({
+    kind: 'Ceramic', applied: '2026-04-20', until: new Date('2029-04-20T12:00:00'),
+    active: true, term: 'active', service: 'Kovalent Graphene', warranty: '3 Year',
+    ...over,
+  }) as unknown as Protection;
+
+  it('files a warranty for living protection, pointing at its own chapter', () => {
+    const [p] = papersFor({ completed: [visit({ invoiceId: undefined })], protections: [layer()] });
+    expect(p).toEqual({
+      id: 'warranty-Ceramic', kind: 'warranty',
+      title: 'Ceramic coat warranty', detail: 'Until April 2029', bookingId: 'v1',
+    });
+  });
+
+  it('does not file a warranty that has run its course, or one with no term', () => {
+    expect(papersFor({ completed: [visit()], protections: [layer({ active: false })] })
+      .filter(p => p.kind === 'warranty')).toEqual([]);
+    expect(papersFor({ completed: [visit()], protections: [layer({ warranty: null })] })
+      .filter(p => p.kind === 'warranty')).toEqual([]);
+  });
+
+  it('files a receipt only when the visit really produced an invoice', () => {
+    const withInvoice = papersFor({ completed: [visit({ invoiceId: 'i1' })], protections: [] });
+    expect(withInvoice).toEqual([
+      { id: 'receipt-v1', kind: 'receipt', title: 'Receipt', detail: '20 April 2026', bookingId: 'v1' },
+    ]);
+    expect(papersFor({ completed: [visit()], protections: [] })).toEqual([]);
+  });
+
+  it('calls it an invoice while payment is still owed', () => {
+    const [p] = papersFor({
+      completed: [visit({ invoiceId: 'i1', paymentStatus: 'pending' })], protections: [],
+    });
+    expect(p.title).toBe('Invoice');
+  });
+
+  it('is silent for a car that owns nothing yet', () => {
+    expect(papersFor({ completed: [], protections: [] })).toEqual([]);
   });
 });
