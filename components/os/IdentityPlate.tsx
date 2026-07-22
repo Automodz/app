@@ -10,7 +10,7 @@
  * onboarding. `plateSurface` is the shared material for any photo-less frame.
  */
 import type { CSSProperties } from 'react';
-import { DisplayLarge, Display, Whisper } from './text';
+import { DisplayLarge, Display, Emphasis, Whisper } from './text';
 
 /** The shared photo-less material: gallery ground, one hairline, no graphics. */
 export const plateSurface: CSSProperties = {
@@ -22,8 +22,11 @@ interface IdentityPlateProps {
   /** The car as the owner says it: "Mercedes-AMG C 43". */
   name: string;
   registration?: string;
-  /** `portrait` fills a hero; `band` sits inside an existing framed ratio. */
-  variant?: 'portrait' | 'band';
+  /**
+   * `portrait` fills a hero · `band` sits inside an existing framed ratio ·
+   * `row` is the in-flow line that names the car a surface is acting on.
+   */
+  variant?: 'portrait' | 'band' | 'row';
   style?: CSSProperties;
 }
 
@@ -39,12 +42,52 @@ function split(name: string): { marque?: string; model: string } {
   return { marque: trimmed.slice(0, cut), model: trimmed.slice(cut + 1) };
 }
 
+/** The plate's own glyphs — the one place ALL-CAPS is allowed with the wordmark. */
+function Registration({ value, style }: { value: string; style?: CSSProperties }) {
+  return (
+    <span
+      style={{
+        background: 'var(--st-linen)',
+        borderRadius: 'var(--st-r-chip)',
+        padding: '6px 12px', whiteSpace: 'nowrap',
+        fontFamily: 'var(--st-data)', fontWeight: 400, fontSize: 14, lineHeight: 1.45,
+        letterSpacing: '0.06em', color: 'var(--st-ink-2)',
+        textTransform: 'uppercase',
+        ...style,
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
 export default function IdentityPlate({
   name, registration, variant = 'portrait', style,
 }: IdentityPlateProps) {
   const { marque, model } = split(name);
   const hero = variant === 'portrait';
+  const row = variant === 'row';
   const Model = hero ? DisplayLarge : Display;
+
+  if (row) {
+    return (
+      <div
+        style={{
+          ...plateSurface,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 'var(--st-gap)',
+          borderRadius: 'var(--st-r-card)', padding: 'var(--st-gap)',
+          ...style,
+        }}
+      >
+        <span style={{ minWidth: 0 }}>
+          {marque && <Whisper tone="ink-3">{marque}</Whisper>}
+          <Emphasis as="p">{model}</Emphasis>
+        </span>
+        {registration && <Registration value={registration} />}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -72,19 +115,10 @@ export default function IdentityPlate({
         {model}
       </Model>
       {registration && (
-        <span
-          style={{
-            marginTop: hero ? 'var(--st-inset)' : 'var(--st-line)',
-            background: 'var(--st-linen)',
-            borderRadius: 'var(--st-r-chip)',
-            padding: '6px 12px',
-            fontFamily: 'var(--st-data)', fontWeight: 400, fontSize: 14, lineHeight: 1.45,
-            letterSpacing: '0.06em', color: 'var(--st-ink-2)',
-            textTransform: 'uppercase',
-          }}
-        >
-          {registration}
-        </span>
+        <Registration
+          value={registration}
+          style={{ marginTop: hero ? 'var(--st-inset)' : 'var(--st-line)' }}
+        />
       )}
       {hero && (
         <Whisper

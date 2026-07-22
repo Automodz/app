@@ -31,7 +31,9 @@ import { proposalFor } from '@/lib/os/proposal';
 import { deriveProtection, PROTECTION_WORD } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
-import { plateSurface } from '@/components/os/IdentityPlate';
+import IdentityPlate, { plateSurface } from '@/components/os/IdentityPlate';
+import StudioIntro from '@/components/os/StudioIntro';
+import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
 import PhotoBand from '@/components/os/PhotoBand';
@@ -81,6 +83,9 @@ function Glance() {
 
   // the story summarises to its most recent chapters; the rest reveal on demand
   const STORY_PREVIEW = 3;
+
+  // reaching the Desk *is* the lesson — the nudge retires the moment it opens
+  useEffect(() => { if (deskOpen) markCoachSeen(); }, [deskOpen]);
 
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
   useEffect(() => {
@@ -330,6 +335,14 @@ function Glance() {
             </Layer>
           ) : null}
 
+          {/* B3.5 · The studio — trust before there is a story of their own.
+              Leaves for good once the first visit is completed (◆audit #2). */}
+          {model.completed.length === 0 && (
+            <Layer title="The studio">
+              <StudioIntro />
+            </Layer>
+          )}
+
           {/* B4 · Protection */}
           {model.protections.length > 0 && (
             <Layer title="Protection">
@@ -494,6 +507,9 @@ function Glance() {
           </div>
         </div>
       )}
+
+      {/* the one-time nudge at the capsule — never over a sheet (◆audit #5) */}
+      <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen} />
 
       <Capsule
         line={capsule.line}
@@ -727,7 +743,13 @@ function ArrangeSheet({
     <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="Arrange a visit">
       <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
         <Title>Arrange a visit</Title>
-        <Body tone="ink-2">For the {vehicle.name}.</Body>
+        {/* the car this visit belongs to, in the plate's own language — it
+            stays in view for every step, so the answer is never a guess */}
+        <IdentityPlate
+          name={vehicle.name}
+          registration={vehicle.registrationNumber}
+          variant="row"
+        />
 
         {/* 1 · the care */}
         {!service ? (
