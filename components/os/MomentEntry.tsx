@@ -35,7 +35,7 @@ export default function MomentEntry({ photo, caption, whisper, milestone, date, 
   );
   if (!onTap) return <div>{body}</div>;
   return (
-    <button onClick={onTap} style={{
+    <button onClick={onTap} className="st-tap" style={{
       display: 'block', width: '100%', textAlign: 'left',
       background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
     }}>

@@ -21,3 +21,9 @@ export const crossfade = {
   exit: { opacity: 0 },
   transition: { duration: move, ease: studioEase },
 } as const;
+
+/** Shared tactile press — one scale, one duration, everywhere it's tapped. */
+export const press = {
+  whileTap: { scale: 0.98 },
+  transition: { duration: tick, ease: studioEase },
+} as const;

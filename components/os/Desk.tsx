@@ -8,7 +8,7 @@
  */
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { studioEase, tick } from '@/lib/os/motion';
+import { press } from '@/lib/os/motion';
 import { Title, Body, Whisper } from './text';
 import Action from './Action';
 
@@ -81,7 +81,7 @@ export default function Desk({ rows, visits, proposal, searchItems, onMessage }:
               <div key={g} style={{ display: 'grid', gap: 8 }}>
                 <Whisper>{g}</Whisper>
                 {results.filter(r => r.group === g).map((r, i) => (
-                  <button key={i} onClick={r.onTap}
+                  <button key={i} onClick={r.onTap} className="st-tap"
                     style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
                     <Body>{r.label}</Body>
                   </button>
@@ -113,8 +113,7 @@ export default function Desk({ rows, visits, proposal, searchItems, onMessage }:
               <motion.button
                 key={row.label}
                 onClick={row.onTap}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: tick, ease: studioEase }}
+                {...press}
                 style={{
                   display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
                   width: '100%', minHeight: 52, padding: '12px 0',
@@ -131,7 +130,7 @@ export default function Desk({ rows, visits, proposal, searchItems, onMessage }:
           {visits.length > 0 && (
             <div style={{ display: 'grid', gap: 8 }}>
               {visits.map(v => (
-                <button key={v.id} onClick={v.onTap} style={CARD}>
+                <button key={v.id} onClick={v.onTap} className="st-card st-tap" style={CARD}>
                   <Body>{v.line}</Body>
                   {v.sub && <Whisper style={{ marginTop: 4 }}>{v.sub}</Whisper>}
                 </button>

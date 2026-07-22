@@ -26,7 +26,7 @@ export default function StudioSheet({
       <Drawer.Portal>
         <Drawer.Overlay
           className="studio"
-          style={{ position: 'fixed', inset: 0, background: 'rgba(12,13,14,0.40)', zIndex: 60 }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--st-scrim)', zIndex: 60 }}
         />
         <Drawer.Content
           className="studio"

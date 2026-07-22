@@ -250,6 +250,7 @@ function Glance() {
               <button
                 onClick={() => router.replace('/app?sheet=you')}
                 aria-label="You"
+                className="st-tap"
                 style={{
                   position: 'absolute', top: 'calc(env(safe-area-inset-top) + 16px)', right: 24,
                   width: 36, height: 36, borderRadius: 999, border: 'none', cursor: 'pointer',
@@ -399,6 +400,7 @@ function Glance() {
               <div style={{ marginTop: 'var(--st-inset)', display: 'grid', gap: 'var(--st-line)' }}>
                 {model.completed.filter(b => b.invoiceId).map(b => (
                   <button key={b.id} onClick={() => router.push(`/invoice/${b.invoiceId}`)} /* TODO(P4): record view */
+                    className="st-tap"
                     style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
                     <Body>Care record — {fmtLong(b.scheduledDate)}</Body>
                   </button>

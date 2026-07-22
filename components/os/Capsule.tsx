@@ -4,7 +4,7 @@
  * safe-bottom; text crossfades; never moves, never badges.
  */
 import { AnimatePresence, motion } from 'framer-motion';
-import { crossfade } from '@/lib/os/motion';
+import { crossfade, press } from '@/lib/os/motion';
 
 interface CapsuleProps {
   line: string;                       // state sentence ('' → wordmark rest state)
@@ -30,7 +30,7 @@ export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPr
         onPointerDown={() => { if (onLongPress) pressTimer = setTimeout(onLongPress, 350); }}
         onPointerUp={() => clearTimeout(pressTimer)}
         onPointerLeave={() => clearTimeout(pressTimer)}
-        whileTap={{ scale: 0.98 }}
+        {...press}
         aria-label={resting ? 'AutoModz concierge' : line}
         style={{
           pointerEvents: 'auto',

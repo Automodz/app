@@ -4,7 +4,7 @@
  * truth stacked bottom-left. Photographed / typographic states.
  */
 import Image from 'next/image';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { DisplayLarge, Data } from './text';
 import TruthLine from './TruthLine';
 
@@ -18,6 +18,7 @@ interface PortraitProps {
 }
 
 export default function Portrait({ name, truth, photo, plate, minHeight = '92vh', children }: PortraitProps) {
+  const [loaded, setLoaded] = useState(false);
   return (
     <div style={{
       position: 'relative', minHeight, width: '100%', overflow: 'hidden',
@@ -28,18 +29,20 @@ export default function Portrait({ name, truth, photo, plate, minHeight = '92vh'
         <>
           <Image
             src={photo} alt={`Your ${name}`} fill priority
+            className={`st-img${loaded ? ' is-loaded' : ''}`}
+            onLoad={() => setLoaded(true)}
             style={{ objectFit: 'cover' }}
             sizes="100vw"
           />
           {/* status-bar legibility */}
           <div aria-hidden style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: 64,
-            background: 'linear-gradient(rgba(12,13,14,0.24), transparent)',
+            background: 'linear-gradient(var(--st-scrim-soft), transparent)',
           }} />
           {/* bottom scrim — max 55%, lower 30% */}
           <div aria-hidden style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%',
-            background: 'linear-gradient(transparent, rgba(12,13,14,0.55))',
+            background: 'linear-gradient(transparent, var(--st-scrim-strong))',
           }} />
         </>
       ) : (

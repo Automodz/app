@@ -1073,6 +1073,11 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-move:  280ms;
   --st-scene: 480ms;
 
+  /* scrims — one hierarchy for sheet backdrop and photographic overlays */
+  --st-scrim:        rgba(12,13,14,0.40);   /* sheet backdrop */
+  --st-scrim-strong: rgba(12,13,14,0.55);   /* bottom photo scrim */
+  --st-scrim-soft:   rgba(12,13,14,0.24);   /* status-bar legibility */
+
   background: var(--st-paper);
   color: var(--st-ink);
   font-family: var(--st-text);
@@ -1099,6 +1104,33 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 /* a calm image-loading placeholder — a breathe, never a shimmer (§13) */
 @keyframes st-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .st-skeleton { background: var(--st-gallery); animation: st-breathe 2.4s ease-in-out infinite; }
+
+/* on-brand focus ring — replaces the legacy accent-glow under .studio */
+.studio :focus-visible {
+  outline: 2px solid var(--st-ink-3);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* shared tactile press — the CSS twin of motion.press, for plain buttons */
+.st-tap { transition: transform var(--st-tick) var(--st-ease); }
+.st-tap:active { transform: scale(0.98); }
+
+/* shared card — a subtle lift on pointer devices; touch stays calm */
+.st-card { transition: box-shadow var(--st-move) var(--st-ease), transform var(--st-move) var(--st-ease); }
+@media (hover: hover) {
+  .st-card:hover { transform: translateY(-1px); box-shadow: var(--st-hold); }
+}
+
+/* shared graceful image load — fade up from the surface, never a pop */
+.st-img { opacity: 0; transition: opacity var(--st-move) var(--st-ease); }
+.st-img.is-loaded { opacity: 1; }
+
 @media (prefers-reduced-motion: reduce) {
   .st-spin, .st-skeleton { animation: none; }
+  .st-tap { transition: none; }
+  .st-tap:active { transform: none; }
+  .st-card { transition: none; }
+  .st-card:hover { transform: none; }
+  .st-img { opacity: 1; transition: none; }
 }

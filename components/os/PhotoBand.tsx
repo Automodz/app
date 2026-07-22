@@ -5,6 +5,7 @@
  * over-scrim title only for the band variant.
  */
 import Image from 'next/image';
+import { useState } from 'react';
 import { Emphasis, Body, Whisper } from './text';
 
 type Ratio = 'band' | 'memory' | 'hero';
@@ -24,6 +25,7 @@ interface PhotoBandProps {
 export default function PhotoBand({
   src, alt, ratio = 'memory', overTitle, overCaption, caption, whisper, onTap,
 }: PhotoBandProps) {
+  const [loaded, setLoaded] = useState(false);
   const body = (
     <>
       <div style={{
@@ -33,13 +35,16 @@ export default function PhotoBand({
       }}>
         {src && (
           <>
-            <Image src={src} alt={alt} fill style={{ objectFit: 'cover' }}
+            <Image src={src} alt={alt} fill
+              className={`st-img${loaded ? ' is-loaded' : ''}`}
+              onLoad={() => setLoaded(true)}
+              style={{ objectFit: 'cover' }}
               sizes="(max-width: 720px) 100vw, 640px" loading="lazy" />
             {overTitle && (
               <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0,
                 padding: '48px 24px 16px',
-                background: 'linear-gradient(transparent, rgba(12,13,14,0.55))',
+                background: 'linear-gradient(transparent, var(--st-scrim-strong))',
               }}>
                 <Emphasis tone="over" as="p">{overTitle}</Emphasis>
                 {overCaption && <Body tone="over-2" style={{ fontSize: 14 }}>{overCaption}</Body>}
@@ -61,7 +66,7 @@ export default function PhotoBand({
 
   if (!onTap) return <div>{body}</div>;
   return (
-    <button onClick={onTap} style={{
+    <button onClick={onTap} className="st-tap" style={{
       display: 'block', width: '100%', textAlign: 'left',
       background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
     }}>
