@@ -14,6 +14,7 @@ import Capsule from '@/components/os/Capsule';
 import Portrait from '@/components/os/Portrait';
 import PhotoBand from '@/components/os/PhotoBand';
 import MomentEntry from '@/components/os/MomentEntry';
+import { ACT_ORDER, ACT_TITLE } from '@/lib/os/visit';
 import MomentStage from '@/components/os/MomentStage';
 import MemberCard from '@/components/os/MemberCard';
 import Desk from '@/components/os/Desk';
@@ -119,8 +120,12 @@ export default function StyleguidePage() {
         <div style={{ borderRadius: 24, overflow: 'hidden' }}>
           <MomentStage
             act="in_care"
+            acts={ACT_ORDER.map((a, i) => ({
+              act: a, title: ACT_TITLE[a], at: null,
+              state: i < 2 ? 'done' : i === 2 ? 'current' : 'coming',
+            }))}
             narration="Deepak is hand-finishing the hood."
-            timing="Ready around 4:30"
+            timing="Planned finish around 4:30 pm."
           />
         </div>
       </Layer>

@@ -7,7 +7,6 @@
  * last page is the add-a-car invitation.
  *
  * Interim targets (tracked; each dies with its phase):
- *   TODO(P3): capsule/visit-card live-tap → the Stay (interim: legacy tracker route)
  *   TODO(P4): story/record taps → Chapter; records → Record view (interim: legacy)
  *   TODO(P6): "Have a look" → join-club sheet (interim: legacy club page)
  *   TODO(P7): CxVehicleForm → the car-form + portrait-capture sheet (onboarding)
@@ -149,12 +148,14 @@ function Glance() {
     const modelWord = vehicle.name;
     if (model.live) {
       const act = careAct(model.live.status);
+      // the capsule is the Stay's glass live header: it carries the act and
+      // taps straight back into it
       if (act === 'ready') {
-        return { line: `The ${modelWord} is ready.`, tap: () => router.push(`/dashboard/care/${model.live!.id}`) };
+        return { line: `The ${modelWord} is ready.`, tap: () => router.push(`/app/visit/${model.live!.id}`) };
       }
       return {
         line: act ? `${ACT_TITLE[act]} — the ${modelWord} is with us.` : 'In the studio.',
-        tap: () => router.push(`/dashboard/care/${model.live!.id}`), // TODO(P3): the Stay
+        tap: () => router.push(`/app/visit/${model.live!.id}`),
       };
     }
     if (model.agreed) {
@@ -205,14 +206,17 @@ function Glance() {
       if (ph === 'proposed') return `${b.serviceName} · requested`;
       return `${b.serviceName} · ${fmtLong(b.scheduledDate)}`;
     };
+    // a live visit opens the Stay; a finished one opens its record (P4: the Chapter)
+    const openVisit = (b: Booking) => () =>
+      router.push(visitPhase(b.status) === 'live' ? `/app/visit/${b.id}` : `/dashboard/care/${b.id}`);
     const visitsFeed: ThreadVisit[] = model.visits.slice(0, 6).reverse().map(b => ({
       id: b.id,
       line: line(b),
       sub: visitPhase(b.status) === 'archived' ? `₹${b.totalAmount.toLocaleString('en-IN')}` : undefined,
-      onTap: () => router.push(`/dashboard/care/${b.id}`), // TODO(P3/P4): the Stay / Chapter
+      onTap: openVisit(b),
     }));
     const search: SearchItem[] = [
-      ...model.visits.map(b => ({ label: line(b), group: 'Visits', onTap: () => router.push(`/dashboard/care/${b.id}`) })),
+      ...model.visits.map(b => ({ label: line(b), group: 'Visits', onTap: openVisit(b) })),
       ...model.completed.filter(b => b.invoiceId).map(b => ({
         label: `Care record — ${fmtLong(b.scheduledDate)}`, group: 'Records',
         onTap: () => router.push(`/invoice/${b.invoiceId}`), // TODO(P4): Chapter

@@ -2,6 +2,7 @@ import { termState, daysLeft, termAlive } from '@/lib/os/term';
 import { visitPhase, careAct, actIndex } from '@/lib/os/visit';
 import { truthOf } from '@/lib/os/truth';
 import { proposalFor } from '@/lib/os/proposal';
+import { deriveStay } from '@/lib/os/stay';
 import type { Booking } from '@/lib/types';
 
 const NOW = new Date('2026-07-20T10:00:00');
@@ -109,5 +110,75 @@ describe('proposal engine', () => {
   it('is silent when protected and recently cared for (one-or-none per vehicle)', () => {
     expect(proposalFor({ vehicleId: 'v1', protections: [P(200)], lastCaredOn: iso(-5), now: NOW })).toBeNull();
     expect(proposalFor({ vehicleId: 'v1', protections: [], now: NOW })).toBeNull();
+  });
+});
+
+describe('the Stay model', () => {
+  const ts = (d: Date) => ({ toDate: () => d }) as unknown as import('firebase/firestore').Timestamp;
+  const at = (minAgo: number) => ts(new Date(NOW.getTime() - minAgo * 60000));
+
+  const booking = (over: Partial<Booking> = {}) => ({
+    id: 'b1', status: 'in_progress', totalAmount: 24000,
+    serviceDurationMinutes: 120, scheduledDate: iso(0), scheduledTime: '10:00',
+    paymentStatus: 'pending', ...over,
+  }) as unknown as Booking;
+
+  const job = (over: Record<string, unknown> = {}) => ({
+    id: 'j1', status: 'in_progress',
+    assignments: [{ employeeId: 'e1', employeeName: 'Ravi Sharma', role: 'lead', assignedAt: at(60) }],
+    statusHistory: [
+      { status: 'checked_in', at: at(60), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma' },
+      { status: 'in_progress', at: at(40), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma', note: 'Clay and decontamination done.' },
+    ],
+    photos: [
+      { url: 'a.jpg', path: 'p1', kind: 'before' },
+      { url: 'b.jpg', path: 'p2', kind: 'during' },
+    ],
+    ...over,
+  }) as unknown as Parameters<typeof deriveStay>[1];
+
+  it('takes the act from the job and marks earlier acts done', () => {
+    const s = deriveStay(booking(), job(), NOW);
+    expect(s.act).toBe('in_care');
+    expect(s.acts.map(a => a.state)).toEqual(['done', 'done', 'current', 'coming', 'coming']);
+    expect(s.acts[0].at).toEqual(new Date(NOW.getTime() - 60 * 60000));
+  });
+
+  it('prefers the studio’s own note as the narration', () => {
+    const s = deriveStay(booking(), job(), NOW);
+    expect(s.narration).toBe('Clay and decontamination done.');
+    expect(s.narrationIsStudio).toBe(true);
+  });
+
+  it('falls back to the act line when the studio has been quiet', () => {
+    const quiet = job({ statusHistory: [{ status: 'checked_in', at: at(10), byEmployeeId: 'e', byEmployeeName: 'R' }], status: 'checked_in' });
+    const s = deriveStay(booking({ status: 'vehicle_received' }), quiet, NOW);
+    expect(s.narrationIsStudio).toBe(false);
+    expect(s.narration).toBe('Your vehicle has arrived safely.');
+  });
+
+  it('names the lead and the arrival, and chains the evidence', () => {
+    const s = deriveStay(booking(), job(), NOW);
+    expect(s.craftsman).toBe('Ravi Sharma');
+    expect(s.arrivalPhoto).toBe('a.jpg');
+    expect(s.craftPhoto).toBe('b.jpg');
+    expect(s.latestPhoto).toBe('b.jpg');
+  });
+
+  it('offers a planned finish only while it is still a plan', () => {
+    expect(deriveStay(booking(), job(), NOW).timing).toMatch(/^Planned finish around /);
+    const late = deriveStay(booking({ serviceDurationMinutes: 30 }), job(), NOW);
+    expect(late.timing).toBe('Running longer than planned — the work sets the pace.');
+  });
+
+  it('says nothing about time at Ready, or before the car has arrived', () => {
+    expect(deriveStay(booking({ status: 'ready_for_delivery' }), job({ status: 'ready_for_delivery' }), NOW).timing).toBeNull();
+    expect(deriveStay(booking({ status: 'confirmed' }), null, NOW).timing).toBeNull();
+  });
+
+  it('hands a collected visit over as archived', () => {
+    const s = deriveStay(booking({ status: 'completed' }), job({ status: 'completed' }), NOW);
+    expect(s.archived).toBe(true);
+    expect(s.acts.every(a => a.state === 'done')).toBe(true);
   });
 });
