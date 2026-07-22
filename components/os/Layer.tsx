@@ -25,7 +25,7 @@ export default function Layer({ title, action, children }: LayerProps) {
       whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-10%' }}
       transition={rise.transition}
-      style={{ marginTop: 96, paddingLeft: 24, paddingRight: 24 }}
+      style={{ marginTop: 'var(--st-movement)', paddingLeft: 'var(--st-inset)', paddingRight: 'var(--st-inset)' }}
     >
       {title && (
         <div style={{

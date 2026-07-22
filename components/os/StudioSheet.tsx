@@ -33,7 +33,7 @@ export default function StudioSheet({
           style={{
             position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 61,
             background: ground,
-            borderRadius: '24px 24px 0 0',
+            borderRadius: 'var(--st-r-sheet) var(--st-r-sheet) 0 0',
             boxShadow: 'var(--st-lift)',
             maxHeight,
             display: 'flex', flexDirection: 'column',
@@ -46,7 +46,8 @@ export default function StudioSheet({
             margin: '12px auto 0',
           }} />
           <div style={{
-            padding: 24, paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
+            padding: 'var(--st-inset)',
+            paddingBottom: 'calc(var(--st-inset) + env(safe-area-inset-bottom))',
             overflowY: 'auto',
           }}>
             {children}

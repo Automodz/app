@@ -16,7 +16,7 @@ export default function MemberCard({ name, tier, since, state = 'active' }: Memb
   const dim = state === 'lapsed';
   return (
     <div style={{
-      background: 'var(--st-paper)', borderRadius: 16,
+      background: 'var(--st-paper)', borderRadius: 'var(--st-r-card)',
       border: '1px solid var(--st-hairline)', boxShadow: 'var(--st-hold)',
       overflow: 'hidden', opacity: state === 'pending' ? 0.62 : 1,
     }}>

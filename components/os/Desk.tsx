@@ -45,7 +45,7 @@ export interface DeskProps {
 }
 
 const CARD: React.CSSProperties = {
-  background: 'var(--st-gallery)', borderRadius: 16, padding: 16,
+  background: 'var(--st-gallery)', borderRadius: 'var(--st-r-card)', padding: 16,
   width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
 };
 

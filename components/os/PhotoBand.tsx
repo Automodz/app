@@ -28,7 +28,7 @@ export default function PhotoBand({
     <>
       <div style={{
         position: 'relative', width: '100%', aspectRatio: ASPECT[ratio],
-        borderRadius: 24, overflow: 'hidden',
+        borderRadius: 'var(--st-r-sheet)', overflow: 'hidden',
         background: src ? 'var(--st-stage)' : 'var(--st-linen)',
       }}>
         {src && (

@@ -18,6 +18,9 @@ import MomentStage from '@/components/os/MomentStage';
 import MemberCard from '@/components/os/MemberCard';
 import Desk from '@/components/os/Desk';
 import StudioSheet from '@/components/os/StudioSheet';
+import EmptyState from '@/components/os/EmptyState';
+import Skeleton from '@/components/os/Skeleton';
+import Spinner from '@/components/os/Spinner';
 
 export default function StyleguidePage() {
   const [sheet, setSheet] = useState(false);
@@ -94,6 +97,22 @@ export default function StyleguidePage() {
           ]}
           onMessage={() => setSheet(true)}
         />
+      </Layer>
+
+      <Layer title="Empty, loading, skeleton">
+        <EmptyState
+          line="The C 43’s story starts with its first visit."
+          actionLabel="Arrange one"
+          onAction={() => setSheet(true)}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24, color: 'var(--st-ink)' }}>
+          <Spinner />
+          <Whisper>The one spinner — inside a pressed action only.</Whisper>
+        </div>
+        <div style={{ marginTop: 24, display: 'grid', gap: 12 }}>
+          <Skeleton style={{ height: 96 }} />
+          <Skeleton radius="var(--st-r-pill)" style={{ height: 20, width: 160 }} />
+        </div>
       </Layer>
 
       <Layer title="The stay">

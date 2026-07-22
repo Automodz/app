@@ -36,10 +36,10 @@ export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPr
           pointerEvents: 'auto',
           display: 'flex', alignItems: 'center', gap: 12,
           height: 52, maxWidth: 'min(560px, 100%)', minWidth: 180,
-          padding: '0 22px', borderRadius: 999, border: 'none', cursor: 'pointer',
-          background: onPhoto ? 'rgba(12,13,14,0.64)' : 'rgba(251,251,249,0.72)',
-          backdropFilter: 'blur(24px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(140%)',
+          padding: '0 22px', borderRadius: 'var(--st-r-pill)', border: 'none', cursor: 'pointer',
+          background: onPhoto ? 'var(--st-glass-on-photo)' : 'var(--st-glass)',
+          backdropFilter: 'var(--st-glass-blur)',
+          WebkitBackdropFilter: 'var(--st-glass-blur)',
           boxShadow: 'var(--st-lift)',
         }}
       >
