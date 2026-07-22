@@ -17,7 +17,10 @@ import OfflineBar from '@/components/os/OfflineBar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, authLoading, setVehicles, setBookings } = useAppStore();
+  const {
+    user, authLoading, setVehicles, setBookings,
+    initialDataLoaded, setInitialDataLoaded,
+  } = useAppStore();
 
   useEffect(() => {
     if (authLoading) return;
@@ -28,9 +31,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (authLoading || !user) return;
 
+    // a new signed-in user starts unloaded; the shell waits on the loading
+    // frame until the first fetch settles, so the garage is never judged empty
+    // against data that simply hasn't arrived yet
+    setInitialDataLoaded(false);
+
     if (isDevUser(user.uid)) {
       setVehicles([DEV_VEHICLE]);
       setBookings([DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING]);
+      setInitialDataLoaded(true);
       return;
     }
 
@@ -41,14 +50,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setBookings(b);
         unsubscribe = subscribeUserBookings(user.uid, setBookings);
       })
-      .catch(err => console.error('[app] load failed:', err));
+      .catch(err => console.error('[app] load failed:', err))
+      .finally(() => setInitialDataLoaded(true));
     return () => { if (unsubscribe) unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, authLoading]);
 
-  // Cold start: cached truth renders instantly; the only wait is auth itself,
-  // and it renders as paper + the wordmark caption (design E2), never a spinner.
-  if (authLoading || !user) return (
+  // Cold start: the shell holds on paper + the wordmark caption (design E2,
+  // never a spinner) through auth *and* the first data load, so the Glance,
+  // welcome and visit/chapter surfaces only ever render against real data -
+  // never a flash of the empty garage or a false "not in this garage".
+  if (authLoading || !user || !initialDataLoaded) return (
     <div className="studio" style={{
       minHeight: '100vh', background: 'var(--st-paper)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
