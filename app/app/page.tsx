@@ -19,6 +19,7 @@ import {
   updateUserProfile, logoutUser, STATIC_SERVICES,
   createBooking, getAvailability,
 } from '@/lib/firebaseService';
+import { cancelBooking, rescheduleBooking } from '@/lib/services/bookings';
 import { generateTimeSlots, getAvailableDates } from '@/lib/utils';
 import type { Booking, Job, Service, Subscription, Vehicle } from '@/lib/types';
 import { truthOf, type ProtectionFact } from '@/lib/os/truth';
@@ -98,6 +99,7 @@ function Glance() {
   const youOpen = params.get('sheet') === 'you';
   const deskOpen = params.get('sheet') === 'desk';
   const arrangeOpen = params.get('sheet') === 'arrange';
+  const manageOpen = params.get('sheet') === 'manage';
   const protectionOpen = params.get('focus') === 'protection';
   const joinClubOpen = params.get('sheet') === 'join-club';
   const prefillCat = params.get('cat');
@@ -442,8 +444,7 @@ function Glance() {
                       )}
                     </div>
                     <div style={{ marginTop: 'var(--st-line)' }}>
-                      {/* changes to a visit go through the conversation */}
-                      <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>Change or cancel</Action>
+                      <Action variant="quiet" onClick={() => router.replace('/app?sheet=manage')}>Change or cancel</Action>
                     </div>
                   </div>
                 );
@@ -712,6 +713,12 @@ function Glance() {
         />
       )}
 
+      <ManageVisitSheet
+        open={manageOpen}
+        booking={model?.agreed ?? null}
+        onClose={() => router.replace('/app')}
+      />
+
       <StudioSheet open={joinClubOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="The Club">
         {vehicle && (
           <JoinClub
@@ -854,6 +861,164 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           Sign out
         </Action>
       </div>
+    </StudioSheet>
+  );
+}
+
+/* ── the manage-visit sheet - reschedule or cancel an agreed/requested visit.
+   Reuses the availability engine and the booking service (rescheduleBooking /
+   cancelBooking); a customer may change a pending or confirmed visit, and the
+   Firestore rules permit exactly this. ── */
+function ManageVisitSheet({
+  open, booking, onClose,
+}: {
+  open: boolean; booking: Booking | null; onClose: () => void;
+}) {
+  const { user, bookings, setBookings, cancelBookingInStore } = useAppStore();
+  const [mode, setMode] = useState<'idle' | 'reschedule' | 'confirmCancel'>('idle');
+  const [date, setDate] = useState<string | null>(null);
+  const [time, setTime] = useState<string | null>(null);
+  const [full, setFull] = useState<{ fullDates: string[]; fullSlots: Record<string, string[]> }>({ fullDates: [], fullSlots: {} });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const dates = useMemo(() => getAvailableDates(), []);
+
+  // reset each time the sheet opens (or the target visit changes)
+  useEffect(() => {
+    if (!open) return;
+    setMode('idle'); setDate(null); setTime(null); setBusy(false); setError(null);
+  }, [open, booking?.id]);
+
+  const duration = booking?.serviceDurationMinutes ?? 60;
+
+  // availability for the visit's own service, only while rescheduling
+  useEffect(() => {
+    if (!open || mode !== 'reschedule' || !booking) return;
+    getAvailability(dates, booking.serviceCategory, duration)
+      .then(setFull).catch(() => setFull({ fullDates: [], fullSlots: {} }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, booking?.id]);
+
+  const times = booking && date
+    ? generateTimeSlots(duration).filter(t => !(full.fullSlots[date] ?? []).includes(t))
+    : [];
+
+  const doReschedule = async () => {
+    if (!booking || !date || !time) return;
+    setBusy(true); setError(null);
+    try {
+      await rescheduleBooking(booking.id, date, time);
+    } catch {
+      if (!isDevUser(user?.uid)) { setError('That didn’t reach us - try again.'); setBusy(false); return; }
+    }
+    // optimistic - the live subscription confirms it for real users, dev seeds locally
+    setBookings(bookings.map(b => b.id === booking.id ? { ...b, scheduledDate: date, scheduledTime: time } : b));
+    onClose();
+  };
+
+  const doCancel = async () => {
+    if (!booking) return;
+    setBusy(true); setError(null);
+    try {
+      await cancelBooking(booking.id);
+    } catch {
+      if (!isDevUser(user?.uid)) { setError('That didn’t reach us - try again.'); setBusy(false); return; }
+    }
+    cancelBookingInStore(booking.id);
+    onClose();
+  };
+
+  return (
+    <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="Your visit">
+      {booking ? (
+        <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
+          <Title>Your visit</Title>
+          <IdentityPlate name={booking.vehicleName} registration={booking.vehicleRegNo} variant="row" />
+
+          <div>
+            <Body>{booking.serviceName}</Body>
+            <Whisper as="p" style={{ marginTop: 'var(--st-hair)' }}>
+              {fmtDayDate(booking.scheduledDate)} · {booking.scheduledTime}
+            </Whisper>
+          </div>
+
+          {mode === 'idle' && (
+            <div style={{ display: 'grid', gap: 'var(--st-line)', justifyItems: 'start' }}>
+              <Action variant="forward" onClick={() => setMode('reschedule')}>Reschedule</Action>
+              <Action variant="destructive" onClick={() => setMode('confirmCancel')}>Cancel this visit</Action>
+            </div>
+          )}
+
+          {mode === 'reschedule' && (
+            <>
+              {/* the day */}
+              <div>
+                <Body tone="ink-2" style={{ marginBottom: 12 }}>A new day?</Body>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+                  {dates.map(d => {
+                    const isFull = full.fullDates.includes(d);
+                    const sel = d === date;
+                    return (
+                      <button key={d} disabled={isFull} onClick={() => { setDate(d); setTime(null); }}
+                        style={{
+                          flex: '0 0 auto', padding: '10px 14px', borderRadius: 12, border: 'none', cursor: isFull ? 'default' : 'pointer',
+                          background: sel ? 'var(--st-linen)' : 'transparent', opacity: isFull ? 0.35 : 1,
+                          fontFamily: 'var(--st-text)', fontSize: 14, color: 'var(--st-ink)', whiteSpace: 'nowrap',
+                        }}>
+                        {new Date(`${d}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* the time */}
+              {date && (
+                <div>
+                  <Body tone="ink-2" style={{ marginBottom: 12 }}>At?</Body>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {times.length ? times.map(t => (
+                      <button key={t} onClick={() => setTime(t)}
+                        style={{
+                          padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                          background: t === time ? 'var(--st-linen)' : 'transparent',
+                          fontFamily: 'var(--st-text)', fontSize: 14, color: 'var(--st-ink)',
+                        }}>{t}</button>
+                    )) : <Whisper>No room that day - try another.</Whisper>}
+                  </div>
+                </div>
+              )}
+
+              {error && <Body tone="caution">{error}</Body>}
+
+              {date && time && (
+                <Action variant="primary" onClick={doReschedule} loading={busy}>
+                  Move to {new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' })} {time}
+                </Action>
+              )}
+              <Action variant="quiet" onClick={() => { setMode('idle'); setDate(null); setTime(null); }}>
+                Keep the current time
+              </Action>
+            </>
+          )}
+
+          {mode === 'confirmCancel' && (
+            <>
+              <Body tone="ink-2">
+                Cancelling the {booking.vehicleName}’s visit frees the slot for someone else. This can’t be undone.
+              </Body>
+              {error && <Body tone="caution">{error}</Body>}
+              <Action variant="destructive" onClick={doCancel} loading={busy}>Yes, cancel the visit</Action>
+              <Action variant="quiet" onClick={() => setMode('idle')}>Keep it</Action>
+            </>
+          )}
+        </div>
+      ) : (
+        <div style={{ paddingBottom: 8 }}>
+          <Body tone="ink-2">There’s no visit to change right now.</Body>
+        </div>
+      )}
     </StudioSheet>
   );
 }
