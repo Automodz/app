@@ -7,7 +7,6 @@
  * last page is the add-a-car invitation.
  *
  * Interim targets (tracked; each dies with its phase):
- *   TODO(P4): story/record taps → Chapter; records → Record view (interim: legacy)
  *   TODO(P6): "Have a look" → join-club sheet (interim: legacy club page)
  *   TODO(P7): CxVehicleForm → the car-form + portrait-capture sheet (onboarding)
  */
@@ -208,7 +207,7 @@ function Glance() {
     };
     // a live visit opens the Stay; a finished one opens its record (P4: the Chapter)
     const openVisit = (b: Booking) => () =>
-      router.push(visitPhase(b.status) === 'live' ? `/app/visit/${b.id}` : `/dashboard/care/${b.id}`);
+      router.push(visitPhase(b.status) === 'live' ? `/app/visit/${b.id}` : `/app/chapter/${b.id}`);
     const visitsFeed: ThreadVisit[] = model.visits.slice(0, 6).reverse().map(b => ({
       id: b.id,
       line: line(b),
@@ -219,7 +218,7 @@ function Glance() {
       ...model.visits.map(b => ({ label: line(b), group: 'Visits', onTap: openVisit(b) })),
       ...model.completed.filter(b => b.invoiceId).map(b => ({
         label: `Care record — ${fmtLong(b.scheduledDate)}`, group: 'Records',
-        onTap: () => router.push(`/invoice/${b.invoiceId}`), // TODO(P4): Chapter
+        onTap: () => router.push(`/app/chapter/${b.id}`),
       })),
       ...model.protections.map(p => ({ label: PROTECTION_WORD[p.kind], group: 'Protection', onTap: () => router.replace('/app') })),
       ...(membership ? [{ label: `Club · ${membership.plan}`, group: 'Club', onTap: () => router.replace('/app') }] : []),
@@ -417,7 +416,7 @@ function Glance() {
                       whisper={best
                         ? `${photos.length} photo${photos.length === 1 ? '' : 's'}${tech ? ` · ${tech}` : ''}`
                         : `₹${b.totalAmount.toLocaleString('en-IN')}`}
-                      onTap={() => router.push(`/dashboard/care/${b.id}`)} // TODO(P4): chapter
+                      onTap={() => router.push(`/app/chapter/${b.id}`)}
                     />
                   );
                 })}
@@ -436,7 +435,7 @@ function Glance() {
             {model.completed.filter(b => b.invoiceId).length > 0 && (
               <div style={{ marginTop: 'var(--st-inset)', display: 'grid', gap: 'var(--st-line)' }}>
                 {model.completed.filter(b => b.invoiceId).map(b => (
-                  <button key={b.id} onClick={() => router.push(`/invoice/${b.invoiceId}`)} /* TODO(P4): record view */
+                  <button key={b.id} onClick={() => router.push(`/app/chapter/${b.id}`)}
                     className="st-tap"
                     style={{ background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
                     <Body>Care record — {fmtLong(b.scheduledDate)}</Body>

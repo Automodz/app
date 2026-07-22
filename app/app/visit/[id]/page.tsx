@@ -41,8 +41,8 @@ const breath = (reduced: boolean | null) =>
         transition: { duration: scene, ease: studioEase },
       };
 
-/** Where a finished visit lives. P4 moves this to `/app/chapter/[id]`. */
-const recordHref = (bookingId: string) => `/dashboard/care/${bookingId}`;
+/** A finished visit is a Chapter — the Stay hands it straight over. */
+const chapterHref = (bookingId: string) => `/app/chapter/${bookingId}`;
 
 export default function StayPage() {
   const router = useRouter();
@@ -62,7 +62,7 @@ export default function StayPage() {
   const isArchived = stay?.archived ?? false;
   const isCancelled = stay?.cancelled ?? false;
   useEffect(() => {
-    if (isArchived) router.replace(recordHref(id));
+    if (isArchived) router.replace(chapterHref(id));
     else if (isCancelled) router.replace('/app');
   }, [isArchived, isCancelled, id, router]);
 

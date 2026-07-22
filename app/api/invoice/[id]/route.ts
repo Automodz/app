@@ -24,10 +24,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const data = snap.data()!;
   if (data.publicToken !== token) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const createdAt = data.createdAt?.toDate?.()?.toISOString() ?? null;
+
+  /* The shared Chapter is the beauty without the money: a projection that
+     never puts amounts, the customer's phone or internal references on the
+     wire, so a forwarded link cannot leak them. (P2D1 §C5) */
+  if (req.nextUrl.searchParams.get('view') === 'chapter') {
+    return NextResponse.json({
+      id: snap.id,
+      vehicleName: data.vehicleName ?? '',
+      vehicleRegNo: data.vehicleRegNo ?? '',
+      work: (data.lineItems ?? []).map((i: { name: string }) => i.name),
+      photos: data.photos ?? [],
+      createdAt,
+    });
+  }
+
   const { publicToken: _publicToken, ...invoice } = data;
-  return NextResponse.json({
-    id: snap.id,
-    ...invoice,
-    createdAt: data.createdAt?.toDate?.()?.toISOString() ?? null,
-  });
+  return NextResponse.json({ id: snap.id, ...invoice, createdAt });
 }

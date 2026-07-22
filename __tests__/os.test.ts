@@ -3,6 +3,7 @@ import { visitPhase, careAct, actIndex } from '@/lib/os/visit';
 import { truthOf } from '@/lib/os/truth';
 import { proposalFor } from '@/lib/os/proposal';
 import { deriveStay } from '@/lib/os/stay';
+import { deriveChapter, timeInCare } from '@/lib/os/chapter';
 import type { Booking } from '@/lib/types';
 
 const NOW = new Date('2026-07-20T10:00:00');
@@ -180,5 +181,95 @@ describe('the Stay model', () => {
     const s = deriveStay(booking({ status: 'completed' }), job({ status: 'completed' }), NOW);
     expect(s.archived).toBe(true);
     expect(s.acts.every(a => a.state === 'done')).toBe(true);
+  });
+});
+
+describe('the Chapter model', () => {
+  const ts = (d: Date) => ({ toDate: () => d }) as unknown as import('firebase/firestore').Timestamp;
+
+  const booking = (over: Partial<Booking> = {}) => ({
+    id: 'b1', status: 'completed', serviceName: 'Ceramic Coating',
+    scheduledDate: '2026-04-20', vehicleName: 'BMW M340i', vehicleRegNo: 'GJ01AB1234',
+    totalAmount: 12000, paymentMethod: 'upi', paymentStatus: 'pending', ...over,
+  }) as unknown as Booking;
+
+  const job = (over: Record<string, unknown> = {}) => ({
+    id: 'j1', status: 'completed',
+    serviceItems: [{ serviceId: 's1', serviceName: 'Kovalent Graphene', category: 'Ceramic', price: 12000 }],
+    assignments: [
+      { employeeId: 'e1', employeeName: 'Ravi Sharma', role: 'lead', assignedAt: ts(new Date('2026-04-20T09:00:00')) },
+      { employeeId: 'e2', employeeName: 'Karan Patel', role: 'helper', assignedAt: ts(new Date('2026-04-20T09:00:00')) },
+    ],
+    statusHistory: [
+      { status: 'checked_in', at: ts(new Date('2026-04-20T09:00:00')), byEmployeeId: 'e1', byEmployeeName: 'Ravi' },
+      { status: 'in_progress', at: ts(new Date('2026-04-20T09:40:00')), byEmployeeId: 'e1', byEmployeeName: 'Ravi', note: 'Two-stage paint correction.' },
+      { status: 'completed', at: ts(new Date('2026-04-20T15:20:00')), byEmployeeId: 'e1', byEmployeeName: 'Ravi' },
+    ],
+    photos: [
+      { url: 'after.jpg', path: 'p3', kind: 'after' },
+      { url: 'before.jpg', path: 'p1', kind: 'before' },
+      { url: 'during.jpg', path: 'p2', kind: 'during' },
+    ],
+    paymentStatus: 'collected',
+    ...over,
+  }) as unknown as Parameters<typeof deriveChapter>[0]['job'];
+
+  const invoice = (over: Record<string, unknown> = {}) => ({
+    id: 'i1', invoiceNumber: 'AMZ-2026-0001', total: 12000,
+    paymentMethod: 'upi', paymentStatus: 'paid', ...over,
+  }) as unknown as Parameters<typeof deriveChapter>[0]['invoice'];
+
+  it('orders the evidence arrival → work → finished and leads with the finished car', () => {
+    const c = deriveChapter({ booking: booking(), job: job(), invoice: null });
+    expect(c.evidence.map(e => e.act)).toEqual(['arrival', 'work', 'finished']);
+    expect(c.hero).toBe('after.jpg');
+  });
+
+  it('falls back to the first photograph when nothing was shot at the end', () => {
+    const c = deriveChapter({
+      booking: booking(),
+      job: job({ photos: [{ url: 'before.jpg', path: 'p', kind: 'before' }] }),
+      invoice: null,
+    });
+    expect(c.hero).toBe('before.jpg');
+  });
+
+  it('tells the work as services plus the studio’s own notes, inventing nothing', () => {
+    const c = deriveChapter({ booking: booking(), job: job(), invoice: null });
+    expect(c.work).toEqual(['Kovalent Graphene', 'In care — Two-stage paint correction.']);
+  });
+
+  it('names the people and measures the time actually recorded', () => {
+    const c = deriveChapter({ booking: booking(), job: job(), invoice: null });
+    expect(c.lead).toBe('Ravi Sharma');
+    expect(c.helpers).toEqual(['Karan Patel']);
+    expect(c.minutesInCare).toBe(380);
+    expect(timeInCare(380)).toBe('6h 20m in the studio');
+    expect(timeInCare(45)).toBe('45 minutes in the studio');
+  });
+
+  it('has no time when the studio never recorded an arrival or a finish', () => {
+    expect(deriveChapter({ booking: booking(), job: null, invoice: null }).minutesInCare).toBeNull();
+  });
+
+  it('offers a receipt when paid, an invoice when not, and nothing without a token', () => {
+    const paid = deriveChapter({ booking: booking(), job: job(), invoice: invoice(), invoiceToken: 'tok' });
+    expect(paid.documents).toEqual([
+      { kind: 'receipt', title: 'Receipt', detail: 'AMZ-2026-0001', href: '/invoice/i1?t=tok' },
+    ]);
+    const unpaid = deriveChapter({
+      booking: booking(), job: job({ paymentStatus: 'pending' }),
+      invoice: invoice({ paymentStatus: 'pending' }), invoiceToken: 'tok',
+    });
+    expect(unpaid.documents[0].kind).toBe('invoice');
+    expect(deriveChapter({ booking: booking(), job: job(), invoice: invoice() }).documents).toEqual([]);
+  });
+
+  it('falls back to the booking when there is no job at all (a migrated visit)', () => {
+    const c = deriveChapter({ booking: booking(), job: null, invoice: null });
+    expect(c.work).toEqual(['Ceramic Coating']);
+    expect(c.evidence).toEqual([]);
+    expect(c.hero).toBeUndefined();
+    expect(c.amount).toBe(12000);
   });
 });
