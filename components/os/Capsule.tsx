@@ -4,7 +4,7 @@
  * safe-bottom; text crossfades; never moves, never badges.
  */
 import { AnimatePresence, motion } from 'framer-motion';
-import { crossfade, press } from '@/lib/os/motion';
+import { crossfade, press, studioEase, tick } from '@/lib/os/motion';
 
 interface CapsuleProps {
   line: string;                       // state sentence ('' → wordmark rest state)
@@ -13,9 +13,10 @@ interface CapsuleProps {
   onActionTap?: () => void;
   onLongPress?: () => void;
   onPhoto?: boolean;                  // rendered over photography
+  ready?: boolean;                    // the one memorable state - the car is done
 }
 
-export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPress, onPhoto }: CapsuleProps) {
+export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPress, onPhoto, ready }: CapsuleProps) {
   let pressTimer: ReturnType<typeof setTimeout> | undefined;
   const resting = line === '';
 
@@ -31,6 +32,11 @@ export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPr
         onPointerUp={() => clearTimeout(pressTimer)}
         onPointerLeave={() => clearTimeout(pressTimer)}
         {...press}
+        // the narrator's one memorable beat: when the car is ready the pill
+        // draws a single breath as it settles, then holds still (reduced motion
+        // keeps it perfectly calm - MotionConfig drops the keyframes)
+        animate={ready ? { scale: [1, 1.035, 1] } : { scale: 1 }}
+        transition={ready ? { duration: 0.5, ease: studioEase, times: [0, 0.4, 1] } : { duration: tick, ease: studioEase }}
         aria-label={resting ? 'AutoModz concierge' : line}
         style={{
           pointerEvents: 'auto',
@@ -40,9 +46,17 @@ export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPr
           background: onPhoto ? 'var(--st-glass-on-photo)' : 'var(--st-glass)',
           backdropFilter: 'var(--st-glass-blur)',
           WebkitBackdropFilter: 'var(--st-glass-blur)',
-          boxShadow: 'var(--st-lift)',
+          boxShadow: ready ? 'var(--st-raise)' : 'var(--st-lift)',
         }}
       >
+        {/* the ready mark - a steady assent light, the only status the narrator
+            ever shows. Calm on purpose: a finished car, not a busy process. */}
+        {ready && (
+          <span aria-hidden style={{
+            width: 7, height: 7, borderRadius: '50%', flex: '0 0 auto',
+            background: 'var(--st-assent)',
+          }} />
+        )}
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
             key={resting ? '·rest·' : line}

@@ -4,6 +4,7 @@
  * edge, assent thread line. Active / pending / lapsed.
  */
 import { Emphasis, Data, Whisper } from './text';
+import Chip from './Chip';
 
 interface MemberCardProps {
   name: string;
@@ -12,17 +13,27 @@ interface MemberCardProps {
   state?: 'active' | 'pending' | 'lapsed';
 }
 
+/** The membership as a possession you hold (UX-1) - real card elevation, an
+ *  edge of light, a status chip. Pending keeps its dignity without dimming to
+ *  the point of doubt. */
 export default function MemberCard({ name, tier, since, state = 'active' }: MemberCardProps) {
   const dim = state === 'lapsed';
+  const chip =
+    state === 'active'  ? { tone: 'ok' as const, label: 'Member' }
+    : state === 'pending' ? { tone: 'neutral' as const, label: 'Confirming' }
+    : { tone: 'neutral' as const, label: 'Lapsed' };
   return (
     <div style={{
-      background: 'var(--st-paper)', borderRadius: 'var(--st-r-card)',
-      border: '1px solid var(--st-hairline)', boxShadow: 'var(--st-hold)',
-      overflow: 'hidden', opacity: state === 'pending' ? 0.62 : 1,
+      background: 'var(--st-card-fill)', borderRadius: 'var(--st-r-card)',
+      border: '1px solid var(--st-hairline)', boxShadow: 'var(--st-raise), var(--st-edge)',
+      overflow: 'hidden',
     }}>
       <div aria-hidden style={{ height: 3, background: dim ? 'var(--st-hairline)' : 'var(--st-assent)' }} />
       <div style={{ padding: 24 }}>
-        <Emphasis tone={dim ? 'ink-3' : 'ink'} as="p">{name}</Emphasis>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
+          <Emphasis tone={dim ? 'ink-3' : 'ink'} as="p">{name}</Emphasis>
+          <Chip tone={chip.tone}>{chip.label}</Chip>
+        </div>
         <Data tone={dim ? 'ink-3' : 'ink-2'} style={{ display: 'block', marginTop: 8 }}>
           {tier} · {since}
         </Data>

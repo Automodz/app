@@ -73,7 +73,10 @@ export default function IdentityPlate({
     return (
       <div
         style={{
-          ...plateSurface,
+          // the in-flow plate is a held object (UX-1): material, an edge of
+          // light, a resting shadow - the car's own letterhead
+          background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+          boxShadow: 'var(--st-hold), var(--st-edge)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 'var(--st-gap)',
           borderRadius: 'var(--st-r-card)', padding: 'var(--st-gap)',
@@ -92,7 +95,17 @@ export default function IdentityPlate({
   return (
     <div
       style={{
-        ...plateSurface,
+        // The hero (photo-less) is a *designed portrait of the marque*, not a
+        // fallback: a studio sweep - the light of seamless paper - with the
+        // car's identity standing as a still, grounded monument. Scoped to the
+        // hero; `band` keeps the flat plate material untouched (Papers, Stay,
+        // Chapter rely on it). (M1 · The Overture)
+        ...(hero
+          ? {
+              background: 'radial-gradient(125% 80% at 50% 32%, var(--st-paper) 0%, var(--st-gallery) 58%, var(--st-linen) 100%)',
+              boxShadow: 'var(--st-edge)',
+            }
+          : plateSurface),
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
@@ -101,6 +114,14 @@ export default function IdentityPlate({
         ...style,
       }}
     >
+      {/* the marque rests on the light - a soft shadow grounds it (hero only) */}
+      {hero && (
+        <div aria-hidden style={{
+          position: 'absolute', bottom: '33%', width: '58%', height: 76,
+          borderRadius: '50%', filter: 'blur(8px)',
+          background: 'radial-gradient(ellipse at center, var(--st-hairline) 0%, transparent 72%)',
+        }} />
+      )}
       {marque && (
         <Whisper tone="ink-3" style={{ marginBottom: 'var(--st-line)' }}>{marque}</Whisper>
       )}

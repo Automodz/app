@@ -97,7 +97,7 @@ export default function Desk({ rows, visits, proposal, searchItems, log = [], on
         ) : (
           <div style={{ display: 'grid', gap: 12 }}>
             <Body tone="ink-2">Nothing for that - try the service or the month. Or just ask.</Body>
-            <Action variant="quiet" onClick={onMessage}>Message the studio</Action>
+            <Action variant="external" onClick={onMessage}>Message the studio</Action>
           </div>
         )
       ) : (
@@ -176,7 +176,7 @@ export default function Desk({ rows, visits, proposal, searchItems, log = [], on
           )}
 
           {/* the composer - free-form hands off to the studio */}
-          <Action variant="quiet" onClick={onMessage}>Message the studio</Action>
+          <Action variant="external" onClick={onMessage}>Message the studio</Action>
         </>
       )}
     </div>

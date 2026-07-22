@@ -31,10 +31,14 @@ export default function StudioIntro() {
 
       <div>
         <Body tone="ink-2">Protection leaves the studio with a written warranty.</Body>
-        <div style={{ marginTop: 'var(--st-gap)', display: 'grid', gap: 'var(--st-line)' }}>
-          {WARRANTED.map(s => (
+        {/* a spec table - hairline-ruled rows, name left, term right (UX-1) */}
+        <div style={{ marginTop: 'var(--st-gap)' }}>
+          {WARRANTED.map((s, i) => (
             <div key={s.cat} style={{
               display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)',
+              padding: 'var(--st-line) 0',
+              borderTop: i === 0 ? '1px solid var(--st-hairline)' : undefined,
+              borderBottom: '1px solid var(--st-hairline)',
             }}>
               <Body>{s.name}</Body>
               <Data style={{ whiteSpace: 'nowrap' }}>{s.warranty}</Data>
@@ -44,8 +48,8 @@ export default function StudioIntro() {
       </div>
 
       <div style={{ display: 'grid', gap: 'var(--st-breath)', justifyItems: 'start' }}>
-        <Action onClick={() => open(COMPANY.googleReviewUrl)}>Read the studio’s Google reviews</Action>
-        <Action onClick={() => open(COMPANY.mapsUrl)}>Find the studio</Action>
+        <Action variant="external" onClick={() => open(COMPANY.googleReviewUrl)}>Read the studio’s Google reviews</Action>
+        <Action variant="external" onClick={() => open(COMPANY.mapsUrl)}>Find the studio</Action>
       </div>
     </div>
   );

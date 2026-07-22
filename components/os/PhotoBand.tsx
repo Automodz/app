@@ -5,7 +5,7 @@
  * over-scrim title only for the band variant.
  */
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Emphasis, Body, Whisper } from './text';
 import { plateSurface } from './IdentityPlate';
 
@@ -18,13 +18,14 @@ interface PhotoBandProps {
   ratio?: Ratio;
   overTitle?: string;      // band variant: title over scrim
   overCaption?: string;
+  overBadge?: ReactNode;   // band variant: a status chip, top-right over the photo
   caption?: string;        // below-image caption
   whisper?: string;
   onTap?: () => void;
 }
 
 export default function PhotoBand({
-  src, alt, ratio = 'memory', overTitle, overCaption, caption, whisper, onTap,
+  src, alt, ratio = 'memory', overTitle, overCaption, overBadge, caption, whisper, onTap,
 }: PhotoBandProps) {
   const [loaded, setLoaded] = useState(false);
   const body = (
@@ -42,6 +43,9 @@ export default function PhotoBand({
               onLoad={() => setLoaded(true)}
               style={{ objectFit: 'cover' }}
               sizes="(max-width: 720px) 100vw, 640px" loading="lazy" />
+            {overBadge && (
+              <div style={{ position: 'absolute', top: 16, right: 16 }}>{overBadge}</div>
+            )}
             {overTitle && (
               <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0,

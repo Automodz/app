@@ -28,12 +28,20 @@ export default function Layer({ title, action, children }: LayerProps) {
       style={{ marginTop: 'var(--st-movement)', paddingLeft: 'var(--st-inset)', paddingRight: 'var(--st-inset)' }}
     >
       {title && (
-        <div style={{
-          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-          marginBottom: 24,
-        }}>
-          <Title>{title}</Title>
-          {action && <Action variant="quiet" onClick={action.onClick}>{action.label}</Action>}
+        <div style={{ marginBottom: 24 }}>
+          {/* the mark - one repeating letterhead motif that ties every section
+              of the Glance into a single crafted record (UX-1) */}
+          <div aria-hidden style={{
+            width: 28, height: 2, borderRadius: 2,
+            background: 'var(--st-ink)', marginBottom: 'var(--st-line)',
+          }} />
+          <div style={{
+            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+            gap: 'var(--st-gap)',
+          }}>
+            <Title>{title}</Title>
+            {action && <Action variant="forward" onClick={action.onClick}>{action.label}</Action>}
+          </div>
         </div>
       )}
       {children}

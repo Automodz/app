@@ -18,7 +18,7 @@ export default function EmptyState({
       <Body tone="ink-2" style={{ fontSize: 19 }}>{line}</Body>
       {actionLabel && onAction && (
         <div style={{ marginTop: 'var(--st-line)' }}>
-          <Action variant="quiet" onClick={onAction}>{actionLabel}</Action>
+          <Action variant="forward" onClick={onAction}>{actionLabel}</Action>
         </div>
       )}
     </div>

@@ -47,8 +47,9 @@ import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/compon
 import StudioSheet from '@/components/os/StudioSheet';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
+import Chip from '@/components/os/Chip';
 import EmptyState from '@/components/os/EmptyState';
-import { Display, Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
+import { Display, DisplayLarge, Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
 import { COMPANY } from '@/lib/company';
 
 const fmtLong = (iso: string) =>
@@ -213,7 +214,7 @@ function Glance() {
   }, [vehicle, model, bookings, membership]);
 
   /* ── capsule state (design B2) ── */
-  const capsule = useMemo<{ line: string; tap: () => void; actionWord?: string; onAction?: () => void }>(() => {
+  const capsule = useMemo<{ line: string; tap: () => void; actionWord?: string; onAction?: () => void; ready?: boolean }>(() => {
     // quiet state (line: '') opens the Desk - the concierge's index
     if (!model || !vehicle) return { line: '', tap: () => router.replace('/app?sheet=desk') };
     const modelWord = vehicle.name;
@@ -222,7 +223,7 @@ function Glance() {
       // the capsule is the Stay's glass live header: it carries the act and
       // taps straight back into it
       if (act === 'ready') {
-        return { line: `The ${modelWord} is ready.`, tap: () => router.push(`/app/visit/${model.live!.id}`) };
+        return { line: `The ${modelWord} is ready.`, ready: true, tap: () => router.push(`/app/visit/${model.live!.id}`) };
       }
       return {
         line: act ? `${ACT_TITLE[act]} - the ${modelWord} is with us.` : 'In the studio.',
@@ -407,31 +408,62 @@ function Glance() {
               in the capsule until P3). The two are mutually exclusive. */}
           {model.agreed ? (
             <Layer>
-              <Whisper as="p" style={{ marginBottom: 'var(--st-breath)' }}>
-                {visitPhase(model.agreed.status) === 'agreed' ? 'Your next visit' : 'Requested'}
-              </Whisper>
-              <Title>{fmtDayDate(model.agreed.scheduledDate)} · {model.agreed.scheduledTime}</Title>
-              <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }}>
-                {model.agreed.serviceName} · ₹{model.agreed.totalAmount.toLocaleString('en-IN')}
-                {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
-              </Body>
-              {visitPhase(model.agreed.status) === 'proposed' && (
-                <Whisper as="p" style={{ marginTop: 'var(--st-breath)' }}>{PHASE_LINE.proposed}</Whisper>
-              )}
-              <div style={{ marginTop: 'var(--st-gap)' }}>
-                {/* changes to a visit go through the conversation */}
-                <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>Change or cancel</Action>
-              </div>
+              {/* the focus card - the single most important thing after the
+                  hero: the visit as an object, its status read at a glance
+                  (UX-1). Object-first: the day is the hero, not a sentence. */}
+              {(() => {
+                const confirmed = visitPhase(model.agreed.status) === 'agreed';
+                return (
+                  <div style={{
+                    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+                    borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-raise), var(--st-edge)',
+                    padding: 'var(--st-inset)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
+                      <Whisper as="p">{confirmed ? 'Your next visit' : 'Requested'}</Whisper>
+                      <Chip tone={confirmed ? 'ok' : 'neutral'}>{confirmed ? 'Confirmed' : 'Requested'}</Chip>
+                    </div>
+                    <DisplayLarge style={{ marginTop: 'var(--st-line)', fontSize: 'clamp(28px, 8vw, 40px)' }}>
+                      {fmtDayDate(model.agreed.scheduledDate)}
+                    </DisplayLarge>
+                    <Data tone="ink-2" style={{ display: 'block', marginTop: 'var(--st-hair)', fontSize: 15 }}>
+                      {model.agreed.scheduledTime}
+                    </Data>
+                    <div style={{ marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)', borderTop: '1px solid var(--st-hairline)' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
+                        <Body tone="ink-2">
+                          {model.agreed.serviceName}
+                          {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
+                        </Body>
+                        <Data>₹{model.agreed.totalAmount.toLocaleString('en-IN')}</Data>
+                      </div>
+                      {!confirmed && (
+                        <Whisper as="p" style={{ marginTop: 'var(--st-breath)' }}>{PHASE_LINE.proposed}</Whisper>
+                      )}
+                    </div>
+                    <div style={{ marginTop: 'var(--st-line)' }}>
+                      {/* changes to a visit go through the conversation */}
+                      <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>Change or cancel</Action>
+                    </div>
+                  </div>
+                );
+              })()}
             </Layer>
           ) : model.proposal ? (
             <Layer>
-              <Whisper as="p" style={{ marginBottom: 'var(--st-breath)' }}>A suggestion from the studio</Whisper>
-              <Emphasis>{model.proposal.reason}</Emphasis>
-              <div style={{ marginTop: 'var(--st-gap)' }}>
-                <Action variant="quiet"
-                  onClick={() => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`)}>
-                  Arrange it
-                </Action>
+              <div style={{
+                background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+                borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-raise), var(--st-edge)',
+                padding: 'var(--st-inset)',
+              }}>
+                <Whisper as="p" style={{ marginBottom: 'var(--st-line)' }}>A suggestion from the studio</Whisper>
+                <Emphasis>{model.proposal.reason}</Emphasis>
+                <div style={{ marginTop: 'var(--st-inset)' }}>
+                  <Action variant="forward"
+                    onClick={() => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`)}>
+                    Arrange it
+                  </Action>
+                </div>
               </div>
             </Layer>
           ) : null}
@@ -567,7 +599,7 @@ function Glance() {
                   )}
                   {(club.state === 'lapsed' || club.state === 'grace') && (
                     <div style={{ marginTop: 'var(--st-breath)' }}>
-                      <Action variant="quiet" onClick={() => router.replace('/app?sheet=join-club')}>
+                      <Action variant="forward" onClick={() => router.replace('/app?sheet=join-club')}>
                         {club.state === 'grace' ? 'Renew' : 'Rejoin'}
                       </Action>
                     </div>
@@ -593,12 +625,13 @@ function Glance() {
             </Layer>
           )}
 
-          {/* the signature */}
+          {/* the signature - the dossier closes on a hairline, then the mark */}
           <div style={{ marginTop: 'var(--st-movement)', padding: '0 var(--st-inset)' }}>
+            <div aria-hidden style={{ height: 1, background: 'var(--st-hairline)', marginBottom: 'var(--st-rest)' }} />
             <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em', display: 'block' }}>AUTOMODZ</Whisper>
             <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 'var(--st-breath)' }}>{COMPANY.address}</Data>
             <div style={{ marginTop: 'var(--st-line)' }}>
-              <Action variant="quiet" onClick={() => router.replace('/app?sheet=desk')}>
+              <Action variant="forward" onClick={() => router.replace('/app?sheet=desk')}>
                 Message the studio
               </Action>
             </div>
@@ -615,6 +648,7 @@ function Glance() {
         onActionTap={capsule.onAction}
         onTap={capsule.tap}
         onPhoto={false}
+        ready={capsule.ready}
       />
 
       {/* the protection panel - the Desk's focus reading of every layer (§C6) */}

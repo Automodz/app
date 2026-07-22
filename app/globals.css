@@ -1039,9 +1039,29 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   /* accents (ink-dark, never backgrounds) */
   --st-assent:   #2E5E48;
   --st-caution:  #8A5A2E;
-  /* elevation */
+  /* elevation ramp (M1) - three tiers + an edge light. `hold` is the resting
+     card, `raise` is a held/hero object (MemberCard, Chapter hero), `lift` is
+     an overlay (sheet, Capsule). `edge` is the top-sheen inset every material
+     surface carries - the "expensive matte" highlight, never a glow. */
+  --st-hold:     0 1px 2px rgba(12,13,14,0.05), 0 3px 12px rgba(12,13,14,0.06);
+  --st-raise:    0 2px 6px rgba(12,13,14,0.06), 0 16px 44px rgba(12,13,14,0.11);
   --st-lift:     0 12px 40px rgba(12,13,14,0.10);
-  --st-hold:     0 2px 12px rgba(12,13,14,0.08);
+  --st-edge:     inset 0 1px 0 rgba(255,255,255,0.65);
+
+  /* material fills (M1) - a barely-there vertical wash under the flat greys.
+     Moderate depth: cards catch light at the top and settle at the base. */
+  --st-card-fill:    linear-gradient(180deg, #FFFFFF 0%, #FBFBF9 100%);
+  --st-gallery-fill: linear-gradient(180deg, #F5F5F2 0%, #EFEFEB 100%);
+
+  /* status scale (M1) - monochrome + the two brand accents only. Fuels the
+     forthcoming Chip primitive; `ok`=protected/live, `warn`=attention,
+     `neutral`=pending/quiet. Backgrounds are whisper-tints, never fills. */
+  --st-ok:         var(--st-assent);
+  --st-ok-bg:      rgba(46,94,72,0.10);
+  --st-warn:       var(--st-caution);
+  --st-warn-bg:    rgba(138,90,46,0.10);
+  --st-neutral:    var(--st-ink-2);
+  --st-neutral-bg: var(--st-linen);
   /* type */
   --st-display:  var(--font-display, ui-sans-serif, system-ui, sans-serif);
   --st-text:     var(--font-body, ui-sans-serif, system-ui, sans-serif);
@@ -1083,18 +1103,28 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   font-family: var(--st-text);
 }
 
-/* dark rendering: chrome inverts; photography, stage, scrim, accents identical */
-@media (prefers-color-scheme: dark) {
-  .studio {
-    --st-paper:    #111214;
-    --st-gallery:  #191A1C;
-    --st-linen:    #212325;
-    --st-ink:      #F2F2EF;
-    --st-ink-2:    rgba(242,242,239,0.62);
-    --st-ink-3:    rgba(242,242,239,0.38);
-    --st-hairline: rgba(242,242,239,0.08);
-    --st-glass:    rgba(24,25,27,0.72);
-  }
+/* dark rendering: chrome inverts; photography, stage, scrim, accents identical.
+   Driven by [data-theme="dark"] (the in-app toggle + ThemeProvider), NOT the OS
+   media query - so the customer product stays coherent with the rest of the app
+   and honours the light/dark control. The app always writes data-theme, so this
+   is authoritative; light stays the default (Studio White is light-first). */
+[data-theme="dark"] .studio {
+  --st-paper:    #111214;
+  --st-gallery:  #191A1C;
+  --st-linen:    #212325;
+  --st-ink:      #F2F2EF;
+  --st-ink-2:    rgba(242,242,239,0.62);
+  --st-ink-3:    rgba(242,242,239,0.38);
+  --st-hairline: rgba(242,242,239,0.08);
+  --st-glass:    rgba(24,25,27,0.72);
+
+  /* material layer (M1) - dark variants */
+  --st-edge:         inset 0 1px 0 rgba(255,255,255,0.05);
+  --st-card-fill:    linear-gradient(180deg, #16181B 0%, #111214 100%);
+  --st-gallery-fill: linear-gradient(180deg, #1D1E21 0%, #191A1C 100%);
+  --st-ok-bg:        rgba(95,191,143,0.14);
+  --st-warn-bg:      rgba(217,169,74,0.14);
+  --st-neutral-bg:   var(--st-linen);
 }
 
 .studio ::selection { background: var(--st-linen); }

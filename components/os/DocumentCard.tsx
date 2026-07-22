@@ -18,16 +18,22 @@ interface DocumentCardProps {
 }
 
 const surface = {
-  display: 'block', width: '100%', textAlign: 'left' as const, textDecoration: 'none',
-  background: 'var(--st-gallery)', borderRadius: 'var(--st-r-card)',
-  padding: 'var(--st-gap)', minHeight: 96, border: 'none', cursor: 'pointer',
+  display: 'flex', flexDirection: 'column' as const, justifyContent: 'space-between',
+  width: '100%', textAlign: 'left' as const, textDecoration: 'none',
+  background: 'var(--st-card-fill)', borderRadius: 'var(--st-r-card)',
+  border: '1px solid var(--st-hairline)', boxShadow: 'var(--st-hold), var(--st-edge)',
+  padding: 'var(--st-gap)', minHeight: 96, cursor: 'pointer',
 };
 
 export default function DocumentCard({ title, detail, href, onOpen }: DocumentCardProps) {
   const body: ReactNode = (
     <>
       <Emphasis as="p">{title}</Emphasis>
-      <Data style={{ display: 'block', marginTop: 'var(--st-hair)' }}>{detail}</Data>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, marginTop: 'var(--st-line)' }}>
+        <Data>{detail}</Data>
+        {/* the one minimal glyph - an external paper opens in its own tab */}
+        {href && <span aria-hidden style={{ color: 'var(--st-ink-3)', fontSize: 15, lineHeight: 1 }}>↗</span>}
+      </div>
     </>
   );
 

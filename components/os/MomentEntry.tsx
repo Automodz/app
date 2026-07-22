@@ -26,19 +26,28 @@ export default function MomentEntry({ photo, caption, whisper, milestone, date, 
   if (photo) {
     return <PhotoBand src={photo} alt={caption} ratio="memory" caption={caption} whisper={whisper} onTap={onTap} />;
   }
-  // migrated / photo-less visit: dignified typographic entry
+  // migrated / photo-less visit: a crafted moment-card, never a bare paragraph
+  // (UX-1) - material, an edge of light, a quiet forward affordance
   const body = (
-    <>
-      <Body>{caption}</Body>
-      {whisper && <Whisper style={{ marginTop: 4 }}>{whisper}</Whisper>}
-    </>
-  );
-  if (!onTap) return <div>{body}</div>;
-  return (
-    <button onClick={onTap} className="st-tap" style={{
-      display: 'block', width: '100%', textAlign: 'left',
-      background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
     }}>
+      <span style={{ minWidth: 0 }}>
+        <Body>{caption}</Body>
+        {whisper && <Whisper style={{ marginTop: 4 }}>{whisper}</Whisper>}
+      </span>
+      {onTap && <span aria-hidden style={{ color: 'var(--st-ink-3)', fontSize: 17, lineHeight: 1, flex: '0 0 auto' }}>→</span>}
+    </div>
+  );
+  const surface = {
+    display: 'block', width: '100%', textAlign: 'left' as const,
+    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+    boxShadow: 'var(--st-hold), var(--st-edge)',
+    borderRadius: 'var(--st-r-card)', padding: 'var(--st-gap)',
+  };
+  if (!onTap) return <div style={surface}>{body}</div>;
+  return (
+    <button onClick={onTap} className="st-tap st-card" style={{ ...surface, cursor: 'pointer' }}>
       {body}
     </button>
   );

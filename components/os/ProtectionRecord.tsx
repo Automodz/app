@@ -15,7 +15,8 @@
 import { PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import PhotoBand from './PhotoBand';
 import Action from './Action';
-import { Body, Whisper } from './text';
+import Chip from './Chip';
+import { Emphasis, Body, Whisper } from './text';
 
 const fmtMonthYear = (d: Date) =>
   d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
@@ -43,6 +44,13 @@ export default function ProtectionRecord({
   const word = PROTECTION_WORD[p.kind];
   const renewing = p.term === 'waning' || p.term === 'expiring';
 
+  /* the one-glance status - protected, needs attention, or run its course */
+  const status = !p.active
+    ? { tone: 'neutral' as const, label: 'Lapsed' }
+    : renewing
+    ? { tone: 'warn' as const, label: typeof daysLeft === 'number' ? `${daysLeft}d left` : 'Renewal soon' }
+    : { tone: 'ok' as const, label: 'Protected' };
+
   const condition = !p.active
     ? `Applied ${fmtLong(p.applied)}${p.until ? ` · ran its course ${fmtMonthYear(p.until)}` : ''}.`
     : renewing && typeof daysLeft === 'number'
@@ -60,14 +68,15 @@ export default function ProtectionRecord({
       </Whisper>
       {(onOpenChapter || onRenew) && (
         <div style={{ marginTop: 'var(--st-line)', display: 'flex', gap: 'var(--st-inset)', flexWrap: 'wrap' }}>
-          {onOpenChapter && <Action onClick={onOpenChapter}>Read its chapter</Action>}
-          {onRenew && <Action onClick={onRenew}>Renew</Action>}
+          {onOpenChapter && <Action variant="forward" onClick={onOpenChapter}>Read its chapter</Action>}
+          {onRenew && <Action variant="forward" onClick={onRenew}>Renew</Action>}
         </div>
       )}
     </>
   );
 
-  /* photography belongs to living protection only (design law) */
+  /* photography belongs to living protection only (design law) - the status
+     chip rides the top-right corner over the scrim */
   if (p.active && photo) {
     return (
       <div>
@@ -77,20 +86,29 @@ export default function ProtectionRecord({
           ratio="band"
           overTitle={word}
           overCaption={condition}
+          overBadge={<Chip tone={status.tone}>{status.label}</Chip>}
         />
         {facts}
       </div>
     );
   }
 
+  /* a material record-card: the word as the object, the status read at a glance,
+     the condition told once beneath (UX-1) */
   return (
     <div style={{
-      background: 'var(--st-gallery)', borderRadius: 'var(--st-r-sheet)', padding: 'var(--st-inset)',
+      background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+      borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-hold), var(--st-edge)',
+      padding: 'var(--st-inset)',
     }}>
-      <Body>
-        {word} - {p.active
-          ? <span style={{ color: 'var(--st-assent)' }}>{condition.toLowerCase()}</span>
-          : condition}
+      <div style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)',
+      }}>
+        <Emphasis as="p">{word}</Emphasis>
+        <Chip tone={status.tone}>{status.label}</Chip>
+      </div>
+      <Body tone="ink-2" style={{ marginTop: 'var(--st-breath)' }}>
+        {p.active ? condition : condition}
       </Body>
       {facts}
     </div>
