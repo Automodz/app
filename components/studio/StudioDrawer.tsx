@@ -1,6 +1,6 @@
 'use client';
 /**
- * StudioDrawer — the Studio Board's context workspace. Walk-ins, jobs and
+ * StudioDrawer - the Studio Board's context workspace. Walk-ins, jobs and
  * bookings open here, over the board, so the operator never leaves the
  * screen that runs the day. Right-side panel on desktop, full sheet on
  * mobile. One drawer, one target at a time; cross-links switch the target

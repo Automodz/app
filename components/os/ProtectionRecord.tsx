@@ -2,8 +2,8 @@
 /**
  * One protection layer, told once (P2D1 §C6).
  *
- * Living protection is photographed — the panel it shields, from the visit
- * that applied it — and speaks with confidence ("Protected until March
+ * Living protection is photographed - the panel it shields, from the visit
+ * that applied it - and speaks with confidence ("Protected until March
  * 2029"). A protection that has run its course keeps its dignity in type,
  * with its dates intact. The same record serves the Glance layer and the
  * Desk's protection panel; there is no second layout.
@@ -25,13 +25,13 @@ const fmtLong = (iso: string) =>
 export interface ProtectionRecordProps {
   protection: Protection;
   vehicleName: string;
-  /** days remaining, from the term engine — only used while it is the action */
+  /** days remaining, from the term engine - only used while it is the action */
   daysLeft?: number | null;
   /** the finished photograph from the visit that applied this layer */
   photo?: string;
   /** who applied it, when the floor recorded it */
   installer?: string | null;
-  /** the visit that created it — its Chapter */
+  /** the visit that created it - its Chapter */
   onOpenChapter?: () => void;
   /** offered only when the studio's proposal engine truly cites this layer */
   onRenew?: () => void;
@@ -46,7 +46,7 @@ export default function ProtectionRecord({
   const condition = !p.active
     ? `Applied ${fmtLong(p.applied)}${p.until ? ` · ran its course ${fmtMonthYear(p.until)}` : ''}.`
     : renewing && typeof daysLeft === 'number'
-    ? `Renewal window open — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`
+    ? `Renewal window open - ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`
     : p.until
     ? `Protected until ${fmtMonthYear(p.until)}`
     : `Applied ${fmtLong(p.applied)}`;
@@ -73,7 +73,7 @@ export default function ProtectionRecord({
       <div>
         <PhotoBand
           src={photo}
-          alt={`${word} — the ${vehicleName}`}
+          alt={`${word} - the ${vehicleName}`}
           ratio="band"
           overTitle={word}
           overCaption={condition}
@@ -88,7 +88,7 @@ export default function ProtectionRecord({
       background: 'var(--st-gallery)', borderRadius: 'var(--st-r-sheet)', padding: 'var(--st-inset)',
     }}>
       <Body>
-        {word} — {p.active
+        {word} - {p.active
           ? <span style={{ color: 'var(--st-assent)' }}>{condition.toLowerCase()}</span>
           : condition}
       </Body>

@@ -1,5 +1,5 @@
 /**
- * COMPANY — the single source for business identity: name, contact,
+ * COMPANY - the single source for business identity: name, contact,
  * address, hours, review link. No phone number, address or maps URL may
  * appear inline in a component; import from here.
  *

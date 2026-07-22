@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
  *  → { fullSlots: Record<date, string[]>, fullDates: string[] }
  *
  * Server-side because Firestore rules (correctly) stop customers reading other
- * people's bookings and any jobs — but availability is derived from exactly
+ * people's bookings and any jobs - but availability is derived from exactly
  * those. The engine itself is pure (lib/availability); this route only feeds it.
  */
 export async function POST(req: NextRequest) {

@@ -1,5 +1,5 @@
 # AutoModz Customer Experience V3
-### The Vehicle Care Companion — audit, psychology, and complete redesign proposal
+### The Vehicle Care Companion - audit, psychology, and complete redesign proposal
 
 > Scope: everything customer-facing. Preserved untouched: Firestore schema, booking/availability engines,
 > permissions, payments logic, notification plumbing, MEDIA/COMPANY/SERVICES content modules.
@@ -38,7 +38,7 @@ success states are toasts + static screens.
 ## 2 · Pain Points (ranked by emotional cost)
 
 1. **The wait is silent.** Between "booking confirmed" and "ready", the app shows a status *word*. This is the
-   window when the customer's ₹2L car is in someone else's hands — peak anxiety, zero theatre. Domino's built an
+   window when the customer's ₹2L car is in someone else's hands - peak anxiety, zero theatre. Domino's built an
    empire on exactly this window.
 2. **Booking feels like paperwork.** Six named steps, dropdown-density, price appears late, no sense of the
    studio's actual capacity ("tomorrow's protection bay is free" is *known* by the availability engine and never shown).
@@ -54,27 +54,27 @@ success states are toasts + static screens.
 
 ## 3 · UX Problems (structural)
 
-- **Navigation is flat**: five equal tabs pretend Home, History, Garage, Profile are peers. They aren't — the
+- **Navigation is flat**: five equal tabs pretend Home, History, Garage, Profile are peers. They aren't - the
   *car* is the object; everything else is context around it.
 - **Wizard state lives in one 1,085-line component**; each step is a screenful of controls rather than one decision.
-- **Two currencies of progress** (thin bar on cards, step list in sheet) — no single canonical tracking surface.
+- **Two currencies of progress** (thin bar on cards, step list in sheet) - no single canonical tracking surface.
 - **The invoice, photos, protection, and history of one car live in four places** (invoice page, job photos,
-  garage sheet, history) — V1 garage began the merge; V3 finishes it.
+  garage sheet, history) - V1 garage began the merge; V3 finishes it.
 - **Empty states instruct instead of invite** ("Add your vehicles to start booking services").
 
 ## 4 · Psychology Analysis
 
-- **Endowment effect** — the more the app reflects *their specific car* (name, plate, its protection layers,
+- **Endowment effect** - the more the app reflects *their specific car* (name, plate, its protection layers,
   its photos), the more the app feels like part of owning the car. The Garage must therefore be the app's
   emotional centre of gravity, not a tab.
-- **Goal-gradient + operational transparency** — visible progress through the studio (Uber/Domino's) converts
+- **Goal-gradient + operational transparency** - visible progress through the studio (Uber/Domino's) converts
   anxiety into anticipation, and *watching work happen* increases perceived value of the work itself
-  (the "labor illusion" — Buell/Norton). We have the real stages streaming from the Studio OS; showing them is free value.
-- **Peak–end rule** — the remembered experience is the peak (watching the car in the bays / the reveal photo)
+  (the "labor illusion" - Buell/Norton). We have the real stages streaming from the Studio OS; showing them is free value.
+- **Peak–end rule** - the remembered experience is the peak (watching the car in the bays / the reveal photo)
   and the end (pickup + payment). Both deserve the most design investment; today both are the *least* designed.
-- **Zeigarnik effect** — an open loop ("ceramic curing — final inspection tomorrow 11:00") makes reopening the
+- **Zeigarnik effect** - an open loop ("ceramic curing - final inspection tomorrow 11:00") makes reopening the
   app compulsive during a service.
-- **Loss aversion for retention** — "PPF protected until Jan 2036" reframes lapsing maintenance as *losing
+- **Loss aversion for retention** - "PPF protected until Jan 2036" reframes lapsing maintenance as *losing
   protection*, which drives rebooking far harder than a discount push ever will.
 
 ## 5 · Trust Analysis
@@ -113,14 +113,14 @@ CARE ·  one canonical flow: book → track → history ("Journey")
 CLUB ·  membership, rewards, referral, offers (merged)
 ```
 Profile/notifications collapse into a header sheet. Marketplace (`/cars`, sell-car) stays a separate
-public surface linked from CLUB — it is a different business and never interrupts care.
+public surface linked from CLUB - it is a different business and never interrupts care.
 
 ### 8 · New Navigation
 
 - **Bottom bar: 3 destinations + 1 action.** `CAR · CARE · CLUB` + centre **Book** button (persistent, thumb-zone).
 - **Active service takeover:** when a booking is live, a **Live Activity bar** docks above the bottom bar on
   every screen (car name · current stage · ETA) and opens the Tracker full-screen. The tracker is a surface,
-  not a page-in-a-tab — Uber's model.
+  not a page-in-a-tab - Uber's model.
 - All secondary flows (add vehicle, booking detail, invoice, plan purchase, preferences) remain bottom sheets.
   Zero new page navigations inside the authed app.
 
@@ -129,10 +129,10 @@ public surface linked from CLUB — it is a different business and never interru
 ```
 /                    cinematic marketing film (public)
 /auth/login          arrival moment ("Welcome to the studio")
-/app                 CAR   — passport of the selected vehicle (multi-car switcher)
-/app/care            CARE  — Tracker (live) | Journey (past) | Book (entry)
+/app                 CAR   - passport of the selected vehicle (multi-car switcher)
+/app/care            CARE  - Tracker (live) | Journey (past) | Book (entry)
 /app/care/track/[id] full-screen live tracker (deep-linked from push)
-/app/club            CLUB  — membership, rewards, referral, offers
+/app/club            CLUB  - membership, rewards, referral, offers
 /invoice/[id]        unchanged public receipt
 /cars, /dashboard/sell-car   marketplace, unchanged
 ```
@@ -141,9 +141,9 @@ Old `/dashboard/*` routes 301 into the new IA (bookmarks + push URLs keep workin
 ### 10 · Motion System
 
 One choreography, two engines, strict division of labour:
-- **GSAP + ScrollTrigger (+ Lenis)** — *public marketing only*: homepage scroll film, image parallax,
+- **GSAP + ScrollTrigger (+ Lenis)** - *public marketing only*: homepage scroll film, image parallax,
   kinetic headline reveals, section hand-offs. Install fresh; the homepage's framer-motion reveals migrate.
-- **Framer Motion** — *authed app only*: it already runs every sheet/list/layout transition there; it stays and
+- **Framer Motion** - *authed app only*: it already runs every sheet/list/layout transition there; it stays and
   GSAP never enters the app bundle. One interaction = one engine, never both.
 - **Motion tokens** (single file): `ease: [0.22,1,0.36,1]`, durations 150/350/700ms, arrival = fade+8px rise,
   departure = fade+4px fall, state-change = colour cross-fade + one pulse. Nothing bounces, spins, or overshoots.
@@ -152,7 +152,7 @@ One choreography, two engines, strict division of labour:
 
 ### 11 · Component System
 
-Primitives via **shadcn/ui** (installed, restyled to AutoModz tokens, replacing hand-rolled equivalents 1:1 —
+Primitives via **shadcn/ui** (installed, restyled to AutoModz tokens, replacing hand-rolled equivalents 1:1 -
 old pattern deleted the same commit it is replaced): Drawer/Sheet, Dialog, Calendar (booking date), Command,
 Tabs, ScrollArea, Tooltip, Toast (sonner). Before any custom interaction is built, check 21st.dev for the
 pattern (tracker rails, tickets, comparison sliders) and adapt.
@@ -167,7 +167,7 @@ Everything consumes MEDIA / COMPANY / SERVICES / Firestore. No inline content, e
 ┌─────────────────────────────┐
 │ DEFENDER 110       ⌄ switch │  ← vehicle name is the headline
 │ GJ01 AB 1234                │
-│ [ hero photo — latest after │
+│ [ hero photo - latest after │
 │   shot of THIS car, else    │
 │   MEDIA fallback ]          │
 │ ● PPF PROTECTED · JAN 2036  │  ← ProtectionSeal row
@@ -202,7 +202,7 @@ DEFENDER 110 · IN THE STUDIO
 │  ✓ Confirmed        09:00  │
 │  ✓ Checked in       09:12  │
 │  ✓ Rahul assigned          │
-│  ● Ceramic — layer 2  now  │   ← live node pulses
+│  ● Ceramic - layer 2  now  │   ← live node pulses
 │     [during-photo strip]   │
 │  ○ Quality check           │
 │  ○ Ready · est 4:30 pm     │   ← honest ETA from floor engine
@@ -213,20 +213,20 @@ DELIVERED → journey entry saved · review ask · next-care seed
 Stages map 1:1 to existing `statusHistory` (+ booking events); photos are the job's real photos; technician from
 assignments. **Zero new backend.** Live: reuse `subscribeUserBookings` (already streaming).
 
-**JOURNEY (replaces history)** — vertical story: each visit = JourneyEntry (date headline, service, after-photo
+**JOURNEY (replaces history)** - vertical story: each visit = JourneyEntry (date headline, service, after-photo
 thumb, amount, invoice link, "book this again"). Active filters gone; the live one lives in the Tracker.
 
-**CLUB** — plan as a membership card (wallet-style), benefits as visuals, washes as a filling ring, renewal as
+**CLUB** - plan as a membership card (wallet-style), benefits as visuals, washes as a filling ring, renewal as
 continuation ("your 9th month"), referral as "invite a friend to the studio · both get ₹200", offers folded in.
 
-**HOMEPAGE (public film)** — same 8 beats, recomposed as full-viewport scenes with GSAP scroll choreography:
+**HOMEPAGE (public film)** - same 8 beats, recomposed as full-viewport scenes with GSAP scroll choreography:
 Hero (one line, one car) → Services as magazine spreads (pinned, image-led, price as typography) → Membership
 scene → Before/After (drag slider, full-bleed) → Gallery (real work, Storage-fed) → Trust (rating + address +
 hours from COMPANY) → Location → minimal footer. No stacked cards anywhere.
 
 ### 13 · Screen Hierarchy
 
-1. **Tracker** (signature — peak emotion, peak differentiation)
+1. **Tracker** (signature - peak emotion, peak differentiation)
 2. **CAR passport** (daily home, endowment)
 3. **Book flow** (revenue path)
 4. **Homepage film** (first impression)
@@ -240,7 +240,7 @@ hours from COMPANY) → Location → minimal footer. No stacked cards anywhere.
 - Sheets for everything secondary; the base surface never navigates away during a flow.
 - Live data animates in place (stage rail, ETA), never via reload.
 - Skeletons mirror final layout exactly; success states are moments (ticket stamp, reveal), failures are
-  in-place, human, and always offer the next action ("Couldn't reach the studio — retry or WhatsApp us").
+  in-place, human, and always offer the next action ("Couldn't reach the studio - retry or WhatsApp us").
 - Haptics (PWA vibration where available): stage advance, booking confirm, payment success. Nothing else.
 
 ### 15 · Priority Roadmap
@@ -259,14 +259,14 @@ Each phase ships independently behind the existing auth; old routes redirect onl
 
 ### 16 · Estimated Impact
 
-- **Tracker (V3-1)** — highest: converts the anxious window into the product's signature; expected push
-  open-rates and unsolicited shares ("look at my car's screen") — this is the feature customers describe to friends.
-- **Passport home (V3-2)** — retention: the app becomes part of owning the car; protection-expiry loops feed
+- **Tracker (V3-1)** - highest: converts the anxious window into the product's signature; expected push
+  open-rates and unsolicited shares ("look at my car's screen") - this is the feature customers describe to friends.
+- **Passport home (V3-2)** - retention: the app becomes part of owning the car; protection-expiry loops feed
   bookings without discounts.
-- **Book v3 (V3-3)** — conversion: fewer decisions per screen + visible availability + price-forward panes
+- **Book v3 (V3-3)** - conversion: fewer decisions per screen + visible availability + price-forward panes
   should measurably cut abandonment (instrument step completion before/after).
-- **Homepage film (V3-5)** — first-impression trust and premium price justification.
-- **Concierge copy (inside V3-1)** — cheapest change with the most tone impact in the whole plan.
+- **Homepage film (V3-5)** - first-impression trust and premium price justification.
+- **Concierge copy (inside V3-1)** - cheapest change with the most tone impact in the whole plan.
 
 ---
 

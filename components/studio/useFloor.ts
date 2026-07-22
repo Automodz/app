@@ -1,6 +1,6 @@
 'use client';
 /**
- * useFloor — the single live derivation of "what is happening inside the
+ * useFloor - the single live derivation of "what is happening inside the
  * workshop right now". One brain shared by the Studio Operations Board and
  * the compact BayStrip so the two never disagree.
  *
@@ -42,7 +42,7 @@ export interface FloorState {
   durationOf: (cat: string, name?: string) => number;
   /** vehicles physically occupying each bay (in_progress) */
   bays: Record<ResourceKey, Occupant[]>;
-  /** checked-in, not yet in a bay — the waiting queue, oldest first */
+  /** checked-in, not yet in a bay - the waiting queue, oldest first */
   waiting: Occupant[];
   qc: Job[];
   ready: Job[];

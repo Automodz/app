@@ -44,7 +44,7 @@ export default function Portrait({ name, truth, photo, plate, minHeight = '92vh'
             position: 'absolute', top: 0, left: 0, right: 0, height: 64,
             background: 'linear-gradient(var(--st-scrim-soft), transparent)',
           }} />
-          {/* bottom scrim — max 55%, lower 30% */}
+          {/* bottom scrim - max 55%, lower 30% */}
           <div aria-hidden style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, height: '30%',
             background: 'linear-gradient(transparent, var(--st-scrim-strong))',

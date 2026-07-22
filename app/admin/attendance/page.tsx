@@ -1,9 +1,9 @@
 'use client';
 /**
- * Team attendance — the whole crew's day on one screen.
+ * Team attendance - the whole crew's day on one screen.
  * Employee flow: Check In → Working ⇄ Break → Check Out (one shift per day;
  * a closed shift can only be reopened by a manager). GPS/device/IP are
- * captured automatically at check-in — nobody types a time, ever.
+ * captured automatically at check-in - nobody types a time, ever.
  * Manager (admin session): force checkout, reopen, correct times, export
  * the month's payroll hours as CSV.
  */
@@ -52,7 +52,7 @@ export default function AttendancePage() {
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
-  // live durations — re-render each minute, no timers stored anywhere
+  // live durations - re-render each minute, no timers stored anywhere
   useEffect(() => {
     const t = setInterval(() => tick(n => n + 1), 60000);
     return () => clearInterval(t);
@@ -86,7 +86,7 @@ export default function AttendancePage() {
         const todaysJobs = await getJobsForDate(format(new Date(), 'yyyy-MM-dd'));
         const handled = todaysJobs.filter(j => j.createdByEmployeeId === e.id && j.status !== 'cancelled').length;
         setSummary({ name: e.name, hours: fmtMin(mins), jobs: handled });
-      } catch { /* summary is a nicety — never block checkout */ }
+      } catch { /* summary is a nicety - never block checkout */ }
     });
 
   const openEdit = (rec: AttendanceRecord) => {
@@ -176,7 +176,7 @@ export default function AttendancePage() {
                   )}
                 </div>
 
-                {/* shift facts — derived live, never typed */}
+                {/* shift facts - derived live, never typed */}
                 {rec && m && (
                   <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-3 pl-1">
                     <span className="font-mono text-[10px]" style={{ color: 'var(--pewter)' }}>

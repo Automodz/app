@@ -1,6 +1,6 @@
 'use client';
 /**
- * The Glance — `/app` (Product Design Part B). One vertical composition:
+ * The Glance - `/app` (Product Design Part B). One vertical composition:
  * portrait region → Now → Protection → The story → Papers → The Club →
  * signature. Layers render only when true (silence law). The Capsule is
  * the only fixed element. Vehicle switching is a horizontal pager; the
@@ -58,7 +58,7 @@ const fmtMonthYear = (iso: string) =>
 const fmtDayDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-/** The visit a protection came from — its photograph, its craftsman, its Chapter. */
+/** The visit a protection came from - its photograph, its craftsman, its Chapter. */
 function protectionSource(
   model: { visits: Booking[]; jobByBooking: Map<string, Job> },
   p: Protection,
@@ -121,7 +121,7 @@ function Glance() {
   // a garage with a car in it has met the welcome
   useEffect(() => { if (vehicles.length > 0) markWelcomed(); }, [vehicles.length]);
 
-  // reaching the Desk *is* the lesson — the nudge retires the moment it opens
+  // reaching the Desk *is* the lesson - the nudge retires the moment it opens
   useEffect(() => { if (deskOpen) markCoachSeen(); }, [deskOpen]);
 
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
@@ -165,7 +165,7 @@ function Glance() {
       .filter(v => ['proposed', 'agreed'].includes(visitPhase(v.status)))
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null;
     const jobByBooking = new Map(jobs.filter(j => j.bookingId).map(j => [j.bookingId!, j]));
-    // one open proposal per vehicle — suppressed while a visit is already in flight
+    // one open proposal per vehicle - suppressed while a visit is already in flight
     const proposal = (live || agreed) ? null : proposalFor({
       vehicleId: vehicle.id, protections, lastCaredOn: completed[0]?.scheduledDate,
     });
@@ -179,14 +179,14 @@ function Glance() {
     };
   }, [vehicle, bookings, services, jobs]);
 
-  /* the relationship, derived once — the Club layer, the Desk and the join
+  /* the relationship, derived once - the Club layer, the Desk and the join
      sheet all read the same model */
   const club = useMemo(
     () => clubModel({ membership, completed: bookings.filter(b => visitPhase(b.status) === 'archived') }),
     [membership, bookings],
   );
 
-  /* this customer's own wash cadence — the join sheet's honest arithmetic */
+  /* this customer's own wash cadence - the join sheet's honest arithmetic */
   const washHistory = useMemo(
     () => bookings
       .filter(b => visitPhase(b.status) === 'archived' && b.serviceCategory === 'Washing')
@@ -194,13 +194,13 @@ function Glance() {
     [bookings],
   );
 
-  /* the car's own papers — warranties that still protect, receipts that exist */
+  /* the car's own papers - warranties that still protect, receipts that exist */
   const papers = useMemo(
     () => (model ? papersFor({ completed: model.completed, protections: model.protections }) : []),
     [model],
   );
 
-  /* what the studio has already told this customer — one timeline, no inbox */
+  /* what the studio has already told this customer - one timeline, no inbox */
   const log = useMemo(() => {
     if (!vehicle || !model) return [];
     return conciergeLog({
@@ -214,7 +214,7 @@ function Glance() {
 
   /* ── capsule state (design B2) ── */
   const capsule = useMemo<{ line: string; tap: () => void; actionWord?: string; onAction?: () => void }>(() => {
-    // quiet state (line: '') opens the Desk — the concierge's index
+    // quiet state (line: '') opens the Desk - the concierge's index
     if (!model || !vehicle) return { line: '', tap: () => router.replace('/app?sheet=desk') };
     const modelWord = vehicle.name;
     if (model.live) {
@@ -225,7 +225,7 @@ function Glance() {
         return { line: `The ${modelWord} is ready.`, tap: () => router.push(`/app/visit/${model.live!.id}`) };
       }
       return {
-        line: act ? `${ACT_TITLE[act]} — the ${modelWord} is with us.` : 'In the studio.',
+        line: act ? `${ACT_TITLE[act]} - the ${modelWord} is with us.` : 'In the studio.',
         tap: () => router.push(`/app/visit/${model.live!.id}`),
       };
     }
@@ -248,7 +248,7 @@ function Glance() {
     return { line: '', tap: () => router.replace('/app?sheet=desk') }; // quiet → Desk
   }, [model, vehicle, router]);
 
-  /* ── the Desk shelf (design system §7.4 · IA D2) — adaptive: a row exists
+  /* ── the Desk shelf (design system §7.4 · IA D2) - adaptive: a row exists
      only when its object does. Thread & search land in P2. ── */
   const deskRows: ShelfRow[] = useMemo(() => {
     if (!vehicle) return [];
@@ -278,7 +278,7 @@ function Glance() {
     if (!model || !vehicle) return { visits: [] as ThreadVisit[], search: [] as SearchItem[] };
     const line = (b: Booking): string => {
       const ph = visitPhase(b.status);
-      if (ph === 'live') { const a = careAct(b.status); return a ? `${ACT_TITLE[a]} — the ${vehicle.name} is with us` : 'In the studio'; }
+      if (ph === 'live') { const a = careAct(b.status); return a ? `${ACT_TITLE[a]} - the ${vehicle.name} is with us` : 'In the studio'; }
       if (ph === 'agreed') return `${fmtDayDate(b.scheduledDate)} · ${b.scheduledTime} · confirmed`;
       if (ph === 'proposed') return `${b.serviceName} · requested`;
       return `${b.serviceName} · ${fmtLong(b.scheduledDate)}`;
@@ -295,11 +295,11 @@ function Glance() {
     const search: SearchItem[] = [
       ...model.visits.map(b => ({ label: line(b), group: 'Visits', onTap: openVisit(b) })),
       ...model.completed.filter(b => b.invoiceId).map(b => ({
-        label: `Care record — ${fmtLong(b.scheduledDate)}`, group: 'Records',
+        label: `Care record - ${fmtLong(b.scheduledDate)}`, group: 'Records',
         onTap: () => router.push(`/app/chapter/${b.id}`),
       })),
       ...model.protections.map(p => ({ label: PROTECTION_WORD[p.kind], group: 'Protection', onTap: () => router.replace('/app?focus=protection') })),
-      /* the Conversation answers membership from the same model — real
+      /* the Conversation answers membership from the same model - real
          sentences about a real cycle, never a scripted reply */
       ...(club.state !== 'none' ? [
         {
@@ -316,7 +316,7 @@ function Glance() {
           group: 'Club', onTap: () => router.replace('/app?sheet=join-club'),
         }] : []),
       ] : club.invited ? [
-        { label: 'The Club — have a look', group: 'Club', onTap: () => router.replace('/app?sheet=join-club') },
+        { label: 'The Club - have a look', group: 'Club', onTap: () => router.replace('/app?sheet=join-club') },
       ] : []),
     ];
     return { visits: visitsFeed, search };
@@ -375,7 +375,7 @@ function Glance() {
                 {user.name?.charAt(0).toUpperCase() || 'Y'}
               </button>
 
-              {/* page dots — only when vehicles ≥ 2 (◆R4) */}
+              {/* page dots - only when vehicles ≥ 2 (◆R4) */}
               {vehicles.length >= 2 && (
                 <div aria-hidden style={{
                   position: 'absolute', bottom: 96, left: 0, right: 0,
@@ -402,7 +402,7 @@ function Glance() {
       {!onAddPage && vehicle && model && (
         <div style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement))' }}>
 
-          {/* B3 · Now — the next thing for this car. An agreed visit takes the
+          {/* B3 · Now - the next thing for this car. An agreed visit takes the
               floor; otherwise the studio's one standing suggestion (live lives
               in the capsule until P3). The two are mutually exclusive. */}
           {model.agreed ? (
@@ -436,7 +436,7 @@ function Glance() {
             </Layer>
           ) : null}
 
-          {/* B3.5 · The studio — trust before there is a story of their own.
+          {/* B3.5 · The studio - trust before there is a story of their own.
               Leaves for good once the first visit is completed (◆audit #2). */}
           {model.completed.length === 0 && (
             <Layer title="The studio">
@@ -444,7 +444,7 @@ function Glance() {
             </Layer>
           )}
 
-          {/* B4 · Protection — one record per layer, told by the protection
+          {/* B4 · Protection - one record per layer, told by the protection
               engine; renewal appears only when the studio's proposal cites it */}
           {model.protections.length > 0 ? (
             <Layer
@@ -474,7 +474,7 @@ function Glance() {
               </div>
             </Layer>
           ) : model.completed.length > 0 ? (
-            /* the car has a story but nothing shields it — say so plainly */
+            /* the car has a story but nothing shields it - say so plainly */
             <Layer title="Protection">
               <EmptyState
                 line={`Nothing protects the ${vehicle.name} yet.`}
@@ -522,7 +522,7 @@ function Glance() {
             )}
           </Layer>
 
-          {/* B6 · Papers — the vault. The plate is the permanent header; each
+          {/* B6 · Papers - the vault. The plate is the permanent header; each
               paper opens the Chapter that holds it (no second record). */}
           <Layer title="Papers">
             <IdentityPlate
@@ -549,7 +549,7 @@ function Glance() {
             </div>
           </Layer>
 
-          {/* B7 · The Club — the relationship, told by the club model. The
+          {/* B7 · The Club - the relationship, told by the club model. The
               card is the object; one true line sits under it. */}
           {(club.state !== 'none' || club.invited) && (
             <Layer title="The Club">
@@ -586,7 +586,7 @@ function Glance() {
                 <div style={{ marginTop: 'var(--st-breath)' }}>
                   <Action variant="quiet" onClick={() => {
                     const url = typeof window !== 'undefined' ? window.location.origin : '';
-                    if (navigator.share) navigator.share({ text: `My car lives at AutoModz — first detail's on me. ${url}` }).catch(() => {});
+                    if (navigator.share) navigator.share({ text: `My car lives at AutoModz - first detail's on me. ${url}` }).catch(() => {});
                   }}>Share</Action>
                 </div>
               </div>
@@ -606,7 +606,7 @@ function Glance() {
         </div>
       )}
 
-      {/* the one-time nudge at the capsule — never over a sheet (◆audit #5) */}
+      {/* the one-time nudge at the capsule - never over a sheet (◆audit #5) */}
       <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen && !protectionOpen && !joinClubOpen} />
 
       <Capsule
@@ -617,7 +617,7 @@ function Glance() {
         onPhoto={false}
       />
 
-      {/* the protection panel — the Desk's focus reading of every layer (§C6) */}
+      {/* the protection panel - the Desk's focus reading of every layer (§C6) */}
       <StudioSheet open={protectionOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="Protection">
         {vehicle && model && (
           <div style={{ display: 'grid', gap: 'var(--st-rest)', paddingBottom: 'var(--st-breath)' }}>
@@ -725,7 +725,7 @@ function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: b
   );
 }
 
-/** Add or edit a car — the one form, in the Studio's own language. */
+/** Add or edit a car - the one form, in the Studio's own language. */
 function CarFormSheet({ open, editing, onClose }: {
   open: boolean; editing?: Vehicle | null; onClose: () => void;
 }) {
@@ -805,7 +805,7 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
             ))}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <span style={{ flex: 1 }}><Body>Message me while the car’s in care.</Body></span>
-              <Whisper>Always — it’s your car.</Whisper>
+              <Whisper>Always - it’s your car.</Whisper>
             </div>
           </div>
         </div>
@@ -824,7 +824,7 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-/* ── the arrange sheet (design E1) — care is agreed, not filed. Three
+/* ── the arrange sheet (design E1) - care is agreed, not filed. Three
    pre-answered questions; reuses the booking engine (createBooking +
    availability + membership-wash) untouched. A visit is born `pending`
    (= proposed); the studio confirms. ── */
@@ -890,7 +890,7 @@ function ArrangeSheet({
       addBookingToStore({ ...payload, id, createdAt: now, updatedAt: now });
     } catch {
       if (isDevUser(user.uid)) addBookingToStore({ ...payload, id: `dev-${Date.now()}`, createdAt: now, updatedAt: now });
-      else { setError('That didn’t reach us — try again.'); setBusy(false); return; }
+      else { setError('That didn’t reach us - try again.'); setBusy(false); return; }
     }
     onClose();
   };
@@ -899,7 +899,7 @@ function ArrangeSheet({
     <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="Arrange a visit">
       <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
         <Title>Arrange a visit</Title>
-        {/* the car this visit belongs to, in the plate's own language — it
+        {/* the car this visit belongs to, in the plate's own language - it
             stays in view for every step, so the answer is never a guess */}
         <IdentityPlate
           name={vehicle.name}
@@ -959,7 +959,7 @@ function ArrangeSheet({
                         background: t === time ? 'var(--st-linen)' : 'transparent',
                         fontFamily: 'var(--st-text)', fontSize: 14, color: 'var(--st-ink)',
                       }}>{t}</button>
-                  )) : <Whisper>No room that day — try another.</Whisper>}
+                  )) : <Whisper>No room that day - try another.</Whisper>}
                 </div>
               </div>
             )}

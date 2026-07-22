@@ -3,7 +3,7 @@ import { careAct, visitPhase, ACT_TITLE } from './visit';
 import { daysLeft, termState } from './term';
 
 /**
- * truthOf() — the one sentence under the car's name (design B1).
+ * truthOf() - the one sentence under the car's name (design B1).
  * Priority is law: in studio > ready > agreed > term edge > care due > protected > quiet.
  * Pure derivation; never stored.
  */
@@ -27,20 +27,20 @@ export function truthOf({ visits, protections, lastCaredOn, now = new Date() }: 
   if (live) {
     const act = careAct(live.status);
     if (act === 'ready') return 'Ready for collection.';
-    return act ? `In the studio — ${ACT_TITLE[act].toLowerCase()}.` : 'In the studio.';
+    return act ? `In the studio - ${ACT_TITLE[act].toLowerCase()}.` : 'In the studio.';
   }
 
   const agreed = visits
     .filter(v => visitPhase(v.status) === 'agreed' || visitPhase(v.status) === 'proposed')
     .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0];
-  if (agreed) return `${fmtDay(agreed.scheduledDate)} ${agreed.scheduledTime} — we're ready for it.`;
+  if (agreed) return `${fmtDay(agreed.scheduledDate)} ${agreed.scheduledTime} - we're ready for it.`;
 
   const edging = protections
     .map(p => ({ p, state: termState(p.expiresOn, { now }), left: daysLeft(p.expiresOn, now) }))
     .filter(x => x.state === 'waning' || x.state === 'expiring')
     .sort((a, b) => a.left - b.left)[0];
   if (edging) {
-    return `${edging.p.label} — ${edging.left} day${edging.left === 1 ? '' : 's'} of protection left.`;
+    return `${edging.p.label} - ${edging.left} day${edging.left === 1 ? '' : 's'} of protection left.`;
   }
 
   if (lastCaredOn) {

@@ -178,7 +178,7 @@ export default function AdminReportsPage() {
               { l: 'Expenses', v: formatCurrency(expenses), c: 'var(--danger)' },
               { l: 'Stock purchases', v: formatCurrency(report.purchasesCost), c: 'var(--danger)' },
               { l: 'Avg turnaround', v: fmtMin(report.avgTurnaroundMin), c: 'var(--info)' },
-              { l: 'Peak hour', v: report.peakHour !== null ? `${report.peakHour}:00` : '—', c: 'var(--info)' },
+              { l: 'Peak hour', v: report.peakHour !== null ? `${report.peakHour}:00` : '-', c: 'var(--info)' },
               // utilization = worked minutes / (working days × 600-min day per bay)
               { l: 'Wash bay utilization', v: `${Math.min(100, Math.round(report.busyMin.wash / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },
               { l: 'Protection bay utilization', v: `${Math.min(100, Math.round(report.busyMin.protection / (report.workingDays * 600) * 100))}%`, c: 'var(--chrome)' },

@@ -1,8 +1,8 @@
 'use client';
 /**
- * THE CHAPTER (P2D1 §C5 · P2D3 C-13) — one completed visit as a document
+ * THE CHAPTER (P2D1 §C5 · P2D3 C-13) - one completed visit as a document
  * worth keeping. The invoice reborn as a keepsake: the finished car, the
- * work, the evidence, the people, the promise, and — for the owner only —
+ * work, the evidence, the people, the promise, and - for the owner only -
  * the money and the papers.
  *
  * One layout serves both readings. `owner={false}` is the public share: it
@@ -42,7 +42,7 @@ export default function Chapter({ chapter, protections, owner, shareUrl, onBack 
 
   const share = async () => {
     if (!shareUrl) return;
-    const data = { title: `${chapter.vehicleName} — ${chapter.title}`, url: shareUrl };
+    const data = { title: `${chapter.vehicleName} - ${chapter.title}`, url: shareUrl };
     try {
       if (navigator.share) await navigator.share(data);
       else { await navigator.clipboard.writeText(shareUrl); setShared(true); }
@@ -94,7 +94,7 @@ export default function Chapter({ chapter, protections, owner, shareUrl, onBack 
               <PhotoBand
                 key={`${shot.url}-${i}`}
                 src={shot.url}
-                alt={`${shot.label} — the ${chapter.vehicleName}`}
+                alt={`${shot.label} - the ${chapter.vehicleName}`}
                 ratio="memory"
                 caption={shot.label}
               />
@@ -129,7 +129,7 @@ export default function Chapter({ chapter, protections, owner, shareUrl, onBack 
                 background: 'var(--st-gallery)', borderRadius: 'var(--st-r-sheet)', padding: 'var(--st-inset)',
               }}>
                 <Body>
-                  {PROTECTION_WORD[p.kind]} — {p.until
+                  {PROTECTION_WORD[p.kind]} - {p.until
                     ? <><span style={{ color: p.active ? 'var(--st-assent)' : undefined }}>
                         {p.active ? 'protected' : 'ran its course'}
                       </span> until {fmtMonthYear(p.until)}</>

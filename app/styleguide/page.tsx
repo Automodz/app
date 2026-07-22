@@ -39,12 +39,12 @@ export default function StyleguidePage() {
         <DisplayLarge>Display 44</DisplayLarge>
         <Display>Display 32</Display>
         <Title>Title 24</Title>
-        <Emphasis>Emphasis 19 — the working voice.</Emphasis>
-        <Body>Body 16 — sentences, not labels.</Body>
+        <Emphasis>Emphasis 19 - the working voice.</Emphasis>
+        <Body>Body 16 - sentences, not labels.</Body>
         <Data>MH 12 AB 1234 · ₹1,200 · 14 June 2026</Data>
-        <Whisper>Whisper 12 — offline, hints, silence.</Whisper>
+        <Whisper>Whisper 12 - offline, hints, silence.</Whisper>
         <div style={{ marginTop: 16 }}>
-          <TruthLine text="Ceramic coat — 212 days of protection left." />
+          <TruthLine text="Ceramic coat - 212 days of protection left." />
         </div>
       </Layer>
 
@@ -87,13 +87,13 @@ export default function StyleguidePage() {
             { label: 'Papers & records', onTap: () => setSheet(true) },
             { label: 'The Club', onTap: () => setSheet(true) },
           ]}
-          proposal={{ reason: 'The ceramic coat has 24 days of protection left — time to renew it.', onAccept: () => setSheet(true) }}
+          proposal={{ reason: 'The ceramic coat has 24 days of protection left - time to renew it.', onAccept: () => setSheet(true) }}
           visits={[
             { id: 'a', line: 'Thursday, 10 July · 10:00 · confirmed', onTap: () => setSheet(true) },
             { id: 'b', line: 'Full detail · 14 June 2026', sub: '₹8,400', onTap: () => setSheet(true) },
           ]}
           searchItems={[
-            { label: 'Care record — 14 June 2026', group: 'Records', onTap: () => setSheet(true) },
+            { label: 'Care record - 14 June 2026', group: 'Records', onTap: () => setSheet(true) },
             { label: 'Ceramic coat', group: 'Protection', onTap: () => setSheet(true) },
           ]}
           onMessage={() => setSheet(true)}
@@ -108,7 +108,7 @@ export default function StyleguidePage() {
         />
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24, color: 'var(--st-ink)' }}>
           <Spinner />
-          <Whisper>The one spinner — inside a pressed action only.</Whisper>
+          <Whisper>The one spinner - inside a pressed action only.</Whisper>
         </div>
         <div style={{ marginTop: 24, display: 'grid', gap: 12 }}>
           <Skeleton style={{ height: 96 }} />

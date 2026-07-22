@@ -1,5 +1,5 @@
 /**
- * SERVICES — the marketing catalog: the four disciplines as the customer
+ * SERVICES - the marketing catalog: the four disciplines as the customer
  * sees them (image, copy, warranty, duration, fallback starting price).
  *
  * Pricing truth stays in Firestore (Studio Settings → Services); surfaces

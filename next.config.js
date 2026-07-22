@@ -29,10 +29,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Front Desk mode was folded into the Studio shell — keep old links working.
+  // Front Desk mode was folded into the Studio shell - keep old links working.
   async redirects() {
     return [
-      // IA §1.2 — deleted V2 customer routes 301 to their successors.
+      // IA §1.2 - deleted V2 customer routes 301 to their successors.
       { source: '/dashboard', destination: '/app', permanent: true },
       { source: '/dashboard/profile', destination: '/app?sheet=you', permanent: true },
       { source: '/dashboard/notifications', destination: '/app', permanent: true },

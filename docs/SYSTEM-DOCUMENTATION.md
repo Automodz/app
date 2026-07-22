@@ -1,6 +1,6 @@
-# AutoModz — Complete System Documentation (Reverse-Engineered)
+# AutoModz - Complete System Documentation (Reverse-Engineered)
 
-_Generated 2026-07-18 from the repository at commit `1f059fa`. This document is the single source of truth for an architect who will never open the code. It documents reality only — no recommendations._
+_Generated 2026-07-18 from the repository at commit `1f059fa`. This document is the single source of truth for an architect who will never open the code. It documents reality only - no recommendations._
 
 ---
 
@@ -11,13 +11,13 @@ _Generated 2026-07-18 from the repository at commit `1f059fa`. This document is 
 **Business it serves.** One physical workshop with exactly **two physical resources**: a Wash Bay (capacity 1) and a Protection Bay (capacity 1, for PPF / ceramic / coating / correction). Services range from ₹400 headlight buffing to ₹220,000 12-year PPF. Side businesses: monthly wash memberships (Silver/Gold/Platinum), a used-car marketplace (buy/sell), and referral marketing.
 
 **Users.**
-- **Customers** — car owners who book services, hold memberships, browse the car marketplace, refer friends.
-- **Employees** — detailers, washers, helpers, managers working the floor and clocking attendance.
-- **The single owner/admin** — `hello.automodz@gmail.com` (hard-coded in Firestore rules as the only account allowed to bootstrap the `admin` role).
+- **Customers** - car owners who book services, hold memberships, browse the car marketplace, refer friends.
+- **Employees** - detailers, washers, helpers, managers working the floor and clocking attendance.
+- **The single owner/admin** - `hello.automodz@gmail.com` (hard-coded in Firestore rules as the only account allowed to bootstrap the `admin` role).
 
 **Goals.** Run the entire business as an "internal OS": booking → check-in → job execution → QC → delivery → payment → invoice → review, plus attendance/payroll, inventory, expenses, daily cash close, monthly P&L, CRM, and marketing.
 
-**Core mental model — three operating modes, one platform** (from `docs/INFORMATION-ARCHITECTURE.md` and the admin layout comment):
+**Core mental model - three operating modes, one platform** (from `docs/INFORMATION-ARCHITECTURE.md` and the admin layout comment):
 
 | Mode | Route root | Who | Chrome | Theme |
 |---|---|---|---|---|
@@ -45,20 +45,20 @@ _Generated 2026-07-18 from the repository at commit `1f059fa`. This document is 
 | Server SDK | `firebase-admin` ^13 in API routes (`lib/server/firebaseAdmin.ts`), configured via `FIREBASE_ADMIN_PROJECT_ID` / `FIREBASE_ADMIN_CLIENT_EMAIL` / `FIREBASE_ADMIN_PRIVATE_KEY`; every route degrades gracefully if unconfigured |
 | Hosting | **Vercel** (deploys from GitHub `Automodz/app`); `vercel.json` defines one cron: `/api/cron/daily` at 03:30 UTC daily |
 | State management | **Zustand** ^4.5 (`lib/store.ts`, single `useAppStore`), `persist` middleware storing **only `theme`** under localStorage key `automodz-v5`. Kiosk employee mirrored to `sessionStorage` key `automodz-kiosk`. |
-| Auth context | `context/AuthContext.tsx` — the only React context; feeds Zustand |
+| Auth context | `context/AuthContext.tsx` - the only React context; feeds Zustand |
 | Styling | **Tailwind CSS 3.4** + a large custom CSS-variable design system in `app/globals.css` ("Studio White" identity v9: grey/white monochrome, graphite-ink accent; customer surfaces light-first, admin/store always dark). Fonts via Google Fonts: Unbounded (display), Outfit, DM Sans (body), DM Mono. `clsx` + `tailwind-merge` via `cn()`. |
 | Animations | **framer-motion** ^11 (page transitions, layout animations, sidebar), **lenis** (inertial scroll, homepage only via `SmoothScroll`), `react-intersection-observer` |
 | Icons | **lucide-react** exclusively (an "icons+emoji sweep" removed all emoji); `ServiceIcon` maps service categories to glyphs |
-| Charts | None — no chart library. Reports are stat tiles + CSV export; gauges are custom (`GaugeRing`). |
+| Charts | None - no chart library. Reports are stat tiles + CSV export; gauges are custom (`GaugeRing`). |
 | Toasts | `react-hot-toast` (Toaster mounted in root layout) |
 | Bottom sheets | **vaul** ^0.9 (`components/ui/Sheet.tsx`) |
 | Dates | `date-fns` ^3 |
-| PWA | `@ducanh2912/next-pwa` — service worker in `public/sw.js`, offline fallback `/offline`, `skipWaiting`+`clientsClaim` (fresh-first), manifest + icons, iOS standalone meta, custom `InstallPrompt` |
+| PWA | `@ducanh2912/next-pwa` - service worker in `public/sw.js`, offline fallback `/offline`, `skipWaiting`+`clientsClaim` (fresh-first), manifest + icons, iOS standalone meta, custom `InstallPrompt` |
 | Images | `next/image` with remote patterns: res.cloudinary.com, i.ibb.co, images.unsplash.com, lh3.googleusercontent.com, firebasestorage.googleapis.com. Client-side resize/compress before upload (`lib/services/storage.ts`). |
-| Notifications | Three channels: in-app Firestore `notifications` docs; FCM web push (tokens at `users/{uid}/fcmTokens/{token}`, service worker route `app/firebase-messaging-sw.js/route.ts`); WhatsApp — free `wa.me` deep links by default, optional Meta WhatsApp Cloud API via `/api/whatsapp/send` when `WHATSAPP_TOKEN`+`WHATSAPP_PHONE_NUMBER_ID` set |
+| Notifications | Three channels: in-app Firestore `notifications` docs; FCM web push (tokens at `users/{uid}/fcmTokens/{token}`, service worker route `app/firebase-messaging-sw.js/route.ts`); WhatsApp - free `wa.me` deep links by default, optional Meta WhatsApp Cloud API via `/api/whatsapp/send` when `WHATSAPP_TOKEN`+`WHATSAPP_PHONE_NUMBER_ID` set |
 | Testing | Jest + ts-jest + jsdom; three suites: `__tests__/payroll.test.ts`, `pricing.test.ts`, `utils.test.ts` |
 | Build | `next build`; ESLint ignored during builds; `removeConsole` in production; React strict mode on |
-| Scripts | `scripts/backfill-assignments.mjs` — one-off admin-SDK migration giving legacy jobs `assignments`/`assignedIds` |
+| Scripts | `scripts/backfill-assignments.mjs` - one-off admin-SDK migration giving legacy jobs `assignments`/`assignedIds` |
 
 **Folder architecture**
 
@@ -109,19 +109,19 @@ __tests__/ · scripts/ · public/ · firestore.rules · firestore.indexes.json
 
 | Route | Mode | Purpose |
 |---|---|---|
-| `/admin` | STUDIO | **Studio Operations Board** — the landing page. Live floor: clock, bay states, alerts (bay freeing / late / customer waiting / ready-to-call), waiting queue, two resource cards, QC/ready tail, technicians, capacity. All derived from `useFloor`. |
+| `/admin` | STUDIO | **Studio Operations Board** - the landing page. Live floor: clock, bay states, alerts (bay freeing / late / customer waiting / ready-to-call), waiting queue, two resource cards, QC/ready tail, technicians, capacity. All derived from `useFloor`. |
 | `/admin/schedule` | STUDIO | Planning surface, 4 views: Day (drag-to-reschedule agenda), Week, Board (by pipeline stage), Technicians (drag between lanes to reassign). Includes `BayStrip`. |
 | `/admin/bookings` | STUDIO | Operational booking queue; rows open the workspace |
-| `/admin/bookings/[id]` | STUDIO | **Booking Operational Workspace** — commercial mode; at check-in creates the linked Job and expands in place to operational mode (stage rail, assignments, photos, activity, payments, invoice) |
-| `/admin/walkin` | STUDIO | Walk-in intake — thin wrapper (8 lines) around shared `WalkInFlow` |
+| `/admin/bookings/[id]` | STUDIO | **Booking Operational Workspace** - commercial mode; at check-in creates the linked Job and expands in place to operational mode (stage rail, assignments, photos, activity, payments, invoice) |
+| `/admin/walkin` | STUDIO | Walk-in intake - thin wrapper (8 lines) around shared `WalkInFlow` |
 | `/admin/jobs/[id]` | STUDIO | Walk-in job workspace (same `workspace/parts` components); **booking-linked jobs redirect to `/admin/bookings/[id]`** |
-| `/admin/jobs` | — | **Redirect stub → `/admin`** (6 lines, keeps old links) |
-| `/admin/workspace` | — | **Redirect stub → `/admin`** (6 lines) |
+| `/admin/jobs` | - | **Redirect stub → `/admin`** (6 lines, keeps old links) |
+| `/admin/workspace` | - | **Redirect stub → `/admin`** (6 lines) |
 | `/admin/office` | OWNER | Owner OS home: intelligence strip (revenue, outstanding, approvals, staff, stock, leads), approval queue, follow-up tasks |
 | `/admin/quotes` | OWNER | Quote pipeline: requested → draft → sent (WhatsApp deep link) → accepted (→ start job) / declined / expired |
 | `/admin/cars/leads` | OWNER | Marketplace leads (inquiries + viewing requests) + sell requests; status new→contacted→closed |
 | `/admin/customers` | OWNER | Customer list/search |
-| `/admin/customers/[id]` | OWNER | **Customer 360** — chronological timeline of bookings/walk-ins/invoices/memberships + rail (garage, membership, promos, admin notes, tags) |
+| `/admin/customers/[id]` | OWNER | **Customer 360** - chronological timeline of bookings/walk-ins/invoices/memberships + rail (garage, membership, promos, admin notes, tags) |
 | `/admin/subscriptions` | OWNER | Membership admin: verify pending payments → activate; auto-persists expiry of lapsed subs on load (`expireLapsedSubscriptions`) |
 | `/admin/invoices` | OWNER | Recent invoices, share links, mark paid |
 | `/admin/expenses` | OWNER | Expense entry (10 categories) + month list |
@@ -135,15 +135,15 @@ __tests__/ · scripts/ · public/ · firestore.rules · firestore.indexes.json
 | `/admin/gallery` | OWNER | Homepage gallery images (upload/delete, public read) |
 | `/admin/cars` | OWNER | Marketplace listing CRUD + photos + featured/status |
 | `/admin/settings` | OWNER | Service catalogue CRUD + seed + **studio resource config (wash capacity)** |
-| `/admin/vehicles/[reg]` | drill-down | **Vehicle 360** — history of one car by reg no (bookings, jobs, invoices, photos). Never in nav; reached by tapping any reg-no. |
+| `/admin/vehicles/[reg]` | drill-down | **Vehicle 360** - history of one car by reg no (bookings, jobs, invoices, photos). Never in nav; reached by tapping any reg-no. |
 
 ## Front Desk routes (`role in ('admin','employee')` enforced by `app/store/layout.tsx`)
 
 | Route | Purpose |
 |---|---|
 | `/store` | Kiosk **lock screen**: employee picker + `PinPad` (SHA-256 hash compare). Managers and personal employee sessions are auto-redirected to `/store/board`. |
-| `/store/board` | **Floor** — live kanban (CHECKED IN → IN PROGRESS → QUALITY CHECK → READY) via `subscribeTodaysJobs` with stream-down detection/resubscribe; rail: today's arrivals (booked cars not yet in), my-shift check-in/break controls, payments-pending counter, daily-close shortcut (admin only); "mine only" filter |
-| `/store/new` | Check-In — thin wrapper (7 lines) around shared `WalkInFlow` |
+| `/store/board` | **Floor** - live kanban (CHECKED IN → IN PROGRESS → QUALITY CHECK → READY) via `subscribeTodaysJobs` with stream-down detection/resubscribe; rail: today's arrivals (booked cars not yet in), my-shift check-in/break controls, payments-pending counter, daily-close shortcut (admin only); "mine only" filter |
+| `/store/new` | Check-In - thin wrapper (7 lines) around shared `WalkInFlow` |
 | `/store/job/[id]` | Job workspace for the desk: advance stages, photos, ledger payments (partial/advance), membership-wash deduction, invoice generation, delivery handover (payment-gated `completed`) |
 | `/store/attendance` | Team attendance: whole crew's day; employee self check-in/break/checkout; manager force-checkout/reopen/correct-times/status-override; month CSV export |
 
@@ -169,15 +169,15 @@ Root-level: `app/error.tsx` (branded crash screen), `app/not-found.tsx` (branded
 
 # 4. INFORMATION ARCHITECTURE
 
-## Customer App — bottom nav (exactly 5 tabs, `app/dashboard/layout.tsx`)
+## Customer App - bottom nav (exactly 5 tabs, `app/dashboard/layout.tsx`)
 
 ```
 Home (/dashboard) · History (/dashboard/history) · [＋ Book] (/dashboard/booking, raised center button)
 · Garage (/dashboard/vehicles) · Profile (/dashboard/profile)
 ```
-Non-tab pages (cars, sell-car, subscriptions, offers, refer, notifications) are reached from Home cards / Profile links — they still render inside the tab shell.
+Non-tab pages (cars, sell-car, subscriptions, offers, refer, notifications) are reached from Home cards / Profile links - they still render inside the tab shell.
 
-## Admin OS — sidebar (`app/admin/layout.tsx`), grouped, filtered by active mode
+## Admin OS - sidebar (`app/admin/layout.tsx`), grouped, filtered by active mode
 
 ```
 [Mode switch: STUDIO | DESK | OWNER]        (DESK links out to /store/board)
@@ -196,7 +196,7 @@ OWNER mode
 ```
 Top bar: mode/page breadcrumb · Search (⌘K) · "New walk-in" button. ⌘K palette = every nav destination + quick actions (Studio Board, Switch to Front Desk, Owner Office, New walk-in, Start daily close, Add expense, Sign out). Unlisted `/admin` routes (job details, walk-in) resolve to STUDIO mode. The layout preserves per-pathname scroll position within a workflow group.
 
-## Front Desk OS — top strip (`app/store/layout.tsx`)
+## Front Desk OS - top strip (`app/store/layout.tsx`)
 
 ```
 Floor (/store/board) · Check-In (/store/new) · Attendance (/store/attendance)
@@ -204,26 +204,26 @@ Right: identity (kiosk employee or manager) · Lock (kiosk only) · Admin switch
 ```
 
 ## Hidden / non-nav navigation
-- `/admin/vehicles/[reg]` — only via reg-no taps.
-- `/admin/workspace`, `/admin/jobs` — redirect stubs.
-- `/store` lock screen — only when kiosk locked.
-- `/invoice/[id]` — only via shared token links.
+- `/admin/vehicles/[reg]` - only via reg-no taps.
+- `/admin/workspace`, `/admin/jobs` - redirect stubs.
+- `/store` lock screen - only when kiosk locked.
+- `/invoice/[id]` - only via shared token links.
 - Mode switching is manager-only; staff and customers never see cross-mode controls (**role-visibility law**).
 
 ---
 
 # 5. USER TYPES
 
-Only **three persisted roles** exist on `users.role`: `customer`, `employee`, `admin`. Finer staff roles live on `employees.role`: `detailer | washer | manager | helper` (display/assignment semantics only — Firestore rules don't distinguish them).
+Only **three persisted roles** exist on `users.role`: `customer`, `employee`, `admin`. Finer staff roles live on `employees.role`: `detailer | washer | manager | helper` (display/assignment semantics only - Firestore rules don't distinguish them).
 
 | Role | Landing | Sees | Can | Cannot |
 |---|---|---|---|---|
 | **Customer** | `/dashboard` | Customer app + public pages | Book/cancel(>4h)/reschedule own pending-confirmed bookings; CRUD own vehicles; buy membership (lands `pending`); cancel own membership; request quotes (total forced 0); redeem promos (bump `usedCount` by exactly 1); create sell requests & car leads; save cars; read own notifications/invoices/referrals | Read others' data; write `washesUsed`; self-escalate role; see any staff UI |
 | **Employee** (linked staff account) | `/store` → board | Front Desk only | Self attendance (check-in/break/out); create jobs; update **assigned** jobs' operational fields only (`status, statusHistory, photos, notes, bay, payment*, invoiceId, payments, amountPaid, completedAt, updatedAt`); create invoices & inventory consumption txns; read roster/jobs/quotes/tasks/walk-in CRM/activity | Amounts/discounts/assignment changes (admin-only); payroll, expenses, daily close, reports, all `/admin` pages; manual discounts (rules require discount.source ∈ membership/promo) |
-| **Admin** (owner) | `/admin` | Everything | Everything client-side rules allow; the only writer of payroll/expenses/dailyClosings/services/promos/employees/inventory items/car listings | — |
+| **Admin** (owner) | `/admin` | Everything | Everything client-side rules allow; the only writer of payroll/expenses/dailyClosings/services/promos/employees/inventory items/car listings | - |
 | **Kiosk identity** (not an auth role) | `/store` PIN pad | Front Desk | Rides on the owner's admin auth session on the shared tablet; individual identity = PIN-unlocked employee (`kioskEmployee` in Zustand/sessionStorage); auto-relocks after 5 min idle | Persist across tab close |
 | **Dev shim** (dev builds only) | any | any | `localStorage['automodz-devauth'] = 'customer'|'employee'|'admin'` fabricates a user in AuthContext; never runs in production | Real data writes still hit rules |
-| Manager / Reception / Detailer / Washer / Demo / "Owner" as distinct roles | — | — | **Do not exist as auth roles.** "Manager" in UI = any admin session; reception/floor = employee role; there is no demo account system. | |
+| Manager / Reception / Detailer / Washer / Demo / "Owner" as distinct roles | - | - | **Do not exist as auth roles.** "Manager" in UI = any admin session; reception/floor = employee role; there is no demo account system. | |
 
 ---
 
@@ -232,7 +232,7 @@ Only **three persisted roles** exist on `users.role`: `customer`, `employee`, `a
 - **Provider**: Firebase Auth. UI path is **Google popup** (`signInWithGoogle`). `adminLogin` (email/password) and `resetPassword` exist in `lib/services/auth.ts` but are not the primary UI.
 - **Profile bootstrap**: `ensureUserProfile` creates `users/{uid}` with role `customer` on first sign-in. Rules allow role `admin` at create **only** for `hello.automodz@gmail.com`.
 - **Role resolution / employee linking**: after auth, `linkEmployeeRole` calls `/api/employee/link` (admin SDK): active employee doc with matching email ⇒ promote to `employee` + backlink `authUid`; stale ⇒ demote. Runs on every session restore (`AuthContext.onAuthStateChanged`). Fails open (profile unchanged on error).
-- **Session/state**: Firebase persists auth; profile lives in Zustand (`user`, `authLoading`) — not persisted to storage.
+- **Session/state**: Firebase persists auth; profile lives in Zustand (`user`, `authLoading`) - not persisted to storage.
 - **Route protection**: no Next.js middleware; **client-side guards in each layout**: admin layout requires `role==='admin'` else → `/auth/login`; store layout requires staff; dashboard layout requires signed-in (admins bounced to `/admin`). Server APIs verify Firebase ID tokens.
 - **Login redirect**: admin→`/admin`, employee→`/store`, customer→`/dashboard`. `?ref=` codes stashed pre-auth and claimed post-auth via `/api/referral/claim`.
 - **Kiosk PIN**: employee PINs (4–6 digits) stored as SHA-256 hex (`pinHash`, hashed client-side via Web Crypto `sha256Hex`); `verifyPin` compares hashes; unlock stored in sessionStorage; 5-min inactivity relock; lock/exit controls in header.
@@ -243,7 +243,7 @@ Only **three persisted roles** exist on `users.role`: `customer`, `employee`, `a
 
 # 7. FIREBASE
 
-Project region `asia-south1`. Client init in `lib/firebase.ts` from `NEXT_PUBLIC_FIREBASE_*` envs; admin SDK in `lib/server/firebaseAdmin.ts`. No Cloud Functions — all server logic is Next.js API routes + Vercel cron.
+Project region `asia-south1`. Client init in `lib/firebase.ts` from `NEXT_PUBLIC_FIREBASE_*` envs; admin SDK in `lib/server/firebaseAdmin.ts`. No Cloud Functions - all server logic is Next.js API routes + Vercel cron.
 
 ## Collections (top-level)
 
@@ -304,7 +304,7 @@ promos: (active, validTo)
 5. Public reads limited to `gallery` and active `carListings`.
 
 ## Storage
-Firebase Storage holds job photos, gallery images, car-listing photos, sell-request photos. Uploads go through `lib/services/storage.ts` (client-side resize/compress to max width, returns URL+path); deletions use the stored `path`. (`deleteImage` currently takes `_path` — see §22.)
+Firebase Storage holds job photos, gallery images, car-listing photos, sell-request photos. Uploads go through `lib/services/storage.ts` (client-side resize/compress to max width, returns URL+path); deletions use the stored `path`. (`deleteImage` currently takes `_path` - see §22.)
 
 ---
 
@@ -312,45 +312,45 @@ Firebase Storage holds job photos, gallery images, car-listing photos, sell-requ
 
 All in `lib/types.ts` (685 lines) unless noted. Full field lists:
 
-**User** — uid, name, email, phone?, photoURL?, notificationPrefs? {promotions, serviceReminders, membershipReminders, whatsapp: boolean}, role: customer|employee|admin, employeeId?, notes? (admin CRM), tags?, createdAt?, updatedAt?. (Referral code stored on the profile ad hoc by `getMyReferralCode`.)
+**User** - uid, name, email, phone?, photoURL?, notificationPrefs? {promotions, serviceReminders, membershipReminders, whatsapp: boolean}, role: customer|employee|admin, employeeId?, notes? (admin CRM), tags?, createdAt?, updatedAt?. (Referral code stored on the profile ad hoc by `getMyReferralCode`.)
 
-**Vehicle** — id, name, registrationNumber, category: Hatchback|Sedan|Compact SUV|Full SUV|Luxury, color, notes?, createdAt.
+**Vehicle** - id, name, registrationNumber, category: Hatchback|Sedan|Compact SUV|Full SUV|Luxury, color, notes?, createdAt.
 
-**Service** — id, category: PPF|Washing|Ceramic|Coating, name, brand|null, price, duration (min), warranty|null, description, popular, active, order, createdAt.
+**Service** - id, category: PPF|Washing|Ceramic|Coating, name, brand|null, price, duration (min), warranty|null, description, popular, active, order, createdAt.
 
-**Booking** — id, userId/Name/Phone/Email, vehicleId/Name/RegNo, serviceId/Name/Category/BasePrice, serviceDurationMinutes?, pickupDropRequired + pickupDropFee (legacy), pickupRequired?/dropRequired? (₹50 per leg)/pickupAddress?, totalAmount, scheduledDate (YYYY-MM-DD), scheduledTime (HH:mm), status: `pending → confirmed → vehicle_received → in_progress → quality_check → ready_for_delivery → completed | cancelled`, paymentMethod: upi|cash, paymentStatus: pending|verified|failed, transactionId?, adminNotes?, discount? (BookingDiscount), invoiceId?, **jobId?** (permanent 1:1 operational link set at check-in), usedMembershipWash?/membershipId?, cancelledAt?, rejectionReason?, noShow?, createdAt, updatedAt.
+**Booking** - id, userId/Name/Phone/Email, vehicleId/Name/RegNo, serviceId/Name/Category/BasePrice, serviceDurationMinutes?, pickupDropRequired + pickupDropFee (legacy), pickupRequired?/dropRequired? (₹50 per leg)/pickupAddress?, totalAmount, scheduledDate (YYYY-MM-DD), scheduledTime (HH:mm), status: `pending → confirmed → vehicle_received → in_progress → quality_check → ready_for_delivery → completed | cancelled`, paymentMethod: upi|cash, paymentStatus: pending|verified|failed, transactionId?, adminNotes?, discount? (BookingDiscount), invoiceId?, **jobId?** (permanent 1:1 operational link set at check-in), usedMembershipWash?/membershipId?, cancelledAt?, rejectionReason?, noShow?, createdAt, updatedAt.
 
-**BookingDiscount** — source: membership|promo, promoId?, label, amount. (Best-of, never stacked.)
+**BookingDiscount** - source: membership|promo, promoId?, label, amount. (Best-of, never stacked.)
 
-**Subscription** — id, userId/Name/Email/Phone, plan: Silver|Gold|Platinum, status: active|expired|cancelled|pending, startDate, endDate (start+30d), washesTotal, washesUsed, paymentMethod, transactionId?, adminNotes?, timestamps. **MembershipPlanConfig** catalogue (`MEMBERSHIP_PLANS`): Silver ₹1,499 / 4 washes / 10% off; Gold ₹2,999 / 8 / 15%; Platinum ₹5,999 / 16 / 20% + perks lists. **MembershipState** (derived) — subscription, isActive, isExpired, washesRemaining, daysRemaining, planConfig.
+**Subscription** - id, userId/Name/Email/Phone, plan: Silver|Gold|Platinum, status: active|expired|cancelled|pending, startDate, endDate (start+30d), washesTotal, washesUsed, paymentMethod, transactionId?, adminNotes?, timestamps. **MembershipPlanConfig** catalogue (`MEMBERSHIP_PLANS`): Silver ₹1,499 / 4 washes / 10% off; Gold ₹2,999 / 8 / 15%; Platinum ₹5,999 / 16 / 20% + perks lists. **MembershipState** (derived) - subscription, isActive, isExpired, washesRemaining, daysRemaining, planConfig.
 
-**Promo** — id, code (uppercase), label, type percent|flat, value, scope: all | {category, categories[]} | {services, serviceIds[]}, target: all | {customers, userIds[]}, validFrom/validTo, usageLimitTotal?, usageLimitPerCustomer?, usedCount, autoApply, active, timestamps. **PromoRedemption** — promoId, userId?, customerPhone?, bookingId?, jobId?, discountAmount, createdAt.
+**Promo** - id, code (uppercase), label, type percent|flat, value, scope: all | {category, categories[]} | {services, serviceIds[]}, target: all | {customers, userIds[]}, validFrom/validTo, usageLimitTotal?, usageLimitPerCustomer?, usedCount, autoApply, active, timestamps. **PromoRedemption** - promoId, userId?, customerPhone?, bookingId?, jobId?, discountAmount, createdAt.
 
-**Employee** — id, name, phone, email? (enables personal sign-in), authUid?, role: detailer|washer|manager|helper, pinHash (SHA-256), active, salary: {type monthly|per_day, monthlyBase?, perDayRate?}, joinedAt, timestamps.
+**Employee** - id, name, phone, email? (enables personal sign-in), authUid?, role: detailer|washer|manager|helper, pinHash (SHA-256), active, salary: {type monthly|per_day, monthlyBase?, perDayRate?}, joinedAt, timestamps.
 
-**AttendanceRecord** — id = `{date}_{employeeId}`, employeeId/Name, date, checkInAt, checkOutAt?, status: present|half_day|leave, note?, breaks?: [{startAt, endAt?}], checkInMeta?: {lat, lng, accuracy, device, ip}, audit: reopenedById/Name, forcedOutById/Name, editedById/Name.
+**AttendanceRecord** - id = `{date}_{employeeId}`, employeeId/Name, date, checkInAt, checkOutAt?, status: present|half_day|leave, note?, breaks?: [{startAt, endAt?}], checkInMeta?: {lat, lng, accuracy, device, ip}, audit: reopenedById/Name, forcedOutById/Name, editedById/Name.
 
-**PayrollRecord** — id = `{month}_{employeeId}`, employeeId/Name, month, daysPresent, halfDays, leaves, baseAmount, advances[]/deductions[]: {amount, date, note?}, netPayable, status draft|paid, paidAt?, paidVia?, timestamps.
+**PayrollRecord** - id = `{month}_{employeeId}`, employeeId/Name, month, daysPresent, halfDays, leaves, baseAmount, advances[]/deductions[]: {amount, date, note?}, netPayable, status draft|paid, paidAt?, paidVia?, timestamps.
 
-**Job** — id, source: walk_in|booking, bookingId?, customerId? (phone-matched), customerName/Phone, vehicleName/RegNo, serviceItems: [{serviceId, serviceName, category, price-at-sale}], bay?: 1|2|3, status: `checked_in → in_progress → quality_check → ready_for_delivery → completed | cancelled` (completed = delivered, payment-gated), discount?, subtotal, totalAmount, paymentMethod?, paymentStatus pending|collected (derived: collected ⇔ amountPaid ≥ totalAmount), transactionId?, payments?: PaymentRecord[] (ledger: id, amount, method, transactionId?, receivedById/Name, at, date), amountPaid? (denormalized Σ), invoiceId?, createdByEmployeeId/Name, assignments: JobAssignment[] {employeeId/Name, role lead|helper, assignedAt/ById/ByName, removedAt?/removedById?} (reassignment = soft-remove+add), assignedIds[] (denormalized active, for array-contains + rules), statusHistory: [{status, at, byEmployeeId/Name, note?}], photos?: [{url, path, kind before|during|after}], notes? (staff-only), date (YYYY-MM-DD board bucket), createdAt/updatedAt/completedAt?.
+**Job** - id, source: walk_in|booking, bookingId?, customerId? (phone-matched), customerName/Phone, vehicleName/RegNo, serviceItems: [{serviceId, serviceName, category, price-at-sale}], bay?: 1|2|3, status: `checked_in → in_progress → quality_check → ready_for_delivery → completed | cancelled` (completed = delivered, payment-gated), discount?, subtotal, totalAmount, paymentMethod?, paymentStatus pending|collected (derived: collected ⇔ amountPaid ≥ totalAmount), transactionId?, payments?: PaymentRecord[] (ledger: id, amount, method, transactionId?, receivedById/Name, at, date), amountPaid? (denormalized Σ), invoiceId?, createdByEmployeeId/Name, assignments: JobAssignment[] {employeeId/Name, role lead|helper, assignedAt/ById/ByName, removedAt?/removedById?} (reassignment = soft-remove+add), assignedIds[] (denormalized active, for array-contains + rules), statusHistory: [{status, at, byEmployeeId/Name, note?}], photos?: [{url, path, kind before|during|after}], notes? (staff-only), date (YYYY-MM-DD board bucket), createdAt/updatedAt/completedAt?.
 
-**Quote** — id, customerName/Phone, customerId?, vehicleName, serviceCategory, items: [{name, detail?, amount}], total, validUntil?, status: requested|draft|sent|accepted|declined|expired, notes? (internal), customerMessage?, jobId? (set when started), createdById?/Name?, timestamps.
+**Quote** - id, customerName/Phone, customerId?, vehicleName, serviceCategory, items: [{name, detail?, amount}], total, validUntil?, status: requested|draft|sent|accepted|declined|expired, notes? (internal), customerMessage?, jobId? (set when started), createdById?/Name?, timestamps.
 
-**FollowUpTask** — note, dueDate, customerName?/Phone?, refType? quote|job|booking + refId?, done, createdByName, createdAt, completedAt?.
+**FollowUpTask** - note, dueDate, customerName?/Phone?, refType? quote|job|booking + refId?, done, createdByName, createdAt, completedAt?.
 
-**CustomerFeedback** — rating 1–5, comment?, invoiceId?, customerName?/Phone?, createdAt.
+**CustomerFeedback** - rating 1–5, comment?, invoiceId?, customerName?/Phone?, createdAt.
 
-**Expense** — amount, category (rent|electricity|water|materials|equipment|maintenance|marketing|transport|refreshments|other), note?, paidVia cash|upi|bank, vendor?, date, month (report bucket), enteredById/Name, createdAt.
+**Expense** - amount, category (rent|electricity|water|materials|equipment|maintenance|marketing|transport|refreshments|other), note?, paidVia cash|upi|bank, vendor?, date, month (report bucket), enteredById/Name, createdAt.
 
-**DailyClosing** — id/date = YYYY-MM-DD, cashExpected, upiExpected, cashCounted, variance (counted−expected), cashExpenses, note?, jobsCompleted, closedById/Name, closedAt.
+**DailyClosing** - id/date = YYYY-MM-DD, cashExpected, upiExpected, cashCounted, variance (counted−expected), cashExpenses, note?, jobsCompleted, closedById/Name, closedAt.
 
-**Invoice** — id, invoiceNumber (`AMZ-YYYY-NNNN`), jobId?/bookingId?/customerId?, customerName/Phone, vehicleName/RegNo, lineItems [{name, qty, unitPrice, amount}], subtotal, discount? {label, amount}, gst? {rate, amount, gstin?} (off by default: `GST_ENABLED=false`), total, paymentMethod, paymentStatus pending|paid, photos? (copied from job), publicToken, createdByEmployeeId?/Name?, createdAt.
+**Invoice** - id, invoiceNumber (`AMZ-YYYY-NNNN`), jobId?/bookingId?/customerId?, customerName/Phone, vehicleName/RegNo, lineItems [{name, qty, unitPrice, amount}], subtotal, discount? {label, amount}, gst? {rate, amount, gstin?} (off by default: `GST_ENABLED=false`), total, paymentMethod, paymentStatus pending|paid, photos? (copied from job), publicToken, createdByEmployeeId?/Name?, createdAt.
 
-**InventoryItem** — name, category ppf_film|ceramic|wash|interior|other, unit ml|ft|pcs|gm, stockQty, lowStockThreshold, costPerUnit, active, timestamps. **InventoryTxn** — itemId/Name, type purchase|consumption|adjustment, qtyDelta (+/−), refType? job|booking + refId?, note?, costTotal?, byEmployeeId?, createdAt. **ServiceRecipe** — serviceId (doc id), serviceName, items [{itemId, itemName, qty, unit}], updatedAt.
+**InventoryItem** - name, category ppf_film|ceramic|wash|interior|other, unit ml|ft|pcs|gm, stockQty, lowStockThreshold, costPerUnit, active, timestamps. **InventoryTxn** - itemId/Name, type purchase|consumption|adjustment, qtyDelta (+/−), refType? job|booking + refId?, note?, costTotal?, byEmployeeId?, createdAt. **ServiceRecipe** - serviceId (doc id), serviceName, items [{itemId, itemName, qty, unit}], updatedAt.
 
-**CarListing** — title, make, model, year, price, kmDriven, fuel petrol|diesel|cng|electric, transmission manual|automatic, ownership (nth owner), color, regNo? (masked publicly), description, photos [{url, path}], status available|reserved|sold, featured, active, timestamps. **CarLead** — listingId/Title, type inquiry|viewing, userId?, name, phone, message?, preferredDate?/Time?, status new|contacted|closed, adminNotes?, timestamps. **SellRequest** — userId, name, phone, make, model, year, kmDriven, expectedPrice?, description?, photos, status, adminNotes?, timestamps.
+**CarListing** - title, make, model, year, price, kmDriven, fuel petrol|diesel|cng|electric, transmission manual|automatic, ownership (nth owner), color, regNo? (masked publicly), description, photos [{url, path}], status available|reserved|sold, featured, active, timestamps. **CarLead** - listingId/Title, type inquiry|viewing, userId?, name, phone, message?, preferredDate?/Time?, status new|contacted|closed, adminNotes?, timestamps. **SellRequest** - userId, name, phone, make, model, year, kmDriven, expectedPrice?, description?, photos, status, adminNotes?, timestamps.
 
-**ActivityEvent** (`lib/services/activity.ts`) — type (status/assignment/photo/payment/invoice/message/delivery…), refs bookingId?/jobId?/customerId?, actor, text, createdAt. **WalkinCustomer** (`walkinCustomers.ts`) — phone-keyed: name, vehicle info, visit count, total spend, timestamps. **ReferralRecord** (`referrals.ts`) — referrerUid, referredUid, code, promo ids, createdAt. **GalleryImage** — url, path, category, caption?, active, createdAt. **StepData** — booking wizard scratch state.
+**ActivityEvent** (`lib/services/activity.ts`) - type (status/assignment/photo/payment/invoice/message/delivery…), refs bookingId?/jobId?/customerId?, actor, text, createdAt. **WalkinCustomer** (`walkinCustomers.ts`) - phone-keyed: name, vehicle info, visit count, total spend, timestamps. **ReferralRecord** (`referrals.ts`) - referrerUid, referredUid, code, promo ids, createdAt. **GalleryImage** - url, path, category, caption?, active, createdAt. **StepData** - booking wizard scratch state.
 
 ---
 
@@ -362,8 +362,8 @@ Vehicle → Service → Schedule → Review → Payment → Done
 ```
 1. Pick/add a garage vehicle.
 2. Pick category (Washing/Ceramic/Coating/PPF) and service (Firestore catalogue, falls back to `STATIC_SERVICES`).
-3. Pick date/time — client POSTs `/api/availability` for the next 14 days; full slots/dates disabled. Multi-day services (≥600 min) offer only 09:00.
-4. Review: pickup/drop legs (₹50 each), address; discount computed = **best-of** membership % vs eligible promo (auto-apply or manually entered code — manual beats auto); active members may instead use a **membership wash** (wash services only; price → 0, deducted server-side at confirm).
+3. Pick date/time - client POSTs `/api/availability` for the next 14 days; full slots/dates disabled. Multi-day services (≥600 min) offer only 09:00.
+4. Review: pickup/drop legs (₹50 each), address; discount computed = **best-of** membership % vs eligible promo (auto-apply or manually entered code - manual beats auto); active members may instead use a **membership wash** (wash services only; price → 0, deducted server-side at confirm).
 5. Payment: UPI (shows UPI id `NEXT_PUBLIC_UPI_ID`, customer enters transaction id, paymentStatus `pending` until admin verifies) or cash.
 6. `createBooking` → status **`pending`** → fires `/api/notify/event booking_created` → owner notified. Promo redemption recorded, `usedCount` incremented.
 
@@ -376,8 +376,8 @@ cancelled                     in_progress → quality_check → ready_for_delive
                                             ──payment-gated──▶ completed (delivered)
 ```
 - Admin approves in `/admin/office` or `/admin/bookings/[id]`; reject writes `rejectionReason` and notifies the customer (in-app + push). Confirmed no-shows can be marked `noShow`.
-- **Check-in** (`createJobFromBooking`, idempotent): creates the Job (operational truth), backlinks `booking.jobId`; the Booking (commercial truth) is never replaced — permanent 1:1. Booking status mirrors job stages.
-- Stage advances (`updateJobStatus`) append `statusHistory` entries (automatic timeline — no manual timers) and write `activity` events.
+- **Check-in** (`createJobFromBooking`, idempotent): creates the Job (operational truth), backlinks `booking.jobId`; the Booking (commercial truth) is never replaced - permanent 1:1. Booking status mirrors job stages.
+- Stage advances (`updateJobStatus`) append `statusHistory` entries (automatic timeline - no manual timers) and write `activity` events.
 - Assignment: admin sets lead/helpers (`setJobAssignees`); history preserved via soft-remove.
 - Photos (before/during/after) attach at any stage and flow onto the invoice.
 - **Delivery**: `completed` only when `amountPaid ≥ totalAmount` (payment-gated handover), `completedAt` stamped; inventory consumption fires (below); walk-in spend recorded to `walkinCustomers`.
@@ -388,7 +388,7 @@ cancelled                     in_progress → quality_check → ready_for_delive
 ## 9.4 Payments & invoicing
 - **Ledger payments** (`addJobPayment`): any number of partial/advance payments, each recording who/how much/when/method; `amountPaid` denormalized; `paymentStatus` flips to `collected` at full cover. Legacy one-shot `markJobPayment` remains.
 - **Invoice** (`createInvoiceForJob` / `createInvoiceForBooking`): Firestore transaction bumps `counters/invoices`, writes invoice `AMZ-YYYY-NNNN` with line items/discount/optional GST/photos/publicToken, backlinks `invoiceId`. Shared via WhatsApp deep link to `/invoice/{id}?t={token}`.
-- **Review ask**: public invoice shows `RatingCard` — 4–5★ redirects to the Google review URL; 1–3★ writes private `feedback`. Plus a `buildReviewAskLink` WhatsApp message.
+- **Review ask**: public invoice shows `RatingCard` - 4–5★ redirects to the Google review URL; 1–3★ writes private `feedback`. Plus a `buildReviewAskLink` WhatsApp message.
 - **Receivables**: completed jobs with `amountPaid < totalAmount` (`getReceivables`); aged >3 days → daily-cron admin alert.
 
 ## 9.5 Membership
@@ -406,7 +406,7 @@ Admin maintains items + per-service **recipes**. On job completion staff either 
 ## 9.10 Expenses & Daily Close
 Expenses entered by admin (category, paidVia, vendor, month bucket). Daily Close: `computeDayTakings` sums the day's payment ledger by method → expected cash/UPI; owner counts drawer, records variance + cash expenses + note → `dailyClosings/{date}` (one per day).
 
-## 9.11 Reports — see §16. · 9.12 Gallery — admin uploads; public homepage reads.
+## 9.11 Reports - see §16. · 9.12 Gallery - admin uploads; public homepage reads.
 ## 9.13 Promotions
 Admin creates percent/flat promos with scope/target/validity/limits/auto-apply. Eligibility checked client-side (`isPromoEligible`); redemption recorded; per-customer limits checked against own `promoRedemptions`. Referral programme mints two targeted flat ₹200 promos (90-day validity) per successful claim, server-side.
 
@@ -422,13 +422,13 @@ Daily cron per customer, capped at **2 notifications/user/day**, idempotent per 
 
 **Screens**: `/admin` Studio Operations Board (full view) · `BayStrip` on `/admin/schedule` (compact) · `/store/board` kanban (desk view). All three derive from the same sources so they cannot disagree.
 
-**The single brain — `components/studio/useFloor.ts`**: derives, from live today's jobs (`subscribeTodaysJobs`) + service catalogue + `statusHistory` timestamps + `studioConfig`:
+**The single brain - `components/studio/useFloor.ts`**: derives, from live today's jobs (`subscribeTodaysJobs`) + service catalogue + `statusHistory` timestamps + `studioConfig`:
 - vehicles physically occupying each bay (`in_progress`), with expected end (service durations vs elapsed; negative = late),
 - the waiting queue (checked-in, not in a bay; oldest first),
 - QC and ready tails, technician states (working/break/idle from jobs+attendance),
 - capacity math: done/planned per bay, average delay, next free bay, look-ahead for tomorrow's bookings.
 
-**Bays**: exactly **two schedulable resources** — Wash Bay (capacity 1, configurable via `studioConfig.washCapacity`, studio runs 1) and Protection Bay (capacity 1, fixed). `categoryToResource`: `Washing`→wash, everything else→protection. A legacy `Job.bay: 1|2|3` field and `BAYS=[1,2,3]` constant persist from the older 3-bay model (bay is still writable by assigned staff per rules) but scheduling ignores them — commit `1f059fa` "Kill service-specific bay logic — the two physical resources are the only truth."
+**Bays**: exactly **two schedulable resources** - Wash Bay (capacity 1, configurable via `studioConfig.washCapacity`, studio runs 1) and Protection Bay (capacity 1, fixed). `categoryToResource`: `Washing`→wash, everything else→protection. A legacy `Job.bay: 1|2|3` field and `BAYS=[1,2,3]` constant persist from the older 3-bay model (bay is still writable by assigned staff per rules) but scheduling ignores them - commit `1f059fa` "Kill service-specific bay logic - the two physical resources are the only truth."
 
 **Scheduling/timeline**: pure engine in `lib/availability.ts` (see §14). Working day 09:00–19:00 (600 min); multi-day services spill across working days (3-day PPF blocks the protection bay Monday–Wednesday); 15-min turnover buffer; 30-min occupancy buckets and start granularity.
 
@@ -436,19 +436,19 @@ Daily cron per customer, capped at **2 notifications/user/day**, idempotent per 
 
 **Colour law** (BayStrip/board): green = available · orange = ending soon (<60 min) · red = late.
 
-**Current limitations (factual)**: durations are catalogue-level (per service, not per vehicle size); walk-in occupants start at `createdAt` clamped to opening, duration = Σ item durations; occupancy lookback capped at 6 days (`LOOKBACK_DAYS`, longest service ≈3 days + margin); multi-day expansion hard-capped at 14 working days; no holidays/closures model — every day is a working day.
+**Current limitations (factual)**: durations are catalogue-level (per service, not per vehicle size); walk-in occupants start at `createdAt` clamped to opening, duration = Σ item durations; occupancy lookback capped at 6 days (`LOOKBACK_DAYS`, longest service ≈3 days + margin); multi-day expansion hard-capped at 14 working days; no holidays/closures model - every day is a working day.
 
 ---
 
 # 11. COMPONENT MAP
 
-## `components/ui/` — 23 design-system primitives
+## `components/ui/` - 23 design-system primitives
 AppTile · AnimatedGradientBg · BeforeAfterSlider (homepage proof) · **CommandPalette** (⌘K, fuzzy filter, full keyboard, used by admin layout) · ConfirmDialog · CountUp · EmptyState · ErrorState (with retry) · GaugeRing · GlassCard · GradientButton · HeroMedia · Input · LiquidOrb · PageHeader · ParallaxSection · SafeArea · **ServiceIcon** (canonical category→glyph) · Sheet (vaul bottom sheet) · Skeleton · SlideToAction (homepage slide-to-book) · StatCard · StatusChip · WhatsAppFloat · Wordmark.
 
 ## Domain components
 | Component | Purpose | Used by |
 |---|---|---|
-| `workspace/parts.tsx` (394) | **Shared operational-workspace building blocks**: job stage rail, team assignment, photos, activity timeline, layout primitives — the single implementation for both workspaces | `/admin/bookings/[id]`, `/admin/jobs/[id]` |
+| `workspace/parts.tsx` (394) | **Shared operational-workspace building blocks**: job stage rail, team assignment, photos, activity timeline, layout primitives - the single implementation for both workspaces | `/admin/bookings/[id]`, `/admin/jobs/[id]` |
 | `workspace/BayStrip.tsx` (168) | Compact two-resource floor strip w/ live occupancy + look-ahead; draws only, derivation in useFloor | `/admin/schedule` |
 | `studio/useFloor.ts` (169) | The floor-derivation hook (§10) | `/admin`, BayStrip |
 | `intake/WalkInFlow.tsx` (388) | The one walk-in intake flow | `/store/new`, `/admin/walkin` |
@@ -467,17 +467,17 @@ AppTile · AnimatedGradientBg · BeforeAfterSlider (homepage proof) · **Command
 
 Line counts in §3/§25 indicate weight. Key pages beyond what §3 covers:
 
-- **`/dashboard` (469)** — reads store-cached vehicles/bookings/notifications (loaded once per uid by the layout, bookings kept live by `subscribeUserBookings`), membership via `getUserSubscription`; links to every non-tab page. Writes: none.
-- **`/dashboard/booking` (1,085; largest file)** — reads services, `/api/availability`, membership, eligible promos; writes booking, promo redemption, optional wash deduction (API), quote request; fires notify event. Dialogs: quote sheet, promo entry, UPI copy.
-- **`/dashboard/subscriptions` (732)** — plan cards, purchase sheet (UPI/cash → pending), usage ring, cancel confirm.
-- **`/admin/bookings/[id]` (454)** — reads booking + job + activity + employees + invoices; writes approve/reject/no-show/reschedule/notes/check-in (creates job)/stage/assign/photos/payments/invoice. Sections without data models (checklist, materials sheet, QC checklist, comments, WhatsApp log) are intentionally not rendered yet.
-- **`/admin/schedule` (461)** — reads bookings for visible dates + today's jobs + employees; writes reschedule (drag), reassign (drag). Renders BayStrip.
-- **`/store/job/[id]` (526)** — stage advance, photo capture, ledger payment sheet, membership-wash deduct (API), invoice create + WhatsApp share, delivery confirm (payment-gated), notes.
-- **`/store/board` (352)** — live kanban + arrivals rail + my-shift controls + payments-pending counter + daily-close shortcut (admin session only); stream-down detection with manual resubscribe.
-- **`/admin/employees/[id]` (387)** — attendance month grid, `employeeWashStats`/`employeeCategoryStats`, payroll computation UI.
-- **`/admin/customers/[id]` (416)** — merges bookings + jobs + invoices + subscriptions into one timeline; rail edits `users.notes`/`tags`; per-customer promo targeting.
-- **`/admin/settings` (183)** — service CRUD + `seedServices()` (from STATIC_SERVICES) + wash-capacity setting (`setWashCapacity`).
-- **`/admin/office` (196)** — `getAdminStats`, pending approvals, due tasks, receivables, low stock, leads counts.
+- **`/dashboard` (469)** - reads store-cached vehicles/bookings/notifications (loaded once per uid by the layout, bookings kept live by `subscribeUserBookings`), membership via `getUserSubscription`; links to every non-tab page. Writes: none.
+- **`/dashboard/booking` (1,085; largest file)** - reads services, `/api/availability`, membership, eligible promos; writes booking, promo redemption, optional wash deduction (API), quote request; fires notify event. Dialogs: quote sheet, promo entry, UPI copy.
+- **`/dashboard/subscriptions` (732)** - plan cards, purchase sheet (UPI/cash → pending), usage ring, cancel confirm.
+- **`/admin/bookings/[id]` (454)** - reads booking + job + activity + employees + invoices; writes approve/reject/no-show/reschedule/notes/check-in (creates job)/stage/assign/photos/payments/invoice. Sections without data models (checklist, materials sheet, QC checklist, comments, WhatsApp log) are intentionally not rendered yet.
+- **`/admin/schedule` (461)** - reads bookings for visible dates + today's jobs + employees; writes reschedule (drag), reassign (drag). Renders BayStrip.
+- **`/store/job/[id]` (526)** - stage advance, photo capture, ledger payment sheet, membership-wash deduct (API), invoice create + WhatsApp share, delivery confirm (payment-gated), notes.
+- **`/store/board` (352)** - live kanban + arrivals rail + my-shift controls + payments-pending counter + daily-close shortcut (admin session only); stream-down detection with manual resubscribe.
+- **`/admin/employees/[id]` (387)** - attendance month grid, `employeeWashStats`/`employeeCategoryStats`, payroll computation UI.
+- **`/admin/customers/[id]` (416)** - merges bookings + jobs + invoices + subscriptions into one timeline; rail edits `users.notes`/`tags`; per-customer promo targeting.
+- **`/admin/settings` (183)** - service CRUD + `seedServices()` (from STATIC_SERVICES) + wash-capacity setting (`setWashCapacity`).
+- **`/admin/office` (196)** - `getAdminStats`, pending approvals, due tasks, receivables, low stock, leads counts.
 
 ---
 
@@ -490,18 +490,18 @@ Categories: **PPF · Washing · Ceramic · Coating**. Firestore `services` is th
 | PPF | Llumar Gloss | Llumar | 145,000 | 480 min | 5 yr |
 | PPF | Llumar Platinum ★ | Llumar | 205,000 | 480 min | 10 yr |
 | PPF | Llumar Valor | Llumar | 220,000 | 480 min | 12 yr |
-| Washing | Regular Wash | — | 500 | 45 min | — |
-| Washing | Premium Wash ★ | — | 1,000 | 60 min | — |
-| Washing | Detail SPA ★ | — | 2,500 | 90 min | — |
-| Washing | Dry Clean | — | 4,000 | 120 min | — |
-| Washing | Roof Cleaning | — | 800 | 30 min | — |
-| Washing | Headlight Buffing | — | 400 | 20 min | — |
+| Washing | Regular Wash | - | 500 | 45 min | - |
+| Washing | Premium Wash ★ | - | 1,000 | 60 min | - |
+| Washing | Detail SPA ★ | - | 2,500 | 90 min | - |
+| Washing | Dry Clean | - | 4,000 | 120 min | - |
+| Washing | Roof Cleaning | - | 800 | 30 min | - |
+| Washing | Headlight Buffing | - | 400 | 20 min | - |
 | Ceramic | Kovalent Prolong | Kovalent | 10,000 | 480 min | 2 yr |
 | Ceramic | Kovalent Graphene ★ | Kovalent | 12,000 | 480 min | 3 yr |
 | Ceramic | Kovalent Borophene ★ | Kovalent | 14,000 | 480 min | 5 yr |
-| Coating | Teflon Coating | — | 5,000 | 120 min | 6 mo |
-| Coating | Glass Coating | — | 1,200 | 60 min | 3 mo |
-| Coating | Maintenance Coat ★ | — | 4,500 | 90 min | 1 yr |
+| Coating | Teflon Coating | - | 5,000 | 120 min | 6 mo |
+| Coating | Glass Coating | - | 1,200 | 60 min | 3 mo |
+| Coating | Maintenance Coat ★ | - | 4,500 | 90 min | 1 yr |
 
 ★ = `popular`. "Graphene"/"Borophene" are ceramic product names, not separate categories. "Correction" is referenced in bay-routing comments but has no catalogue entries. Business rules: pickup/drop ₹50/leg; membership discounts 10/15/20%; promos best-of with membership, never stacked; PPF/Ceramic typically go through the **quote** pipeline rather than fixed-price booking. Marketplace Buy/Sell is documented in §9.14.
 
@@ -515,9 +515,9 @@ Categories: **PPF · Washing · Ceramic · Coating**. Firestore `services` is th
 - **Candidate slots** (`candidateSlots`): every 30 min where `start + duration ≤ close`; durations ≥600 min → `['09:00']` only.
 - **Occupancy** (`buildOccupancy`): per-resource `Map<date, count[20buckets]>` over occupants (job+buffer). `slotBlocked` = any bucket in the expanded span at/over capacity.
 - **Core query** (`computeAvailability`): per requested date, which slots are full and which dates are entirely full.
-- **Occupant mapping**: `bookingToOccupant` (active statuses: pending…ready_for_delivery; start = scheduledTime; duration = `serviceDurationMinutes` ?? category default) and `walkInJobToOccupant` (walk-ins only — booking-linked jobs count via their booking; start = createdAt clamped to open; duration = Σ item durations).
-- **History**: `LOOKBACK_DAYS=6`, `lookbackDates()` — a PPF started up to 6 days ago can still occupy today.
-- **Consumers**: `/api/availability` (server, admin SDK — the only path customers get availability), and staff surfaces (`useFloor`/BayStrip) directly.
+- **Occupant mapping**: `bookingToOccupant` (active statuses: pending…ready_for_delivery; start = scheduledTime; duration = `serviceDurationMinutes` ?? category default) and `walkInJobToOccupant` (walk-ins only - booking-linked jobs count via their booking; start = createdAt clamped to open; duration = Σ item durations).
+- **History**: `LOOKBACK_DAYS=6`, `lookbackDates()` - a PPF started up to 6 days ago can still occupy today.
+- **Consumers**: `/api/availability` (server, admin SDK - the only path customers get availability), and staff surfaces (`useFloor`/BayStrip) directly.
 - **Edge cases encoded**: cancelled/rejected bookings free slots automatically (excluded from occupancy); pending bookings **do** hold capacity; the 8h ceramic can start 09:30 after a buffered handover (30-min granularity kept even for long jobs).
 - **Legacy**: `lib/config/bookingConfig.ts` (60-min slots, `SLOT_CAPACITY=3`) and `lib/utils.generateTimeSlots/getAvailableDates` predate the engine; `getAvailableDates(14)` still supplies the wizard's date strip; the slot-capacity model is superseded.
 
@@ -526,9 +526,9 @@ Categories: **PPF · Washing · Ceramic · Coating**. Firestore `services` is th
 # 15. ATTENDANCE (`lib/services/attendance.ts`, `/store/attendance`)
 
 - Shift constants: 09:00–19:00, `LATE_GRACE_MIN=15`.
-- **Check-in**: doc id `{date}_{employeeId}` ⇒ idempotent (double-tap returns the open record); checking in after checkout throws `ShiftClosedError` — only a manager reopen clears it. `captureAttendanceMeta` best-effort records GPS lat/lng/accuracy, trimmed user-agent, IP; never blocks.
+- **Check-in**: doc id `{date}_{employeeId}` ⇒ idempotent (double-tap returns the open record); checking in after checkout throws `ShiftClosedError` - only a manager reopen clears it. `captureAttendanceMeta` best-effort records GPS lat/lng/accuracy, trimmed user-agent, IP; never blocks.
 - **Breaks**: `startBreak`/`endBreak` manage `breaks[]` windows (open break = missing `endAt`); no-ops when invalid.
-- **Checkout** closes the shift. **Manager controls** (admin session): `forceCheckOut`, `reopenAttendance`, `correctAttendanceTimes` (HH:mm on the record's own date), `overrideAttendanceStatus` (half_day/leave/fix missed check-in, creates doc if needed) — all stamped with the acting manager's id/name.
+- **Checkout** closes the shift. **Manager controls** (admin session): `forceCheckOut`, `reopenAttendance`, `correctAttendanceTimes` (HH:mm on the record's own date), `overrideAttendanceStatus` (half_day/leave/fix missed check-in, creates doc if needed) - all stamped with the acting manager's id/name.
 - **Derived**: `shiftMath` (worked/break minutes, late flag); `attendanceCsv` month export for payroll hours.
 - **Payroll linkage**: §9.7. Nobody ever types a time at check-in; corrections are audited.
 - Limitations (factual): GPS/IP capture is best-effort and unverified; one shift per day; no geofence enforcement.
@@ -545,7 +545,7 @@ Monthly, selectable month. All computed client-side from raw collections (bookin
 - **Throughput** (`studioThroughput` in `washMetrics.ts`): average turnaround, peak start hours, per-resource busy share.
 - CSV download of the report rows.
 
-Other BI surfaces: `washDayStats` (today's wash pulse on the board), `employeeWashStats`/`employeeCategoryStats` (per-employee averages on the employee page), `getAdminStats` (office strip), receivables list, daily-closing variance history. **No chart library** — everything is tiles/lists/CSV.
+Other BI surfaces: `washDayStats` (today's wash pulse on the board), `employeeWashStats`/`employeeCategoryStats` (per-employee averages on the employee page), `getAdminStats` (office strip), receivables list, daily-closing variance history. **No chart library** - everything is tiles/lists/CSV.
 
 ---
 
@@ -555,7 +555,7 @@ Homepage `/` (dark, cinematic, slide-to-book) → `/auth/login` (Google) → `/d
 
 ---
 
-# 18. ADMIN APP — summarized in §3/§4; owner-only powers
+# 18. ADMIN APP - summarized in §3/§4; owner-only powers
 
 Everything under `/admin` requires role `admin`. Owner-exclusive (not even employees): payroll, expenses, daily close, reports, employee/service/promo/inventory-item/listing management, assignment changes, manual amounts, subscription activation, booking approval/rejection, attendance overrides, settings. Financial tools: invoices, expenses, close, reports, receivables, payroll. ⌘K palette is admin-only.
 
@@ -563,25 +563,25 @@ Everything under `/admin` requires role `admin`. Owner-exclusive (not even emplo
 
 # 19. STUDIO / DESK (`/store`)
 
-**Why it exists**: a tablet-first shared-device surface for the physical floor — distinct chrome, kiosk PIN identity, zero owner-money actions. **Pages**: `/store` (lock), `/store/board`, `/store/new`, `/store/job/[id]`, `/store/attendance`.
+**Why it exists**: a tablet-first shared-device surface for the physical floor - distinct chrome, kiosk PIN identity, zero owner-money actions. **Pages**: `/store` (lock), `/store/board`, `/store/new`, `/store/job/[id]`, `/store/attendance`.
 
-**Code sharing vs duplication**: intake (`WalkInFlow`), job stream (`subscribeTodaysJobs`), arrivals (`getBookingsForDates`), job services (`lib/services/jobs.ts`) are single-sourced. **Deliberate overlaps with Admin** (per IA doc): `/store/job/[id]` vs job handling inside `/admin/bookings/[id]` — different actor mid-task (technician on tablet vs owner on the commercial record), same services underneath; the board (kanban) vs Studio Board (`useFloor` full view) — same stream, different presentation intent. Data flows: everything through the barrel services to the same collections; kiosk identity only decorates writes (`byEmployeeId/Name`). Daily close is reachable from the desk rail but the page itself is admin-session-gated.
+**Code sharing vs duplication**: intake (`WalkInFlow`), job stream (`subscribeTodaysJobs`), arrivals (`getBookingsForDates`), job services (`lib/services/jobs.ts`) are single-sourced. **Deliberate overlaps with Admin** (per IA doc): `/store/job/[id]` vs job handling inside `/admin/bookings/[id]` - different actor mid-task (technician on tablet vs owner on the commercial record), same services underneath; the board (kanban) vs Studio Board (`useFloor` full view) - same stream, different presentation intent. Data flows: everything through the barrel services to the same collections; kiosk identity only decorates writes (`byEmployeeId/Name`). Daily close is reachable from the desk rail but the page itself is admin-session-gated.
 
 ---
 
 # 20. OWNER AREA
 
-There is **no separate `/owner` route** — "Owner" is the OWNER mode of the admin sidebar (groups TODAY/WORK/CUSTOMERS/BUSINESS/TEAM/MARKETING/SETTINGS), home `/admin/office`. Capabilities: intelligence strip, approvals, follow-up tasks, full financial suite (§18), CRM (Customer 360, walk-in CRM, leads), marketing (promos, gallery, marketplace), team (employees, payroll, attendance oversight), catalogue + resource settings.
+There is **no separate `/owner` route** - "Owner" is the OWNER mode of the admin sidebar (groups TODAY/WORK/CUSTOMERS/BUSINESS/TEAM/MARKETING/SETTINGS), home `/admin/office`. Capabilities: intelligence strip, approvals, follow-up tasks, full financial suite (§18), CRM (Customer 360, walk-in CRM, leads), marketing (promos, gallery, marketplace), team (employees, payroll, attendance oversight), catalogue + resource settings.
 
 ---
 
 # 21. DUPLICATION AUDIT (documentation only)
 
-1. **Availability logic ×2 generations**: `lib/availability.ts` (current engine) vs `lib/config/bookingConfig.ts` (60-min slots, `SLOT_CAPACITY=3`) and `lib/utils.generateTimeSlots` — the legacy pair still exists; wizard dates come from `lib/utils.getAvailableDates`.
+1. **Availability logic ×2 generations**: `lib/availability.ts` (current engine) vs `lib/config/bookingConfig.ts` (60-min slots, `SLOT_CAPACITY=3`) and `lib/utils.generateTimeSlots` - the legacy pair still exists; wizard dates come from `lib/utils.getAvailableDates`.
 2. **Bay models ×2**: two-resource model (engine, useFloor, studioConfig) vs legacy `Job.bay: 1|2|3` field, `BAYS=[1,2,3]` constant, and the `bay` key still in the employees' allowed-update whitelist in rules.
 3. **Marketplace browse ×2**: `/cars` (public) and `/dashboard/cars` (in-app) render the same listings with different chrome; both use `CarCard`.
 4. **Job workspaces ×2 (intentional)**: `/store/job/[id]` and `/admin/bookings/[id]`+`/admin/jobs/[id]`; admin pair shares `workspace/parts.tsx`; the store page has its own layout.
-5. **Job status vs booking status**: booking-linked jobs mirror stage changes onto both documents — two records intentionally carry overlapping state (commercial vs operational truth).
+5. **Job status vs booking status**: booking-linked jobs mirror stage changes onto both documents - two records intentionally carry overlapping state (commercial vs operational truth).
 6. **Denormalized copies by design**: user name/phone/email on bookings/jobs/subscriptions/invoices; `assignedIds` beside `assignments`; `amountPaid` beside `payments[]`; job `photos` copied onto invoices; `serviceName/category/price` frozen onto jobs/bookings.
 7. **Duplicate customer identity stores**: `users` (accounts) and `walkinCustomers` (phone-keyed), reconciled by phone match at intake.
 8. **Wash-deduction paths ×2 clients** (booking wizard + kiosk) converging on one API.
@@ -594,17 +594,17 @@ There is **no separate `/owner` route** — "Owner" is the OWNER mode of the adm
 
 # 22. DEAD / LEGACY CODE (factual)
 
-- `lib/config/bookingConfig.ts` — superseded slot model (`SLOT_CAPACITY=3`, `calculateRequiredSlots`) not used by the current engine.
-- `BAYS = [1,2,3]` (`storeConfig.ts`) and `Job.bay` — remnants of the 3-bay model; scheduling ignores them.
-- `lib/reviews.ts` — explicitly marked **scaffold data** awaiting Google Places wiring.
-- `lib/services/storage.ts:deleteImage(_path)` — underscore-prefixed param; effectively a no-op signature for deletion.
-- `adminLogin` / `resetPassword` (auth service) — no UI path uses email/password sign-in.
-- `context/AuthContext.tsx` exports a context whose value is `null` — consumed only for its provider side effects; nothing reads the context value.
-- `pickupDropRequired`/`pickupDropFee` on Booking — legacy combined field kept for old records (superseded by per-leg fields).
+- `lib/config/bookingConfig.ts` - superseded slot model (`SLOT_CAPACITY=3`, `calculateRequiredSlots`) not used by the current engine.
+- `BAYS = [1,2,3]` (`storeConfig.ts`) and `Job.bay` - remnants of the 3-bay model; scheduling ignores them.
+- `lib/reviews.ts` - explicitly marked **scaffold data** awaiting Google Places wiring.
+- `lib/services/storage.ts:deleteImage(_path)` - underscore-prefixed param; effectively a no-op signature for deletion.
+- `adminLogin` / `resetPassword` (auth service) - no UI path uses email/password sign-in.
+- `context/AuthContext.tsx` exports a context whose value is `null` - consumed only for its provider side effects; nothing reads the context value.
+- `pickupDropRequired`/`pickupDropFee` on Booking - legacy combined field kept for old records (superseded by per-leg fields).
 - `docs/` planning files (MASTER_PLAN, UPGRADE_PLAN, ROADMAP, PRD_ASSESSMENT) describe earlier states; INFORMATION-ARCHITECTURE.md is current as of 2026-07-17.
-- `scripts/backfill-assignments.mjs` — one-time completed migration.
-- `checkAndExpireSubscription` — client-side computed check retained though `getUserSubscription` already computes expiry.
-- Homepage history: all 3D/WebGL code deleted (`three` uninstalled); no dead 3D remains — noted so the next architect doesn't hunt for it.
+- `scripts/backfill-assignments.mjs` - one-time completed migration.
+- `checkAndExpireSubscription` - client-side computed check retained though `getUserSubscription` already computes expiry.
+- Homepage history: all 3D/WebGL code deleted (`three` uninstalled); no dead 3D remains - noted so the next architect doesn't hunt for it.
 
 ---
 
@@ -635,17 +635,17 @@ Service→collection ownership is tabulated in §7. Hooks→context: only `useFl
 2. `Job.bay` remains writable by assigned employees per rules while the scheduler ignores bays.
 3. Route protection is entirely client-side (no middleware); page HTML/JS for admin routes ships to any browser, with data protected only by Firestore rules and token-checked APIs.
 4. `bookings` status is written from at least five places (wizard, customer cancel/reschedule, admin approve/reject/no-show, check-in, job-stage mirror). `jobs` is written from kiosk job page, admin workspaces, schedule drag, board, walk-in flow.
-5. Subscription expiry is displayed as computed client-side but persisted only when an admin opens the subscriptions page — the stored status can lag reality.
+5. Subscription expiry is displayed as computed client-side but persisted only when an admin opens the subscriptions page - the stored status can lag reality.
 6. Promo per-customer usage limits are enforced client-side (rules allow any +1 `usedCount` bump); redemption honesty relies on the client.
-7. Payment "verification" for UPI is manual admin trust of a typed transaction id — no gateway integration.
+7. Payment "verification" for UPI is manual admin trust of a typed transaction id - no gateway integration.
 8. Homepage reviews are scaffold data (flagged in code).
 9. Kiosk PIN hashes are unsalted SHA-256 and readable by any staff account (roster read).
 10. `feedback` and `carLeads` allow unauthenticated creates (shape-validated but rate-unlimited at the rules layer).
 11. Reports load whole month collections client-side and aggregate in the browser.
 12. Customer identity is split across `users` and `walkinCustomers` with phone-match reconciliation only at intake.
 13. A previously leaked admin key still requires console rotation (deploy memory; repo history itself re-initialized clean 2026-07-15).
-14. Dashboard layout loads bookings both once (`getUserBookings`) and via subscription (`subscribeUserBookings`) — double initial read.
-15. `theme` persists via zustand but `/` forces dark and admin/store are always dark — the toggle affects only customer surfaces.
+14. Dashboard layout loads bookings both once (`getUserBookings`) and via subscription (`subscribeUserBookings`) - double initial read.
+15. `theme` persists via zustand but `/` forces dark and admin/store are always dark - the toggle affects only customer surfaces.
 
 ---
 
@@ -740,8 +740,8 @@ logout:  signOut ▶ /auth/login  (kiosk: 5-min auto-relock ▶ /store)
 
 AutoModz is a single-tenant business operating system for one car-detailing studio in Ahmedabad, built as one Next.js 15 PWA over Firebase, presenting **three chrome-distinct operating modes**: a light customer app (`/dashboard` + public marketing/marketplace/invoice pages), a dark admin OS (`/admin`, split into STUDIO production and OWNER money/decision modes with a ⌘K palette), and a dark kiosk-style Front Desk (`/store`) with PIN-based shared-tablet identity.
 
-The domain hinges on one deliberate duality: a **Booking is commercial truth** (what was sold, to whom, for how much, approval/payment state) and a **Job is operational truth** (what happens to the car on the floor). They link 1:1 at vehicle check-in and neither replaces the other; walk-ins are Jobs with no Booking. Every stage change is timestamped into `statusHistory`, from which all time intelligence (floor board, wash metrics, throughput reports) is *derived* — there are no manual timers. Money is a ledger (`payments[]` with denormalized `amountPaid`); delivery is payment-gated; invoices are numbered transactionally and shared as token-gated public pages that also harvest reviews (good ones to Google, bad ones privately).
+The domain hinges on one deliberate duality: a **Booking is commercial truth** (what was sold, to whom, for how much, approval/payment state) and a **Job is operational truth** (what happens to the car on the floor). They link 1:1 at vehicle check-in and neither replaces the other; walk-ins are Jobs with no Booking. Every stage change is timestamped into `statusHistory`, from which all time intelligence (floor board, wash metrics, throughput reports) is *derived* - there are no manual timers. Money is a ledger (`payments[]` with denormalized `amountPaid`); delivery is payment-gated; invoices are numbered transactionally and shared as token-gated public pages that also harvest reviews (good ones to Google, bad ones privately).
 
-Scheduling is a pure two-resource engine — Wash Bay ×1 and Protection Bay ×1, 09:00–19:00, 30-min buckets, 15-min buffers, multi-day spill — consumed server-side for customers (who may not read others' data) and directly by staff surfaces through one shared derivation hook (`useFloor`), so every floor view agrees. Security is enforced almost entirely in Firestore rules plus a handful of admin-SDK API routes for the mutations rules can't safely allow (role linking, wash deduction, referral promos, public invoice reads, notifications); page routing guards are client-side only. Supporting systems — memberships with server-side wash deduction, best-of discounts, quotes, inventory recipes with actuals, attendance with GPS capture and manager audit, attendance-derived payroll, expenses, daily cash close, monthly client-computed P&L, retention cron capped at two nudges per user per day, and a used-car marketplace — all write to a flat set of ~27 Firestore collections through a single barrel service layer.
+Scheduling is a pure two-resource engine - Wash Bay ×1 and Protection Bay ×1, 09:00–19:00, 30-min buckets, 15-min buffers, multi-day spill - consumed server-side for customers (who may not read others' data) and directly by staff surfaces through one shared derivation hook (`useFloor`), so every floor view agrees. Security is enforced almost entirely in Firestore rules plus a handful of admin-SDK API routes for the mutations rules can't safely allow (role linking, wash deduction, referral promos, public invoice reads, notifications); page routing guards are client-side only. Supporting systems - memberships with server-side wash deduction, best-of discounts, quotes, inventory recipes with actuals, attendance with GPS capture and manager audit, attendance-derived payroll, expenses, daily cash close, monthly client-computed P&L, retention cron capped at two nudges per user per day, and a used-car marketplace - all write to a flat set of ~27 Firestore collections through a single barrel service layer.
 
 Known seams an incoming architect should hold in mind: legacy slot/bay models still present but inert, client-trusted promo limits and UPI verification, split account/walk-in customer identity, admin-page-load-triggered subscription expiry, scaffold homepage reviews, and client-side aggregation for reports. The `docs/INFORMATION-ARCHITECTURE.md` file (2026-07-17) is the team's own current statement of the IA and matches the code as documented here.

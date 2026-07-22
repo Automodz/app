@@ -1,10 +1,10 @@
 'use client';
 /**
- * The Join sheet (P2D1 §C7 · P2D3 C-10) — `?sheet=join-club`.
+ * The Join sheet (P2D1 §C7 · P2D3 C-10) - `?sheet=join-club`.
  *
  * Membership is an object you hold, so joining is not a checkout: each tier
- * is shown card-shaped, with what it actually gives and — when the car's own
- * history can say it — how that compares to how often this customer really
+ * is shown card-shaped, with what it actually gives and - when the car's own
+ * history can say it - how that compares to how often this customer really
  * washes. Then one honest choice of how to pay, and a pending state that
  * tells the truth: the studio confirms, and the card goes live.
  *
@@ -28,7 +28,7 @@ const cycleEnd = (fromISO: string) => {
 };
 
 interface JoinClubProps {
-  /** the car in context — the Club belongs to the person, but it is felt by the car */
+  /** the car in context - the Club belongs to the person, but it is felt by the car */
   vehicleName: string;
   /** this customer's completed wash visits, newest first */
   washes: Booking[];
@@ -70,7 +70,7 @@ export default function JoinClub({ vehicleName, washes, rejoining, onJoined }: J
       await createSubscription(payload);
       onJoined();
     } catch {
-      setError('That didn’t reach the studio — try again.');
+      setError('That didn’t reach the studio - try again.');
       setBusy(false);
     }
   };
@@ -79,7 +79,7 @@ export default function JoinClub({ vehicleName, washes, rejoining, onJoined }: J
     <div style={{ display: 'grid', gap: 'var(--st-inset)', paddingBottom: 'var(--st-breath)' }}>
       <Title>{rejoining ? 'Rejoin the Club' : 'The Club'}</Title>
       <Body tone="ink-2">
-        A standing arrangement for the {vehicleName} — washes kept, and the studio
+        A standing arrangement for the {vehicleName} - washes kept, and the studio
         keeping an eye on it between them.
       </Body>
 
@@ -146,7 +146,7 @@ export default function JoinClub({ vehicleName, washes, rejoining, onJoined }: J
           <Whisper style={{ marginTop: 'var(--st-line)' }}>
             {method === 'upi'
               ? 'The studio sends a UPI reference and confirms once it lands.'
-              : 'Pay on your next visit — the studio confirms and the card goes live.'}
+              : 'Pay on your next visit - the studio confirms and the card goes live.'}
           </Whisper>
         </div>
       )}

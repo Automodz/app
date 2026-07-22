@@ -1,6 +1,6 @@
 'use client';
 /**
- * Kiosk PIN lock — the only thing left at /store. The shared studio tablet
+ * Kiosk PIN lock - the only thing left at /store. The shared studio tablet
  * rides the owner's admin session; a technician unlocks with their PIN and
  * lands on the Studio Board (/admin). This is an auth surface, not a mode:
  * all work happens inside the one Studio shell.
@@ -30,7 +30,7 @@ export default function KioskLockScreen() {
   useEffect(() => {
     if (authLoading) return;
     if (!user || !isStaff) { router.replace('/auth/login'); return; }
-    // personal sessions carry their own identity — straight to the Studio
+    // personal sessions carry their own identity - straight to the Studio
     if (user.role === 'employee') router.replace('/admin');
   }, [user, authLoading, isStaff, router]);
 

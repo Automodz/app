@@ -1,6 +1,6 @@
 'use client';
 /**
- * Office — the Owner OS home. Money and decisions, not operations:
+ * Office - the Owner OS home. Money and decisions, not operations:
  *   intelligence strip  → revenue, outstanding, approvals, staff, stock, leads
  *   approvals           → bookings awaiting a yes
  *   follow-ups          → the owner's action queue

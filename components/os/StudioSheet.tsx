@@ -1,6 +1,6 @@
 'use client';
 /**
- * The single overlay (design system §7.10) — vaul drawer, gallery ground,
+ * The single overlay (design system §7.10) - vaul drawer, gallery ground,
  * 24 top radius, drag-dismiss. Confirm/done states live INSIDE the sheet.
  */
 import { Drawer } from 'vaul';

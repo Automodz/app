@@ -151,7 +151,7 @@ export default function JobWorkspace({ id, onBack, backLabel, onOpenBooking }: {
               <Field icon={Car} label="Vehicle" value={job.vehicleName} sub={job.vehicleRegNo} />
               <Field icon={serviceIconField(category ?? '')} label="Services" value={services} sub={`${job.serviceItems.length} item${job.serviceItems.length === 1 ? '' : 's'}`} />
               <Field icon={Clock} label="Bay"
-                value={category ? RESOURCE_LABELS[categoryToResource(category)] : '—'}
+                value={category ? RESOURCE_LABELS[categoryToResource(category)] : '-'}
                 sub={`By ${job.createdByEmployeeName}`} />
             </div>
           </Section>

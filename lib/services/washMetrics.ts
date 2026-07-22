@@ -1,5 +1,5 @@
 /**
- * Wash performance metrics — PURE derivations over the job timeline the app
+ * Wash performance metrics - PURE derivations over the job timeline the app
  * already records. `statusHistory` is written automatically on every stage
  * change (updateJobStatus / check-in), so there are no manual timers and no
  * duplicate timestamps: this module only reads.
@@ -121,7 +121,7 @@ export const studioThroughput = (jobs: Job[]) => {
 };
 
 export const fmtMin = (m: number | null): string => {
-  if (m === null) return '—';
+  if (m === null) return '-';
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
   return `${h}h ${m % 60}m`;

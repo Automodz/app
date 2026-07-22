@@ -3,7 +3,7 @@
  * A paper, as an object you hold (P2D1 §C1 Papers · §C5).
  *
  * The vault and the Chapter both keep documents; they keep them the same
- * way — a gallery-toned card with the document's name and its one true
+ * way - a gallery-toned card with the document's name and its one true
  * detail. A card exists only when its document does.
  */
 import type { ReactNode } from 'react';

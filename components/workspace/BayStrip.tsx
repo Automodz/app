@@ -1,10 +1,10 @@
 'use client';
 /**
- * BayStrip — the physical floor, compact. Two resources (Wash Bay ×1,
+ * BayStrip - the physical floor, compact. Two resources (Wash Bay ×1,
  * Protection Bay ×1) with live occupancy, derived time tracking and
  * scheduling intelligence. Used by the Schedule page; the Studio Operations
  * Board renders the full-size version of the same state. All derivation
- * lives in useFloor — this component only draws.
+ * lives in useFloor - this component only draws.
  *
  * Colour law:  green = available · orange = ending soon (<60 min) · red = late
  */
@@ -148,7 +148,7 @@ export default function BayStrip({
         )}
       </div>
 
-      {/* ── wash pulse — derived from the automatic job timeline ── */}
+      {/* ── wash pulse - derived from the automatic job timeline ── */}
       <div className="flex items-center gap-x-5 gap-y-1 flex-wrap mt-2.5 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
         {[
           { icon: Timer, label: 'avg wash', value: fmtMin(wash.avgWorkMin) },

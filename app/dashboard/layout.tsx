@@ -1,6 +1,6 @@
 'use client';
 /**
- * TEMPORARY (P1) — shell for the surviving legacy surfaces (booking P2,
+ * TEMPORARY (P1) - shell for the surviving legacy surfaces (booking P2,
  * tracker P3, history P4, garage/passport P5, club P6). Auth guard + object
  * loading only: the bottom nav, Live Activity strip and home died with the
  * Glance (/app). Each remaining route deletes with its replacing phase;

@@ -49,7 +49,7 @@ export default function AdminGalleryPage() {
         </p>
       </div>
 
-      {/* Upload toolbar — one calm row set; never overflows, never wraps the CTA */}
+      {/* Upload toolbar - one calm row set; never overflows, never wraps the CTA */}
       <div className="card mb-6 overflow-hidden">
         <div className="flex gap-1.5 overflow-x-auto no-scroll pb-3 -mx-1 px-1">
           {CATEGORIES.map(c => (
@@ -65,7 +65,7 @@ export default function AdminGalleryPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2.5">
           <input className="input w-full sm:flex-1 min-w-0 text-sm" value={caption} onChange={e => setCaption(e.target.value)}
-            placeholder="Caption (optional) — e.g. Full-body PPF on Thar" />
+            placeholder="Caption (optional) - e.g. Full-body PPF on Thar" />
           <button onClick={() => inputRef.current?.click()} disabled={uploading}
             className="btn-ember flex items-center justify-center gap-2 px-5 py-3 text-sm shrink-0 whitespace-nowrap">
             {uploading ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}

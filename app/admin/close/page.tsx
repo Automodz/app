@@ -1,9 +1,9 @@
 'use client';
 /**
- * Daily Close — the end-of-day ritual: Money → Operations → Tomorrow → Close.
+ * Daily Close - the end-of-day ritual: Money → Operations → Tomorrow → Close.
  * Everything derives from the day's jobs, expenses, attendance and tomorrow's
  * bookings. (Inventory consumed joins when a consumption read-model exists;
- * technician hours show for today only — there is no per-date attendance query.)
+ * technician hours show for today only - there is no per-date attendance query.)
  */
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -153,7 +153,7 @@ export default function DailyClosePage() {
                   {unpaidSum > 0 && row('Outstanding on today’s cars', formatCurrency(unpaidSum), 'var(--warning)')}
                   {[...readyList, ...inside].map(j => (
                     <p key={j.id} className="text-xs font-body py-0.5" style={{ color: 'var(--steel)' }}>
-                      {j.vehicleName} · {j.customerName} — {j.status === 'ready_for_delivery' ? 'awaiting pickup' : 'still in the studio'}
+                      {j.vehicleName} · {j.customerName} - {j.status === 'ready_for_delivery' ? 'awaiting pickup' : 'still in the studio'}
                     </p>
                   ))}
                   {staffMin && staffMin.length > 0 && (

@@ -1,5 +1,5 @@
 /**
- * TEMPORARY ADAPTER (PRE-1) — re-exports the Studio motion constants for
+ * TEMPORARY ADAPTER (PRE-1) - re-exports the Studio motion constants for
  * Generation-A surfaces. lib/os/motion.ts is the ONE motion system; no
  * motion value may be defined here.
  *
@@ -19,12 +19,12 @@ export const DUR = {
   slow: scene,
 } as const;
 
-/** standard content arrival — use with motion.* initial/animate */
+/** standard content arrival - use with motion.* initial/animate */
 export const arrive = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: DUR.base, ease: EASE },
 } as const;
 
-/** staggered list arrival — spread children by this step */
+/** staggered list arrival - spread children by this step */
 export const STAGGER = 0.05;

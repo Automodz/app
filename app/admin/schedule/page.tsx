@@ -194,7 +194,7 @@ export default function AdminSchedulePage() {
         </div>
       </div>
 
-      {/* Bay occupancy — live only for today, where jobs are real */}
+      {/* Bay occupancy - live only for today, where jobs are real */}
       {isToday && !loading && <BayStrip jobs={jobs} bookings={dayBookings} />}
 
       {/* Date strip (Week view carries its own days) */}

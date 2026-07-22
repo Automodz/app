@@ -285,13 +285,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ BUY / SELL — the marketplace, two doors ═══ */}
+      {/* ═══ BUY / SELL - the marketplace, two doors ═══ */}
       <section id="cars" className="relative z-10 px-6 py-14 md:py-20">
         <SectionHead kicker="MARKETPLACE" title="Cars, kept honest." />
         <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
           {[
             { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: MEDIA.fallbacks.car },
-            { title: 'Sell your car', line: 'List it in minutes — we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: MEDIA.fallbacks.vehicle },
+            { title: 'Sell your car', line: 'List it in minutes - we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: MEDIA.fallbacks.vehicle },
           ].map((t, i) => (
             <motion.div key={t.href} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }}>
               <Link href={t.href}

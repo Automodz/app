@@ -1,6 +1,6 @@
 'use client';
 /**
- * The Conversation (design system §7.4 · IA D · Constitution Art. 8) — one
+ * The Conversation (design system §7.4 · IA D · Constitution Art. 8) - one
  * surface: search · the thread (a real-object projection: the open proposal,
  * then visit cards, then the composer) · the adaptive object shelf. There is
  * no message store; every line here cites a real object. Free-form talk hands
@@ -43,7 +43,7 @@ export interface DeskProps {
   visits: ThreadVisit[];
   proposal?: DeskProposal;
   searchItems: SearchItem[];
-  /** what the studio has already told you — a projection, not an inbox */
+  /** what the studio has already told you - a projection, not an inbox */
   log?: LogEntry[];
   onOpenLogEntry?: (entry: LogEntry) => void;
   onMessage: () => void;    // composer → studio (WhatsApp at launch)
@@ -66,11 +66,11 @@ export default function Desk({ rows, visits, proposal, searchItems, log = [], on
     <div style={{ display: 'grid', gap: 24 }}>
       <Title>The studio</Title>
 
-      {/* search — the one allowed desk hairline (§1.3) */}
+      {/* search - the one allowed desk hairline (§1.3) */}
       <input
         value={q}
         onChange={e => setQ(e.target.value)}
-        placeholder="Find anything — ‘march ceramic’, ‘invoice’…"
+        placeholder="Find anything - ‘march ceramic’, ‘invoice’…"
         aria-label="Search your car’s history"
         style={{
           width: '100%', padding: '8px 0', border: 'none',
@@ -96,13 +96,13 @@ export default function Desk({ rows, visits, proposal, searchItems, log = [], on
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 12 }}>
-            <Body tone="ink-2">Nothing for that — try the service or the month. Or just ask.</Body>
+            <Body tone="ink-2">Nothing for that - try the service or the month. Or just ask.</Body>
             <Action variant="quiet" onClick={onMessage}>Message the studio</Action>
           </div>
         )
       ) : (
         <>
-          {/* the open proposal — care proposed, not requested */}
+          {/* the open proposal - care proposed, not requested */}
           {proposal && (
             <div style={{ ...CARD, cursor: 'default' }}>
               <Body tone="ink-2">{proposal.reason}</Body>
@@ -131,7 +131,7 @@ export default function Desk({ rows, visits, proposal, searchItems, log = [], on
             ))}
           </nav>
 
-          {/* what the studio has said — the same objects, in the order they
+          {/* what the studio has said - the same objects, in the order they
               happened. No bell, no badge, no second store (audit #6). */}
           {log.length > 0 && (
             <section aria-label="What the studio has told you" style={{ display: 'grid', gap: 'var(--st-line)' }}>
@@ -163,7 +163,7 @@ export default function Desk({ rows, visits, proposal, searchItems, log = [], on
             </section>
           )}
 
-          {/* the thread — real visits, newest last */}
+          {/* the thread - real visits, newest last */}
           {visits.length > 0 && (
             <div style={{ display: 'grid', gap: 8 }}>
               {visits.map(v => (
@@ -175,7 +175,7 @@ export default function Desk({ rows, visits, proposal, searchItems, log = [], on
             </div>
           )}
 
-          {/* the composer — free-form hands off to the studio */}
+          {/* the composer - free-form hands off to the studio */}
           <Action variant="quiet" onClick={onMessage}>Message the studio</Action>
         </>
       )}

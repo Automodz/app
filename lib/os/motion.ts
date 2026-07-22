@@ -1,5 +1,5 @@
 /**
- * Studio motion constants — the only motion values allowed in the customer product.
+ * Studio motion constants - the only motion values allowed in the customer product.
  * One curve, three durations. (Design system §5)
  */
 export const studioEase = [0.22, 1, 0.36, 1] as const;
@@ -22,7 +22,7 @@ export const crossfade = {
   transition: { duration: move, ease: studioEase },
 } as const;
 
-/** Shared tactile press — one scale, one duration, everywhere it's tapped. */
+/** Shared tactile press - one scale, one duration, everywhere it's tapped. */
 export const press = {
   whileTap: { scale: 0.98 },
   transition: { duration: tick, ease: studioEase },

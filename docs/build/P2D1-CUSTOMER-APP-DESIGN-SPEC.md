@@ -1,24 +1,24 @@
-# AUTOMODZ CUSTOMER APP — COMPLETE DESIGN SPECIFICATION
+# AUTOMODZ CUSTOMER APP - COMPLETE DESIGN SPECIFICATION
 ### P2.D1 · Figma-level UX/UI blueprint · design only, no implementation
 
 **Baseline:** commit `4c5d6ba`. Architecture is frozen (Constitution + IA); this specifies the **experience** only.
 **Authority of values:** every number here is the canonical Studio system as shipped. Where this spec and code disagree, this spec is the design intent to converge on.
-**How to read:** Part A = foundations (the token truth). Part B = components (exact specs). Part C = screens. Part D = sheets. Part E = transitions. Part F = states. Parts G–I = responsive, dark, accessibility. All measures in points (pt) on the compact class unless noted. No code, no CSS, no framework references — values are design specs.
+**How to read:** Part A = foundations (the token truth). Part B = components (exact specs). Part C = screens. Part D = sheets. Part E = transitions. Part F = states. Parts G–I = responsive, dark, accessibility. All measures in points (pt) on the compact class unless noted. No code, no CSS, no framework references - values are design specs.
 
 ---
 
-# PART A — FOUNDATIONS
+# PART A - FOUNDATIONS
 
 ## A1 · Design principles (the lens for every screen)
 1. The customer's car is the subject; the interface is a gallery wall.
-2. Photography first, content second, controls last — in that visual order.
+2. Photography first, content second, controls last - in that visual order.
 3. One sentence of truth beats a dashboard of numbers.
 4. Silence is a valid state: when there's nothing true to say, show nothing.
-5. Premium = confidence, precision, restraint — never decoration.
+5. Premium = confidence, precision, restraint - never decoration.
 6. Motion communicates state change; it is never entertainment.
 
 ## A2 · Color & surface
-Two renderings (light default / dark). Only *chrome* inverts — photography, the stage, scrims, and both accents are identical in both.
+Two renderings (light default / dark). Only *chrome* inverts - photography, the stage, scrims, and both accents are identical in both.
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
@@ -35,10 +35,10 @@ Two renderings (light default / dark). Only *chrome* inverts — photography, th
 | assent | `#2E5E48` | `#2E5E48` | The single accent (deep green ink). Confirmed tick · "covered/active" · member card thread. Never a background. |
 | caution | `#8A5A2E` | `#8A5A2E` | Amber ink. Irreversible-confirm labels inside sheets only. |
 
-**Laws:** no gradients except scrims; no pure black/white; color is never introduced by a screen — if a state seems to need color, it needs a better sentence.
+**Laws:** no gradients except scrims; no pure black/white; color is never introduced by a screen - if a state seems to need color, it needs a better sentence.
 
 ## A3 · Typography
-Three faces. Display = the car's name / act titles / chapter titles. Text = everything else. Data (mono) = plates, VINs, dates, amounts only — never labels.
+Three faces. Display = the car's name / act titles / chapter titles. Text = everything else. Data (mono) = plates, VINs, dates, amounts only - never labels.
 
 | Style | Size / line-height | Weight | Face | Use |
 |---|---|---|---|---|
@@ -78,24 +78,24 @@ Blur 24 / saturate 140%, over paper @ 72% (light) / #18191B @ 72% (dark), or sta
 | scrim | `#0C0D0E @ 40%` | Sheet backdrop |
 | scrim-strong | `→ 55%` bottom-anchored gradient, lower 30% | Portrait / PhotoBand bottom |
 | scrim-soft | `→ 24%` top 64pt gradient | Status-bar legibility over photos |
-Text never sits over the middle of a photograph — only in the bottom-30% scrim zone or top-15% cleared band.
+Text never sits over the middle of a photograph - only in the bottom-30% scrim zone or top-15% cleared band.
 
 ## A9 · Motion
 - **One curve:** `cubic-bezier(0.22, 1, 0.36, 1)` ("studio ease"). Sheets add platform spring on drag-release (felt physics = trust).
 - **Three durations:** `tick 120ms` (press, toggle, check draw) · `move 280ms` (sheet, layer reveal, image fade, card state, text crossfade) · `scene 480ms` (the Stay presenting, chapter dissolve, act transitions).
 - **Named transitions:**
-  - *Rise* — new content: opacity 0→1 + 8pt upward, `move`, once.
-  - *Crossfade* — changing text/state (TruthLine, Capsule): opacity swap, `move`.
-  - *Press* — tap feedback: scale to 0.98, `tick`.
+  - *Rise* - new content: opacity 0→1 + 8pt upward, `move`, once.
+  - *Crossfade* - changing text/state (TruthLine, Capsule): opacity swap, `move`.
+  - *Press* - tap feedback: scale to 0.98, `tick`.
   - *Card hover* (pointer only): translateY −1 + hold shadow, `move`.
-  - *Image load* — opacity 0→1 from surface, `move`.
-  - *Takeover breath* (signature) — portrait scale 1.00→1.04 + stage fade-up as the Stay presents, `scene`.
-  - *Visit→Memory dissolve* (signature) — reveal hero travels into the timeline's newest entry, `scene`, shared element.
+  - *Image load* - opacity 0→1 from surface, `move`.
+  - *Takeover breath* (signature) - portrait scale 1.00→1.04 + stage fade-up as the Stay presents, `scene`.
+  - *Visit→Memory dissolve* (signature) - reveal hero travels into the timeline's newest entry, `scene`, shared element.
 - **Banned:** loops, pulses, shimmer, parallax inside the app, staggered list choreography, count-ups, confetti, anything > `scene`.
 - **Reduced motion:** all transforms/reveals off (opacity kept); signature scenes become crossfades; press becomes instant; images appear without fade; drag physics retained (input, not animation).
 
 ## A10 · Iconography
-Nearly icon-free — words outrank glyphs. Permitted set (16), 1.5pt stroke, round caps, 20pt frame, ink-2 or over-2, never filled/colored/animated: back-chevron · close · share · camera · photo-add · search · send · phone · location · calendar · check(assent) · plus · overflow-dot · sound · external. No icon carries meaning alone (always a paired word or aria-label). No icon buttons except back/close/share/avatar in established positions.
+Nearly icon-free - words outrank glyphs. Permitted set (16), 1.5pt stroke, round caps, 20pt frame, ink-2 or over-2, never filled/colored/animated: back-chevron · close · share · camera · photo-add · search · send · phone · location · calendar · check(assent) · plus · overflow-dot · sound · external. No icon carries meaning alone (always a paired word or aria-label). No icon buttons except back/close/share/avatar in established positions.
 
 ## A11 · Grid, breakpoints, safe areas
 - 4pt base grid. Photography is full-bleed; text sits in the inset column.
@@ -109,7 +109,7 @@ Keyboard focus ring: 2pt solid ink-3, 2pt offset, 4pt corner. Touch targets ≥ 
 
 ---
 
-# PART B — COMPONENT LIBRARY
+# PART B - COMPONENT LIBRARY
 
 Each component: **anatomy · box (padding / radius / height) · spacing · type · icon · elevation / border · motion · interaction states.**
 
@@ -126,7 +126,7 @@ Each component: **anatomy · box (padding / radius / height) · spacing · type 
 - **Anatomy:** one live sentence; container reserves min-height 28.
 - **Type:** Emphasis-size 19 / 1.45; over-2 on photography, ink-2 in layers.
 - **Motion:** *Crossfade* on text change; `aria-live=polite`.
-- **Rule:** exactly one line; the sentence is authored to fit — never ellipsis (may wrap to 2 lines only at accessibility text sizes).
+- **Rule:** exactly one line; the sentence is authored to fit - never ellipsis (may wrap to 2 lines only at accessibility text sizes).
 
 ## B3 · Capsule (the concierge presence)
 - **Box:** height 52, radius pill, padding 0 / 22 horizontal, max-width min(560, 100%−48), min-width 180; fixed at `safe-bottom + 16`, centered, z above all but sheets.
@@ -139,7 +139,7 @@ Each component: **anatomy · box (padding / radius / height) · spacing · type 
 ## B4 · Desk (the Conversation surface)
 - **Anatomy (top→bottom):** Title "The studio" → search field → [open proposal card] → object shelf → thread (visit cards) → composer.
 - **Search field:** full-width, hairline underline only (an allowed hairline), Body 16, placeholder ink-3, 8pt vertical padding; results group by year with Whisper headers.
-- **Shelf rows:** height 52, 12 vertical padding, Emphasis 19 label + optional Whisper detail right-aligned; no icons, no chevrons — the row is the affordance. *Press* feedback.
+- **Shelf rows:** height 52, 12 vertical padding, Emphasis 19 label + optional Whisper detail right-aligned; no icons, no chevrons - the row is the affordance. *Press* feedback.
 - **Cards (proposal / visit):** gallery ground, radius card 16, padding 16; visit cards get *Card hover* + *Press*.
 - **Composer:** the "Message the studio" Action-quiet (WhatsApp at launch).
 - **Motion:** presents as a sheet (see D). Search failure routes to the composer (no dead-end).
@@ -159,12 +159,12 @@ Each component: **anatomy · box (padding / radius / height) · spacing · type 
 
 ## B7 · MomentEntry (timeline atom)
 - **Photo moment:** a PhotoBand (memory ratio) + caption + whisper.
-- **Milestone:** text-only — Emphasis line + Data date, no card, no photo.
+- **Milestone:** text-only - Emphasis line + Data date, no card, no photo.
 - **Photo-less visit:** dignified Body caption + Whisper (amount), *Press* if tappable.
 - **Rhythm:** entries separated by `rest 48`.
 
 ## B8 · MomentStage (the Stay renderer)
-- **Anatomy:** on stage — top 60% evidence photo (or dimmed portrait) → act title Display 32 `over` → narration Emphasis 19 `over-2` → act row (five word-dots) → timing Whisper.
+- **Anatomy:** on stage - top 60% evidence photo (or dimmed portrait) → act title Display 32 `over` → narration Emphasis 19 `over-2` → act row (five word-dots) → timing Whisper.
 - **Act row:** five act names in Whisper; done = over + assent check (drawn `tick`), current = over, future = over-2. No bars, no percentages.
 - **Collapsed variant:** glass bar above capsule position with the act line; tap re-expands.
 - **Motion:** *Takeover breath* to present; act change crossfades title + advances one check; *Visit→Memory dissolve* on archive.
@@ -172,7 +172,7 @@ Each component: **anatomy · box (padding / radius / height) · spacing · type 
 ## B9 · MemberCard (the one literal card)
 - **Box:** radius card 16, hairline border, `hold` shadow, overflow hidden; a 3pt assent bar across the top (hairline when lapsed); inner padding 24.
 - **Type:** name Emphasis; "tier · since" Data 14 ink-2; pending line Whisper.
-- **States:** active (full) · pending (opacity 62%, internal confirming line — shown here only, never duplicated) · lapsed (ink-3, dates kept).
+- **States:** active (full) · pending (opacity 62%, internal confirming line - shown here only, never duplicated) · lapsed (ink-3, dates kept).
 - **Motion:** animates in once (its scene arrival into the Relationship layer on activation).
 
 ## B10 · Sheet (the single overlay)
@@ -187,14 +187,14 @@ See Part D for full behavior. Box: gallery ground, top radius sheet 24, `lift` s
 
 ## B12 · Action (the one button)
 - **Variants & box:**
-  - `primary` — filled ink bar, `over` text, full-width (in sheets), radius chip 12, padding 14/24, min-height 44, Body 16 weight 520.
-  - `quiet` — ink text only, Emphasis 19 weight 520, padding 10/0, min-height 44.
-  - `destructive` — caution text, quiet layout, confirm-state only.
-  - `on-photo` — over text, quiet layout.
+  - `primary` - filled ink bar, `over` text, full-width (in sheets), radius chip 12, padding 14/24, min-height 44, Body 16 weight 520.
+  - `quiet` - ink text only, Emphasis 19 weight 520, padding 10/0, min-height 44.
+  - `destructive` - caution text, quiet layout, confirm-state only.
+  - `on-photo` - over text, quiet layout.
 - **States:** press → scale 0.98 `tick`; loading → inline 14pt ring replaces label (the app's only spinner); success → assent check draw `tick`; disabled → ink-3 label + Whisper reason adjacent (never a mystery).
 
 ## B13 · Text primitives
-Display-L / Display / Title / Emphasis / Body / Data / Whisper — exactly as A3. Every character on every screen is one of these. Raw type sizes outside them are a defect.
+Display-L / Display / Title / Emphasis / Body / Data / Whisper - exactly as A3. Every character on every screen is one of these. Raw type sizes outside them are a defect.
 
 ## B14 · EmptyState
 One-sentence invitation: Emphasis-size Body 19 ink-2 + optional Action-quiet (`line 12` below). Silence (render nothing) is the other legitimate empty state; there is no "nothing here yet" card.
@@ -203,23 +203,23 @@ One-sentence invitation: Emphasis-size Body 19 ink-2 + optional Action-quiet (`l
 14pt ring, 1.5pt, currentColor, top transparent, one revolution ≈ 0.7s. **Only** inside a pressed Action. Static under reduced motion.
 
 ## B16 · Skeleton
-Gallery-toned block, radius card 16 (overridable), a gentle opacity breathe 1→0.55→1 over 2.4s. **Only** for an image still loading — never for text (cached truth renders instantly). Fully static under reduced motion.
+Gallery-toned block, radius card 16 (overridable), a gentle opacity breathe 1→0.55→1 over 2.4s. **Only** for an image still loading - never for text (cached truth renders instantly). Fully static under reduced motion.
 
 ---
 
-# PART C — SCREENS
+# PART C - SCREENS
 
 Format per screen: **Purpose · Hierarchy · Layout · Spacing · Type · Cards · Imagery · Interactions · Animations · Sheet behavior · Gestures · Navigation · CTA hierarchy · States · Responsive · Dark · Accessibility.**
 
-## C1 · THE GLANCE — Home + Vehicle (route: the root)
+## C1 · THE GLANCE - Home + Vehicle (route: the root)
 The Home and the Vehicle are one surface (the architecture merges them).
 
-- **Purpose:** answer "what's happening with my car?" in under 5 seconds — which car, is it protected, what's next.
+- **Purpose:** answer "what's happening with my car?" in under 5 seconds - which car, is it protected, what's next.
 - **Hierarchy:** 1 Portrait (the car) → 2 Now (next action) → 3 Protection → 4 The story → 5 Papers → 6 The Club → 7 signature. Emotional order is law; no layer may jump it.
 - **Layout:** a single vertical scroll. Portrait fills the first ~92vh. Layers follow at `movement 96` rhythm, inset 24. Bottom padding clears the capsule.
 - **Spacing:** header→content within a layer = inset 24; text blocks = line 12; groups = rest 48.
 - **Type:** car name Display-L; layer headers Title 24; truth Emphasis 19; captions Body/Whisper.
-- **Cards:** almost none — protection is a PhotoBand, story is MomentEntry, the only literal card is the MemberCard in Club.
+- **Cards:** almost none - protection is a PhotoBand, story is MomentEntry, the only literal card is the MemberCard in Club.
 - **Imagery:** the customer's/studio's car photo is the hero; protection shows a detail shot of *that* car's panel; story shows the best shot per visit. One hero per screen; a second photo renders ≥ 50% smaller.
 - **Interactions:** horizontal swipe = between vehicles (last page = add-a-car); vertical scroll = depth; avatar → You sheet; capsule → Desk (or the Stay when live); every tappable element has *Press*.
 - **Animations:** portrait *Image-load*; layers *Rise* once; truth/capsule *Crossfade*; no stagger.
@@ -237,8 +237,8 @@ The Home and the Vehicle are one surface (the architecture merges them).
 
 **Protection:**
 - Title "Protection". Per active protection: a PhotoBand (band 21:9) with over-title = protection name ("Ceramic coat"), over-caption:
-  - healthy → "Protected until <Month Year>" (confidence, warranty surfaced — never a countdown).
-  - waning/expiring → "Renewal window open — <n> days left" (the one place a number is actionable).
+  - healthy → "Protected until <Month Year>" (confidence, warranty surfaced - never a countdown).
+  - waning/expiring → "Renewal window open - <n> days left" (the one place a number is actionable).
 - Expired protection: converts to a typographic gallery block (radius sheet, inset padding): "Ceramic coat · 2026–2027 · ran its course." + Action-quiet "Renew". Photography is for *living* protection only.
 - No protection → layer absent.
 
@@ -248,87 +248,87 @@ The Home and the Vehicle are one surface (the architecture merges them).
 - Empty → EmptyState "The <car>'s story starts with its first visit." + "Arrange one".
 
 **Papers:**
-- Title "Papers". Plate in Data. Care records as tappable "Care record — <date>" rows (documents). Action-quiet "Edit details" (→ car-form). (In the vehicle-OS future this vault also holds RC/insurance/PUC.)
+- Title "Papers". Plate in Data. Care records as tappable "Care record - <date>" rows (documents). Action-quiet "Edit details" (→ car-form). (In the vehicle-OS future this vault also holds RC/insurance/PUC.)
 
 **The Club:** see C7.
 
 **Signature:** AUTOMODZ wordmark (Whisper, display face, +8%), studio address (Data 14 ink-3), Action-quiet "Message the studio" (→ Desk). Ends the scroll like the signature on a letter.
 
-- **States:** no-vehicle → the add-a-car invitation *is* the whole Glance (stage ground, "Another car? / The garage has room." — worded as first-run "Welcome"). Single vs multi-vehicle (dots only at ≥ 2). Offline → cached portrait + whisper. Live visit → the Stay auto-presents.
+- **States:** no-vehicle → the add-a-car invitation *is* the whole Glance (stage ground, "Another car? / The garage has room." - worded as first-run "Welcome"). Single vs multi-vehicle (dots only at ≥ 2). Offline → cached portrait + whisper. Live visit → the Stay auto-presents.
 - **Responsive:** compact single column; regular text column 640 centered, photo full-bleed; wide letterboxes to 720 centered.
 - **Dark:** chrome inverts; the car photo and stage fallback are identical; the capsule becomes dark glass.
 - **Accessibility:** portrait is one VoiceOver element (name + truth); layers are headings; every photo has a job-specific alt; controls live in the bottom 60% (avatar is the only top control); Dynamic Type reflows (truth may wrap to 2).
 
-## C2 · THE CONVERSATION — Desk (route: `?sheet=desk` / `/app/desk`)
-- **Purpose:** the single place to talk with the studio and recall anything — booking, renewal, support, history are all sentences here, not features.
+## C2 · THE CONVERSATION - Desk (route: `?sheet=desk` / `/app/desk`)
+- **Purpose:** the single place to talk with the studio and recall anything - booking, renewal, support, history are all sentences here, not features.
 - **Hierarchy:** search (recall) → open proposal (the one suggestion) → object shelf (jump) → thread (real visit cards) → composer.
 - **Layout:** presents as a bottom sheet (compact) / centered panel 560 (wide+); internally the Desk component (B4). Two-pane at wide: thread left 400, focus panel right.
 - **Cards:** proposal card (reason + "Arrange it"); visit cards (state-worded line + amount whisper) with card 16 radius, hover + press.
-- **Imagery:** none — the Conversation is words; the objects it references carry the imagery on their own surfaces.
-- **Interactions:** typing filters search live; empty result → "Nothing for that — try the service or the month. Or just ask." + composer. Shelf row tap → the object's surface. Composer → WhatsApp (launch).
+- **Imagery:** none - the Conversation is words; the objects it references carry the imagery on their own surfaces.
+- **Interactions:** typing filters search live; empty result → "Nothing for that - try the service or the month. Or just ask." + composer. Shelf row tap → the object's surface. Composer → WhatsApp (launch).
 - **CTA hierarchy:** (1) accept the open proposal; (2) search; (3) shelf jumps; (4) message.
 - **States:** first-open thread is pre-seeded with one studio welcome message (never empty). Offline → composer queues with a whisper.
 - **Accessibility:** search is a combobox; full keyboard traversal; the thread reads newest-last.
 
-## C3 · BOOKING — the Arrange sheet (route: `?sheet=arrange`)
-Booking is deliberately minor — a sheet, not a screen.
+## C3 · BOOKING - the Arrange sheet (route: `?sheet=arrange`)
+Booking is deliberately minor - a sheet, not a screen.
 - **Purpose:** agree a visit in under 20 seconds; the studio confirms after.
-- **Hierarchy:** three pre-answered questions — the car (implicit) → the care → the time → confirm.
-- **Layout (bottom sheet):** Title "Arrange a visit" → "For the <car>." → **1 Service**: a plain list, each row = service name (Emphasis 19) + "from ₹X" (Data) right-aligned, press feedback; selecting collapses it to a gallery summary chip with "change". → **2 Day**: a horizontal scroll of day chips (radius chip 12; selected = linen ground; full days at 35% opacity, disabled). → **3 Time**: wrapped time chips (selected = linen); "No room that day — try another." when empty. → confirm Action-primary whose label carries the commitment ("Confirm Wednesday 10:00", or "… · covered by the Club").
+- **Hierarchy:** three pre-answered questions - the car (implicit) → the care → the time → confirm.
+- **Layout (bottom sheet):** Title "Arrange a visit" → "For the <car>." → **1 Service**: a plain list, each row = service name (Emphasis 19) + "from ₹X" (Data) right-aligned, press feedback; selecting collapses it to a gallery summary chip with "change". → **2 Day**: a horizontal scroll of day chips (radius chip 12; selected = linen ground; full days at 35% opacity, disabled). → **3 Time**: wrapped time chips (selected = linen); "No room that day - try another." when empty. → confirm Action-primary whose label carries the commitment ("Confirm Wednesday 10:00", or "… · covered by the Club").
 - **Imagery:** none (speed over spectacle); the car is already the context.
-- **CTA hierarchy:** one primary — Confirm — appears only when day + time are chosen.
+- **CTA hierarchy:** one primary - Confirm - appears only when day + time are chosen.
 - **Sheet behavior:** see D3.
 - **States:** membership-covered wash shows "covered by the Club" and ₹0 intent; error → the sheet reopens with values + a concierge line; done → the visit appears in Now as "Requested" with the honest confirming line.
 - **Accessibility:** each step is a labelled group; chips are radio-like; the primary stays visible above the keyboard.
 
-## C4 · THE STAY — live visit (route: `/app/visit/[id]`, auto-presents)
-- **Purpose:** the hero moment — turn waiting into hospitality; answer "where is my car and is it okay?" continuously.
+## C4 · THE STAY - live visit (route: `/app/visit/[id]`, auto-presents)
+- **Purpose:** the hero moment - turn waiting into hospitality; answer "where is my car and is it okay?" continuously.
 - **Hierarchy:** the current act → its narration → evidence photo → the five-act progress → honest timing.
 - **Layout:** full-bleed stage. Top 60% evidence photograph (or dimmed portrait). Lower 40%: act title Display 32, narration Emphasis 19, act row, timing Whisper. A back/collapse chevron bottom-left (over-2, 44pt).
 - **Five acts (customer-facing translation of ops states):** Received → Looked over → In care → Final checks → Ready. Each names the work and, when known, the person ("Deepak is hand-finishing the hood.").
-- **Cards:** a mid-visit scope-addition surfaces as an inline thread card above the act row ("Arjun found paint swirls… correcting them adds ₹4,500 and a day. Photos attached." → "Go ahead" / "Leave it") — work waits for the yes.
-- **Imagery:** the evidence chain — arrival (custody, timestamped) → inspection (honest, flaws named) → craft (close, hands allowed) → finished. Wide→close→macro→wide.
-- **Interactions/Animations:** presents via *Takeover breath*; act change crossfades title + advances one assent check; drag-down collapses to the glass act-bar (portrait re-emerges live beneath — you literally put the visit down); on archive, *Visit→Memory dissolve* into the new Chapter.
+- **Cards:** a mid-visit scope-addition surfaces as an inline thread card above the act row ("Arjun found paint swirls… correcting them adds ₹4,500 and a day. Photos attached." → "Go ahead" / "Leave it") - work waits for the yes.
+- **Imagery:** the evidence chain - arrival (custody, timestamped) → inspection (honest, flaws named) → craft (close, hands allowed) → finished. Wide→close→macro→wide.
+- **Interactions/Animations:** presents via *Takeover breath*; act change crossfades title + advances one assent check; drag-down collapses to the glass act-bar (portrait re-emerges live beneath - you literally put the visit down); on archive, *Visit→Memory dissolve* into the new Chapter.
 - **The Reveal (act 5):** the finished portrait holds the screen alone for ~1.2s, *then* rises: "Ready." → before/after slider (arrival|finished, same angle) → craftsman's line → amount ("pay at the desk" / "Covered by the Club") → "Collect any time before 7." No rating or upsell beside the finished car.
-- **CTA hierarchy:** during care, none (watching is the experience); at Ready, one — collection.
-- **States:** photo-less degraded mode (acts narrate without images — never a broken frame); delay → one honest line ("running 40 minutes long — the interior deserved it."); offline → last act cached + whisper.
+- **CTA hierarchy:** during care, none (watching is the experience); at Ready, one - collection.
+- **States:** photo-less degraded mode (acts narrate without images - never a broken frame); delay → one honest line ("running 40 minutes long - the interior deserved it."); offline → last act cached + whisper.
 - **Off-app rendering:** Lock-Screen / Live Activity = act word + assent check; expanded = act title + narration + timing, with a 1:1 crop of the latest evidence photo. Ready persists until collected.
 - **Accessibility:** act changes via live region; the Stay collapses with a visible control equivalent to the drag; reduced motion → crossfades.
 
-## C5 · THE CHAPTER — care record (route: `/app/chapter/[id]` owner · `/chapter/[id]` public)
-- **Purpose:** the permanent, shareable document of one visit — the invoice reborn as a keepsake.
+## C5 · THE CHAPTER - care record (route: `/app/chapter/[id]` owner · `/chapter/[id]` public)
+- **Purpose:** the permanent, shareable document of one visit - the invoice reborn as a keepsake.
 - **Hierarchy:** hero photo → the work → the evidence → the people → the promise → (owner) the amount → next → (owner) rating.
 - **Layout:** paper document page. Hero 3:2 full-bleed with scrim; over it Display 32 "Full detail" + Data "date · AutoModz Studio". Back chevron bottom-left, share top-right.
-- **Sections:** *the work* = human-language Body list; *the evidence* = act-grouped PhotoBand run (tap → stage viewer, swipe-through); *the people* = "Cared for by <lead> · checked by <qc>" Body ink-2; *the promise* = a gallery block "Protected until <date>" (assent on "protected") + "Warranty filed to the <car>'s papers." whisper; *the amount* (owner only) = hairline-ruled Data table, items + total + method — omitted entirely in the public view; *next* = a whisper next-due; *rating* (owner, once, ≤ 24h) = "How was it?" + five quiet tick targets → "Thank you.", never returns.
+- **Sections:** *the work* = human-language Body list; *the evidence* = act-grouped PhotoBand run (tap → stage viewer, swipe-through); *the people* = "Cared for by <lead> · checked by <qc>" Body ink-2; *the promise* = a gallery block "Protected until <date>" (assent on "protected") + "Warranty filed to the <car>'s papers." whisper; *the amount* (owner only) = hairline-ruled Data table, items + total + method - omitted entirely in the public view; *next* = a whisper next-due; *rating* (owner, once, ≤ 24h) = "How was it?" + five quiet tick targets → "Thank you.", never returns.
 - **Imagery:** the full evidence chain; the public share shows the beauty, hides the money.
 - **CTA hierarchy:** share (top); rating (once); otherwise a document to read.
 - **States:** migrated pre-V3 visit → typographic hero (stage band, service name Display) with full facts, no photos.
 - **Accessibility:** the amount table is a proper table; photos carry act-labelled alts.
 
-## C6 · PROTECTION — detail (lives as the Glance layer; a focus panel in the Desk at `focus=protection`)
+## C6 · PROTECTION - detail (lives as the Glance layer; a focus panel in the Desk at `focus=protection`)
 - **Purpose:** show what shields the car, confidently.
 - **Hierarchy:** each protection = name → state → evidence. Confidence over countdown (until-date), except waning/expiring where the number is the action.
 - **Layout/Imagery:** PhotoBand bands (C1). The Desk focus panel lists all protections with their term wording and links each to its source Chapter.
-- **Future:** insurance / warranty / RSA / tyres enter as new protection types on the same band + term wording — no new layout.
+- **Future:** insurance / warranty / RSA / tyres enter as new protection types on the same band + term wording - no new layout.
 - **States:** healthy / waning / expiring / expired (typographic) / none (absent).
 
-## C7 · MEMBERSHIP — The Club (Glance layer + Join sheet `?sheet=join-club`)
+## C7 · MEMBERSHIP - The Club (Glance layer + Join sheet `?sheet=join-club`)
 - **Purpose:** make membership an object you hold and privileges you feel, not a pricing page.
 - **Hierarchy:** the card (identity) → the benefit in context → renewal (only when near) → referral.
-- **Layout:** MemberCard (B9) → below it Body ink-2 "<n> washes left this cycle · renews <date>"; pending → the card's own confirming line (no duplicate); lapsed → "Rejoin any time — your history holds." + "Rejoin". Non-member (after 2nd visit) → EmptyState "You wash often. The Club would suit the <car>." + "Have a look". Then referral: "A friend's first detail is on us." + "Share".
-- **Join sheet:** tier cards (member-card-shaped, swipeable) each with honest arithmetic vs the customer's own cadence → pay choice (at studio / UPI reference) → pending state, honest ("The studio confirms and your card goes live — usually within hours.") → the card animates into the Relationship layer on activation.
+- **Layout:** MemberCard (B9) → below it Body ink-2 "<n> washes left this cycle · renews <date>"; pending → the card's own confirming line (no duplicate); lapsed → "Rejoin any time - your history holds." + "Rejoin". Non-member (after 2nd visit) → EmptyState "You wash often. The Club would suit the <car>." + "Have a look". Then referral: "A friend's first detail is on us." + "Share".
+- **Join sheet:** tier cards (member-card-shaped, swipeable) each with honest arithmetic vs the customer's own cadence → pay choice (at studio / UPI reference) → pending state, honest ("The studio confirms and your card goes live - usually within hours.") → the card animates into the Relationship layer on activation.
 - **CTA hierarchy:** join / renew (contextual) → share.
 - **States:** none / non-member-invite / pending / active / grace / lapsed. Never guilt, never a countdown to lapse.
 - **Accessibility:** the card is a labelled region; tier chips are radio-like.
 
-## C8 · PROFILE + SETTINGS — the You sheet (`?sheet=you`)
-Profile and Settings are one small sheet — settings are maintenance, not a place.
+## C8 · PROFILE + SETTINGS - the You sheet (`?sheet=you`)
+Profile and Settings are one small sheet - settings are maintenance, not a place.
 - **Purpose:** identity + preferences + escape hatches. No stats, no link farm.
-- **Layout (bottom sheet):** Title "You" → Field Name → Field Phone → "Notifications" group of sentence-switches (each a Body line + 44×24 toggle; the always-on classes shown with a Whisper "Always — it's your car.") → Install AutoModz (when available) → Sign out → (deep) "Leave AutoModz" with an in-sheet confirm state that plainly states what's kept (anonymised vehicle history) and what's erased.
+- **Layout (bottom sheet):** Title "You" → Field Name → Field Phone → "Notifications" group of sentence-switches (each a Body line + 44×24 toggle; the always-on classes shown with a Whisper "Always - it's your car.") → Install AutoModz (when available) → Sign out → (deep) "Leave AutoModz" with an in-sheet confirm state that plainly states what's kept (anonymised vehicle history) and what's erased.
 - **CTA hierarchy:** implicit save on dismiss; destructive delete is a two-text-action confirm state, never a second overlay.
 - **Accessibility:** switches are labelled by their sentence; focus trapped; Esc/back saves and closes.
 
-## C9 · NOTIFICATIONS — philosophy, not a screen
+## C9 · NOTIFICATIONS - philosophy, not a screen
 There is **no inbox, no bell, no badge**. The ambient surface is the capsule + truth line; history lives in the thread.
 - **Emitters (the lifecycles are the whole list):** prep-note (visit-eve) · custody "arrived" (always) · inspection note (if findings) · craft photo (opt-in) · honest delay (always) · the reveal (always) · chapter filed · follow-up (studio, human) · protection waning/expiring (once each) · membership renewing (once) · one delight/week (anniversary, milestone, memory, seasonal) · dormancy line (once ever).
 - **Budget:** ≤ 2 pushes/week outside live visits; every push deep-links to the exact state.
@@ -338,22 +338,22 @@ There is **no inbox, no bell, no badge**. The ambient surface is the capsule + t
 ## C10 · ONBOARDING / FIRST VISIT (route: `/app/welcome`, once)
 - **Purpose:** produce a photographed car so the Glance can exist; form the mental model in one session.
 - **Four moments (forward-only, no step dots):**
-  1. *Welcome* — paper; Display 32 "Welcome to AutoModz." + one Body paragraph ("This is where your car will live — its care, its protection, its story. It starts with the car.") + Action-primary "Begin".
-  2. *You* — Title "You"; Name + Phone Fields (prefilled), phone edit → inline OTP; "That's me".
-  3. *The car* — Title "The car"; Make / Model / Year / Plate Fields (Data, auto-caps); "Next". No colour/category pickers — the photo carries what a dropdown pretended to.
-  4. *The portrait* — stage; "Now, the portrait." + "Take a photo of the <model> — front three-quarter, in good light. It becomes your home screen." + camera Field + Action-quiet "Later".
-- **Exit:** the captured portrait scales from preview to full-bleed and the Glance assembles over it (the first signature moment — hanging a picture); truth line "Welcome to the studio."
+  1. *Welcome* - paper; Display 32 "Welcome to AutoModz." + one Body paragraph ("This is where your car will live - its care, its protection, its story. It starts with the car.") + Action-primary "Begin".
+  2. *You* - Title "You"; Name + Phone Fields (prefilled), phone edit → inline OTP; "That's me".
+  3. *The car* - Title "The car"; Make / Model / Year / Plate Fields (Data, auto-caps); "Next". No colour/category pickers - the photo carries what a dropdown pretended to.
+  4. *The portrait* - stage; "Now, the portrait." + "Take a photo of the <model> - front three-quarter, in good light. It becomes your home screen." + camera Field + Action-quiet "Later".
+- **Exit:** the captured portrait scales from preview to full-bleed and the Glance assembles over it (the first signature moment - hanging a picture); truth line "Welcome to the studio."
 - **Skip path:** typographic portrait + capsule "Add the <model>'s portrait" until done.
 - **States:** existing-user first V3 open skips to the Glance (photo capture offered if missing). Requires connectivity (creates objects others react to).
 
 ---
 
-# PART D — BOTTOM SHEETS (one system)
+# PART D - BOTTOM SHEETS (one system)
 
-There is exactly **one overlay primitive** — no modals, no drawers. Destructive confirmation is a *state inside* the invoking sheet. Sheets are addressable via `?sheet=` so each is deep-linkable and back-correct.
+There is exactly **one overlay primitive** - no modals, no drawers. Destructive confirmation is a *state inside* the invoking sheet. Sheets are addressable via `?sheet=` so each is deep-linkable and back-correct.
 
 ## D1 · Shared sheet behavior
-- **Collapsed:** not used as a resting state on compact — sheets are either open or dismissed. (The Stay is the only surface with a collapsed resting state, and it collapses to the glass act-bar, not a sheet.)
+- **Collapsed:** not used as a resting state on compact - sheets are either open or dismissed. (The Stay is the only surface with a collapsed resting state, and it collapses to the glass act-bar, not a sheet.)
 - **Expanded:** slides up from the bottom, `move`, studio ease + spring on release; backdrop scrim fades to 40% in parallel; content max-height 88vh, scrolls internally.
 - **Snap points:** compact = a single expanded snap (content-height, capped 88vh). No half-snaps (avoids the "tray" feeling). The Desk may grow to the 88vh cap and scroll.
 - **Drag behavior:** the grab-handle and the sheet body follow the finger 1:1; release past 30% of height or with downward velocity dismisses (spring); otherwise it settles back.
@@ -373,15 +373,15 @@ There is exactly **one overlay primitive** — no modals, no drawers. Destructiv
 | `pay` | Record payment intent | content-height; amount centered; "at studio" default |
 | `desk` | The Conversation (C2) | expands to 88vh cap; internal scroll; search + thread + composer |
 
-## D3 · Arrange sheet — worked example
+## D3 · Arrange sheet - worked example
 - **Collapsed:** n/a (task sheet). **Expanded:** content-height, grows as steps reveal.
 - **Snap:** single; if content exceeds 88vh (long service list), the body scrolls, the confirm Action stays pinned to the bottom inset.
 - **Drag/Dismiss:** drag-down or backdrop dismisses with no warning (nothing committed until Confirm).
-- **Keyboard:** none required (all chip selection) — no keyboard case unless a future note field is added.
+- **Keyboard:** none required (all chip selection) - no keyboard case unless a future note field is added.
 
 ---
 
-# PART E — TRANSITIONS
+# PART E - TRANSITIONS
 
 | # | Source → Destination | Animation | Duration | Curve | Reduced-motion |
 |---|---|---|---|---|---|
@@ -404,27 +404,27 @@ There is exactly **one overlay primitive** — no modals, no drawers. Destructiv
 
 ---
 
-# PART F — STATES CATALOG
+# PART F - STATES CATALOG
 
 | State | Where | Presentation |
 |---|---|---|
-| **Empty — silence** | Now, Protection, Club-extras when nothing is true | render nothing; the scroll simply shortens |
-| **Empty — invitation** | Story, Club (non-member), no-photo portrait | one EmptyState sentence + one quiet action |
+| **Empty - silence** | Now, Protection, Club-extras when nothing is true | render nothing; the scroll simply shortens |
+| **Empty - invitation** | Story, Club (non-member), no-photo portrait | one EmptyState sentence + one quiet action |
 | **No vehicle** | Glance root | the add-a-car invitation *is* the whole screen ("The garage is open.") |
 | **No protection** | Glance | Protection layer absent |
 | **No membership** | Glance | Club shows the non-member invitation only after the 2nd visit; else absent |
 | **First use** | first authenticated open | onboarding (C10); thread pre-seeded with the studio welcome |
 | **Returning** | daily | opens on yesterday's cached truth, silently corrects; no spinner |
 | **Loading** | cold start | paper + AUTOMODZ wordmark (no spinner); images blur-up; the only spinner is inside a pressed Action |
-| **Offline** | any | cached objects + one Whisper ("Offline — last updated 7:40 pm"); queueable writes queue; non-queueable single-actions disable with the whisper |
-| **Error** | any | three renderings only — the whisper (connectivity), a concierge line inside the acting sheet (submit failure), the thread (needs a human). Crash → `/error` in the concierge voice, one action "Back to the car." No error cards, no toasts. |
+| **Offline** | any | cached objects + one Whisper ("Offline - last updated 7:40 pm"); queueable writes queue; non-queueable single-actions disable with the whisper |
+| **Error** | any | three renderings only - the whisper (connectivity), a concierge line inside the acting sheet (submit failure), the thread (needs a human). Crash → `/error` in the concierge voice, one action "Back to the car." No error cards, no toasts. |
 | **Expired** | protection / membership | rendered with dignity (typographic / greyed card, dates kept), never red, never punitive |
 | **Active** | protection / membership / visit | confidence wording; assent ink for "covered/active" |
 | **Completed** | visit | becomes a Chapter; the deposit into the twin is made visible |
 
 ---
 
-# PART G — RESPONSIVE MATRIX
+# PART G - RESPONSIVE MATRIX
 
 | Surface | compact (<720) | regular (720–1199) | wide (≥1200) |
 |---|---|---|---|
@@ -441,22 +441,22 @@ Landscape (phone): Glance letterboxes the portrait to the left 50%, layers scrol
 
 ---
 
-# PART H — DARK MODE
+# PART H - DARK MODE
 
 - Only chrome inverts (paper/gallery/linen/ink scale + glass). Photography, stage, scrims, assent, caution are identical in both renderings.
 - The capsule glass reads as dark glass on dark (theme-aware), never a light pill.
-- The Stay and image viewer are always dark (stage) in both renderings — photography contexts don't invert.
+- The Stay and image viewer are always dark (stage) in both renderings - photography contexts don't invert.
 - Admin and `/store` are always-dark ops surfaces and are outside this spec; the boundary is absolute.
 - Contrast is re-verified per rendering; over-on-photo is guaranteed by scrim minimums, which are rendering-independent.
 
 ---
 
-# PART I — ACCESSIBILITY
+# PART I - ACCESSIBILITY
 
 - **Targets:** ≥ 44 (capsule 52). Every gesture has a visible-control equivalent (car-swipe ↔ page dots + deep-link; Stay-collapse ↔ chevron).
 - **Focus:** 2pt ink-3 ring, 2pt offset, 4pt corner; logical order portrait → capsule → layers; sheets trap focus, restore to invoker on close; Esc/back dismisses.
-- **VoiceOver:** portrait = one element (name + truth); layers are headings; the Stay announces act changes via a live region; every photo carries a job-specific alt ("arrival photo — the C 43 at the studio, 9:58"); decorative scrims hidden.
-- **Dynamic Type:** the scale maps to platform text styles; layouts reflow (truth may wrap to 2); photography never shrinks to make room — text takes new lines.
+- **VoiceOver:** portrait = one element (name + truth); layers are headings; the Stay announces act changes via a live region; every photo carries a job-specific alt ("arrival photo - the C 43 at the studio, 9:58"); decorative scrims hidden.
+- **Dynamic Type:** the scale maps to platform text styles; layouts reflow (truth may wrap to 2); photography never shrinks to make room - text takes new lines.
 - **Reduced motion:** the whole customer tree honours the OS setting (transforms/reveals off, opacity kept; signature scenes → crossfade; press instant; images no fade; drag physics retained). Nothing is information-bearing through motion alone.
 - **Keyboard (wide/desktop):** full traversal; no palette (search is Tab-reachable in the Desk); sheets are focus-scoped.
 - **One-handed:** all actionable elements in the bottom 60% on compact; the top is photography + reading (back/close/share float in established bottom/edge corners on push pages).
@@ -464,7 +464,7 @@ Landscape (phone): Glance letterboxes the portrait to the left 50%, layers scrol
 
 ---
 
-# APPENDIX — SCREEN ↔ ROUTE ↔ STATE INDEX
+# APPENDIX - SCREEN ↔ ROUTE ↔ STATE INDEX
 
 | Screen | Route / trigger | Owning phase |
 |---|---|---|
@@ -480,4 +480,4 @@ Landscape (phone): Glance letterboxes the portrait to the left 50%, layers scrol
 | Onboarding | `/app/welcome` | P7 |
 | Notifications | no screen (capsule + thread) | ongoing |
 
-*End of specification. Design only — no implementation performed. Awaiting review.*
+*End of specification. Design only - no implementation performed. Awaiting review.*

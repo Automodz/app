@@ -4,7 +4,7 @@
  *
  * The first frame of the customer product, so it renders in the customer's
  * own language: paper, the text primitives, the one Action, one sentence of
- * welcome. Authentication itself is unchanged — only the experience around it.
+ * welcome. Authentication itself is unchanged - only the experience around it.
  */
 import { useState, useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
@@ -83,7 +83,7 @@ export default function LoginPage() {
         <main style={{ width: '100%', maxWidth: 420, padding: 'var(--st-rest) 0' }}>
           <Display style={{ fontSize: 'clamp(26px, 7vw, 32px)' }}>Welcome to the studio.</Display>
           <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }}>
-            This is where your car lives — its care, its protection, its story.
+            This is where your car lives - its care, its protection, its story.
           </Body>
 
           <div style={{ marginTop: 'var(--st-rest)' }}>
@@ -92,7 +92,7 @@ export default function LoginPage() {
             </Action>
             {error
               ? <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }} aria-live="polite">{error}</Body>
-              : <Whisper style={{ marginTop: 'var(--st-line)' }}>One tap — no password to remember.</Whisper>}
+              : <Whisper style={{ marginTop: 'var(--st-line)' }}>One tap - no password to remember.</Whisper>}
           </div>
         </main>
 

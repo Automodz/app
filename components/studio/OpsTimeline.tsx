@@ -1,15 +1,15 @@
 'use client';
 /**
- * Operations Timeline — yesterday | today | tomorrow across the two bays.
+ * Operations Timeline - yesterday | today | tomorrow across the two bays.
  * Occupancy visualization only (execution lives on the bay cards): every job
  * or booking is ONE block on a compressed working-day axis (09:00–19:00,
  * nights removed), so a multi-day PPF renders as a single block flowing
- * across day boundaries — no fake duplication.
+ * across day boundaries - no fake duplication.
  *
  * Status palette matches the bay tone engine:
  *   grey scheduled · blue waiting · green running · red delayed · amber QC ·
  *   accent ready · dark-grey completed
- * (the identity is monochrome — "ready" wears the graphite accent, not purple)
+ * (the identity is monochrome - "ready" wears the graphite accent, not purple)
  *
  * Blocks open the job/booking drawer. Never navigates.
  */
@@ -35,7 +35,7 @@ type Block = {
   title: string;             // hover detail: customer/service/tech/times/payment
   color: string;
   dim: boolean;              // completed / past
-  live: boolean;             // running now — gets the subtle pulse
+  live: boolean;             // running now - gets the subtle pulse
   progress: number | null;
   paid: boolean | null;
   onOpen: () => void;
@@ -44,7 +44,7 @@ type Block = {
 export default function OpsTimeline({ jobs, yesterdayJobs, bookings, durationOf, now, onOpenJob, onOpenBooking, flowLine }: {
   /** today's live jobs (the board's single stream) */
   jobs: Job[];
-  /** yesterday's jobs — one plain fetch, not a listener */
+  /** yesterday's jobs - one plain fetch, not a listener */
   yesterdayJobs: Job[];
   /** bookings for yesterday..tomorrow that never became jobs */
   bookings: Booking[];
@@ -190,7 +190,7 @@ export default function OpsTimeline({ jobs, yesterdayJobs, bookings, durationOf,
           ))}
         </div>
       </div>
-      {/* current studio flow — one derived sentence, no manual input */}
+      {/* current studio flow - one derived sentence, no manual input */}
       <p className="font-mono mb-3" style={{ fontSize: 10.5, color: 'var(--pewter)' }}>{flowLine}</p>
 
       <div ref={scroller} className="overflow-x-auto pb-1">
@@ -249,7 +249,7 @@ export default function OpsTimeline({ jobs, yesterdayJobs, bookings, durationOf,
                     )}
                   </button>
                 ))}
-                {/* glowing now line — today only by construction */}
+                {/* glowing now line - today only by construction */}
                 <span className="absolute top-0 bottom-0 pointer-events-none"
                   style={{ left: nowAxis * pxPerMin, width: 2, background: 'var(--danger)', boxShadow: '0 0 8px var(--danger)' }} />
               </div>

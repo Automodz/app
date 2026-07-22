@@ -4,7 +4,7 @@
  * Membership as a relationship, not a plan: which state it is in, what is
  * left of it this cycle, and when it renews. The lifecycle itself belongs to
  * the term engine (membership is the one term that gets grace) and the
- * counts belong to the subscription document — nothing is recomputed here.
+ * counts belong to the subscription document - nothing is recomputed here.
  */
 import type { Booking, Subscription } from '@/lib/types';
 import { termState, daysLeft } from './term';
@@ -24,7 +24,7 @@ export interface ClubModel {
   context: string | null;
   /** the studio hasn't taken payment yet */
   awaitingPayment: boolean;
-  /** a car that washes often, with no membership — the invitation may show */
+  /** a car that washes often, with no membership - the invitation may show */
   invited: boolean;
 }
 
@@ -65,9 +65,9 @@ export function clubModel(args: {
 
   const context =
     state === 'pending' ? null // the card carries its own confirming line
-    : state === 'lapsed' ? 'Rejoin any time — your history holds.'
+    : state === 'lapsed' ? 'Rejoin any time - your history holds.'
     : state === 'grace'
-    ? `The cycle ended ${fmtLong(m.endDate)} — renew to keep it going.`
+    ? `The cycle ended ${fmtLong(m.endDate)} - renew to keep it going.`
     : `${washesLeft} wash${washesLeft === 1 ? '' : 'es'} left this cycle · renews ${fmtLong(m.endDate)}`;
 
   return {
@@ -82,7 +82,7 @@ export function clubModel(args: {
   };
 }
 
-/** Days until the cycle ends — the term engine's count, not a second one. */
+/** Days until the cycle ends - the term engine's count, not a second one. */
 export const cycleDaysLeft = (m: ClubModel, now = new Date()): number | null =>
   m.renewsOn ? daysLeft(m.renewsOn, now) : null;
 

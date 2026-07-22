@@ -15,9 +15,9 @@ export const SHIFT_END = '19:00';
 export const LATE_GRACE_MIN = 15;
 const SHIFT_LEN_MIN = 10 * 60;
 
-/** Thrown when an employee tries to check in after checkout — managers reopen. */
+/** Thrown when an employee tries to check in after checkout - managers reopen. */
 export class ShiftClosedError extends Error {
-  constructor() { super('Shift already closed — ask a manager to reopen it.'); }
+  constructor() { super('Shift already closed - ask a manager to reopen it.'); }
 }
 
 /** Best-effort device/GPS/IP capture. Never blocks or fails a check-in. */
@@ -31,17 +31,17 @@ export const captureAttendanceMeta = async (): Promise<AttendanceMeta> => {
     meta.lat = Number(pos.coords.latitude.toFixed(6));
     meta.lng = Number(pos.coords.longitude.toFixed(6));
     meta.accuracy = Math.round(pos.coords.accuracy);
-  } catch { /* permission denied / timeout — attendance still records */ }
+  } catch { /* permission denied / timeout - attendance still records */ }
   try {
     const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(3000) });
     if (r.ok) meta.ip = (await r.json()).ip;
-  } catch { /* offline / blocked — fine */ }
+  } catch { /* offline / blocked - fine */ }
   return meta;
 };
 
 /**
  * Check in. ONE check-in per day: a still-open record is returned as-is
- * (idempotent double-tap); a CLOSED record throws ShiftClosedError — only a
+ * (idempotent double-tap); a CLOSED record throws ShiftClosedError - only a
  * manager reopen clears it.
  */
 export const checkIn = async (
@@ -199,7 +199,7 @@ export const shiftMath = (rec: AttendanceRecord, now = new Date()): ShiftMath =>
   return { onBreak, breakMin, workedMin, lateMin, overtimeMin };
 };
 
-/** CSV rows for a month of records — payroll hours export. */
+/** CSV rows for a month of records - payroll hours export. */
 export const attendanceCsv = (records: AttendanceRecord[]): string => {
   const fmt = (ts?: Timestamp) => ts?.toDate ? format(ts.toDate(), 'HH:mm') : '';
   const rows = [

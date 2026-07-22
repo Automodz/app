@@ -1,5 +1,5 @@
 /**
- * The four text primitives — every character in the customer product is one
+ * The four text primitives - every character in the customer product is one
  * of these (design system §3). Raw font sizes outside this file are a defect.
  */
 import type { CSSProperties, ReactNode, ElementType } from 'react';
@@ -31,7 +31,7 @@ function make(base: CSSProperties, defaultTone: Tone, defaultTag: ElementType) {
   };
 }
 
-/** 24 / 32 / 44 — the car's name, act titles, chapter titles. */
+/** 24 / 32 / 44 - the car's name, act titles, chapter titles. */
 export const Display = make(
   { fontFamily: 'var(--st-display)', fontWeight: 620, fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.02em' },
   'ink', 'h1',
@@ -61,7 +61,7 @@ export const Data = make(
   'ink-2', 'span',
 );
 
-/** 12/14 — staleness, hints, silence. */
+/** 12/14 - staleness, hints, silence. */
 export const Whisper = make(
   { fontFamily: 'var(--st-text)', fontWeight: 400, fontSize: 12, lineHeight: 1.45 },
   'ink-3', 'p',

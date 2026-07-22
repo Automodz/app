@@ -28,7 +28,7 @@ export default function MemberCard({ name, tier, since, state = 'active' }: Memb
         </Data>
         {state === 'pending' && (
           <Whisper style={{ marginTop: 12 }}>
-            The studio is confirming — your card goes live within hours.
+            The studio is confirming - your card goes live within hours.
           </Whisper>
         )}
       </div>

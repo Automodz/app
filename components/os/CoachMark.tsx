@@ -1,6 +1,6 @@
 'use client';
 /**
- * The one nudge (audit #5 — the Conversation is undiscoverable).
+ * The one nudge (audit #5 - the Conversation is undiscoverable).
  *
  * The capsule is the only global control, and nothing tells a first-timer it
  * is the door to the studio. One sentence, once, sitting just above the
@@ -15,9 +15,9 @@ import Action from './Action';
 
 const SEEN = 'automodz-coach-desk';
 
-/** Remembers that the customer has met the capsule — also called on Desk open. */
+/** Remembers that the customer has met the capsule - also called on Desk open. */
 export function markCoachSeen() {
-  try { localStorage.setItem(SEEN, '1'); } catch { /* private mode — the nudge simply repeats */ }
+  try { localStorage.setItem(SEEN, '1'); } catch { /* private mode - the nudge simply repeats */ }
 }
 
 export default function CoachMark({ show }: { show: boolean }) {
@@ -55,7 +55,7 @@ export default function CoachMark({ show }: { show: boolean }) {
         gap: 'var(--st-gap)', flexWrap: 'wrap',
       }}>
         <Body tone="ink-2" style={{ flex: '1 1 200px' }}>
-          Anything you need — booking, a question, your history — starts here.
+          Anything you need - booking, a question, your history - starts here.
         </Body>
         <Action onClick={dismiss}>Got it</Action>
       </div>

@@ -1,5 +1,5 @@
 # 01 · INFORMATION ARCHITECTURE
-### Phase 1 of the build — pure structure, derived from the Constitution
+### Phase 1 of the build - pure structure, derived from the Constitution
 
 **Authority:** `docs/AUTOMODZ-CUSTOMER-PRODUCT-CONSTITUTION.md` (law) + `docs/AUTOMODZ-EXPERIENCE-PRINCIPLES.md` (feel). Nothing here is philosophy; everything here is a derivation. Nothing visual.
 **Merge rule applied throughout:** every screen has exactly one purpose; where two structures solved the same problem, they were merged and the merge is noted.
@@ -20,15 +20,15 @@
 | `/chapter/[visitId]` | **Public share of a chapter** | The care record an owner shares; amounts hidden for non-owners. **Merge:** absorbs `/invoice/[id]` (301 redirect kept for old links). One document, two audiences. |
 | `/offline` `/not-found` `/error` | System pages | Concierge-voiced |
 
-### 1.2 The customer product (authenticated) — under `/app`
+### 1.2 The customer product (authenticated) - under `/app`
 
 | Route | Surface | Purpose (one) |
 |---|---|---|
-| `/app` | **The Glance** | "What is happening with my car?" — portrait, truth line, layers, capsule. The root and default. |
+| `/app` | **The Glance** | "What is happening with my car?" - portrait, truth line, layers, capsule. The root and default. |
 | `/app?car=[vehicleId]` | Glance, positioned | Deep-link target for a specific vehicle (swipe position) |
 | `/app/welcome` | **Onboarding** | Produce a photographed Vehicle; runs once; forward-only; unreachable afterwards |
-| `/app/visit/[visitId]` | **The Stay** | The live visit takeover — five acts. Route exists so pushes can land in it; when the visit is live, `/app` auto-presents it (route and state converge on one surface). |
-| `/app/chapter/[visitId]` | **Chapter (owner view)** | One archived visit as a document. Same component as `/chapter/[visitId]` with owner privileges — one screen, two routes by audience. |
+| `/app/visit/[visitId]` | **The Stay** | The live visit takeover - five acts. Route exists so pushes can land in it; when the visit is live, `/app` auto-presents it (route and state converge on one surface). |
+| `/app/chapter/[visitId]` | **Chapter (owner view)** | One archived visit as a document. Same component as `/chapter/[visitId]` with owner privileges - one screen, two routes by audience. |
 | `/app/desk` | **The Conversation** | The thread + object shelf + search. Full-screen sheet visually; a real route so every intent is deep-linkable. |
 | `/app/desk?focus=[objectRef]` | Conversation, focused | Deep-link target for term edges, records, club (e.g. `focus=protection:abc`, `focus=club`, `focus=records`) |
 
@@ -36,7 +36,7 @@
 
 ### 1.3 Sheets, modals, drawers (complete inventory)
 
-There are **no modals and no drawers** in the customer product — one overlay primitive exists: the **Sheet** (bottom, drag-dismiss). Destructive confirmation is a *state inside* the invoking sheet, never a second overlay. Native OS surfaces (share sheet, camera, notification permission) are the only other overlays.
+There are **no modals and no drawers** in the customer product - one overlay primitive exists: the **Sheet** (bottom, drag-dismiss). Destructive confirmation is a *state inside* the invoking sheet, never a second overlay. Native OS surfaces (share sheet, camera, notification permission) are the only other overlays.
 
 Sheets are addressable as query params on any `/app*` route (`?sheet=…`), so every one is deep-linkable and back-button-correct:
 
@@ -70,9 +70,9 @@ Canonical definitions live in the Constitution (Articles 3–5); this section fi
 | Moment | `vehicleId`, `kind`, `media?`, `caption`, `at`, `authorPartyId`, `visitId?`, `act?` | Vehicle | `vehicles/{id}/moments/{id}` |
 | Studio | `name`, `location`, `staff[]` | root | `studios/{id}` |
 | Thread | messages: `{author, body, cardRef?, at, read}` | Party | `parties/{id}/thread/{msgId}` |
-| Signal | *reserved — collection path claimed, nothing written* | Vehicle | `vehicles/{id}/signals/{id}` |
+| Signal | *reserved - collection path claimed, nothing written* | Vehicle | `vehicles/{id}/signals/{id}` |
 
-Relationship edges are exactly the Constitution's Article 4 graph; the only IA-level additions: (a) thread messages may carry a `cardRef` pointing at a Visit/Membership/Protection — cards in conversation are references, never copies; (b) Moments carry optional `visitId+act` so the evidence chain and the timeline are one dataset viewed two ways. **Merge:** there is no separate "chapter" store — a chapter is `visit + its moments + its records`, composed at read time.
+Relationship edges are exactly the Constitution's Article 4 graph; the only IA-level additions: (a) thread messages may carry a `cardRef` pointing at a Visit/Membership/Protection - cards in conversation are references, never copies; (b) Moments carry optional `visitId+act` so the evidence chain and the timeline are one dataset viewed two ways. **Merge:** there is no separate "chapter" store - a chapter is `visit + its moments + its records`, composed at read time.
 
 ---
 
@@ -98,12 +98,12 @@ All UI state derives from these machines. No screen may hold a status of its own
 
 ### 4.1 The gesture grammar (global, invariant)
 
-| Gesture | Meaning — always |
+| Gesture | Meaning - always |
 |---|---|
 | Vertical scroll on Glance | Depth into ownership (Now → Protection → Timeline → Identity → Relationship) |
 | Horizontal swipe on portrait | Between vehicles; last page = add-a-car invitation |
 | Capsule tap | Live visit → the Stay; otherwise → the Conversation (`/app/desk`) |
-| Capsule long-press | Shelf shortcuts (jump to a layer/focus) — power path, never required |
+| Capsule long-press | Shelf shortcuts (jump to a layer/focus) - power path, never required |
 | Avatar tap | `?sheet=you` |
 | Swipe down / scrim tap | Dismiss sheet; collapse the Stay back to Glance |
 | Left-edge swipe / back | Pop push page (chapter, desk) to Glance |
@@ -156,22 +156,22 @@ Every push and every share resolves to one of these; no link may land on a gener
 
 Two document types exist (a document = permanent, addressable, shareable):
 
-1. **Chapter** (`/app/chapter/[id]` owner · `/chapter/[id]` public) — one visit: hero, acts, evidence chain, work in human language, craftsman, amount (owner-only), protections applied with expiries, share. *This is the invoice.*
-2. **Record view** (within desk `focus=records`; individual records open in-place full-screen) — filed documents: care records list (each → its chapter), and future kinds (RC, policy) render as a typed document page from the same Record object. No separate route until a record kind exists that is not a chapter; when it does, it claims `/app/record/[id]` — the slot is reserved here so no one invents an alternative.
+1. **Chapter** (`/app/chapter/[id]` owner · `/chapter/[id]` public) - one visit: hero, acts, evidence chain, work in human language, craftsman, amount (owner-only), protections applied with expiries, share. *This is the invoice.*
+2. **Record view** (within desk `focus=records`; individual records open in-place full-screen) - filed documents: care records list (each → its chapter), and future kinds (RC, policy) render as a typed document page from the same Record object. No separate route until a record kind exists that is not a chapter; when it does, it claims `/app/record/[id]` - the slot is reserved here so no one invents an alternative.
 
 ---
 
 ## 7 · Notification entry points (complete)
 
-The lifecycles are the *only* emitters (Constitution Art. 14). Full registry — every push, its trigger, and its deep link:
+The lifecycles are the *only* emitters (Constitution Art. 14). Full registry - every push, its trigger, and its deep link:
 
 | # | Push | Trigger (machine edge) | Deep link | Opt |
 |---|---|---|---|---|
 | 1 | Prep note ("We're ready for the C 43 tomorrow at 10") | visit `agreed`, T-1 evening | `/app/visit/X` | default on |
-| 2 | Custody ("The C 43 is with us — safe at 9:58") | visit → `arrived` | `/app/visit/X` | always |
+| 2 | Custody ("The C 43 is with us - safe at 9:58") | visit → `arrived` | `/app/visit/X` | always |
 | 3 | Inspection note (only if findings) | visit → `inspected` with findings | `/app/visit/X` | default on |
 | 4 | Craft moment photo drop | moment authored during `in_care` | `/app/visit/X` | **opt-in** |
-| 5 | Honest delay ("running 40 minutes long — the interior deserved it") | slot overrun threshold | `/app/visit/X` | always |
+| 5 | Honest delay ("running 40 minutes long - the interior deserved it") | slot overrun threshold | `/app/visit/X` | always |
 | 6 | The reveal ("Come and see it") | visit → `revealed` | `/app/visit/X` | always |
 | 7 | Chapter filed | visit → `archived` | `/app/chapter/X` | default on |
 | 8 | Follow-up (human line, days later) | studio-authored thread message | `/app/desk` | default on |
@@ -181,7 +181,7 @@ The lifecycles are the *only* emitters (Constitution Art. 14). Full registry —
 | 12 | Delight moment (anniversary, milestone, memory, seasonal word) | timeline emitter, ≤1/week | `/app?car=X` or `/app/chapter/X` | default on, one switch |
 | 13 | Dormancy line (once ever) | party → `dormant` | `/app/desk` | always-on but once |
 
-Budget enforcement is structural: emitters 9–13 pass through one gate that enforces ≤2/week outside live visits. In-app there is **no inbox, no bell, no badge** — the capsule and truth line are the ambient layer; history is the thread.
+Budget enforcement is structural: emitters 9–13 pass through one gate that enforces ≤2/week outside live visits. In-app there is **no inbox, no bell, no badge** - the capsule and truth line are the ambient layer; history is the thread.
 
 ---
 

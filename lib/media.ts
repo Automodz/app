@@ -1,18 +1,18 @@
 /**
- * MEDIA — the single source for every image in the app.
+ * MEDIA - the single source for every image in the app.
  *
  * Rule: NO image URL or /public path lives inside a component. Components
  * import MEDIA.<section>.<name>; swapping a photo means editing ONE line
- * here (or replacing the file in /public with the same name) — zero
+ * here (or replacing the file in /public with the same name) - zero
  * component edits.
  *
  * Photography is currently curated design-time placeholders (Unsplash,
  * host whitelisted in next.config.js) chosen per service. Swap each line
  * for real AutoModz shoots (e.g. '/images/services/ppf.webp') as they are
- * produced — the shape stays the same.
+ * produced - the shape stays the same.
  *
  * User-generated media (job photos, gallery uploads, car listings) lives
- * in Firebase Storage and flows through lib/services/storage.ts — it is
+ * in Firebase Storage and flows through lib/services/storage.ts - it is
  * data, not app chrome, and never belongs here.
  */
 const u = (id: string, w = 1600) =>
@@ -20,7 +20,7 @@ const u = (id: string, w = 1600) =>
 
 export const MEDIA = {
   hero: {
-    /** LC1 homepage photo hero — freshly detailed paintwork close-up */
+    /** LC1 homepage photo hero - freshly detailed paintwork close-up */
     homepage: u('photo-1617531653332-bd46c24f2068', 1800),
     /** bright silver supercar; reads on light + dark */
     studio: u('photo-1544829099-b9a0c07fad1a', 2200),
@@ -43,7 +43,7 @@ export const MEDIA = {
   },
 
   beforeAfter: {
-    /** placeholder pair until real before/after shoots exist — same frame twice */
+    /** placeholder pair until real before/after shoots exist - same frame twice */
     ceramic: {
       before: u('photo-1580273916550-e323be2ae537', 1800),
       after: u('photo-1580273916550-e323be2ae537', 1800),

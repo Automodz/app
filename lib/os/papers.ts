@@ -3,7 +3,7 @@
  *
  * Papers holds what the car actually owns: the warranty each living
  * protection carries, and the receipt of every visit that produced one.
- * Each paper points at the Chapter that contains it — the record is never
+ * Each paper points at the Chapter that contains it - the record is never
  * duplicated, only indexed. When the car owns no papers yet, the vault says
  * nothing at all (audit #17: Papers is documents, not a second Story).
  */

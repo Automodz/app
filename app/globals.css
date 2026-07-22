@@ -1018,7 +1018,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 @media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; } }
 
 /* ═══════════════════════════════════════════════════════════════════
-   STUDIO — the customer product's design tokens (design system §1–3).
+   STUDIO - the customer product's design tokens (design system §1–3).
    Scoped: applies only under `.studio` (the /app tree + styleguide).
    Admin & store remain always-dark and never use these.
    ═══════════════════════════════════════════════════════════════════ */
@@ -1047,13 +1047,13 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-text:     var(--font-body, ui-sans-serif, system-ui, sans-serif);
   --st-data:     var(--font-mono, ui-monospace, monospace);
 
-  /* radius (design system §2 — three, fixed; +chip for slot/time pills) */
+  /* radius (design system §2 - three, fixed; +chip for slot/time pills) */
   --st-r-sheet:  24px;
   --st-r-card:   16px;
   --st-r-chip:   12px;
   --st-r-pill:   999px;
 
-  /* spacing scale (the seven numbers — §2) */
+  /* spacing scale (the seven numbers - §2) */
   --st-hair:      4px;
   --st-breath:    8px;
   --st-line:     12px;
@@ -1062,18 +1062,18 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-rest:     48px;
   --st-movement: 96px;
 
-  /* glass (one recipe — §1.1; chrome, so it inverts with the theme) */
+  /* glass (one recipe - §1.1; chrome, so it inverts with the theme) */
   --st-glass:          rgba(251,251,249,0.72);
   --st-glass-on-photo: rgba(12,13,14,0.64);
   --st-glass-blur:     blur(24px) saturate(140%);
 
-  /* motion (CSS-side mirror of lib/os/motion.ts — one curve, three durations) */
+  /* motion (CSS-side mirror of lib/os/motion.ts - one curve, three durations) */
   --st-ease:  cubic-bezier(0.22, 1, 0.36, 1);
   --st-tick:  120ms;
   --st-move:  280ms;
   --st-scene: 480ms;
 
-  /* scrims — one hierarchy for sheet backdrop and photographic overlays */
+  /* scrims - one hierarchy for sheet backdrop and photographic overlays */
   --st-scrim:        rgba(12,13,14,0.40);   /* sheet backdrop */
   --st-scrim-strong: rgba(12,13,14,0.55);   /* bottom photo scrim */
   --st-scrim-soft:   rgba(12,13,14,0.24);   /* status-bar legibility */
@@ -1099,30 +1099,30 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 
 .studio ::selection { background: var(--st-linen); }
 
-/* the one permitted spinner — inside a pressed Action only (§13) */
+/* the one permitted spinner - inside a pressed Action only (§13) */
 .st-spin { animation: spin-cw 0.7s linear infinite; }
-/* a calm image-loading placeholder — a breathe, never a shimmer (§13) */
+/* a calm image-loading placeholder - a breathe, never a shimmer (§13) */
 @keyframes st-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .st-skeleton { background: var(--st-gallery); animation: st-breathe 2.4s ease-in-out infinite; }
 
-/* on-brand focus ring — replaces the legacy accent-glow under .studio */
+/* on-brand focus ring - replaces the legacy accent-glow under .studio */
 .studio :focus-visible {
   outline: 2px solid var(--st-ink-3);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* shared tactile press — the CSS twin of motion.press, for plain buttons */
+/* shared tactile press - the CSS twin of motion.press, for plain buttons */
 .st-tap { transition: transform var(--st-tick) var(--st-ease); }
 .st-tap:active { transform: scale(0.98); }
 
-/* shared card — a subtle lift on pointer devices; touch stays calm */
+/* shared card - a subtle lift on pointer devices; touch stays calm */
 .st-card { transition: box-shadow var(--st-move) var(--st-ease), transform var(--st-move) var(--st-ease); }
 @media (hover: hover) {
   .st-card:hover { transform: translateY(-1px); box-shadow: var(--st-hold); }
 }
 
-/* shared graceful image load — fade up from the surface, never a pop */
+/* shared graceful image load - fade up from the surface, never a pop */
 .st-img { opacity: 0; transition: opacity var(--st-move) var(--st-ease); }
 .st-img.is-loaded { opacity: 1; }
 

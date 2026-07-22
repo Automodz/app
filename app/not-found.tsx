@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Wordmark from '@/components/ui/Wordmark';
 
-/** Branded 404 — a dead link should never be a dead end. */
+/** Branded 404 - a dead link should never be a dead end. */
 export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center safe-page"
@@ -14,7 +14,7 @@ export default function NotFound() {
         Wrong turn.
       </h1>
       <p className="font-body mt-3 max-w-xs" style={{ fontSize: 14.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.55)' }}>
-        This page doesn&apos;t exist — but the studio does.
+        This page doesn&apos;t exist - but the studio does.
       </p>
       <Link href="/"
         className="mt-8 inline-flex items-center justify-center px-7 rounded-2xl font-display tap-target"

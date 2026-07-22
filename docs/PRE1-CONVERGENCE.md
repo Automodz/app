@@ -1,4 +1,4 @@
-# PRE-1 — Migration & Convergence Record
+# PRE-1 - Migration & Convergence Record
 
 _2026-07-21 · Companion to the Constitution (Part VIII). Generation B (Customer OS,
 `lib/os` + `components/os`) is the ONLY architecture; Generation A (`lib/cx` +
@@ -41,11 +41,11 @@ replacement. Every remaining cx file is an **adapter** with a named deletion pha
 
 - `lib/os/visit.ts` gained the customer copy homes: `ACT_LINE`, `PHASE_TITLE`,
   `PHASE_LINE`, and `actFromJobStatus()` (jobs vocabulary inside the boundary).
-- `components/os/StudioSheet.tsx` gained a proper `Drawer.Title` (sr-only — fixes a
+- `components/os/StudioSheet.tsx` gained a proper `Drawer.Title` (sr-only - fixes a
   Radix a11y error) and two legacy overrides (`ground`, `maxHeight`) used only by the
-  CxSheet adapter — TODO(P7) removes both.
+  CxSheet adapter - TODO(P7) removes both.
 
-## Truth boundary — law, enforced now
+## Truth boundary - law, enforced now
 
 Grep-clean: no ops stage vocabulary (`vehicle_received`, `in_progress`,
 `quality_check`, `ready_for_delivery`, `checked_in`) appears under
@@ -59,7 +59,7 @@ ratified act copy (Received / In care / Final checks / Ready for collection).
 - Bundle diff: first-load JS stable (shared 104 kB; heaviest route 324 kB, unchanged);
   vaul now has exactly one implementation (StudioSheet)
 - Dead-import audit: no references to deleted symbols; unused-export audit clean
-- Browser: home, tracker, garage, add-vehicle sheet verified — no visible regressions;
+- Browser: home, tracker, garage, add-vehicle sheet verified - no visible regressions;
   sheet a11y title present
 
 ## One motion · one status · one term · one truth · one sheet
@@ -67,4 +67,4 @@ ratified act copy (Received / In care / Final checks / Ready for collection).
 `lib/os/motion` · `lib/os/visit` · `lib/os/term` · `lib/os/truth` ·
 `components/os/StudioSheet`. Everything else adapts or awaits deletion.
 
-**Next: Constitution P1 — The Glance.**
+**Next: Constitution P1 - The Glance.**

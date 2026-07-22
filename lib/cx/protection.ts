@@ -1,5 +1,5 @@
 /**
- * TEMPORARY ADAPTER (PRE-1) — protection derivation for Generation-A
+ * TEMPORARY ADAPTER (PRE-1) - protection derivation for Generation-A
  * surfaces. Expiry truth now comes from the ONE Term Engine (lib/os/term);
  * this file only maps completed work × catalog warranties into facts.
  *
@@ -43,7 +43,7 @@ export type Protection = {
   applied: string;
   until: Date | null;
   active: boolean;
-  /** Term Engine state — the one lifecycle (active/waning/expiring/lapsed) */
+  /** Term Engine state - the one lifecycle (active/waning/expiring/lapsed) */
   term: TermState;
   service: string;
   /** raw warranty string from the catalog, when known */

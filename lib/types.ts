@@ -29,7 +29,7 @@ export interface Vehicle {
   id: string;
   name: string;
   registrationNumber: string;
-  /** the owner's portrait of the car — the Glance's hero when it exists */
+  /** the owner's portrait of the car - the Glance's hero when it exists */
   photo?: string;
   /** legacy descriptors; the photograph replaced the pickers that set them */
   category?: 'Hatchback' | 'Sedan' | 'Compact SUV' | 'Full SUV' | 'Luxury';
@@ -247,7 +247,7 @@ export interface AttendanceBreak {
   endAt?: Timestamp;
 }
 
-/** Where/what a check-in came from — captured automatically, best-effort. */
+/** Where/what a check-in came from - captured automatically, best-effort. */
 export interface AttendanceMeta {
   lat?: number;
   lng?: number;
@@ -268,7 +268,7 @@ export interface AttendanceRecord {
   /** Check-in → working → break → working → check-out */
   breaks?: AttendanceBreak[];
   checkInMeta?: AttendanceMeta;
-  /** Manager audit trail — who reopened / forced out / corrected times */
+  /** Manager audit trail - who reopened / forced out / corrected times */
   reopenedById?: string;
   reopenedByName?: string;
   forcedOutById?: string;

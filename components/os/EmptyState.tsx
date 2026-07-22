@@ -1,6 +1,6 @@
 /**
  * An empty state is either silence (render nothing) or a single invitation
- * (design system §12). This is the invitation — one sentence, one optional
+ * (design system §12). This is the invitation - one sentence, one optional
  * quiet action. Never an illustration, never a "nothing here yet" card.
  */
 import { Body } from './text';

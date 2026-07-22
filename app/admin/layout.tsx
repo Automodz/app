@@ -20,7 +20,7 @@ import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 // ONE staff shell, TWO operating modes:
 //   STUDIO → run today's work. Open all day. Technicians live here.
 //   OFFICE → run the business. Money & decisions. Owner/manager only.
-// Roles filter what each person sees — there are no other applications.
+// Roles filter what each person sees - there are no other applications.
 type Mode = 'studio' | 'office';
 const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
   {
@@ -37,7 +37,7 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
   // Office = business management only. Live production, queue, attendance,
   // schedule and walk-ins live exclusively in Studio. (Suppliers, a vehicles
   // index and a dedicated accounting module join this list when their pages
-  // exist — no placeholder destinations.)
+  // exist - no placeholder destinations.)
   {
     group: 'BUSINESS',
     mode: 'office',
@@ -96,7 +96,7 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
 // flat list of every destination, for the top-bar title + command palette
 const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items.map(i => ({ ...i, group: g.group, mode: g.mode })));
 
-// Role access rules live in ONE place — lib/permissions.ts.
+// Role access rules live in ONE place - lib/permissions.ts.
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
@@ -170,7 +170,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // <main> is the desktop scroll container. Remember scrollTop per pathname
   // and restore it when the user returns to that page; entering a DIFFERENT
   // workflow (nav group / detail route) starts at the top. Mobile scrolls
-  // the window — same policy applied there.
+  // the window - same policy applied there.
   const mainRef = useRef<HTMLElement>(null);
   const scrollMemory = useRef<Map<string, number>>(new Map());
   const prevPath = useRef(pathname);
@@ -259,7 +259,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Operating-mode switch — STUDIO ⇄ OFFICE (owner/manager only) */}
+        {/* Operating-mode switch - STUDIO ⇄ OFFICE (owner/manager only) */}
         {isAdmin && (
           <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-xl" style={{ background: 'var(--dark)', border: '1px solid var(--border)' }}>
             {([
@@ -393,7 +393,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="font-body" style={{ fontSize: 12.5 }}>Search…</span>
             <kbd className="inline-flex items-center px-1.5 py-0.5 rounded-md font-mono ml-4" style={{ fontSize: 10, background: 'var(--surface)', border: '1px solid var(--border-2)', color: 'var(--muted)' }}>⌘K</kbd>
           </button>
-          {/* the Studio Board has its own drawer-based walk-in button — no duplicate */}
+          {/* the Studio Board has its own drawer-based walk-in button - no duplicate */}
           {pathname !== '/admin' && (
             <Link href="/admin/walkin"
               className="flex items-center gap-1.5 px-3.5 rounded-xl transition-transform active:scale-95"

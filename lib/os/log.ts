@@ -1,8 +1,8 @@
 /**
- * The concierge log (audit #6) — what the studio has already told you.
+ * The concierge log (audit #6) - what the studio has already told you.
  *
  * The app has no inbox and no message store, and this does not become one:
- * every line is a projection of an object that really exists — a booking that
+ * every line is a projection of an object that really exists - a booking that
  * was requested and confirmed, a job the floor moved through, a membership
  * the studio verified, a protection that was applied. If an event did not
  * happen, no line is written for it.
@@ -16,7 +16,7 @@ import { actFromJobStatus, visitPhase } from './visit';
 
 export interface LogEntry {
   id: string;
-  /** when it happened — the ordering truth */
+  /** when it happened - the ordering truth */
   at: Date;
   line: string;
   /** where reading it takes you, when it has a surface of its own */
@@ -76,7 +76,7 @@ export function conciergeLog(args: {
       });
     }
 
-    // the floor's own record — one line per act it actually moved through
+    // the floor's own record - one line per act it actually moved through
     const job = jobByBooking.get(b.id);
     (job?.statusHistory ?? []).forEach((h, i) => {
       const act = actFromJobStatus(h.status);
@@ -106,7 +106,7 @@ export function conciergeLog(args: {
       id: `protection-${p.kind}`,
       at: new Date(`${p.applied}T12:00:00`),
       line: p.until
-        ? `${PROTECTION_WORD[p.kind]} applied — protected until ${p.until.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
+        ? `${PROTECTION_WORD[p.kind]} applied - protected until ${p.until.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
         : `${PROTECTION_WORD[p.kind]} applied to the ${vehicleName}.`,
     });
   });
@@ -131,7 +131,7 @@ export function conciergeLog(args: {
     .map(({ e }) => e);
 }
 
-/** "Today" / "Yesterday" / the date — the log's only grouping. */
+/** "Today" / "Yesterday" / the date - the log's only grouping. */
 export function logDay(at: Date, now = new Date()): string {
   const days = Math.round((dayOf(now).getTime() - dayOf(at).getTime()) / 86400000);
   if (days <= 0) return 'Today';

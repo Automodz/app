@@ -47,7 +47,7 @@ export default function AdminSettingsPage() {
     setWashSaving(true);
     try {
       await setWashCapacity(n);
-      toast.success('Wash capacity updated — availability recalculates immediately');
+      toast.success('Wash capacity updated - availability recalculates immediately');
     } catch { toast.error('Failed to update'); }
     finally { setWashSaving(false); }
   };
@@ -71,7 +71,7 @@ export default function AdminSettingsPage() {
     try {
       await updateDoc(doc(db, 'services', svc.id), { price: p, duration: dur });
       setServices(services.map(s => s.id === svc.id ? { ...s, price: p, duration: dur } : s));
-      toast.success('Service updated — bookings use the new duration immediately');
+      toast.success('Service updated - bookings use the new duration immediately');
     } catch { toast.error('Failed to update'); }
     finally { setSaving(null); }
   };
@@ -85,19 +85,19 @@ export default function AdminSettingsPage() {
         <p className="text-muted text-sm font-body">Manage services and pricing</p>
       </div>
 
-      {/* Studio resources — what the booking engine schedules against */}
+      {/* Studio resources - what the booking engine schedules against */}
       <div className="card-dark mb-6">
         <div className="flex items-center gap-3 mb-4">
           <Package size={20} className="text-white" />
           <div>
             <div className="font-display font-800 text-sm text-foreground tracking-wide">Studio Resources</div>
-            <div className="text-muted text-xs font-body">Two physical resources — the calendar blocks around real occupancy</div>
+            <div className="text-muted text-xs font-body">Two physical resources - the calendar blocks around real occupancy</div>
           </div>
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
           <div className="p-3 rounded-xl sm:col-span-2" style={{ background: 'var(--background-2)' }}>
             <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Protection Bay</p>
-            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· PPF, ceramic, graphene, coating, correction — one active job; the rest wait</span></p>
+            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· PPF, ceramic, graphene, coating, correction - one active job; the rest wait</span></p>
           </div>
           <div className="p-3 rounded-xl flex items-center justify-between gap-2" style={{ background: 'var(--background-2)' }}>
             <div>
@@ -157,7 +157,7 @@ export default function AdminSettingsPage() {
                     <div className="flex items-center gap-2">
                       <input type="number" value={durations[svc.id] || ''}
                         onChange={e => setDurations(d => ({ ...d, [svc.id]: e.target.value }))}
-                        title="Duration (minutes) — drives bay blocking on the calendar"
+                        title="Duration (minutes) - drives bay blocking on the calendar"
                         className="w-20 input-dark text-sm py-1.5 px-2 text-right" />
                       <span className="text-muted text-xs font-body">min</span>
                       <span className="text-muted text-sm font-body ml-1">₹</span>

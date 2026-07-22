@@ -1,9 +1,9 @@
 'use client';
 /**
- * Technician workspace — opens as a drawer from the Studio Board's tech rail.
+ * Technician workspace - opens as a drawer from the Studio Board's tech rail.
  * Operations, not HR: what they're working on, how the day is going, and the
  * actions a manager needs (assign a waiting vehicle, break control). All data
- * arrives as props from the board's existing streams — no new listeners.
+ * arrives as props from the board's existing streams - no new listeners.
  */
 import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -22,7 +22,7 @@ export default function TechnicianDrawer({ employeeId, jobs, attendance, actor, 
   jobs: Job[];
   attendance: AttendanceRecord[];
   actor: { id: string; name: string };
-  /** attendance changed (break) — board refetches */
+  /** attendance changed (break) - board refetches */
   onChanged: () => void;
   onOpenJob: (j: Job) => void;
 }) {
@@ -74,7 +74,7 @@ export default function TechnicianDrawer({ employeeId, jobs, attendance, actor, 
   };
 
   const tsToTime = (ts?: { toDate?: () => Date }) =>
-    ts?.toDate ? formatTime(format(ts.toDate(), 'HH:mm')) : '—';
+    ts?.toDate ? formatTime(format(ts.toDate(), 'HH:mm')) : '-';
 
   const state = !onShift ? 'Off shift' : m?.onBreak ? 'On break' : current ? 'Working' : 'Available';
   const stateColor = !onShift ? 'var(--steel)' : m?.onBreak ? 'var(--warning)' : current ? 'var(--success)' : 'var(--info)';
@@ -115,7 +115,7 @@ export default function TechnicianDrawer({ employeeId, jobs, attendance, actor, 
       ) : (
         <div className="rounded-2xl border border-dashed py-5 text-center mb-4" style={{ borderColor: 'var(--border)' }}>
           <p className="text-xs font-body" style={{ color: 'var(--steel)' }}>
-            {onShift ? 'No active job — assign a waiting vehicle below.' : 'Not on shift today.'}
+            {onShift ? 'No active job - assign a waiting vehicle below.' : 'Not on shift today.'}
           </p>
         </div>
       )}
@@ -124,9 +124,9 @@ export default function TechnicianDrawer({ employeeId, jobs, attendance, actor, 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
         {[
           { icon: Wrench, v: String(doneToday.length), l: 'Jobs done' },
-          { icon: Timer, v: avgMin !== null ? fmtMin(avgMin) : '—', l: 'Avg time' },
+          { icon: Timer, v: avgMin !== null ? fmtMin(avgMin) : '-', l: 'Avg time' },
           { icon: IndianRupee, v: formatCurrency(revenueToday), l: 'Revenue' },
-          { icon: Coffee, v: m ? fmtMin(m.breakMin) : '—', l: 'Break' },
+          { icon: Coffee, v: m ? fmtMin(m.breakMin) : '-', l: 'Break' },
         ].map(s => (
           <div key={s.l} className="rounded-xl px-3 py-2.5" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
             <s.icon size={12} style={{ color: 'var(--steel)' }} />
@@ -147,7 +147,7 @@ export default function TechnicianDrawer({ employeeId, jobs, attendance, actor, 
           }}>
           {m?.onBreak ? <Play size={15} /> : <Coffee size={15} />}
           <span className="font-display" style={{ fontSize: 13.5, fontWeight: 700 }}>
-            {busy === 'break' ? 'Saving…' : m?.onBreak ? 'End break — back to work' : 'Start break'}
+            {busy === 'break' ? 'Saving…' : m?.onBreak ? 'End break - back to work' : 'Start break'}
           </span>
         </button>
       )}

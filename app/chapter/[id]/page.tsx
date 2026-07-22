@@ -1,10 +1,10 @@
 'use client';
 /**
- * The shared Chapter — `/chapter/[id]?t=` (P2D1 §C5, public reading).
+ * The shared Chapter - `/chapter/[id]?t=` (P2D1 §C5, public reading).
  *
  * The same document, for someone the owner sent it to: the finished car, the
  * work and the evidence. The money, the phone number and anything internal
- * never reach this page — the server's `view=chapter` projection leaves them
+ * never reach this page - the server's `view=chapter` projection leaves them
  * behind. One layout, two readings; there is no second Chapter.
  */
 import { useEffect, useState } from 'react';

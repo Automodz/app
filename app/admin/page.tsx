@@ -1,6 +1,6 @@
 'use client';
 /**
- * Studio Board — the operating system for the working day. Open from morning
+ * Studio Board - the operating system for the working day. Open from morning
  * to close; the whole day runs on this one screen:
  *
  *   header        → date/clock + pipeline counts + operational notifications
@@ -12,7 +12,7 @@
  *   studio feed   → realtime event stream of the day (arrivals → deliveries)
  *   timeline      → today's bookings + live work on two resource lanes
  *
- * All state derives from useFloor + the single subscribeTodaysJobs listener —
+ * All state derives from useFloor + the single subscribeTodaysJobs listener -
  * no duplicate listeners, no duplicate logic.
  */
 import { useEffect, useMemo, useState } from 'react';
@@ -51,7 +51,7 @@ const lateColor = (remainingMin: number | null): string | undefined =>
 
 /** long spans read in working days: 1450min → "2d 2h" (10h working day) */
 const fmtSpan = (m: number | null): string => {
-  if (m === null) return '—';
+  if (m === null) return '-';
   if (m <= WORK_DAY_MIN) return fmtMin(m);
   const d = Math.floor(m / WORK_DAY_MIN);
   const rest = m % WORK_DAY_MIN;
@@ -89,10 +89,10 @@ export default function StudioBoard() {
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const [bookings, setBookings] = useState<Booking[]>([]);
-  // next 7 days — feeds "next booking" per bay + tomorrow's capacity
+  // next 7 days - feeds "next booking" per bay + tomorrow's capacity
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  // yesterday's jobs feed the operations timeline only — plain fetch, no listener
+  // yesterday's jobs feed the operations timeline only - plain fetch, no listener
   const [yesterdayJobs, setYesterdayJobs] = useState<Job[]>([]);
   useEffect(() => {
     const range = [...Array(8)].map((_, i) => format(addDays(new Date(), i - 1), 'yyyy-MM-dd'));
@@ -160,7 +160,7 @@ export default function StudioBoard() {
         - (b.state === 'working' ? 0 : b.state === 'break' ? 1 : 2));
   }, [attendance, jobs, bays]);
 
-  // ── studio feed: today's events, newest first — derived, never stored ──
+  // ── studio feed: today's events, newest first - derived, never stored ──
   const feed = useMemo(() => {
     const events: { at: Date; text: string; color: string; job: Job }[] = [];
     for (const j of jobs) {
@@ -184,7 +184,7 @@ export default function StudioBoard() {
   const capacityPlanned = floor.capacity.wash.planned + floor.capacity.protection.planned;
 
   /**
-   * Auto-priority queue — nobody sorts by hand. Appointments outrank
+   * Auto-priority queue - nobody sorts by hand. Appointments outrank
    * walk-ins; inside each class the longest wait floats to the top.
    * (Premium-member boost joins when membership lands on the Job record.)
    */
@@ -247,10 +247,10 @@ export default function StudioBoard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [upcoming, bays, nowMin]);
 
-  /** the board tells reception what to do next — one prioritized list */
+  /** the board tells reception what to do next - one prioritized list */
   const upNext = useMemo(() => {
     const out: { icon: typeof Timer; text: string; sub?: string; color: string; onClick?: () => void }[] = [];
-    // 1 — a bay is open and a vehicle is waiting for it: move it (with reasons)
+    // 1 - a bay is open and a vehicle is waiting for it: move it (with reasons)
     const freeTech = technicians.find(t => t.state === 'idle');
     queue.forEach(o => {
       const p = queuePlan.get(o.job.id);
@@ -266,28 +266,28 @@ export default function StudioBoard() {
         onClick: () => openJob(o.job),
       });
     });
-    // 2 — work in a bay with nobody on it
+    // 2 - work in a bay with nobody on it
     [...bays.wash, ...bays.protection].forEach(o => {
       if (!(o.job.assignedIds?.length)) out.push({
         icon: UserRound, color: 'var(--warning)',
-        text: `Assign a technician — ${o.vehicle}`, onClick: () => openJob(o.job),
+        text: `Assign a technician - ${o.vehicle}`, onClick: () => openJob(o.job),
       });
     });
-    // 3 — QC gate
+    // 3 - QC gate
     qc.forEach(j => out.push({
       icon: BadgeCheck, color: 'var(--info)',
       text: `Quality-check ${j.vehicleName}`, onClick: () => openJob(j),
     }));
-    // 4 — money before handover
+    // 4 - money before handover
     ready.filter(j => j.paymentStatus === 'pending').forEach(j => out.push({
       icon: IndianRupee, color: 'var(--warning)',
-      text: `Collect ${formatCurrency(j.totalAmount - (j.amountPaid ?? 0))} — ${j.vehicleName}`,
+      text: `Collect ${formatCurrency(j.totalAmount - (j.amountPaid ?? 0))} - ${j.vehicleName}`,
       onClick: () => openJob(j),
     }));
-    // 5 — paid and ready: hand it over
+    // 5 - paid and ready: hand it over
     ready.filter(j => j.paymentStatus === 'collected').forEach(j => out.push({
       icon: Truck, color: 'var(--success)',
-      text: `Deliver ${j.vehicleName} — call ${j.customerName}`, onClick: () => openJob(j),
+      text: `Deliver ${j.vehicleName} - call ${j.customerName}`, onClick: () => openJob(j),
     }));
     // warnings ride below the actions
     [...bays.wash, ...bays.protection].forEach(o => {
@@ -332,7 +332,7 @@ export default function StudioBoard() {
     return { word: 'IDLE', color: 'var(--steel)' };
   };
 
-  // one derived sentence above the timeline — the studio's current flow
+  // one derived sentence above the timeline - the studio's current flow
   const flowLine = useMemo(() => {
     const parts: string[] = [];
     (['protection', 'wash'] as ResourceKey[]).forEach(r => {
@@ -488,7 +488,7 @@ export default function StudioBoard() {
                   ) : (
                     <span className="font-mono text-[10px] shrink-0 text-right" style={{ color: 'var(--pewter)' }}>
                       {RESOURCE_LABELS[r].split(' ')[0]} ~{p ? (p.inMin > DAY_CLOSE_MIN - nowMin
-                        ? fmtSpan(p.inMin) : timeLabel(new Date(floor.now.getTime() + p.inMin * 60000))) : '—'}
+                        ? fmtSpan(p.inMin) : timeLabel(new Date(floor.now.getTime() + p.inMin * 60000))) : '-'}
                     </span>
                   )}
                 </div>
@@ -539,11 +539,11 @@ export default function StudioBoard() {
                   )}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
                     {[
-                      ['Started', occ.startedAt ? timeLabel(occ.startedAt) : '—'],
-                      ['Ends', occ.eta ? timeLabel(occ.eta) : '—'],
-                      ['Elapsed', occ.elapsedMin !== null ? fmtMin(occ.elapsedMin) : '—'],
+                      ['Started', occ.startedAt ? timeLabel(occ.startedAt) : '-'],
+                      ['Ends', occ.eta ? timeLabel(occ.eta) : '-'],
+                      ['Elapsed', occ.elapsedMin !== null ? fmtMin(occ.elapsedMin) : '-'],
                       ['Remaining', occ.remainingMin !== null
-                        ? (occ.remainingMin < 0 ? `late ${fmtMin(-occ.remainingMin)}` : fmtSpan(occ.remainingMin)) : '—'],
+                        ? (occ.remainingMin < 0 ? `late ${fmtMin(-occ.remainingMin)}` : fmtSpan(occ.remainingMin)) : '-'],
                     ].map(([l, v]) => (
                       <div key={l}>
                         <p className="font-mono" style={{ fontSize: 9, letterSpacing: '0.12em', color: 'var(--faint)' }}>{l.toUpperCase()}</p>
@@ -576,7 +576,7 @@ export default function StudioBoard() {
               ) : (
                 <div className="py-2">
                   <p className="font-body text-sm mb-1" style={{ color: 'var(--steel)' }}>
-                    Available now{waiting.length > 0 ? ' — assign from the waiting queue.' : '.'}
+                    Available now{waiting.length > 0 ? ' - assign from the waiting queue.' : '.'}
                   </p>
                   <BayNextLine r={r} waiting={queue} nextBooking={nextBooking[r]}
                     bookingDayLabel={bookingDayLabel} resourceOf={resourceOf} />
@@ -678,7 +678,7 @@ export default function StudioBoard() {
         <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
           <p className="font-mono mb-2" style={{ fontSize: 10, letterSpacing: '0.14em', color: 'var(--faint)' }}>STUDIO FEED</p>
           {feed.length === 0 ? (
-            <p className="text-xs font-body py-3" style={{ color: 'var(--steel)' }}>Nothing yet — events appear as the day unfolds.</p>
+            <p className="text-xs font-body py-3" style={{ color: 'var(--steel)' }}>Nothing yet - events appear as the day unfolds.</p>
           ) : (
             <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
               {feed.map((e, i) => (
@@ -710,11 +710,11 @@ export default function StudioBoard() {
       ) : jobs.length === 0 && (
         <div className="card text-center py-12">
           <Wrench size={24} className="mx-auto mb-3" style={{ color: 'var(--steel)' }} />
-          <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Quiet floor — start a walk-in to get moving.</p>
+          <p className="font-body text-sm" style={{ color: 'var(--steel)' }}>Quiet floor - start a walk-in to get moving.</p>
         </div>
       )}
 
-      {/* the context workspace — walk-ins, jobs, bookings, technicians open over the board */}
+      {/* the context workspace - walk-ins, jobs, bookings, technicians open over the board */}
       <StudioDrawer target={drawer} onClose={() => setDrawer(null)} onTarget={setDrawer}
         renderTech={id => (
           <TechnicianDrawer employeeId={id} jobs={jobs} attendance={attendance} actor={actor}
@@ -725,7 +725,7 @@ export default function StudioBoard() {
   );
 }
 
-/** "Next: …" footer on a bay card — who takes this bay after the current job. */
+/** "Next: …" footer on a bay card - who takes this bay after the current job. */
 function BayNextLine({ r, waiting, nextBooking, bookingDayLabel, resourceOf }: {
   r: ResourceKey;
   waiting: Occupant[];
@@ -737,7 +737,7 @@ function BayNextLine({ r, waiting, nextBooking, bookingDayLabel, resourceOf }: {
   if (inQueue) return (
     <p className="font-mono text-[10px] mt-2 flex items-center gap-1.5" style={{ color: 'var(--pewter)' }}>
       <CalendarClock size={10} className="shrink-0" style={{ color: 'var(--info)' }} />
-      Next: <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{inQueue.vehicle}</b> — waiting on site
+      Next: <b style={{ color: 'var(--chrome)', fontWeight: 700 }}>{inQueue.vehicle}</b> - waiting on site
     </p>
   );
   if (nextBooking) return (

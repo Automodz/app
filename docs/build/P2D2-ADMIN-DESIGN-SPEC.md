@@ -1,26 +1,26 @@
-# AUTOMODZ STAFF (ADMIN) APP — COMPLETE DESIGN SPECIFICATION
+# AUTOMODZ STAFF (ADMIN) APP - COMPLETE DESIGN SPECIFICATION
 ### P2.D2 · Figma-level UX/UI blueprint · design only, no implementation
 
 **Baseline:** commit `4c5d6ba`. Architecture is real and frozen; this specifies the **experience** only.
-**Companion to:** `P2D1-CUSTOMER-APP-DESIGN-SPEC.md`. The customer app is Studio White and light; the staff app is a separate, **always-dark operations OS**. The boundary is absolute — no customer surface ever renders dark chrome, no staff surface ever renders paper.
-**Grounding audit:** one staff shell (`app/admin/layout.tsx`) with **two operating modes** — STUDIO (the floor) and OFFICE (the business) — filtered by role (`lib/permissions.ts`). Real routes: Studio Board `/admin`, Schedule, Bookings(+detail), Attendance, Gallery, Walk-in, Jobs(+detail), Vehicles/[reg]; Office Dashboard `/admin/office`, Customers(+profile), Memberships, Quotes, Invoices, Expenses, Daily Close, Inventory(+recipes), Reports, Employees(+detail), Services(Settings), Cars(+leads), Promos. Command palette (⌘K), kiosk (shared-tablet PIN unlock with actor attribution + auto-relock to `/store`). Job lifecycle: `checked_in → in_progress → quality_check → ready_for_delivery → completed/delivered`. Two physical resources (bays): **wash** and **protection**. This spec designs *within* that reality — no invented modules, no fake features.
-**How to read:** Part A philosophy · B visual language · C IA/navigation · D screens · E operational flows · F components · G motion · H responsive · I accessibility · J future. No code, no CSS, no framework references — values are design specs (points).
+**Companion to:** `P2D1-CUSTOMER-APP-DESIGN-SPEC.md`. The customer app is Studio White and light; the staff app is a separate, **always-dark operations OS**. The boundary is absolute - no customer surface ever renders dark chrome, no staff surface ever renders paper.
+**Grounding audit:** one staff shell (`app/admin/layout.tsx`) with **two operating modes** - STUDIO (the floor) and OFFICE (the business) - filtered by role (`lib/permissions.ts`). Real routes: Studio Board `/admin`, Schedule, Bookings(+detail), Attendance, Gallery, Walk-in, Jobs(+detail), Vehicles/[reg]; Office Dashboard `/admin/office`, Customers(+profile), Memberships, Quotes, Invoices, Expenses, Daily Close, Inventory(+recipes), Reports, Employees(+detail), Services(Settings), Cars(+leads), Promos. Command palette (⌘K), kiosk (shared-tablet PIN unlock with actor attribution + auto-relock to `/store`). Job lifecycle: `checked_in → in_progress → quality_check → ready_for_delivery → completed/delivered`. Two physical resources (bays): **wash** and **protection**. This spec designs *within* that reality - no invented modules, no fake features.
+**How to read:** Part A philosophy · B visual language · C IA/navigation · D screens · E operational flows · F components · G motion · H responsive · I accessibility · J future. No code, no CSS, no framework references - values are design specs (points).
 
 ---
 
-# PART A — ADMIN DESIGN PHILOSOPHY
+# PART A - ADMIN DESIGN PHILOSOPHY
 
 The staff app is not a CRM the team must feed; it is the **instrument the studio runs on**. Every pixel earns its place by reducing effort or increasing certainty. The three people who use it should feel different things:
 
-**The technician (employee) should feel: guided and fast.** They live on the Studio Board. They should never think about "which screen" — the day's next action is always in front of them: the next car to check in, the next status to advance, the next photo to take. One tap advances a job; the drawer holds the detail without leaving the board. No finance, no reports, no decisions — the shell hard-redirects them to the floor. The feeling: *a well-run kitchen pass*, not a database.
+**The technician (employee) should feel: guided and fast.** They live on the Studio Board. They should never think about "which screen" - the day's next action is always in front of them: the next car to check in, the next status to advance, the next photo to take. One tap advances a job; the drawer holds the detail without leaving the board. No finance, no reports, no decisions - the shell hard-redirects them to the floor. The feeling: *a well-run kitchen pass*, not a database.
 
-**The manager should feel: in control without policing.** They move between Studio (is the day flowing?) and Office (is the business healthy?). The board tells them capacity, queue pressure, who's idle, what's late — at a glance, in one screen, without asking anyone. Office gives them the money and the decisions. The feeling: *a cockpit* — dense with truth, calm under load.
+**The manager should feel: in control without policing.** They move between Studio (is the day flowing?) and Office (is the business healthy?). The board tells them capacity, queue pressure, who's idle, what's late - at a glance, in one screen, without asking anyone. Office gives them the money and the decisions. The feeling: *a cockpit* - dense with truth, calm under load.
 
 **The owner should feel: the whole business is legible and trustworthy.** Every rupee is traceable (invoices, expenses, daily close), every action is attributed (kiosk actor), every override is deliberate. They should be able to close the day in minutes and trust the number. The feeling: *Stripe-grade financial clarity* applied to a detailing studio.
 
 **Doctrine:**
 1. **The day runs on one screen.** The Studio Board is the operating system, not a landing page. Everything the floor needs is reachable without a route change (drawers, inline actions).
-2. **Minimize clicks; the common path is one tap.** Check-in, status advance, assign, photo, collect payment, deliver — each is a single deliberate action, confirmed only when irreversible or money-moving.
+2. **Minimize clicks; the common path is one tap.** Check-in, status advance, assign, photo, collect payment, deliver - each is a single deliberate action, confirmed only when irreversible or money-moving.
 3. **Operational clarity over aesthetics.** Dark, monochrome, dense, quiet. Color is a signal, never decoration. No glass everywhere, no decorative gradients.
 4. **Attribution is sacred.** On the shared tablet, every action is stamped with the unlocked employee. Trust is built by knowing who did what.
 5. **Roles are the guardrails, in one place.** `lib/permissions.ts` is the single source; the UI simply reflects it (technicians never *see* Office).
@@ -28,9 +28,9 @@ The staff app is not a CRM the team must feed; it is the **instrument the studio
 
 ---
 
-# PART B — VISUAL LANGUAGE (dark operations)
+# PART B - VISUAL LANGUAGE (dark operations)
 
-The staff app uses the existing dark ops token system. Monochrome — a graphite-to-white ramp with **semantic status color as the only chromatic signal**. No brand accent color; the "accent" is near-white on graphite.
+The staff app uses the existing dark ops token system. Monochrome - a graphite-to-white ramp with **semantic status color as the only chromatic signal**. No brand accent color; the "accent" is near-white on graphite.
 
 ## B1 · Surfaces (depth ramp, dark)
 A single deepening ramp establishes hierarchy by elevation, not by borders.
@@ -55,7 +55,7 @@ A single deepening ramp establishes hierarchy by elevation, not by borders.
 | steel | chrome @ 35% | Captions, disabled, placeholders |
 | smoke / ash / fog | @16 / @8 / @4% | Dividers, hairlines, faint fills |
 
-## B3 · Status color (the only chroma — used sparingly, as signal)
+## B3 · Status color (the only chroma - used sparingly, as signal)
 | Token | Value | Meaning |
 |---|---|---|
 | success | `#5FBF8F` | Paid · delivered · in-stock · present · on-time |
@@ -63,7 +63,7 @@ A single deepening ramp establishes hierarchy by elevation, not by borders.
 | danger | `#E06C75` | Late 15m+ · out-of-stock · overdue · unpaid-at-delivery · absent |
 | info | `#6FA8C9` | Neutral informational (rarely; prefer ink) |
 
-Status color appears as: a 6–8pt **status dot**, a **left rule** on a row/card, or a **pill** (12/1.4 text, color @ 16% fill + color text). Never as a full background. A status is always paired with a word (color is never the sole signal — accessibility law).
+Status color appears as: a 6–8pt **status dot**, a **left rule** on a row/card, or a **pill** (12/1.4 text, color @ 16% fill + color text). Never as a full background. A status is always paired with a word (color is never the sole signal - accessibility law).
 
 ## B4 · Typography
 | Style | Size / lh | Weight | Face | Use |
@@ -77,13 +77,13 @@ Status color appears as: a 6–8pt **status dot**, a **left rule** on a row/card
 | Data | 13 / 1.4 | 400 | mono (DM Mono) | Money, counts, times, plates, IDs, SKUs |
 | Micro | 11 / 1.4, +8% | 500 | mono | Timestamps, meta, kiosk actor |
 
-Money and time are **always** mono (Data) — right-aligned in tables so digits scan vertically. Titles are display; everything operational is body/mono.
+Money and time are **always** mono (Data) - right-aligned in tables so digits scan vertically. Titles are display; everything operational is body/mono.
 
 ## B5 · Spacing
 4pt base. Scale: `4 · 8 · 12 · 16 · 20 · 24 · 32 · 48`. Dense but breathing: table row height 44 (comfortable) / 36 (compact toggle); card padding 16–20; section gap 24; page inset 20 (mobile) / 24 (desktop content). The board is dense (12–16 gaps); Office reports breathe more (24).
 
 ## B6 · Radius
-`control 8 · card 12 · drawer 16 (top) · pill 999`. Tighter than the customer app — operational, not luxurious.
+`control 8 · card 12 · drawer 16 (top) · pill 999`. Tighter than the customer app - operational, not luxurious.
 
 ## B7 · Elevation & shadow
 Depth is primarily the surface ramp (B1). Shadows are subtle and reserved:
@@ -104,42 +104,42 @@ Default card = `cavern` ground, radius 12, padding 16–20, 1pt `ash` hairline o
 - **Row action:** entire row is the primary tap (opens detail/drawer); a trailing overflow (⋯) reveals secondary actions on hover/focus.
 - **Bulk:** checkbox column appears on first selection; a selection action bar docks to the bottom of the table ("3 selected · Mark paid · Export").
 - **Sort:** click a column head; one sort at a time; arrow indicator.
-- **Sticky first column** on mobile horizontal scroll (the identity column — customer/vehicle).
+- **Sticky first column** on mobile horizontal scroll (the identity column - customer/vehicle).
 - **Empty / loading / error:** see F-Table.
 
 ## B10 · Forms
 - **Field:** label (Label style, steel) above input; input on `dim` ground, radius 8, 1pt `smoke` border, height 40; focus → border chrome + 2pt focus ring (see I). Help/error text below (12, error = danger).
 - **Layout:** single column by default; two-column only on wide for short paired fields (price/duration). Money inputs are mono, ₹-prefixed.
-- **Inline edit:** table cells that are editable (price, stock) become an input on click without a modal — Notion/Stripe style. Enter commits, Esc cancels, blur commits.
+- **Inline edit:** table cells that are editable (price, stock) become an input on click without a modal - Notion/Stripe style. Enter commits, Esc cancels, blur commits.
 - **Validation:** on blur and on submit; the submit button shows the count of blocking errors; never a silent failure.
 - **Autosave** where safe (settings, notes); explicit Save for money-moving forms.
 
 ## B11 · Sheets & Drawers
-The staff app's detail pattern is the **right-side drawer** (desktop/tablet) / **bottom sheet** (mobile), *not* full-page navigation — so context (the board, the list) stays behind.
+The staff app's detail pattern is the **right-side drawer** (desktop/tablet) / **bottom sheet** (mobile), *not* full-page navigation - so context (the board, the list) stays behind.
 - **Drawer (desktop):** slides in from the right, width 480 (detail) / 640 (workspace), `deep` ground, `shadow`, backdrop `void @ 55%`. Header = title + status + close. Body scrolls; a sticky action bar docks at the bottom.
 - **Bottom sheet (mobile):** the same content, slides up, radius 16 top, drag-to-dismiss, 90vh max, sticky action bar above the safe area.
 - Used by: Job Workspace, Booking detail, Customer/Vehicle quick-view, Walk-in intake, Add expense, Assign employee.
 
 ## B12 · Dialogs (confirm only)
-Reserved for **irreversible or money-moving** confirmations (delete, refund, deliver-with-balance override, reopen shift, void invoice). Centered, `deep` ground, radius 12, `shadow-lg`, max-width 420. Title (H2) + one plain sentence + two actions (cancel ghost, confirm filled — danger-tinted for destructive). Never used for routine input (that's a drawer/inline).
+Reserved for **irreversible or money-moving** confirmations (delete, refund, deliver-with-balance override, reopen shift, void invoice). Centered, `deep` ground, radius 12, `shadow-lg`, max-width 420. Title (H2) + one plain sentence + two actions (cancel ghost, confirm filled - danger-tinted for destructive). Never used for routine input (that's a drawer/inline).
 
 ## B13 · Alerts & toasts
 - **Toast** (react-hot-toast): bottom-center, `dark` ground, 1pt status rule, auto-dismiss 3–4s; used for action confirmation ("Marked paid", "Assigned to Ravi"). Errors persist until dismissed.
-- **Inline alert** (banner): on a screen when a persistent condition needs attention (unverified UPI payments, low-stock items, an open shift at close) — status-tinted left rule, one line + one action.
+- **Inline alert** (banner): on a screen when a persistent condition needs attention (unverified UPI payments, low-stock items, an open shift at close) - status-tinted left rule, one line + one action.
 - No alert stacking theatre; one toast at a time (queued).
 
 ## B14 · Search & Command Palette
 - **Global search** lives in the top bar (a field on desktop, an icon on mobile) and in the palette.
-- **Command Palette (⌘K / Ctrl-K):** the power surface. Fuzzy over: every nav destination (grouped "Go to · Studio/Business/…"), quick actions (New walk-in, Start daily close, Add expense, Office, Sign out), and — future — entities (customers, vehicles, invoices by number/plate). Role-filtered from the same permission list. Keyboard: ↑↓ navigate, ⏎ run, Esc close; recent/most-used float to top. This is the fastest path for the manager/owner.
+- **Command Palette (⌘K / Ctrl-K):** the power surface. Fuzzy over: every nav destination (grouped "Go to · Studio/Business/…"), quick actions (New walk-in, Start daily close, Add expense, Office, Sign out), and - future - entities (customers, vehicles, invoices by number/plate). Role-filtered from the same permission list. Keyboard: ↑↓ navigate, ⏎ run, Esc close; recent/most-used float to top. This is the fastest path for the manager/owner.
 
 ## B15 · Navigation
-- **Sidebar** (desktop, collapsible to icon rail): grouped by mode — STUDIO group, then BUSINESS/CUSTOMERS/ACCOUNTING/WAREHOUSE/ANALYTICS/TEAM/SETTINGS (Office). Group headers = Label style. Active item = `dark` fill + chrome text + 2pt left rule. Technicians see only STUDIO.
+- **Sidebar** (desktop, collapsible to icon rail): grouped by mode - STUDIO group, then BUSINESS/CUSTOMERS/ACCOUNTING/WAREHOUSE/ANALYTICS/TEAM/SETTINGS (Office). Group headers = Label style. Active item = `dark` fill + chrome text + 2pt left rule. Technicians see only STUDIO.
 - **Top bar:** current section title (derived from the longest-matching nav href) + global search + a **STUDIO/OFFICE mode indicator** + primary quick action (contextual: "New walk-in" on the board) + user/kiosk-actor chip.
 - **Mobile:** the sidebar becomes a slide-in drawer (hamburger); a bottom tab bar carries the 3–5 highest-frequency Studio destinations for technicians (Board · Schedule · Attendance · Gallery); Office is drawer-only.
 
 ## B16 · Filters
 - **Filter bar** above tables: segmented chips for the primary axis (e.g. Bookings: All · Today · Upcoming · Completed · Cancelled), plus a date range and a search field. Chips are single-select for status, multi for tags. Active filters show as removable pills; "Clear" resets. Filters persist per table per session.
-- Never a modal filter panel for common axes — chips are one click.
+- Never a modal filter panel for common axes - chips are one click.
 
 ## B17 · Status system (operational)
 Every operational object renders its state as a **status token** (dot + word, or pill). Canonical vocabularies (ops-side; the customer never sees these):
@@ -164,22 +164,22 @@ Every operational object renders its state as a **status token** (dot + word, or
 Lucide, 18–20pt, 1.75pt stroke, steel/pewter default, chrome when active. Icons pair with words in nav and actions; icon-only allowed for universal controls (close, overflow, search, add) with aria-labels. Status is a colored dot, not a colored icon.
 
 ## B21 · Dark mode
-The staff app **is** dark — there is no light rendering. (This is deliberate: an always-on floor tablet in a studio, and a manager's cockpit, read best dark; it also hard-separates staff from the light customer app.) Contrast is tuned for the dark ramp (Part I). No theme toggle.
+The staff app **is** dark - there is no light rendering. (This is deliberate: an always-on floor tablet in a studio, and a manager's cockpit, read best dark; it also hard-separates staff from the light customer app.) Contrast is tuned for the dark ramp (Part I). No theme toggle.
 
 ## B22 · Accessibility baseline
 Focus ring 2pt chrome @ 70%, 2pt offset; targets ≥ 40 (44 on the floor tablet); status never color-alone; tables are real tables with headers; the palette and all drawers are keyboard-complete. Full spec in Part I.
 
 ---
 
-# PART C — NAVIGATION ARCHITECTURE (complete IA)
+# PART C - NAVIGATION ARCHITECTURE (complete IA)
 
 ## C1 · The model
-**One application, two modes, four human roles** (owner/admin · technician · kiosk · — customer is elsewhere). Mode follows the route; role gates visibility. There is no separate "employee app" — the shell redirects technicians to Studio.
+**One application, two modes, four human roles** (owner/admin · technician · kiosk · - customer is elsewhere). Mode follows the route; role gates visibility. There is no separate "employee app" - the shell redirects technicians to Studio.
 
 ```
 STAFF SHELL (/admin, always dark)
 │
-├── STUDIO  (the floor — technicians + managers)
+├── STUDIO  (the floor - technicians + managers)
 │   ├── Studio Board        /admin            ← the day's operating system (home)
 │   │   ├── Waiting queue · Bays · QC/Ready · Tech rail · Feed · Timeline
 │   │   ├── Job Workspace   (drawer)  · deep-link /admin/jobs/[id]
@@ -191,7 +191,7 @@ STAFF SHELL (/admin, always dark)
 │   ├── Gallery             /admin/gallery    ← work photos by job/date
 │   └── Vehicle profile     /admin/vehicles/[reg]  ← the shop-side twin + timeline
 │
-└── OFFICE  (the business — owner/manager only)
+└── OFFICE  (the business - owner/manager only)
     ├── Dashboard           /admin/office
     ├── CUSTOMERS
     │   ├── Customers        /admin/customers  · /admin/customers/[id] (Customer 360)
@@ -211,7 +211,7 @@ STAFF SHELL (/admin, always dark)
     │   └── Services         /admin/settings
     └── (business lines) Cars marketplace /admin/cars(+/leads) · Promos /admin/promos
 
-KIOSK  (/store) — PIN unlock screen for the shared floor tablet; unlocks an
+KIOSK  (/store) - PIN unlock screen for the shared floor tablet; unlocks an
 employee onto the shell (Studio only), auto-relocks here after inactivity.
 ```
 
@@ -230,8 +230,8 @@ Every list drills to a detail; every detail links to its related entities (a Job
 
 ## C3 · Cross-device IA
 - **Desktop (≥ 1200):** sidebar (expanded) + top bar + content; details open as right drawers over context.
-- **Tablet (720–1199) — the floor device:** sidebar collapses to an icon rail (or hamburger); the Studio Board is optimized for touch; details open as drawers (right on landscape, bottom on portrait); kiosk mode lives here.
-- **Mobile (< 720) — the manager's pocket:** hamburger drawer nav + a bottom tab bar for the top Studio destinations; tables become stacked cards or horizontally-scroll with a sticky identity column; details are full bottom sheets.
+- **Tablet (720–1199) - the floor device:** sidebar collapses to an icon rail (or hamburger); the Studio Board is optimized for touch; details open as drawers (right on landscape, bottom on portrait); kiosk mode lives here.
+- **Mobile (< 720) - the manager's pocket:** hamburger drawer nav + a bottom tab bar for the top Studio destinations; tables become stacked cards or horizontally-scroll with a sticky identity column; details are full bottom sheets.
 - **Ultra-wide (≥ 1600):** the board gains a persistent right column (Feed + Tech rail always visible); Office tables cap content width and center; a two-pane list+detail is available (list left, detail right) without a drawer.
 
 ## C4 · Navigation flows (representative)
@@ -241,12 +241,12 @@ Every list drills to a detail; every detail links to its related entities (a Job
 
 ---
 
-# PART D — SCREEN SPECIFICATIONS
+# PART D - SCREEN SPECIFICATIONS
 
 Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Errors · Mobile · Tablet · Desktop · Motion · Accessibility.** (Screens are grouped; shared table/drawer behavior is defined once in F and referenced.)
 
-## D1 · STUDIO BOARD — `/admin` (the home of the floor)
-- **Purpose:** run the entire working day on one screen — capacity, queue, live work, team, money-in-motion — with the next action always one tap away. Derives from one realtime jobs listener + the floor model (no duplicate listeners).
+## D1 · STUDIO BOARD - `/admin` (the home of the floor)
+- **Purpose:** run the entire working day on one screen - capacity, queue, live work, team, money-in-motion - with the next action always one tap away. Derives from one realtime jobs listener + the floor model (no duplicate listeners).
 - **Layout (desktop):** top bar (date/clock, pipeline counts, "New walk-in", search) → **live capacity strip** (utilization bar + next-free time per bay) → three-column working area: **Waiting queue** (left), **Bay cards** ×2 (center, the physical resources with occupant detail), **QC / Ready** (right tail) → **Technician rail** (who's working/break/idle, ETA, jobs-done) → **Studio feed** (realtime event stream) → **Timeline** (today's bookings + live work on two resource lanes). On ultra-wide, Feed + Tech rail dock as a persistent right column.
 - **Hierarchy:** capacity (can we take work?) → queue (who's next?) → bays (what's happening now?) → QC/ready (what's finishing?) → team (who's free?) → feed/timeline (the record).
 - **Components:** capacity bar, bay card (occupant, service, elapsed/remaining, tech, late color), queue card (auto-prioritized: appointments > wait time > walk-ins), QC/ready card, tech chip, feed row, OpsTimeline (two lanes), StudioDrawer (job workspace), TechnicianDrawer.
@@ -260,18 +260,18 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** feed rows *rise*-in (200ms, once); status advance = the occupant chip crossfades to the next state + a success tick (120ms); drawer slides from the right (200ms). Realtime updates never jump the scroll.
 - **Accessibility:** each bay card is a labelled region announcing occupant + state + remaining time; status advance is a labelled button; the feed is a live region (polite); color-coded lateness is paired with a "late 12m" label.
 
-## D2 · JOB WORKSPACE — drawer over the board (deep-link `/admin/jobs/[id]`)
+## D2 · JOB WORKSPACE - drawer over the board (deep-link `/admin/jobs/[id]`)
 - **Purpose:** everything about one car-in-care in a single scroll, without leaving the board: identity, service items, status, assignees, photos, notes, payment, delivery.
 - **Layout (drawer 640):** header (customer · vehicle · plate · booking source · current status pill · close) → **status stepper** (checked_in → in_progress → quality_check → ready_for_delivery → delivered) with the next step as the primary action → **service items** (name · category · price · membership-wash badge) → **assignments** (lead + assist, add/remove) → **photos** (capture: before/during/after, grid, add) → **notes** (timestamped, per-actor) → **payment** (amount, method, status; collect) → sticky action bar (advance status / collect payment / deliver).
 - **Hierarchy:** current status + next action (top) → the work → the evidence → the money.
 - **Components:** status stepper, service-item rows, AssignmentControl, PhotoGrid + Camera, NoteList, PaymentControl, sticky action bar.
 - **Interactions:** one tap advances status; camera opens for capture (before/after by act); assign from a searchable employee list; collect payment (cash/UPI, UPI needs reference); **deliver** requires the confirm dialog only when a balance is due (owner/kiosk override, attributed).
-- **Empty/Loading/Errors:** a job always has data; photo section empty → "No photos yet — capture the arrival." ; save failure → inline retry, never lose the note.
+- **Empty/Loading/Errors:** a job always has data; photo section empty → "No photos yet - capture the arrival." ; save failure → inline retry, never lose the note.
 - **Responsive:** drawer (desktop/tablet-landscape) → bottom sheet (mobile/portrait); the sticky action bar persists above the keyboard/safe area.
 - **Motion:** slide-in 200ms; status tick 120ms; photo add fades in.
 - **Accessibility:** stepper is an ordered list with the current step marked; camera control labelled; payment amount is mono and announced.
 
-## D3 · SCHEDULE — `/admin/schedule`
+## D3 · SCHEDULE - `/admin/schedule`
 - **Purpose:** see and place work across the two bays over time (resource calendar).
 - **Layout:** day/week toggle → two resource lanes (Wash, Protection) with time on the vertical axis → booking blocks (customer · service · duration) → capacity/blocked overlays. A side "unscheduled/pending" list to drag or assign.
 - **Interactions:** click a slot → new booking/intake; click a block → booking detail drawer; drag to reschedule (with confirm if it moves a confirmed booking). Full days show as blocked.
@@ -280,7 +280,7 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** blocks *rise* in; drag uses a 1:1 ghost; snap on drop.
 - **Accessibility:** blocks are buttons with full labels (time · bay · customer · service); keyboard move via a reschedule dialog.
 
-## D4 · BOOKINGS — `/admin/bookings` (+ detail `/[id]`)
+## D4 · BOOKINGS - `/admin/bookings` (+ detail `/[id]`)
 - **Purpose:** the full ledger of bookings across time (past + future), searchable and filterable.
 - **Layout:** filter bar (All · Today · Upcoming · Completed · Cancelled · date range · search) → table (Customer · Vehicle · Service · Date/Time · Amount · Payment · Status). Row → **Booking Detail drawer**.
 - **Booking Detail:** customer/vehicle, service + price breakdown, schedule, source (customer app / walk-in / manual), payment, status timeline, actions (confirm, reschedule, cancel, convert to job / check-in, message customer).
@@ -289,7 +289,7 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** row hover 120ms; drawer 200ms.
 - **Accessibility:** sortable columns announced; status pills paired with text.
 
-## D5 · CUSTOMERS — `/admin/customers` (+ Customer 360 `/[id]`)
+## D5 · CUSTOMERS - `/admin/customers` (+ Customer 360 `/[id]`)
 - **Purpose:** the CRM ledger and the single customer view.
 - **List layout:** search + tag filter → table (Name · Phone · Vehicles · Visits · Lifetime value · Last seen · Tags). Row → Customer 360.
 - **Customer 360:** header (name · phone · WhatsApp · tags · lifetime value) → **vehicles** (each links to Vehicle profile) → **visit history** (bookings/jobs) → **memberships** → **invoices/payments** → **notes** (admin-only) → actions (message, add note, add vehicle, new booking).
@@ -299,8 +299,8 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** section expand 200ms.
 - **Accessibility:** each section is a landmark; notes are marked admin-only.
 
-## D6 · VEHICLE PROFILE & TIMELINE — `/admin/vehicles/[reg]`
-- **Purpose:** the shop-side digital twin — identity + full care timeline (the staff mirror of the customer's Vehicle/Passport).
+## D6 · VEHICLE PROFILE & TIMELINE - `/admin/vehicles/[reg]`
+- **Purpose:** the shop-side digital twin - identity + full care timeline (the staff mirror of the customer's Vehicle/Passport).
 - **Layout:** header (make/model/year · plate · owner · derived protection state) → **timeline** (every job/visit, newest first: date · service · tech · photos · amount) → **active protections** (with warranty/expiry, derived from completed jobs × catalog warranties) → documents/invoices → actions (new booking, add note).
 - **Hierarchy:** identity → history → what protects it now.
 - **Empty:** "No visits yet for this vehicle." **Loading:** skeleton timeline. **Errors:** retry.
@@ -308,25 +308,25 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** timeline entries *rise* in.
 - **Accessibility:** timeline is an ordered list; protection state paired with words + dates.
 
-## D7 · SERVICES (Settings) — `/admin/settings`
+## D7 · SERVICES (Settings) - `/admin/settings`
 - **Purpose:** the service catalog + pricing (PPF, Ceramic, Detailing/Coating, Washing) and business settings.
 - **Layout:** tabs or sections by category (PPF · Ceramic · Detailing · Wash) → per service: name · brand · price · duration · warranty · active toggle · popular flag · order. **Inline-editable** table (price/duration edit in place). Plus business settings (hours, bays/capacity, tax, studio profile).
 - **Interactions:** inline edit with autosave-on-blur for catalog fields; drag to reorder; toggle active. Money-affecting changes are logged (audit).
-- **Empty/Loading/Errors:** "No services in this category — add one." ; skeleton; inline validation.
+- **Empty/Loading/Errors:** "No services in this category - add one." ; skeleton; inline validation.
 - **Responsive:** table → stacked editable cards on mobile.
 - **Motion:** inline edit expands the cell 120ms; save tick.
 - **Accessibility:** each editable cell is a labelled input; reorder has a keyboard alternative.
 
-## D8 · INVENTORY — `/admin/inventory` (+ Recipes `/recipes`)
+## D8 · INVENTORY - `/admin/inventory` (+ Recipes `/recipes`)
 - **Purpose:** stock levels, consumption, and the recipe mapping (which products a service deducts).
 - **Layout:** filter (All · Low · Out · category · search) → table (Product · SKU · Category · On-hand · Unit · Reorder point · Status · Last movement). Low/Out rows carry a warning/danger left-rule. **Recipes**: per service, the products + quantities it consumes (drives auto-deduction on job completion).
 - **Interactions:** inline adjust on-hand (stock refill/correction, logged); set reorder point; a "low stock" inline banner at top with a jump. Recipe editing maps service → products × qty.
 - **Empty/Loading/Errors:** "No products yet." ; skeleton; adjust failures inline.
 - **Responsive:** desktop table; mobile stacked cards with the status rule prominent.
-- **Motion:** stock change animates the number (no count-up theatre — a single crossfade).
+- **Motion:** stock change animates the number (no count-up theatre - a single crossfade).
 - **Accessibility:** status paired with words; adjustments announced.
 
-## D9 · INVOICES — `/admin/invoices`
+## D9 · INVOICES - `/admin/invoices`
 - **Purpose:** every invoice, its state, and payment.
 - **Layout:** filter (All · Draft · Paid · Unpaid · date · search) → table (Invoice # · Customer · Vehicle · Amount · Method · Status · Date). Row → invoice detail (line items, taxes, discounts, payment, link to job/booking; actions: mark paid, void with reason, resend/share, download).
 - **Hierarchy:** unpaid/overdue surface first (a top banner counts them).
@@ -335,7 +335,7 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** mark-paid → row status crossfades to success + tick.
 - **Accessibility:** amounts mono + announced; void is a confirmed, reasoned action.
 
-## D10 · EXPENSES — `/admin/expenses`
+## D10 · EXPENSES - `/admin/expenses`
 - **Purpose:** record and categorize outgoings for the daily close and reports.
 - **Layout:** "Add expense" (drawer: amount · category · method · note · date · optional receipt photo) → table (Date · Category · Amount · Method · Note · Added by). Filters by category/date.
 - **Empty/Loading/Errors:** "No expenses recorded." ; skeleton; add validated.
@@ -343,8 +343,8 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** new expense *rise*-ins at top.
 - **Accessibility:** amount mono; added-by attributed.
 
-## D11 · DAILY CLOSE — `/admin/close`
-- **Purpose:** the end-of-day ritual — reconcile cash/UPI against jobs & invoices, record the close, lock the day. (Owner/manager.)
+## D11 · DAILY CLOSE - `/admin/close`
+- **Purpose:** the end-of-day ritual - reconcile cash/UPI against jobs & invoices, record the close, lock the day. (Owner/manager.)
 - **Layout:** a guided single screen: expected vs counted (cash, UPI) → unpaid/pending flags (jobs delivered without payment, unverified UPI) → expenses of the day → net → **confirm close** (dialog; reopening a closed shift is an owner override, logged).
 - **Hierarchy:** discrepancies first; you cannot calmly close over an unresolved flag without acknowledging it.
 - **Empty/Loading/Errors:** if nothing to close → "Nothing to reconcile today." ; a discrepancy shows a danger banner with a jump to the offending job/invoice.
@@ -352,32 +352,32 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** section-to-section 200ms; the final confirm draws a success state.
 - **Accessibility:** each reconcile field labelled; the close is a confirmed, attributed action.
 
-## D12 · MEMBERSHIPS — `/admin/subscriptions`
-- **Purpose:** manage Club memberships — verify pending joins, track wash credits, renewals.
+## D12 · MEMBERSHIPS - `/admin/subscriptions`
+- **Purpose:** manage Club memberships - verify pending joins, track wash credits, renewals.
 - **Layout:** filter (Pending · Active · Expiring · Lapsed) → table (Customer · Tier · Since · Washes used/total · Renews · Status · Payment). **Pending** rows surface first (verify → activate). Row → membership detail (history, credits ledger, actions: verify, activate, adjust credits, cancel).
 - **Empty/Loading/Errors:** "No memberships." ; skeleton; verify is a confirmed action.
 - **Responsive:** cards on mobile; pending prominent.
 - **Motion:** verify → status crossfades to active + tick.
 - **Accessibility:** credit counts mono; status paired with words.
 
-## D13 · EMPLOYEES — `/admin/employees` (+ detail `/[id]`)
+## D13 · EMPLOYEES - `/admin/employees` (+ detail `/[id]`)
 - **Purpose:** the team roster, roles, and per-person detail.
 - **Layout:** table (Name · Role · Phone · Status today · Jobs done (period) · Attendance %). Row → employee detail (profile, role, PIN/kiosk access, assignment history, attendance history, payroll summary if enabled).
 - **Hierarchy:** who's on today → performance → admin.
-- **Empty/Loading/Errors:** "No employees yet — add your first." ; skeleton.
+- **Empty/Loading/Errors:** "No employees yet - add your first." ; skeleton.
 - **Responsive:** cards on mobile.
 - **Motion:** detail drawer 200ms.
 - **Accessibility:** role and status labelled; PIN never displayed in plain text.
 
-## D14 · ATTENDANCE — `/admin/attendance`
-- **Purpose:** today's shifts — clock in/out, breaks, presence — plus history.
+## D14 · ATTENDANCE - `/admin/attendance`
+- **Purpose:** today's shifts - clock in/out, breaks, presence - plus history.
 - **Layout:** today view: each employee row (status · clock-in · break · hours) with clock/break actions (on the shared tablet these are the employee's self-actions via kiosk). History tab: date range table. Leave/off shown inline (leave & calendar are lightweight here; a dedicated leave workflow is a future addition, not a current module).
 - **Empty/Loading/Errors:** "No one clocked in yet." ; skeleton.
 - **Responsive:** the today view is touch-first (big clock buttons on tablet); history is a table → cards on mobile.
 - **Motion:** clock action → status crossfade + tick.
 - **Accessibility:** clock buttons labelled; times mono.
 
-## D15 · GALLERY — `/admin/gallery`
+## D15 · GALLERY - `/admin/gallery`
 - **Purpose:** the studio's work photography, organized by job/date, for QC, records, and marketing selection.
 - **Layout:** date/job filter → responsive photo grid; tap → lightbox (job context, before/after, tags). Select multiple → export/share to the customer's chapter (feeds the customer app's evidence chain).
 - **Empty/Loading/Errors:** "No photos for this day." ; grid skeleton; failed loads show a retry tile (never a broken image).
@@ -385,17 +385,17 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** thumbnails fade in on load; lightbox scales from the thumbnail.
 - **Accessibility:** every photo has job-context alt; lightbox is keyboard-navigable (←/→, Esc).
 
-## D16 · OFFICE DASHBOARD — `/admin/office`
-- **Purpose:** the manager/owner's at-a-glance business health (money, throughput, alerts) — the Office home.
-- **Layout:** KPI tile row (today's revenue · jobs done · avg ticket · unpaid count — big number + delta) → alerts (unverified payments, low stock, open shift) → mini charts (revenue trend, jobs by service) → quick links (Close, Invoices, Reports).
+## D16 · OFFICE DASHBOARD - `/admin/office`
+- **Purpose:** the manager/owner's at-a-glance business health (money, throughput, alerts) - the Office home.
+- **Layout:** KPI tile row (today's revenue · jobs done · avg ticket · unpaid count - big number + delta) → alerts (unverified payments, low stock, open shift) → mini charts (revenue trend, jobs by service) → quick links (Close, Invoices, Reports).
 - **Hierarchy:** money today → things needing attention → trends.
-- **Empty/Loading/Errors:** first-run → "Your first day's numbers will appear here." ; KPI skeletons; a failed metric shows "—" not a crash.
+- **Empty/Loading/Errors:** first-run → "Your first day's numbers will appear here." ; KPI skeletons; a failed metric shows "-" not a crash.
 - **Responsive:** KPI tiles wrap 4→2→1; charts stack.
 - **Motion:** KPIs crossfade to new values (no count-up); *rise* on alerts.
 - **Accessibility:** each KPI is a labelled figure with its delta; charts have table fallbacks.
 
-## D17 · REPORTS / ANALYTICS — `/admin/reports`
-- **Purpose:** deeper analysis — revenue, services mix, technician throughput, membership, retention.
+## D17 · REPORTS / ANALYTICS - `/admin/reports`
+- **Purpose:** deeper analysis - revenue, services mix, technician throughput, membership, retention.
 - **Layout:** date-range + dimension controls → a set of chart cards (trend, composition, leaderboard) each with an underlying table + export.
 - **Hierarchy:** headline trend → breakdowns → per-entity leaderboards.
 - **Empty/Loading/Errors:** "Not enough data for this range." ; chart skeletons; a broken series degrades to its table.
@@ -403,14 +403,14 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 - **Motion:** chart draw-in 280ms (once); reduced-motion → static.
 - **Accessibility:** every chart has a labelled table equivalent and text summary of the headline.
 
-## D18 · QUOTES — `/admin/quotes` · PROMOS — `/admin/promos` · CARS — `/admin/cars(+/leads)`
+## D18 · QUOTES - `/admin/quotes` · PROMOS - `/admin/promos` · CARS - `/admin/cars(+/leads)`
 - **Quotes:** requested/sent/accepted quotes (for size-priced services like PPF); table + detail drawer; convert to booking. Empty "No quotes." 
 - **Promos:** discount codes/campaigns; table (code · type · value · window · redemptions · active); create/edit drawer. Empty "No promos."
-- **Cars marketplace + leads:** the used-car business line — listings + inbound leads (the twin-powered listing); table + detail. Out of the core service loop but part of Office.
+- **Cars marketplace + leads:** the used-car business line - listings + inbound leads (the twin-powered listing); table + detail. Out of the core service loop but part of Office.
 - All follow the shared table + drawer + status patterns; each: purpose, table, detail drawer, empty/loading/errors, responsive cards on mobile.
 
-## D19 · WALK-IN INTAKE — `/admin/walkin` (drawer over the board)
-- **Purpose:** the fastest path from "a car just arrived" to a live job — minimal fields, maximum speed.
+## D19 · WALK-IN INTAKE - `/admin/walkin` (drawer over the board)
+- **Purpose:** the fastest path from "a car just arrived" to a live job - minimal fields, maximum speed.
 - **Layout (drawer):** plate (with lookup → prefill known vehicle/customer) → customer (new or matched) → service(s) → assign bay/tech (optional) → create → the job appears on the board **Received**.
 - **Hierarchy:** plate first (it resolves everything); everything else defaults.
 - **Interactions:** plate lookup prefills; one "Create & check in" primary; membership auto-detected (wash credit).
@@ -430,14 +430,14 @@ Format: **Purpose · Layout · Hierarchy · Components · Empty · Loading · Er
 
 ## D21 · SETTINGS: PERMISSIONS · ROLES · AUDIT LOGS · NOTIFICATIONS
 These are settings surfaces (owner), grounded in the real permission model:
-- **Roles & Permissions:** a read-first view of the matrix (owner/admin · technician · kiosk) — what each role may access (Studio vs Office, finance, pricing, overrides). Editable where the business allows (e.g., which employees get kiosk PINs). Presented as a clear grid (role × capability), not free-form ACLs.
-- **Audit Logs:** the attributed action stream — status advances, payments, voids, overrides, shift reopens, price changes — filterable by actor/date/type. Every money-moving or override action appears here (this is how attribution becomes trust). Table + detail; export.
-- **Notifications:** operational push/notify configuration (the cron/notify/whatsapp rails) — which events notify whom (e.g., low-stock to owner, ready-for-delivery to the desk). Sentence-style toggles.
+- **Roles & Permissions:** a read-first view of the matrix (owner/admin · technician · kiosk) - what each role may access (Studio vs Office, finance, pricing, overrides). Editable where the business allows (e.g., which employees get kiosk PINs). Presented as a clear grid (role × capability), not free-form ACLs.
+- **Audit Logs:** the attributed action stream - status advances, payments, voids, overrides, shift reopens, price changes - filterable by actor/date/type. Every money-moving or override action appears here (this is how attribution becomes trust). Table + detail; export.
+- **Notifications:** operational push/notify configuration (the cron/notify/whatsapp rails) - which events notify whom (e.g., low-stock to owner, ready-for-delivery to the desk). Sentence-style toggles.
 - Each: purpose, grid/table layout, empty/loading/errors, responsive (grid → stacked), motion (minimal), accessibility (real tables/grids, labelled toggles).
 
 ---
 
-# PART E — OPERATIONAL FLOWS (click-minimized)
+# PART E - OPERATIONAL FLOWS (click-minimized)
 
 Each flow lists the **happy path** with the target number of deliberate actions. The design goal: the floor's common flows are 1–2 taps; money/irreversible steps add exactly one confirm.
 
@@ -449,11 +449,11 @@ Each flow lists the **happy path** with the target number of deliberate actions.
 6. **Quality control:** advance In progress → **Quality check** (one tap) → QC checklist optional → advance to Ready. → *1–2 actions.*
 7. **Invoice:** generated from the job's service items (draft) on completion; adjust line items inline if needed. → *0 actions default.*
 8. **Payment:** job workspace → Collect → method (cash/UPI; UPI requires reference) → Paid. → *2 actions.*
-9. **Delivery:** advance Ready → **Delivered**; if a balance is due, a confirm dialog (owner/kiosk override, attributed) — otherwise one tap. → *1 action (+1 confirm if unpaid).*
+9. **Delivery:** advance Ready → **Delivered**; if a balance is due, a confirm dialog (owner/kiosk override, attributed) - otherwise one tap. → *1 action (+1 confirm if unpaid).*
 10. **Membership purchase:** customer app join → **pending** → Office › Memberships surfaces it → Verify → Active. → *1 action (verify).* Or in-studio: create membership in the customer's 360.
 11. **Inventory deduction:** automatic on job completion via the service's recipe (product × qty). → *0 actions.* Manual correction is an inline adjust (logged).
 12. **Stock refill:** Inventory → inline adjust on-hand (or a refill entry) → logged; low-stock banner clears. → *1 action.*
-13. **Supplier ordering:** (future module — see J) today, low-stock is surfaced as a banner + a manual refill; a purchase-order workflow is a planned Warehouse addition, not a current fake feature.
+13. **Supplier ordering:** (future module - see J) today, low-stock is surfaced as a banner + a manual refill; a purchase-order workflow is a planned Warehouse addition, not a current fake feature.
 14. **Refund:** Invoice detail → Refund → dialog (reason + amount) → recorded (adjusts close/reports). → *1 action + confirm.*
 15. **Cancellation:** Booking/Job → Cancel → dialog (reason) → status Cancelled; no job/inventory side effects if pre-check-in. → *1 action + confirm.*
 16. **Reschedule:** Booking detail or Schedule drag → new slot → confirm if it moves a confirmed booking (customer is notified via the notify rail). → *1–2 actions.*
@@ -462,38 +462,38 @@ Each flow lists the **happy path** with the target number of deliberate actions.
 
 ---
 
-# PART F — COMPONENT LIBRARY (staff)
+# PART F - COMPONENT LIBRARY (staff)
 
 Each: purpose + exact behavior. (Visual specs in Part B.)
 
-- **AppShell** — sidebar (mode-grouped, role-filtered, collapsible) + top bar (title, search, mode indicator, contextual primary, actor chip) + content + drawer host. Remembers scroll per page within a workflow.
-- **CommandPalette** — ⌘K fuzzy nav + actions + (future) entities; role-filtered; keyboard-complete; recents.
-- **DataTable** — sticky header, sortable, density toggle, row-tap → detail, overflow actions, bulk-select bar, sticky identity column on mobile, empty/loading/error states, CSV export.
-- **FilterBar** — segmented status chips + date range + search; active filters as removable pills; persists per table.
-- **StatusToken** — dot / left-rule / pill; the canonical vocabularies (B17); always word-paired.
-- **Drawer** — right (desktop) / bottom sheet (mobile); header + scroll body + sticky action bar; backdrop; ⌘/Esc/drag dismiss.
-- **ConfirmDialog** — irreversible/money-moving only; title + one sentence + cancel/confirm (destructive tinted).
-- **Field / Form** — labeled inputs on `dim`; inline-editable table cells; ₹-mono money inputs; blur+submit validation; autosave where safe.
-- **KpiTile** — big mono number + label + delta (▲/▼ with success/danger), optional sparkline; crossfades on update.
-- **Chart** — monochrome-first line/bar/stacked/sparkline; tooltip card; table fallback; reduced-motion static.
-- **BayCard** — occupant, service, elapsed/remaining (late-colored), tech, inline status advance + assign.
-- **QueueCard** — auto-prioritized waiting entry; tap → workspace.
-- **TechChip / TechnicianDrawer** — status (working/break/idle), ETA, jobs-done; tap for detail/assign.
-- **FeedRow** — realtime event (time · actor · event); live region.
-- **OpsTimeline** — two resource lanes (wash/protection) with bookings + live work; drag on Schedule.
-- **StatusStepper** — the job lifecycle; current step marked; next step = primary action.
-- **PhotoGrid + Camera + Lightbox** — capture (act-tagged), grid, full-screen viewer; feeds Gallery + customer chapter.
-- **AssignmentControl** — lead/assist add/remove from a searchable employee list; attributed.
-- **PaymentControl** — amount (mono), method (cash/UPI+reference), collect → status.
-- **Toast / InlineAlert / Banner** — action confirmation / persistent condition; status-ruled; queued.
-- **KioskLock / ActorChip** — PIN unlock screen (/store), actor attribution, auto-relock timer.
-- **AuditRow** — attributed action entry (actor · time · action · target · reason); filterable.
+- **AppShell** - sidebar (mode-grouped, role-filtered, collapsible) + top bar (title, search, mode indicator, contextual primary, actor chip) + content + drawer host. Remembers scroll per page within a workflow.
+- **CommandPalette** - ⌘K fuzzy nav + actions + (future) entities; role-filtered; keyboard-complete; recents.
+- **DataTable** - sticky header, sortable, density toggle, row-tap → detail, overflow actions, bulk-select bar, sticky identity column on mobile, empty/loading/error states, CSV export.
+- **FilterBar** - segmented status chips + date range + search; active filters as removable pills; persists per table.
+- **StatusToken** - dot / left-rule / pill; the canonical vocabularies (B17); always word-paired.
+- **Drawer** - right (desktop) / bottom sheet (mobile); header + scroll body + sticky action bar; backdrop; ⌘/Esc/drag dismiss.
+- **ConfirmDialog** - irreversible/money-moving only; title + one sentence + cancel/confirm (destructive tinted).
+- **Field / Form** - labeled inputs on `dim`; inline-editable table cells; ₹-mono money inputs; blur+submit validation; autosave where safe.
+- **KpiTile** - big mono number + label + delta (▲/▼ with success/danger), optional sparkline; crossfades on update.
+- **Chart** - monochrome-first line/bar/stacked/sparkline; tooltip card; table fallback; reduced-motion static.
+- **BayCard** - occupant, service, elapsed/remaining (late-colored), tech, inline status advance + assign.
+- **QueueCard** - auto-prioritized waiting entry; tap → workspace.
+- **TechChip / TechnicianDrawer** - status (working/break/idle), ETA, jobs-done; tap for detail/assign.
+- **FeedRow** - realtime event (time · actor · event); live region.
+- **OpsTimeline** - two resource lanes (wash/protection) with bookings + live work; drag on Schedule.
+- **StatusStepper** - the job lifecycle; current step marked; next step = primary action.
+- **PhotoGrid + Camera + Lightbox** - capture (act-tagged), grid, full-screen viewer; feeds Gallery + customer chapter.
+- **AssignmentControl** - lead/assist add/remove from a searchable employee list; attributed.
+- **PaymentControl** - amount (mono), method (cash/UPI+reference), collect → status.
+- **Toast / InlineAlert / Banner** - action confirmation / persistent condition; status-ruled; queued.
+- **KioskLock / ActorChip** - PIN unlock screen (/store), actor attribution, auto-relock timer.
+- **AuditRow** - attributed action entry (actor · time · action · target · reason); filterable.
 
 ---
 
-# PART G — MOTION SYSTEM (staff)
+# PART G - MOTION SYSTEM (staff)
 
-Operational motion is quick and certain — nothing lingers, nothing entertains.
+Operational motion is quick and certain - nothing lingers, nothing entertains.
 
 | Interaction | Motion | Duration | Curve | Reduced-motion |
 |---|---|---|---|---|
@@ -515,42 +515,42 @@ Banned: loops, shimmer, decorative parallax/gradients, count-up numbers, anythin
 
 ---
 
-# PART H — RESPONSIVE BEHAVIOUR
+# PART H - RESPONSIVE BEHAVIOUR
 
-- **Ultra-wide (≥ 1600) — owner cockpit / big floor screen:** sidebar expanded; Studio Board gains a persistent right column (Feed + Tech rail); Office supports two-pane list+detail (no drawer needed); content max-width caps so lines don't run; tables show more columns.
+- **Ultra-wide (≥ 1600) - owner cockpit / big floor screen:** sidebar expanded; Studio Board gains a persistent right column (Feed + Tech rail); Office supports two-pane list+detail (no drawer needed); content max-width caps so lines don't run; tables show more columns.
 - **Desktop (1200–1599):** expanded sidebar; details as right drawers over context; full tables; ⌘K primary nav.
-- **Tablet (720–1199) — the floor device:** sidebar → icon rail / hamburger; the Studio Board is touch-tuned (≥ 44 targets), landscape = queue+bays side by side, portrait = stacked; drawers = right (landscape) / bottom sheet (portrait); **kiosk mode** lives here (PIN unlock, actor chip, auto-relock).
-- **Mobile (< 720) — manager's pocket:** hamburger drawer + bottom tab bar (top Studio destinations for technicians); tables → stacked identity cards or horizontal scroll with a sticky identity column; details → full bottom sheets; the board stacks its columns with a sticky capacity strip.
+- **Tablet (720–1199) - the floor device:** sidebar → icon rail / hamburger; the Studio Board is touch-tuned (≥ 44 targets), landscape = queue+bays side by side, portrait = stacked; drawers = right (landscape) / bottom sheet (portrait); **kiosk mode** lives here (PIN unlock, actor chip, auto-relock).
+- **Mobile (< 720) - manager's pocket:** hamburger drawer + bottom tab bar (top Studio destinations for technicians); tables → stacked identity cards or horizontal scroll with a sticky identity column; details → full bottom sheets; the board stacks its columns with a sticky capacity strip.
 
 Cross-cutting: touch targets grow on the floor tablet; scroll position is remembered per page within a workflow; the primary action is always reachable (sticky) regardless of viewport.
 
 ---
 
-# PART I — ACCESSIBILITY
+# PART I - ACCESSIBILITY
 
-- **Keyboard:** everything operable without a mouse — ⌘K palette, table sort/select, drawer open/close (Esc), inline edit (Enter/Esc), status advance, form submit. Logical tab order; visible focus everywhere.
+- **Keyboard:** everything operable without a mouse - ⌘K palette, table sort/select, drawer open/close (Esc), inline edit (Enter/Esc), status advance, form submit. Logical tab order; visible focus everywhere.
 - **Focus:** 2pt ring at chrome @ 70%, 2pt offset, on the deepest control; focus is trapped in drawers/dialogs/palette and restored to the invoker on close.
 - **Screen readers:** real semantic tables (headers, scope), landmarks per section, live regions for the studio feed and status changes (polite), labelled buttons for every icon-only control, an ordered-list status stepper, and table fallbacks + text summaries for every chart.
 - **Touch targets:** ≥ 40 general, ≥ 44 on the floor tablet (check-in, status advance, clock, camera).
-- **Contrast:** tuned for the dark ramp — chrome/silver on cavern/deep pass AA for text; status colors are used at sizes/weights that pass, and are **always paired with a word** (never color-alone); steel used only at ≥ 12pt.
+- **Contrast:** tuned for the dark ramp - chrome/silver on cavern/deep pass AA for text; status colors are used at sizes/weights that pass, and are **always paired with a word** (never color-alone); steel used only at ≥ 12pt.
 - **Attribution & clarity:** the actor is always visible (kiosk chip); PINs never shown; destructive actions are labelled, confirmed, and reasoned.
 - **No dark-pattern urgency:** operational alerts state facts and a next action; nothing manufactures pressure.
 
 ---
 
-# PART J — FUTURE EXPANSION
+# PART J - FUTURE EXPANSION
 
-The architecture grows by adding **parties, locations, and object types** — never by rebuilding the shell. Each below is a placement, not a promise:
+The architecture grows by adding **parties, locations, and object types** - never by rebuilding the shell. Each below is a placement, not a promise:
 
-- **Multi-branch / HQ:** a `branch` scope on the shell — a branch switcher in the top bar; the Studio Board, Schedule, Inventory, Reports all filter by branch; HQ is a role that sees an all-branch roll-up (a Reports/Office aggregation), with per-branch drill-down. The board/table components are reused with a branch dimension.
+- **Multi-branch / HQ:** a `branch` scope on the shell - a branch switcher in the top bar; the Studio Board, Schedule, Inventory, Reports all filter by branch; HQ is a role that sees an all-branch roll-up (a Reports/Office aggregation), with per-branch drill-down. The board/table components are reused with a branch dimension.
 - **Franchise:** franchisee = a branch with a restricted Office (their own money, not HQ's); the permission grid gains a franchise role; audit + close are per-branch; HQ sees consolidated reports and standards compliance.
 - **Warehouse / Purchase Orders:** Inventory grows a **Suppliers** entity and a **Purchase Order** workflow (draft → sent → received → stock-in), plus reorder automation off the existing reorder points. Slots into the WAREHOUSE group; recipes and auto-deduction already exist to feed it.
-- **Fleet customers:** a customer that is an organization owning many vehicles — the Customer 360 becomes a fleet view (roll-up + per-vehicle), bulk booking, consolidated invoicing/terms; reuses the customer/vehicle/booking graph with a party-group.
+- **Fleet customers:** a customer that is an organization owning many vehicles - the Customer 360 becomes a fleet view (roll-up + per-vehicle), bulk booking, consolidated invoicing/terms; reuses the customer/vehicle/booking graph with a party-group.
 - **Insurance partners:** insurance-claim jobs as a **Job kind** with claim metadata + partner billing; the Vehicle timeline and Records already hold the evidence chain claims need; a partner role with scoped access to relevant jobs/photos.
-- **OEM integrations:** vehicle-data / warranty lookups feeding the Vehicle profile (VIN decode, service intervals) and the customer twin; enters as read integrations on the Vehicle profile and as Signals on the shared vehicle model — no new top-level surface.
+- **OEM integrations:** vehicle-data / warranty lookups feeding the Vehicle profile (VIN decode, service intervals) and the customer twin; enters as read integrations on the Vehicle profile and as Signals on the shared vehicle model - no new top-level surface.
 
-**Growth law (staff side):** a new capability lands as a new object type, a new party/role, or a new branch dimension on existing components — and appears as at most one new nav item in its mode group. If it needs a third mode or a parallel app, the model is wrong. Anything shipped must be **true** (real data/workflow) and **operational** (reduces effort), never a placeholder destination.
+**Growth law (staff side):** a new capability lands as a new object type, a new party/role, or a new branch dimension on existing components - and appears as at most one new nav item in its mode group. If it needs a third mode or a parallel app, the model is wrong. Anything shipped must be **true** (real data/workflow) and **operational** (reduces effort), never a placeholder destination.
 
 ---
 
-*End of specification. Design only — no implementation, no code, no commits. Awaiting review.*
+*End of specification. Design only - no implementation, no code, no commits. Awaiting review.*

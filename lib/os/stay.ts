@@ -3,8 +3,8 @@
  *
  * `lib/cx/care.ts` carried a progress fraction and an ETA because the old
  * tracker drew a bar. The Stay draws no bar: it says which act the car is in,
- * what the studio actually wrote about it, who has it, and — only when it is
- * genuinely known — roughly when it will be done. Everything here is derived
+ * what the studio actually wrote about it, who has it, and - only when it is
+ * genuinely known - roughly when it will be done. Everything here is derived
  * from the real booking + job; nothing is estimated into a percentage and
  * nothing is invented when the studio has been quiet.
  */
@@ -28,7 +28,7 @@ export interface StayModel {
   /** the act the car is in right now */
   act: CareAct;
   acts: StayAct[];
-  /** the visit is over — it belongs to the Chapter, not the Stay */
+  /** the visit is over - it belongs to the Chapter, not the Stay */
   archived: boolean;
   cancelled: boolean;
   /** the studio's own words for this act when it left a note, else the act line */
@@ -41,7 +41,7 @@ export interface StayModel {
   arrivalPhoto?: string;
   craftPhoto?: string;
   finishedPhoto?: string;
-  /** the newest photo of any kind — what the stage shows */
+  /** the newest photo of any kind - what the stage shows */
   latestPhoto?: string;
   /** one honest line about time, or nothing at all */
   timing: string | null;
@@ -110,7 +110,7 @@ export function deriveStay(booking: Booking, job: Job | null, now = new Date()):
 }
 
 /**
- * One line about time — or silence. A planned finish is only offered while the
+ * One line about time - or silence. A planned finish is only offered while the
  * car is in care and the studio has actually taken it in; once it runs past
  * that plan the app says so plainly rather than counting anything down.
  */
@@ -123,6 +123,6 @@ function timingLine(a: {
   const durationMin = a.booking.serviceDurationMinutes;
   if (!durationMin) return null;
   const planned = new Date(a.arrivedAt.getTime() + durationMin * 60000);
-  if (a.now > planned) return 'Running longer than planned — the work sets the pace.';
+  if (a.now > planned) return 'Running longer than planned - the work sets the pace.';
   return `Planned finish around ${fmtClock(planned)}.`;
 }

@@ -2,7 +2,7 @@
 /**
  * The Stay's act renderer (design system §7.8): stage ground, evidence above,
  * act title + narration below, the five acts as words with an assent check on
- * the ones that are done. No bar, no percentage, no countdown — the act row is
+ * the ones that are done. No bar, no percentage, no countdown - the act row is
  * the whole of the progress language.
  */
 import Image from 'next/image';
@@ -44,7 +44,7 @@ export default function MomentStage({
     }}>
       <div style={{ position: 'relative', flex: '0 0 55%', minHeight: '52vh' }}>
         {photo
-          ? <Image src={photo} alt={photoAlt ?? `${ACT_TITLE[act]} — the studio’s photograph`} fill
+          ? <Image src={photo} alt={photoAlt ?? `${ACT_TITLE[act]} - the studio’s photograph`} fill
               style={{ objectFit: 'cover' }} sizes="100vw" priority />
           : fallback}
         <div aria-hidden style={{
@@ -78,7 +78,7 @@ export default function MomentStage({
           {acts.map(a => (
             <li
               key={a.act}
-              aria-label={`${a.title} — ${STATE_WORD[a.state]}`}
+              aria-label={`${a.title} - ${STATE_WORD[a.state]}`}
               aria-current={a.state === 'current' ? 'step' : undefined}
               style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--st-hair)' }}
             >
@@ -100,7 +100,7 @@ export default function MomentStage({
   );
 }
 
-/** The assent tick — drawn once; instant under reduced motion (MotionConfig). */
+/** The assent tick - drawn once; instant under reduced motion (MotionConfig). */
 function Check() {
   return (
     <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flex: '0 0 auto' }}>

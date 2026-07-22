@@ -19,7 +19,7 @@ export default function Layer({ title, action, children }: LayerProps) {
   if (!children) return null;
   return (
     <motion.section
-      // Content is visible immediately (craft law) — the reveal is position-only,
+      // Content is visible immediately (craft law) - the reveal is position-only,
       // so a missed IntersectionObserver tick can never hide a layer.
       initial={{ y: 8 }}
       whileInView={{ y: 0 }}

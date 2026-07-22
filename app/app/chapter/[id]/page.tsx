@@ -1,6 +1,6 @@
 'use client';
 /**
- * The owner's Chapter — `/app/chapter/[id]` (P2D1 §C5).
+ * The owner's Chapter - `/app/chapter/[id]` (P2D1 §C5).
  *
  * The permanent record of one completed visit, read by the person whose car
  * it is: the work, the evidence, the people, the promise, the amount and the
@@ -61,7 +61,7 @@ export default function OwnerChapterPage() {
     [booking, job, invoice],
   );
 
-  /* what this car's completed work protects it with — the one protection
+  /* what this car's completed work protects it with - the one protection
      engine, not a second derivation */
   const protections = useMemo(() => {
     if (!booking) return [];

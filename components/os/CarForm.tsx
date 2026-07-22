@@ -2,8 +2,8 @@
 /**
  * The car form (P2D1 §C10 moment 3 · `?sheet=car-form`).
  *
- * The car as its owner says it, its plate, and — when the studio's image
- * service is configured — its portrait. Nothing else: no colour swatches and
+ * The car as its owner says it, its plate, and - when the studio's image
+ * service is configured - its portrait. Nothing else: no colour swatches and
  * no body-type grid, because the photograph carries what a dropdown only
  * pretended to. The same form adds a car during onboarding and edits one
  * from Papers; it owns the write, the host just listens.
@@ -21,7 +21,7 @@ import { Title, Body, Whisper } from './text';
 interface CarFormProps {
   /** pass a vehicle to edit it; omit to add one */
   editing?: Vehicle | null;
-  /** onboarding words the form differently — it is the first car, not another */
+  /** onboarding words the form differently - it is the first car, not another */
   first?: boolean;
   onSaved: (vehicle: Vehicle) => void;
 }
@@ -45,7 +45,7 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
       const { url } = await uploadImage(`vehicles/${user?.uid ?? 'new'}-${Date.now()}`, file);
       setPhoto(url);
     } catch {
-      // uploads are optional — the plate is a first-class portrait
+      // uploads are optional - the plate is a first-class portrait
       setError('That photo didn’t reach us. The car looks good without one too.');
     } finally {
       setUploading(false);
@@ -73,7 +73,7 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
         onSaved(next);
       }
     } catch {
-      setError('That didn’t reach the studio — try again.');
+      setError('That didn’t reach the studio - try again.');
       setBusy(false);
     }
   };
@@ -120,7 +120,7 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
           {photo ? 'Change the photo' : 'Add a photo'}
         </Action>
         <Whisper style={{ marginTop: 'var(--st-hair)' }}>
-          A front three-quarter, in good light — it becomes your home screen.
+          A front three-quarter, in good light - it becomes your home screen.
         </Whisper>
       </div>
 

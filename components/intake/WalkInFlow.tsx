@@ -25,7 +25,7 @@ export default function WalkInFlow({ onDone }: {
 } = {}) {
   const router = useRouter();
   const { kioskEmployee, user } = useAppStore();
-  // Kiosk PIN identity wins; otherwise staff act as themselves — managers on
+  // Kiosk PIN identity wins; otherwise staff act as themselves - managers on
   // their admin session, technicians on their personal employee session.
   const operator = kioskEmployee
     ?? (user?.role === 'admin' ? { id: user.uid, name: user.name || 'Manager' }
@@ -55,7 +55,7 @@ export default function WalkInFlow({ onDone }: {
   const [services, setServices] = useState<Service[]>([]);
   const [cat, setCat] = useState('Washing');
   const [selected, setSelected] = useState<Map<string, JobServiceItem>>(new Map());
-  // live floor state — the physical resource (Wash / Protection Bay) is
+  // live floor state - the physical resource (Wash / Protection Bay) is
   // derived from the chosen services; nobody picks a bay number
   const [floorJobs, setFloorJobs] = useState<Job[]>([]);
   useEffect(() => subscribeTodaysJobs(setFloorJobs, () => {}), []);
@@ -340,7 +340,7 @@ export default function WalkInFlow({ onDone }: {
                         </p>
                       </>
                     ) : (
-                      <p className="font-body text-sm font-600" style={{ color: 'var(--success)' }}>Free now — work can start immediately.</p>
+                      <p className="font-body text-sm font-600" style={{ color: 'var(--success)' }}>Free now - work can start immediately.</p>
                     )}
                   </div>
                 );

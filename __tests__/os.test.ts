@@ -61,7 +61,7 @@ describe('truthOf priority', () => {
       visits: [visit('in_progress'), visit('confirmed')],
       protections: [{ label: 'Ceramic coat', expiresOn: iso(5) }],
       now: NOW,
-    })).toBe('In the studio — in care.');
+    })).toBe('In the studio - in care.');
   });
   it('ready reads as ready', () => {
     expect(truthOf({ visits: [visit('ready_for_delivery')], protections: [], now: NOW }))
@@ -79,7 +79,7 @@ describe('truthOf priority', () => {
     expect(truthOf({
       visits: [], protections: [{ label: 'Ceramic coat', expiresOn: iso(5) }],
       lastCaredOn: iso(-60), now: NOW,
-    })).toBe('Ceramic coat — 6 days of protection left.');
+    })).toBe('Ceramic coat - 6 days of protection left.');
     expect(truthOf({
       visits: [], protections: [{ label: 'Ceramic coat', expiresOn: iso(200) }], now: NOW,
     })).toBe('All quiet. Protected.');
@@ -173,7 +173,7 @@ describe('the Stay model', () => {
   it('offers a planned finish only while it is still a plan', () => {
     expect(deriveStay(booking(), job(), NOW).timing).toMatch(/^Planned finish around /);
     const late = deriveStay(booking({ serviceDurationMinutes: 30 }), job(), NOW);
-    expect(late.timing).toBe('Running longer than planned — the work sets the pace.');
+    expect(late.timing).toBe('Running longer than planned - the work sets the pace.');
   });
 
   it('says nothing about time at Ready, or before the car has arrived', () => {
@@ -240,7 +240,7 @@ describe('the Chapter model', () => {
 
   it('tells the work as services plus the studio’s own notes, inventing nothing', () => {
     const c = deriveChapter({ booking: booking(), job: job(), invoice: null });
-    expect(c.work).toEqual(['Kovalent Graphene', 'In care — Two-stage paint correction.']);
+    expect(c.work).toEqual(['Kovalent Graphene', 'In care - Two-stage paint correction.']);
   });
 
   it('names the people and measures the time actually recorded', () => {
@@ -355,7 +355,7 @@ describe('the Club model', () => {
     expect(cycleDaysLeft(c, NOW)).toBe(11);
   });
 
-  it('holds a pending join without a context line — the card says it', () => {
+  it('holds a pending join without a context line - the card says it', () => {
     const c = clubModel({ membership: sub({ status: 'pending' }), completed: [], now: NOW });
     expect(c.state).toBe('pending');
     expect(c.awaitingPayment).toBe(true);
@@ -366,7 +366,7 @@ describe('the Club model', () => {
     expect(clubModel({ membership: sub({ endDate: iso(-3) }), completed: [], now: NOW }).state).toBe('grace');
     const lapsed = clubModel({ membership: sub({ endDate: iso(-40) }), completed: [], now: NOW });
     expect(lapsed.state).toBe('lapsed');
-    expect(lapsed.context).toBe('Rejoin any time — your history holds.');
+    expect(lapsed.context).toBe('Rejoin any time - your history holds.');
     expect(clubModel({ membership: sub({ status: 'expired' }), completed: [], now: NOW }).state).toBe('lapsed');
   });
 
@@ -449,7 +449,7 @@ describe('the concierge log', () => {
       } as unknown as Protection],
       membership: { id: 'm1', plan: 'Silver', status: 'active', startDate: '2026-07-05' } as unknown as Subscription,
     });
-    expect(rich.some(e => e.line === 'Ceramic coat applied — protected until July 2029.')).toBe(true);
+    expect(rich.some(e => e.line === 'Ceramic coat applied - protected until July 2029.')).toBe(true);
     expect(rich.some(e => e.line === 'The studio confirmed your Club membership on Silver.')).toBe(true);
   });
 

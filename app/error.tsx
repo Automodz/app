@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import Wordmark from '@/components/ui/Wordmark';
 
-/** Branded crash screen — recoverable, never a stack trace in the user's face. */
+/** Branded crash screen - recoverable, never a stack trace in the user's face. */
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center safe-page"
@@ -15,7 +15,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
         A hiccup, not a crash.
       </h1>
       <p className="font-body mt-3 max-w-xs" style={{ fontSize: 14.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.55)' }}>
-        Give it another try — your data is safe.
+        Give it another try - your data is safe.
       </p>
       <div className="mt-8 flex items-center gap-3">
         <button onClick={reset}

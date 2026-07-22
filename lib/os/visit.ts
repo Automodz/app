@@ -9,7 +9,7 @@ export type CareAct = 'received' | 'looked_over' | 'in_care' | 'final_checks' | 
 export type VisitPhase =
   | 'proposed'
   | 'agreed'
-  | 'live'      // one of the five acts — see careAct()
+  | 'live'      // one of the five acts - see careAct()
   | 'archived'
   | 'cancelled';
 
@@ -38,7 +38,7 @@ export function careAct(status: BookingStatus): CareAct | null {
 
 export const ACT_ORDER: CareAct[] = ['received', 'looked_over', 'in_care', 'final_checks', 'ready'];
 
-/** Act titles — Display copy (product design C1). */
+/** Act titles - Display copy (product design C1). */
 export const ACT_TITLE: Record<CareAct, string> = {
   received:     'Received',
   looked_over:  'Looked over',
@@ -55,7 +55,7 @@ export function isLive(b: Pick<Booking, 'status'>): boolean {
   return visitPhase(b.status) === 'live';
 }
 
-/** Act narration — the one sentence per act (voice law, Art. 8/13). */
+/** Act narration - the one sentence per act (voice law, Art. 8/13). */
 export const ACT_LINE: Record<CareAct, string> = {
   received:     'Your vehicle has arrived safely.',
   looked_over:  'A careful look before any work begins.',

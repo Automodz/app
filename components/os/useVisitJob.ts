@@ -1,7 +1,7 @@
 'use client';
 /**
- * useVisitJob — THE way a customer surface follows the job behind a visit.
- * One subscription per mounted consumer — the Stay is the only surface that
+ * useVisitJob - THE way a customer surface follows the job behind a visit.
+ * One subscription per mounted consumer - the Stay is the only surface that
  * follows a job live, so at most one listener exists at a time.
  * Dev-guarded seed keeps it exercisable without Firestore.
  */

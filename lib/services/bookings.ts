@@ -147,7 +147,7 @@ export const verifyPayment = async (bookingId: string) =>
 
 /**
  * Resource-aware availability for the customer booking flow.
- * The studio schedules its TWO resources (wash bay ×1, protection bay ×1) — a
+ * The studio schedules its TWO resources (wash bay ×1, protection bay ×1) - a
  * 3-day PPF blocks its bay for the whole span. Computed SERVER-SIDE
  * (/api/availability, Admin SDK) because Firestore rules stop customers
  * reading other people's bookings or any jobs, which is exactly the data

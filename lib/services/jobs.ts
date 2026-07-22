@@ -136,7 +136,7 @@ export const getJob = async (id: string): Promise<Job | null> => {
   return snap.exists() ? ({ id: snap.id, ...snap.data() } as Job) : null;
 };
 
-/** Live listener for ONE customer's job behind a booking — powers the
+/** Live listener for ONE customer's job behind a booking - powers the
  *  Live Care tracker. The customerId equality keeps the query inside the
  *  customer-reads-their-own security rule. */
 export const subscribeJobForBooking = (

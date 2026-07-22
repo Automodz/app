@@ -1,5 +1,5 @@
 /**
- * Resource-aware availability engine — PURE functions, no Firestore.
+ * Resource-aware availability engine - PURE functions, no Firestore.
  *
  * The studio has exactly TWO physical resources:
  *   wash bay        capacity 1   (all washes - no parallel washes)
@@ -10,7 +10,7 @@
  * Occupancy is computed from bookings + active jobs, expanded across WORKING
  * days (09:00–19:00): a 3-day PPF starting Monday 9AM blocks the PPF bay
  * through Wednesday close. Consumed by the /api/availability route (server,
- * Admin SDK — customers cannot read other bookings) and by staff surfaces
+ * Admin SDK - customers cannot read other bookings) and by staff surfaces
  * directly (BayStrip).
  */
 
@@ -68,7 +68,7 @@ export const expandIntervals = (
   let remaining = Math.max(0, o.durationMin);
   let date = o.date;
   let start = Math.min(Math.max(o.startMin, DAY_OPEN_MIN), DAY_CLOSE_MIN);
-  // hard cap at 14 working days — nothing the studio sells runs longer
+  // hard cap at 14 working days - nothing the studio sells runs longer
   for (let day = 0; day < 14 && remaining > 0; day++) {
     const avail = DAY_CLOSE_MIN - start;
     const used = Math.min(avail, remaining);
@@ -110,7 +110,7 @@ export const buildOccupancy = (occupants: Occupant[], resource: ResourceKey): Oc
 export const candidateSlots = (durationMin: number): string[] => {
   if (durationMin >= WORK_DAY_MIN) return ['09:00'];
   const slots: string[] = [];
-  // 30-min start granularity regardless of duration — an 8h ceramic can still
+  // 30-min start granularity regardless of duration - an 8h ceramic can still
   // start 09:30 after a buffered handover instead of losing the whole day
   const step = 30;
   for (let t = DAY_OPEN_MIN; t + durationMin <= DAY_CLOSE_MIN; t += step) {
@@ -200,7 +200,7 @@ export const bookingToOccupant = (
   };
 };
 
-/** Walk-in jobs only — booking-linked jobs are already counted via their booking. */
+/** Walk-in jobs only - booking-linked jobs are already counted via their booking. */
 export const walkInJobToOccupant = (
   j: JobLike,
   durationOf: (category: string, serviceName?: string) => number,

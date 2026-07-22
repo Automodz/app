@@ -1,5 +1,5 @@
 /**
- * The Term Engine — one implementation of the lifecycle shared by
+ * The Term Engine - one implementation of the lifecycle shared by
  * Protection and Membership (Constitution, Amendment record §4).
  *
  *   active → waning(30d) → expiring(7d) → grace(7d, membership only) → lapsed

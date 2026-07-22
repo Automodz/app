@@ -1,5 +1,5 @@
 /**
- * Dev-only seed data — companion to the AuthContext dev-auth shim.
+ * Dev-only seed data - companion to the AuthContext dev-auth shim.
  * Mock dev users cannot read Firestore, so customer surfaces seed from here
  * to be exercisable locally (Live Activity, booking flow, Care tracker).
  * Never imported into any production path without the dev-uid guard.
@@ -20,7 +20,7 @@ export const DEV_VEHICLE = {
   createdAt: Timestamp.fromDate(new Date('2026-03-01T12:00:00')),
 } as unknown as Vehicle;
 
-/** Completed ceramic from April — makes protection ACTIVE on the passport. */
+/** Completed ceramic from April - makes protection ACTIVE on the passport. */
 export const DEV_CERAMIC_BOOKING = {
   id: 'dev-ceramic', userId: 'dev-customer', vehicleId: 'dev-car',
   vehicleName: 'BMW M340i', vehicleRegNo: 'GJ01AB1234',
@@ -51,7 +51,7 @@ export const DEV_COMPLETED_BOOKING = {
   jobId: 'dev-job-done',
 } as unknown as Booking;
 
-/** An active Club membership, mid-cycle — the Club layer needs a real one. */
+/** An active Club membership, mid-cycle - the Club layer needs a real one. */
 export const DEV_MEMBERSHIP = {
   id: 'dev-sub', userId: 'dev-customer', userName: 'Aarav Mehta',
   userEmail: 'customer@dev.automodz.local', userPhone: '',
@@ -104,7 +104,7 @@ export const DEV_JOBS: Record<string, Job> = {
     }],
     assignedIds: ['e1'],
     statusHistory: [
-      { status: 'checked_in', at: tsMinAgo(135), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma', note: 'Walked the car with the owner — noted stone chip on bonnet.' },
+      { status: 'checked_in', at: tsMinAgo(135), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma', note: 'Walked the car with the owner - noted stone chip on bonnet.' },
       { status: 'in_progress', at: tsMinAgo(110), byEmployeeId: 'e1', byEmployeeName: 'Ravi Sharma', note: 'Decontamination wash and clay complete.' },
     ],
     photos: [

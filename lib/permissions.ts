@@ -1,5 +1,5 @@
 /**
- * Permission matrix — the single code definition of who may do what.
+ * Permission matrix - the single code definition of who may do what.
  * Consumed by the staff shell (app/admin/layout.tsx) and anywhere else a
  * role decision is made. There are exactly four ways a human uses the staff
  * side; the customer app is a separate surface with its own auth.
@@ -8,7 +8,7 @@
  *     Everything: Studio + Office, business settings, pricing, overrides
  *     (unpaid-delivery override, assignee edits, shift reopen).
  *   technician (role 'employee', personal session)
- *     Studio only. No finance, no reports, no pricing, no Office routes —
+ *     Studio only. No finance, no reports, no pricing, no Office routes -
  *     the shell hard-redirects them to the Studio Board.
  *   kiosk (PIN unlock riding the owner's admin session on the shared tablet)
  *     Studio actions attributed to the unlocked employee (actor =

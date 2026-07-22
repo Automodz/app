@@ -1,10 +1,10 @@
 'use client';
 /**
- * ONBOARDING — `/app/welcome` (P2D1 §C10 · P2D3 C-14), once.
+ * ONBOARDING - `/app/welcome` (P2D1 §C10 · P2D3 C-14), once.
  *
  * Four moments, forward only, no step dots and no tutorial: a welcome, the
- * person, the car, and the portrait. It exists to produce a photographed —
- * or at least named — car, so that the Glance has something true to open on.
+ * person, the car, and the portrait. It exists to produce a photographed -
+ * or at least named - car, so that the Glance has something true to open on.
  * The last moment hands over by assembling the Glance over the car itself.
  *
  * It never returns: a garage with a car in it is proof enough that this has
@@ -71,7 +71,7 @@ export default function WelcomePage() {
         <motion.section {...rise}>
           <Display>Welcome to AutoModz.</Display>
           <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>
-            This is where your car will live — its care, its protection, its story.
+            This is where your car will live - its care, its protection, its story.
             It starts with the car.
           </Body>
           <div style={{ marginTop: 'var(--st-rest)' }}>

@@ -1,6 +1,6 @@
 'use client';
 /**
- * The customer product shell (Constitution P1). No navigation chrome — the
+ * The customer product shell (Constitution P1). No navigation chrome - the
  * Glance never gains chrome; the Capsule is the only fixed element and it
  * belongs to the page. This layout only guards auth and loads the objects.
  */
@@ -58,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     // reducedMotion="user" makes every framer animation under the customer
-    // tree honour the OS setting (transform/reveal off, opacity kept) — one
+    // tree honour the OS setting (transform/reveal off, opacity kept) - one
     // reusable guard instead of per-component checks.
     <MotionConfig reducedMotion="user">
       <div className="studio" style={{ minHeight: '100vh', background: 'var(--st-paper)' }}>

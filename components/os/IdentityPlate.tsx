@@ -2,7 +2,7 @@
  * The identity plate (design system §7.1, photo-absent state).
  *
  * Most cars have no photograph, so the photo-less rendering is the *default*
- * state, not a fallback — it is designed to the same bar as photography:
+ * state, not a fallback - it is designed to the same bar as photography:
  * a gallery-toned material, one hairline, the car's own words, the plate in
  * its own glyphs, and the studio's mark held quiet underneath.
  *
@@ -32,7 +32,7 @@ interface IdentityPlateProps {
 
 /**
  * The owner writes one name ("Mercedes-AMG C 43"); the marque is its first
- * word and the model is the rest. A single-word name stays whole — the plate
+ * word and the model is the rest. A single-word name stays whole - the plate
  * never invents a marque it wasn't given.
  */
 function split(name: string): { marque?: string; model: string } {
@@ -42,7 +42,7 @@ function split(name: string): { marque?: string; model: string } {
   return { marque: trimmed.slice(0, cut), model: trimmed.slice(cut + 1) };
 }
 
-/** The plate's own glyphs — the one place ALL-CAPS is allowed with the wordmark. */
+/** The plate's own glyphs - the one place ALL-CAPS is allowed with the wordmark. */
 function Registration({ value, style }: { value: string; style?: CSSProperties }) {
   return (
     <span

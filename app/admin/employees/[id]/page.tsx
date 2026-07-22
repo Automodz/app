@@ -148,7 +148,7 @@ export default function EmployeePayrollPage() {
         </div>
       </div>
 
-      {/* Month hours — derived from the automatic shift timeline */}
+      {/* Month hours - derived from the automatic shift timeline */}
       {attendance.length > 0 && (() => {
         const maths = attendance.map(a => shiftMath(a));
         const tot = (k: 'workedMin' | 'breakMin' | 'overtimeMin') =>
@@ -331,7 +331,7 @@ export default function EmployeePayrollPage() {
         </div>
       )}
 
-      {/* Service performance — one card: per-category averages + wash detail */}
+      {/* Service performance - one card: per-category averages + wash detail */}
       {(() => {
         const cs = employeeCategoryStats(jobsWorked, id);
         const w = employeeWashStats(jobsWorked, id);
@@ -349,7 +349,7 @@ export default function EmployeePayrollPage() {
                 { label: 'Revenue handled', value: formatCurrency(cs.revenue) },
                 ...(w.washesDone ? [
                   { label: 'Active wash time', value: fmtMin(w.activeWorkMin) },
-                  { label: 'Completion rate', value: w.completionRate !== null ? `${w.completionRate}%` : '—' },
+                  { label: 'Completion rate', value: w.completionRate !== null ? `${w.completionRate}%` : '-' },
                 ] : []),
               ].map(s => (
                 <div key={s.label} className="p-3 rounded-xl" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>

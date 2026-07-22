@@ -3,7 +3,7 @@
  *
  * One completed visit, read as a document: what was done, the evidence in the
  * order it happened, who did it and for how long, what now protects the car,
- * and — for the owner only — what it cost and which papers exist. Every field
+ * and - for the owner only - what it cost and which papers exist. Every field
  * is read off the real booking, job and invoice; when a fact wasn't recorded
  * the Chapter simply doesn't carry it (silence, never a placeholder).
  */
@@ -60,7 +60,7 @@ export function deriveChapter(args: {
   booking: Booking;
   job: Job | null;
   invoice: Invoice | null;
-  /** the invoice's own share token — the owner has it, the public link carries it */
+  /** the invoice's own share token - the owner has it, the public link carries it */
   invoiceToken?: string;
 }): ChapterModel {
   const { booking, job, invoice, invoiceToken } = args;
@@ -73,7 +73,7 @@ export function deriveChapter(args: {
   const hero = evidence.find(e => e.act === 'finished')?.url ?? evidence[0]?.url;
 
   /* the work: the services actually performed, then any note the studio left
-     along the way — its own sentences, never a generated summary */
+     along the way - its own sentences, never a generated summary */
   const services = job?.serviceItems?.length
     ? job.serviceItems.map(i => i.serviceName)
     : [booking.serviceName];
@@ -81,7 +81,7 @@ export function deriveChapter(args: {
     .filter(h => h.note?.trim())
     .map(h => {
       const act: CareAct | null = actFromJobStatus(h.status);
-      return act ? `${ACT_TITLE[act]} — ${h.note!.trim()}` : h.note!.trim();
+      return act ? `${ACT_TITLE[act]} - ${h.note!.trim()}` : h.note!.trim();
     });
   const work = [...services, ...notes];
 
@@ -131,7 +131,7 @@ export function deriveChapter(args: {
   };
 }
 
-/** "6h 20m in the studio" / "45 minutes in the studio" — never a bare number. */
+/** "6h 20m in the studio" / "45 minutes in the studio" - never a bare number. */
 export const timeInCare = (minutes: number): string => {
   if (minutes < 60) return `${minutes} minutes in the studio`;
   const h = Math.floor(minutes / 60);

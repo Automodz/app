@@ -1,10 +1,10 @@
 'use client';
 /**
- * THE STAY — `/app/visit/[id]` (P2D1 §C4 · P2D3 C-12).
+ * THE STAY - `/app/visit/[id]` (P2D1 §C4 · P2D3 C-12).
  *
  * The hero moment: while the car is in the studio, this surface answers
  * "where is my car and is it okay?" continuously, and turns waiting into
- * hospitality. Everything on it is the floor's own record — the act the job
+ * hospitality. Everything on it is the floor's own record - the act the job
  * is in, the note the craftsman wrote, the photograph they took, who has the
  * car, when it arrived. Nothing is estimated into a bar and nothing is said
  * when the studio has said nothing.
@@ -28,7 +28,7 @@ import Action from '@/components/os/Action';
 import { Display, Emphasis, Body, Data, Whisper } from '@/components/os/text';
 
 /**
- * The takeover breath — the evidence settles from 1.04 as the stage fades up.
+ * The takeover breath - the evidence settles from 1.04 as the stage fades up.
  * Under reduced motion the transform is dropped entirely (an `initial` scale
  * would otherwise stay applied, since framer holds transforms still).
  */
@@ -41,7 +41,7 @@ const breath = (reduced: boolean | null) =>
         transition: { duration: scene, ease: studioEase },
       };
 
-/** A finished visit is a Chapter — the Stay hands it straight over. */
+/** A finished visit is a Chapter - the Stay hands it straight over. */
 const chapterHref = (bookingId: string) => `/app/chapter/${bookingId}`;
 
 export default function StayPage() {
@@ -66,7 +66,7 @@ export default function StayPage() {
     else if (isCancelled) router.replace('/app');
   }, [isArchived, isCancelled, id, router]);
 
-  /** Put the visit down — the car (and the capsule's live line) is behind it. */
+  /** Put the visit down - the car (and the capsule's live line) is behind it. */
   const collapse = () => router.replace('/app');
   const onDragEnd = (_: unknown, info: PanInfo) => {
     if (info.offset.y > 120 || info.velocity.y > 500) collapse();
@@ -90,7 +90,7 @@ export default function StayPage() {
   const name = vehicle?.name ?? booking.vehicleName;
   const registration = vehicle?.registrationNumber ?? booking.vehicleRegNo;
 
-  /* the plate speaks the stage's rendering — the photo-less Stay is never a
+  /* the plate speaks the stage's rendering - the photo-less Stay is never a
      black box, and the identity language is not duplicated to achieve it */
   const plate = (
     <div style={{
@@ -134,7 +134,7 @@ export default function StayPage() {
               acts={stay.acts}
               narration={stay.narration}
               photo={stay.latestPhoto}
-              photoAlt={`The ${name} at the studio — ${stay.acts.find(a => a.state === 'current')?.title.toLowerCase()}`}
+              photoAlt={`The ${name} at the studio - ${stay.acts.find(a => a.state === 'current')?.title.toLowerCase()}`}
               fallback={plate}
               timing={stay.timing}
               meta={<Facts stay={stay} name={name} />}
@@ -237,7 +237,7 @@ function Reveal({
             {covered
               ? 'Covered by the Club.'
               : stay.paid
-              ? 'Paid — thank you.'
+              ? 'Paid - thank you.'
               : <>Pay at the desk · <Data tone="over-2">₹{stay.amount.toLocaleString('en-IN')}</Data></>}
           </Body>
 

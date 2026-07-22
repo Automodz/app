@@ -5,7 +5,7 @@ import { RESOURCE_DEFAULTS, type ResourceConfig } from '../availability';
 /**
  * Studio resource configuration (studioConfig/resources). Read by staff
  * surfaces (BayStrip) and edited in Studio Settings; the availability API
- * reads the same doc server-side. Bay capacities are physical (1 each) —
+ * reads the same doc server-side. Bay capacities are physical (1 each) -
  * only wash concurrency is configurable.
  */
 export const getResourceConfig = async (): Promise<ResourceConfig> => {
