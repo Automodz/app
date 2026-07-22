@@ -38,6 +38,7 @@ import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
 import JoinClub from '@/components/os/JoinClub';
 import CarForm from '@/components/os/CarForm';
 import { markWelcomed, hasBeenWelcomed } from '@/lib/os/welcome';
+import { useOnline } from '@/components/os/useOnline';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
 import ProtectionRecord from '@/components/os/ProtectionRecord';
@@ -875,6 +876,7 @@ function ManageVisitSheet({
   open: boolean; booking: Booking | null; onClose: () => void;
 }) {
   const { user, bookings, setBookings, cancelBookingInStore } = useAppStore();
+  const online = useOnline();
   const [mode, setMode] = useState<'idle' | 'reschedule' | 'confirmCancel'>('idle');
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
@@ -906,6 +908,7 @@ function ManageVisitSheet({
 
   const doReschedule = async () => {
     if (!booking || !date || !time) return;
+    if (!online) { setError('You’re offline — reconnect to change this visit.'); return; }
     setBusy(true); setError(null);
     try {
       await rescheduleBooking(booking.id, date, time);
@@ -919,6 +922,7 @@ function ManageVisitSheet({
 
   const doCancel = async () => {
     if (!booking) return;
+    if (!online) { setError('You’re offline — reconnect to cancel this visit.'); return; }
     setBusy(true); setError(null);
     try {
       await cancelBooking(booking.id);
@@ -1034,6 +1038,7 @@ function ArrangeSheet({
   membership: Subscription | null; prefillCat: string | null; onClose: () => void;
 }) {
   const { user, addBookingToStore } = useAppStore();
+  const online = useOnline();
   const active = useMemo(() => services.filter(s => s.active !== false), [services]);
 
   const [service, setService] = useState<Service | null>(null);
@@ -1072,6 +1077,7 @@ function ArrangeSheet({
 
   const confirm = async () => {
     if (!user || !service || !date || !time) return;
+    if (!online) { setError('You’re offline — reconnect to arrange this visit.'); return; }
     setBusy(true); setError(null);
     const now = Timestamp.now();
     const payload: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {

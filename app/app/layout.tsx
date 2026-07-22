@@ -13,6 +13,7 @@ import {
 } from '@/lib/firebaseService';
 import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING } from '@/lib/cx/devseed';
 import { Whisper } from '@/components/os/text';
+import OfflineBar from '@/components/os/OfflineBar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // reusable guard instead of per-component checks.
     <MotionConfig reducedMotion="user">
       <div className="studio" style={{ minHeight: '100vh', background: 'var(--st-paper)' }}>
+        <OfflineBar />
         {children}
       </div>
     </MotionConfig>

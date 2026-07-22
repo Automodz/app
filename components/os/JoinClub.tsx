@@ -17,6 +17,7 @@ import { MEMBERSHIP_PLANS } from '@/lib/types';
 import { createSubscription } from '@/lib/services/subscriptions';
 import { useAppStore } from '@/lib/store';
 import { cadenceLine } from '@/lib/os/club';
+import { useOnline } from './useOnline';
 import Action from './Action';
 import { Title, Emphasis, Body, Data, Whisper } from './text';
 
@@ -39,6 +40,7 @@ interface JoinClubProps {
 
 export default function JoinClub({ vehicleName, washes, rejoining, onJoined }: JoinClubProps) {
   const { user } = useAppStore();
+  const online = useOnline();
   const [plan, setPlan] = useState<MembershipPlan | null>(null);
   const [method, setMethod] = useState<'cash' | 'upi'>('cash');
   const [busy, setBusy] = useState(false);
@@ -51,6 +53,7 @@ export default function JoinClub({ vehicleName, washes, rejoining, onJoined }: J
 
   const join = async () => {
     if (!user || !chosen) return;
+    if (!online) { setError('You’re offline — reconnect to join the Club.'); return; }
     setBusy(true); setError(null);
     const start = todayISO();
     const payload: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'> = {
