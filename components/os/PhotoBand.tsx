@@ -7,6 +7,7 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { Emphasis, Body, Whisper } from './text';
+import { plateSurface } from './IdentityPlate';
 
 type Ratio = 'band' | 'memory' | 'hero';
 const ASPECT: Record<Ratio, string> = { band: '21 / 9', memory: '4 / 3', hero: '3 / 2' };
@@ -31,7 +32,8 @@ export default function PhotoBand({
       <div style={{
         position: 'relative', width: '100%', aspectRatio: ASPECT[ratio],
         borderRadius: 'var(--st-r-sheet)', overflow: 'hidden',
-        background: src ? 'var(--st-stage)' : 'var(--st-linen)',
+        // photography sits on stage; a photo-less frame uses the shared plate material
+        ...(src ? { background: 'var(--st-stage)' } : plateSurface),
       }}>
         {src && (
           <>

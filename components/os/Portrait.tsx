@@ -5,7 +5,8 @@
  */
 import Image from 'next/image';
 import { useState, type ReactNode } from 'react';
-import { DisplayLarge, Data } from './text';
+import { DisplayLarge } from './text';
+import IdentityPlate from './IdentityPlate';
 import TruthLine from './TruthLine';
 
 interface PortraitProps {
@@ -22,8 +23,12 @@ export default function Portrait({ name, truth, photo, plate, minHeight = '92vh'
   return (
     <div style={{
       position: 'relative', minHeight, width: '100%', overflow: 'hidden',
-      background: 'var(--st-stage)',
+      // stage is for photography only; without a photo the portrait is paper
+      background: photo ? 'var(--st-stage)' : 'var(--st-gallery)',
       display: 'flex', alignItems: 'flex-end',
+      // overlays (page dots) read their ink from the portrait's own rendering
+      ['--st-portrait-fg' as string]: photo ? 'var(--st-over)' : 'var(--st-ink)',
+      ['--st-portrait-fg-2' as string]: photo ? 'var(--st-over-2)' : 'var(--st-ink-3)',
     }}>
       {photo ? (
         <>
@@ -46,13 +51,7 @@ export default function Portrait({ name, truth, photo, plate, minHeight = '92vh'
           }} />
         </>
       ) : (
-        <div style={{
-          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 12,
-        }}>
-          <DisplayLarge tone="over" style={{ textAlign: 'center', padding: '0 24px' }}>{name}</DisplayLarge>
-          {plate && <Data tone="over-2" style={{ fontSize: 16 }}>{plate}</Data>}
-        </div>
+        <IdentityPlate name={name} registration={plate} variant="portrait" />
       )}
 
       <div style={{
@@ -68,7 +67,7 @@ export default function Portrait({ name, truth, photo, plate, minHeight = '92vh'
         )}
         {!photo && (
           <div style={{ textAlign: 'center' }}>
-            <TruthLine text={truth} onPhoto />
+            <TruthLine text={truth} />
           </div>
         )}
       </div>

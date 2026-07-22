@@ -31,6 +31,7 @@ import { proposalFor } from '@/lib/os/proposal';
 import { deriveProtection, PROTECTION_WORD } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
+import { plateSurface } from '@/components/os/IdentityPlate';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
 import PhotoBand from '@/components/os/PhotoBand';
@@ -277,7 +278,7 @@ function Glance() {
                   {[...vehicles, null].map((_, i) => (
                     <span key={i} style={{
                       width: 4, height: 4, borderRadius: 999,
-                      background: i === page ? 'var(--st-over)' : 'var(--st-over-2)',
+                      background: i === page ? 'var(--st-portrait-fg)' : 'var(--st-portrait-fg-2)',
                     }} />
                   ))}
                 </div>
@@ -539,15 +540,16 @@ const fmtDay = (iso: string) =>
 function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: boolean }) {
   return (
     <div style={{
+      ...plateSurface,
       minWidth: '100%', minHeight: full ? '100vh' : '92vh',
-      background: 'var(--st-stage)', scrollSnapAlign: 'start',
+      scrollSnapAlign: 'start',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: 12, padding: 24, textAlign: 'center',
     }}>
-      <Display tone="over">Another car?</Display>
-      <Body tone="over-2">The garage has room.</Body>
+      <Display>{full ? 'Welcome to AutoModz.' : 'Another car?'}</Display>
+      <Body tone="ink-2">The garage has room.</Body>
       <div style={{ marginTop: 24 }}>
-        <Action variant="on-photo" onClick={onAdd}>Add a car</Action>
+        <Action onClick={onAdd}>Add a car</Action>
       </div>
     </div>
   );
