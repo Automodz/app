@@ -395,7 +395,7 @@ function Glance() {
               plate={v.registrationNumber}
               photo={v.photo}
               truth={v.id === vehicle?.id && model ? model.truth : ''}
-              minHeight="80vh"
+              minHeight="100svh"
             >
               {/* avatar → you sheet */}
               <button
@@ -435,9 +435,24 @@ function Glance() {
         </div>
       </div>
 
-      {/* ── layers for the visible vehicle ── */}
+      {/* ── the DECK: a physical surface that lifts over the vehicle stage,
+          carrying the car's live world. Not sections under a hero - a raised
+          deck floating over the car, Wallet/car-OS depth. ── */}
       {!onAddPage && vehicle && model && (
-        <div style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement))' }}>
+        <div style={{
+          position: 'relative', zIndex: 1,
+          marginTop: 'calc(-1 * var(--st-rest))',
+          borderTopLeftRadius: 30, borderTopRightRadius: 30,
+          background: 'var(--st-paper)',
+          boxShadow: '0 -28px 64px -28px rgba(12,13,14,0.22), var(--st-edge)',
+          paddingTop: 'var(--st-hair)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement))',
+        }}>
+          {/* grab handle - the deck reads as a liftable surface */}
+          <div aria-hidden style={{
+            width: 38, height: 4, borderRadius: 999, background: 'var(--st-hairline)',
+            margin: '12px auto 0',
+          }} />
 
           {/* GLANCE - a row of stat tiles that answers, without a sentence:
               where is my car, what protects it, what do I own. */}
@@ -478,7 +493,7 @@ function Glance() {
             }
             return (
               <div className="st-rail-fade" style={{
-                marginTop: 'var(--st-rest)', display: 'flex', gap: 'var(--st-line)',
+                marginTop: 'var(--st-inset)', display: 'flex', gap: 'var(--st-line)',
                 overflowX: 'auto', scrollbarWidth: 'none',
                 padding: '2px var(--st-inset)',
               }}>
@@ -682,64 +697,27 @@ function Glance() {
             </div>
           )}
 
-          {/* RECENT ACTIVITY - a timeline, not stacked photo cards. History
-              recedes: date, work, who, a small frame - one tap to the chapter. */}
-          <Layer title="Recent activity">
-            {model.completed.length === 0 ? (
+          {/* THE STORY - the car's history as an editorial filmstrip: tall
+              cinematic frames you swipe through, the work named over its own
+              photograph. No heading - the photography is the section. */}
+          {model.completed.length === 0 ? (
+            <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
               <EmptyState
                 line={`The ${vehicle.name}’s story starts with its first visit.`}
                 actionLabel="Arrange one"
                 onAction={() => router.replace('/app?sheet=arrange')}
               />
-            ) : (
-              <div style={{ position: 'relative', paddingLeft: 'var(--st-inset)' }}>
-                <div aria-hidden style={{ position: 'absolute', left: 4, top: 10, bottom: 10, width: 1, background: 'var(--st-hairline)' }} />
-                {(showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)).map(b => {
-                  const job = model.jobByBooking.get(b.id);
-                  const photos = job?.photos ?? [];
-                  const best = photos.find(x => x.kind === 'after') ?? photos[0];
-                  const tech = job?.assignments?.filter(a => !a.removedAt && a.role === 'lead')[0]?.employeeName;
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => router.push(`/app/chapter/${b.id}`)}
-                      className="st-tap"
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 'var(--st-gap)', width: '100%',
-                        padding: 'var(--st-line) 0', background: 'transparent', border: 'none',
-                        cursor: 'pointer', textAlign: 'left', position: 'relative',
-                      }}
-                    >
-                      <span aria-hidden style={{
-                        position: 'absolute', left: -18, width: 7, height: 7, borderRadius: 999,
-                        background: 'var(--st-ink-3)',
-                      }} />
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <Body as="span" style={{ display: 'block' }}>{b.serviceName}</Body>
-                        <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>
-                          {fmtLong(b.scheduledDate)}{tech ? ` · ${tech}` : ''}
-                        </Whisper>
-                      </span>
-                      {best && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={best.url} alt="" style={{
-                          width: 48, height: 48, borderRadius: 10, objectFit: 'cover',
-                          flex: '0 0 auto', background: 'var(--st-gallery)',
-                        }} />
-                      )}
-                    </button>
-                  );
-                })}
-                {!showAllStory && model.completed.length > STORY_PREVIEW && (
-                  <div style={{ marginTop: 'var(--st-breath)' }}>
-                    <Action variant="quiet" onClick={() => setShowAllStory(true)}>
-                      Show earlier visits ({model.completed.length - STORY_PREVIEW})
-                    </Action>
-                  </div>
-                )}
-              </div>
-            )}
-          </Layer>
+            </div>
+          ) : (
+            <StoryFilm
+              completed={showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)}
+              jobByBooking={model.jobByBooking}
+              vehicleName={vehicle.name}
+              moreCount={!showAllStory ? Math.max(0, model.completed.length - STORY_PREVIEW) : 0}
+              onMore={() => setShowAllStory(true)}
+              onOpen={id => router.push(`/app/chapter/${id}`)}
+            />
+          )}
 
           {/* OWNERSHIP - the membership card speaks for itself, no label */}
           {(club.state !== 'none' || club.invited) && (
@@ -954,6 +932,97 @@ function StatTile({ label, value, sub, onTap, live, index = 0 }: {
   return onTap
     ? <button onClick={onTap} className={className} style={style}>{body}</button>
     : <div className={className} style={style}>{body}</div>;
+}
+
+/** THE STORY - the car's history as a filmstrip of tall cinematic frames.
+ *  Each visit is named over its own photograph; no heading, the images lead. */
+function StoryFilm({
+  completed, jobByBooking, vehicleName, moreCount, onMore, onOpen,
+}: {
+  completed: Booking[];
+  jobByBooking: Map<string, Job>;
+  vehicleName: string;
+  moreCount: number;
+  onMore: () => void;
+  onOpen: (id: string) => void;
+}) {
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({});
+  return (
+    <div className="st-rail-fade" style={{
+      marginTop: 'var(--st-rest)', display: 'flex', gap: 'var(--st-line)',
+      overflowX: 'auto', scrollbarWidth: 'none', padding: '2px var(--st-inset)',
+      scrollSnapType: 'x proximity',
+    }}>
+      {completed.map(b => {
+        const job = jobByBooking.get(b.id);
+        const photos = job?.photos ?? [];
+        const best = photos.find(x => x.kind === 'after') ?? photos[0];
+        const tech = job?.assignments?.filter(a => !a.removedAt && a.role === 'lead')[0]?.employeeName;
+        return (
+          <button
+            key={b.id}
+            onClick={() => onOpen(b.id)}
+            className="st-tap st-card"
+            style={{
+              position: 'relative', flex: '0 0 auto', width: 'min(64vw, 244px)',
+              aspectRatio: '3 / 4', borderRadius: 'var(--st-r-card)', overflow: 'hidden',
+              border: 'none', cursor: 'pointer', textAlign: 'left', scrollSnapAlign: 'start',
+              background: best ? 'var(--st-stage)' : 'var(--st-gallery-fill)',
+              boxShadow: 'var(--st-raise), var(--st-edge)', padding: 0,
+              display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+            }}
+          >
+            {best ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={best.url} alt=""
+                  onLoad={() => setLoaded(m => ({ ...m, [b.id]: true }))}
+                  className={`st-img${loaded[b.id] ? ' is-loaded' : ''}`}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div aria-hidden style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(to top, var(--st-scrim-strong) 0%, transparent 46%)',
+                }} />
+              </>
+            ) : (
+              <span aria-hidden style={{
+                position: 'absolute', top: 'var(--st-gap)', left: 'var(--st-gap)',
+                fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.08em',
+                textTransform: 'uppercase', color: 'var(--st-ink-3)',
+              }}>{vehicleName}</span>
+            )}
+            <span style={{ position: 'relative', zIndex: 1, padding: 'var(--st-gap)' }}>
+              <Emphasis as="span" tone={best ? 'over' : 'ink'} style={{ display: 'block' }}>
+                {b.serviceName}
+              </Emphasis>
+              <Whisper as="span" tone={best ? 'over-2' : 'ink-3'} style={{ display: 'block', marginTop: 2 }}>
+                {fmtLong(b.scheduledDate)}{tech ? ` · ${tech}` : ''}
+              </Whisper>
+            </span>
+          </button>
+        );
+      })}
+      {moreCount > 0 && (
+        <button
+          onClick={onMore}
+          className="st-tap st-card"
+          style={{
+            flex: '0 0 auto', width: 132, aspectRatio: '3 / 4', borderRadius: 'var(--st-r-card)',
+            border: '1px solid var(--st-hairline)', cursor: 'pointer',
+            background: 'var(--st-card-fill)', boxShadow: 'var(--st-hold), var(--st-edge)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+          }}
+        >
+          <span style={{
+            fontFamily: 'var(--st-display)', fontWeight: 600, fontSize: 26, color: 'var(--st-ink)',
+          }}>+{moreCount}</span>
+          <Whisper as="span">earlier</Whisper>
+        </button>
+      )}
+    </div>
+  );
 }
 
 /** STUDIO - a destination card (Apple Maps-style), not a signature footer. */
