@@ -1,15 +1,21 @@
+'use client';
 /**
  * The identity plate (design system §7.1, photo-absent state).
  *
  * Most cars have no photograph, so the photo-less rendering is the *default*
- * state, not a fallback - it is designed to the same bar as photography:
- * a gallery-toned material, one hairline, the car's own words, the plate in
- * its own glyphs, and the studio's mark held quiet underneath.
+ * state, not a fallback - it is designed to the same bar as photography.
  *
- * Created once, reused by Portrait, PhotoBand, the empty garage and (later)
- * onboarding. `plateSurface` is the shared material for any photo-less frame.
+ * THE OVERTURE (hero): the marque stands as a lit chrome monument on seamless
+ * paper - a slow specular sweeps its face, an ambient bloom breathes behind it,
+ * a soft reflection grounds it, and on a pointer device the whole monument tilts
+ * to the cursor like a machined object catching the light. Every motion is a
+ * single settle, a slow ambient loop, or pointer-linked - and all of it is
+ * dropped under reduced motion. The `band` and `row` variants stay flat plate
+ * material (Papers, Stay, Chapter, the sheets rely on them unchanged).
  */
 import type { CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion';
 import { DisplayLarge, Display, Emphasis, Whisper } from './text';
 
 /** The shared photo-less material: gallery ground, one hairline, no graphics. */
@@ -32,8 +38,7 @@ interface IdentityPlateProps {
 
 /**
  * The owner writes one name ("Mercedes-AMG C 43"); the marque is its first
- * word and the model is the rest. A single-word name stays whole - the plate
- * never invents a marque it wasn't given.
+ * word and the model is the rest. A single-word name stays whole.
  */
 function split(name: string): { marque?: string; model: string } {
   const trimmed = name.trim();
@@ -61,13 +66,156 @@ function Registration({ value, style }: { value: string; style?: CSSProperties }
   );
 }
 
+/* ── THE OVERTURE ─────────────────────────────────────────────────────────
+   The photo-less hero, rebuilt as a machined monument that catches the light.
+*/
+function OvertureHero({ name, registration }: { name: string; registration?: string }) {
+  const { marque, model } = split(name);
+  const reduced = useReducedMotion();
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [interactive, setInteractive] = useState(false);
+
+  // pointer-linked parallax tilt - a machined object turning to the cursor.
+  // Only armed on a hover-capable device with motion allowed.
+  const px = useMotionValue(0); // -0.5 .. 0.5
+  const py = useMotionValue(0);
+  const sx = useSpring(px, { stiffness: 120, damping: 18, mass: 0.4 });
+  const sy = useSpring(py, { stiffness: 120, damping: 18, mass: 0.4 });
+  const rotY = useTransform(sx, [-0.5, 0.5], [7, -7]);
+  const rotX = useTransform(sy, [-0.5, 0.5], [-5, 5]);
+  const glintX = useTransform(sx, [-0.5, 0.5], ['38%', '62%']);
+  const glintY = useTransform(sy, [-0.5, 0.5], ['34%', '58%']);
+  const glintBg = useTransform([glintX, glintY], ([x, y]) =>
+    `radial-gradient(28% 34% at ${x} ${y}, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 70%)`);
+
+  useEffect(() => {
+    if (reduced) return;
+    const hoverable = typeof window !== 'undefined'
+      && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+    setInteractive(!!hoverable);
+  }, [reduced]);
+
+  const onMove = (e: React.PointerEvent) => {
+    if (!interactive) return;
+    const r = stageRef.current?.getBoundingClientRect();
+    if (!r) return;
+    px.set((e.clientX - r.left) / r.width - 0.5);
+    py.set((e.clientY - r.top) / r.height - 0.5);
+  };
+  const onLeave = () => { px.set(0); py.set(0); };
+
+  const tilt = interactive ? { rotateX: rotX, rotateY: rotY } : undefined;
+
+  return (
+    <div
+      ref={stageRef}
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+      style={{
+        position: 'absolute', inset: 0, overflow: 'hidden',
+        // seamless-paper sweep: the studio light the monument stands in
+        background: 'radial-gradient(130% 86% at 50% 30%, var(--st-paper) 0%, var(--st-gallery) 56%, var(--st-linen) 100%)',
+        boxShadow: 'var(--st-edge)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: 'var(--st-inset)', textAlign: 'center',
+        perspective: 1100,
+      }}
+    >
+      {/* ambient light bloom, breathing slowly behind the monument */}
+      <div aria-hidden className="st-bloom" style={{
+        position: 'absolute', top: '18%', left: '50%', width: 'min(120vw, 720px)', height: '52%',
+        transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 0,
+        background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 62%)',
+        mixBlendMode: 'soft-light', opacity: 0.9,
+      }} />
+
+      {/* pointer-linked glint that rides the monument's chrome face */}
+      {interactive && (
+        <motion.div aria-hidden style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2,
+          background: glintBg,
+          mixBlendMode: 'overlay',
+        }} />
+      )}
+
+      {/* the monument group: kicker · name · reflection · plate, tilting as one */}
+      <motion.div
+        className="st-overture-monument"
+        style={{
+          position: 'relative', zIndex: 1, width: '100%',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          transformStyle: 'preserve-3d', ...(tilt ?? {}),
+        }}
+      >
+        {marque && (
+          <Whisper tone="ink-3" style={{
+            marginBottom: 'var(--st-gap)', letterSpacing: '0.42em',
+            paddingLeft: '0.42em', fontFamily: 'var(--st-display)', fontWeight: 500,
+            textTransform: 'uppercase', fontSize: 12,
+          }}>
+            {marque}
+          </Whisper>
+        )}
+
+        {/* the machined name - brushed chrome with a slow specular sweep */}
+        <DisplayLarge
+          as="p"
+          className="st-chrome st-chrome-sweep"
+          style={{
+            fontSize: 'clamp(44px, 15vw, 92px)', fontWeight: 700, lineHeight: 0.98,
+            letterSpacing: '-0.03em', maxWidth: 760,
+            // a faint machined edge so the chrome reads as raised metal
+            textShadow: '0 1px 0 var(--st-chrome-edge)',
+          }}
+        >
+          {model}
+        </DisplayLarge>
+
+        {/* the reflection - the monument grounded on seamless paper */}
+        <div aria-hidden style={{
+          marginTop: 2, transform: 'scaleY(-1)', opacity: 0.14,
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 72%)',
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 72%)',
+          pointerEvents: 'none', userSelect: 'none',
+        }}>
+          <DisplayLarge as="p" className="st-chrome" style={{
+            fontSize: 'clamp(44px, 15vw, 92px)', fontWeight: 700, lineHeight: 0.98,
+            letterSpacing: '-0.03em', maxWidth: 760,
+          }}>
+            {model}
+          </DisplayLarge>
+        </div>
+
+        {registration && (
+          <div style={{ marginTop: 'var(--st-inset)' }}>
+            <Registration value={registration} />
+          </div>
+        )}
+      </motion.div>
+
+      {/* the studio's mark, held quiet at the base */}
+      <Whisper tone="ink-3" style={{
+        position: 'absolute', left: 0, right: 0, zIndex: 1,
+        bottom: 'calc(env(safe-area-inset-bottom) + var(--st-rest))',
+        fontFamily: 'var(--st-display)', letterSpacing: '0.4em', paddingLeft: '0.4em',
+        fontSize: 11, opacity: 0.7,
+      }}>
+        AUTOMODZ
+      </Whisper>
+    </div>
+  );
+}
+
 export default function IdentityPlate({
   name, registration, variant = 'portrait', style,
 }: IdentityPlateProps) {
   const { marque, model } = split(name);
-  const hero = variant === 'portrait';
   const row = variant === 'row';
-  const Model = hero ? DisplayLarge : Display;
+
+  if (variant === 'portrait') {
+    return <OvertureHero name={name} registration={registration} />;
+  }
 
   if (row) {
     return (
@@ -92,67 +240,29 @@ export default function IdentityPlate({
     );
   }
 
+  // band - flat plate material inside an existing framed ratio
   return (
     <div
       style={{
-        // The hero (photo-less) is a *designed portrait of the marque*, not a
-        // fallback: a studio sweep - the light of seamless paper - with the
-        // car's identity standing as a still, grounded monument. Scoped to the
-        // hero; `band` keeps the flat plate material untouched (Papers, Stay,
-        // Chapter rely on it). (M1 · The Overture)
-        ...(hero
-          ? {
-              background: 'radial-gradient(125% 80% at 50% 32%, var(--st-paper) 0%, var(--st-gallery) 58%, var(--st-linen) 100%)',
-              boxShadow: 'var(--st-edge)',
-            }
-          : plateSurface),
+        ...plateSurface,
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        padding: hero ? 'var(--st-inset)' : 'var(--st-gap)',
-        textAlign: 'center',
+        padding: 'var(--st-gap)', textAlign: 'center',
         ...style,
       }}
     >
-      {/* the marque rests on the light - a soft shadow grounds it (hero only) */}
-      {hero && (
-        <div aria-hidden style={{
-          position: 'absolute', bottom: '33%', left: '50%', transform: 'translateX(-50%)',
-          width: 'min(58%, 260px)', height: 76,
-          borderRadius: '50%', filter: 'blur(8px)',
-          background: 'radial-gradient(ellipse at center, var(--st-hairline) 0%, transparent 72%)',
-        }} />
-      )}
       {marque && (
         <Whisper tone="ink-3" style={{ marginBottom: 'var(--st-line)' }}>{marque}</Whisper>
       )}
-      <Model
+      <Display
         as="p"
-        style={{
-          // holds its line from 320 to 1440 without ever clipping the name
-          fontSize: hero ? 'clamp(30px, 8vw, 44px)' : 'clamp(20px, 5vw, 32px)',
-          maxWidth: hero ? 640 : 480,
-        }}
+        style={{ fontSize: 'clamp(20px, 5vw, 32px)', maxWidth: 480 }}
       >
         {model}
-      </Model>
+      </Display>
       {registration && (
-        <Registration
-          value={registration}
-          style={{ marginTop: hero ? 'var(--st-inset)' : 'var(--st-line)' }}
-        />
-      )}
-      {hero && (
-        <Whisper
-          tone="ink-3"
-          style={{
-            position: 'absolute', left: 0, right: 0,
-            bottom: 'calc(env(safe-area-inset-bottom) + var(--st-rest))',
-            fontFamily: 'var(--st-display)', letterSpacing: '0.08em',
-          }}
-        >
-          AUTOMODZ
-        </Whisper>
+        <Registration value={registration} style={{ marginTop: 'var(--st-line)' }} />
       )}
     </div>
   );

@@ -1129,6 +1129,57 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 
 .studio ::selection { background: var(--st-linen); }
 
+/* ═══════════════════════════════════════════════════════════════════
+   THE OVERTURE — the photo-less hero rendered as a lit chrome monument.
+   Brushed-metal text, a slow specular sweep, an ambient light bloom and
+   a floor reflection. Monochrome, GPU-only, dropped under reduced motion.
+   ═══════════════════════════════════════════════════════════════════ */
+.studio {
+  /* the marque monument's brushed-chrome ramp (light: graphite ink family) */
+  --st-chrome-grad: linear-gradient(100deg,
+    #101215 0%, #3B4046 26%, #6E747C 44%, #262A2E 52%,
+    #6E747C 60%, #3B4046 74%, #101215 100%);
+  --st-chrome-edge: rgba(20,21,23,0.14);
+}
+[data-theme="dark"] .studio {
+  --st-chrome-grad: linear-gradient(100deg,
+    #FFFFFF 0%, #D7DBDF 26%, #9AA0A8 44%, #F2F4F6 52%,
+    #9AA0A8 60%, #D7DBDF 74%, #FFFFFF 100%);
+  --st-chrome-edge: rgba(255,255,255,0.16);
+}
+.studio .st-chrome {
+  background-image: var(--st-chrome-grad);
+  background-size: 220% auto;
+  background-position: 0% center;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.studio .st-chrome-sweep { animation: st-sheen 8s ease-in-out infinite alternate; }
+@keyframes st-sheen { from { background-position: 8% center; } to { background-position: 200% center; } }
+
+/* ambient light bloom drifting behind the monument (transform-only) */
+@keyframes st-bloom-drift {
+  0%   { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.9; }
+  50%  { transform: translate3d(4%, 3%, 0)  scale(1.08);  opacity: 1;   }
+  100% { transform: translate3d(-3%, 4%, 0) scale(1.03);  opacity: 0.9; }
+}
+.studio .st-bloom { animation: st-bloom-drift 18s ease-in-out infinite; will-change: transform, opacity; }
+
+/* the on-load spotlight: the monument settles into focus, once */
+@keyframes st-overture-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);     filter: blur(0);   }
+}
+.studio .st-overture-monument { animation: st-overture-in 900ms var(--st-ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .studio .st-chrome-sweep,
+  .studio .st-bloom,
+  .studio .st-overture-monument { animation: none !important; }
+}
+
 /* the one permitted spinner - inside a pressed Action only (§13) */
 .st-spin { animation: spin-cw 0.7s linear infinite; }
 /* a calm image-loading placeholder - a breathe, never a shimmer (§13) */
