@@ -9,7 +9,7 @@
  * neither is a browser error - a failure keeps the customer's trust by saying,
  * plainly, that their car is safe and offering exactly two ways forward.
  */
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { COMPANY, waLink } from '@/lib/company';
 import { studioEase, move, rise } from '@/lib/os/motion';
 import Action from './Action';
@@ -43,18 +43,36 @@ function BootFrame({
  * pulse, never a spinner. Under reduced motion it simply sits still.
  */
 export function StudioLoading({ caption }: { caption?: string }) {
-  const reduced = useReducedMotion();
   return (
     <BootFrame>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--st-gap)' }}>
-        <motion.div
-          role="status"
-          aria-label="Loading"
-          animate={reduced ? undefined : { opacity: [0.45, 1, 0.45] }}
-          transition={reduced ? undefined : { duration: 2.2, ease: studioEase, repeat: Infinity }}
-        >
-          <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em' }}>AUTOMODZ</Whisper>
-        </motion.div>
+      {/* ambient light the mark develops out of */}
+      <div aria-hidden className="st-bloom" style={{
+        position: 'absolute', top: '30%', left: '50%', width: 'min(120vw, 560px)', height: '40%',
+        transform: 'translateX(-50%)', pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 62%)',
+        mixBlendMode: 'soft-light',
+      }} />
+      <div role="status" aria-label="Loading" className="st-boot-mark" style={{
+        position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: 'var(--st-inset)', width: '100%', maxWidth: 280,
+      }}>
+        {/* the wordmark, machined in chrome, a slow specular passing over it */}
+        <span className="st-chrome st-chrome-sweep" style={{
+          fontFamily: 'var(--st-display)', fontWeight: 700, fontSize: 26,
+          letterSpacing: '0.24em', paddingLeft: '0.24em',
+        }}>
+          AUTOMODZ
+        </span>
+        {/* the calm progress hairline - it breathes toward completion, no spinner */}
+        <span aria-hidden style={{
+          position: 'relative', width: '100%', height: 2, borderRadius: 999,
+          background: 'var(--st-hairline)', overflow: 'hidden',
+        }}>
+          <span className="st-boot-bar" style={{
+            position: 'absolute', inset: 0, borderRadius: 999,
+            background: 'linear-gradient(90deg, transparent, var(--st-ink-2))',
+          }} />
+        </span>
         {caption && <Whisper tone="ink-3" aria-hidden>{caption}</Whisper>}
       </div>
     </BootFrame>
