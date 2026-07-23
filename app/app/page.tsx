@@ -1087,6 +1087,39 @@ function CarFormSheet({ open, editing, onClose }: {
   );
 }
 
+/** A notification preference as a tactile toggle pill - on: filled ink with a
+ *  check; off: a quiet hairline outline. A cluster of these replaces the list. */
+function NotifPill({ on, label, onTap, busy }: {
+  on: boolean; label: string; onTap: () => void; busy?: boolean;
+}) {
+  return (
+    <button onClick={onTap} disabled={busy} aria-pressed={on} className="st-tap"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7, cursor: busy ? 'default' : 'pointer',
+        padding: '10px 16px', borderRadius: 999,
+        background: on ? 'var(--st-ink)' : 'transparent',
+        border: `1px solid ${on ? 'var(--st-ink)' : 'var(--st-border-2, var(--st-hairline))'}`,
+        color: on ? 'var(--st-paper)' : 'var(--st-ink-3)',
+        fontFamily: 'var(--st-text)', fontWeight: 500, fontSize: 15,
+        transition: 'background var(--st-move) var(--st-ease), color var(--st-move) var(--st-ease), border-color var(--st-move) var(--st-ease)',
+      }}>
+      <span aria-hidden style={{
+        width: 15, height: 15, display: 'grid', placeItems: 'center', flex: '0 0 auto',
+      }}>
+        {on ? (
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+            <path d="M1.5 6.5 L4.5 9.5 L10.5 2.5" stroke="var(--st-paper)" strokeWidth="1.6"
+              strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : (
+          <span style={{ width: 11, height: 11, borderRadius: 999, border: '1.5px solid var(--st-ink-3)' }} />
+        )}
+      </span>
+      {label}
+    </button>
+  );
+}
+
 /* ── the You sheet (design E1) ── */
 function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -1203,51 +1236,21 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         <Field label="Name" value={name} onChange={setName} />
         <Field label="Phone" value={phone} onChange={setPhone} kind="phone" />
 
-        <div>
-          <Body tone="ink-2" style={{ marginBottom: 12 }}>Notifications</Body>
-          <div style={{ display: 'grid', gap: 16 }}>
-            {/* the device itself - the channel the studio's updates arrive on */}
-            {pushState === 'unsupported' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ flex: 1 }}><Body>Alerts on this device.</Body></span>
-                <Whisper>Not available here.</Whisper>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ flex: 1 }}>
-                  <Body>Alerts on this device.</Body>
-                  <Whisper as="p" style={{ marginTop: 'var(--st-hair)' }}>
-                    {pushState === 'on'
-                      ? 'On — we’ll tell you the moment the car’s ready.'
-                      : 'Off — turn on to hear the moment the car’s ready.'}
-                  </Whisper>
-                </span>
-                <Action variant="quiet" onClick={pushState === 'on' ? turnOffPush : turnOnPush} loading={pushBusy}>
-                  {pushState === 'on' ? 'Turn off' : 'Turn on'}
-                </Action>
-              </div>
-            )}
-            {pushErr && (
-              <div role="status" aria-live="polite"><Whisper tone="ink-2">{pushErr}</Whisper></div>
-            )}
-
-            {rows.map(r => (
-              <label key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
-                <span style={{ flex: 1 }}><Body>{r.line}</Body></span>
-                <input
-                  type="checkbox"
-                  checked={prefs[r.key]}
-                  onChange={() => togglePref(r.key)}
-                  style={{ width: 44, height: 24, accentColor: 'var(--st-ink)' }}
-                />
-              </label>
-            ))}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ flex: 1 }}><Body>Message me while the car’s in care.</Body></span>
-              <Whisper>Always - it’s your car.</Whisper>
-            </div>
-          </div>
+        {/* how we reach you - a cluster of toggle pills, never a settings list */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {pushState !== 'unsupported' && (
+            <NotifPill on={pushState === 'on'} busy={pushBusy} label="This device"
+              onTap={pushState === 'on' ? turnOffPush : turnOnPush} />
+          )}
+          <NotifPill on={prefs.whatsapp} label="WhatsApp" onTap={() => togglePref('whatsapp')} />
+          <NotifPill on={prefs.serviceReminders} label="Care due" onTap={() => togglePref('serviceReminders')} />
+          <NotifPill on={prefs.membershipReminders} label="Membership" onTap={() => togglePref('membershipReminders')} />
+          <NotifPill on={prefs.promotions} label="Offers" onTap={() => togglePref('promotions')} />
         </div>
+        {pushErr && (
+          <div role="status" aria-live="polite"><Whisper tone="ink-2">{pushErr}</Whisper></div>
+        )}
+        <Whisper>While the car’s in care we always message — it’s your car.</Whisper>
 
         {installEvent && (
           <Action variant="quiet" onClick={() => (installEvent as { prompt?: () => void }).prompt?.()}>
