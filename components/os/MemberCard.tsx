@@ -1,47 +1,80 @@
 'use client';
 /**
- * The one literal card (design system §7.9): paper, hold shadow, hairline
- * edge, assent thread line. Active / pending / lapsed.
+ * THE MEMBERSHIP - a physical brushed-metal card you hold, not a paper panel.
+ * Landscape credit-card proportions, milled silver with a specular sheen and an
+ * engraved name; the one literal object that says "you belong here". Active /
+ * pending / lapsed change the metal's temperature, never the object.
  */
-import { Emphasis, Data, Whisper } from './text';
-import Chip from './Chip';
-
 interface MemberCardProps {
   name: string;
-  tier: string;           // "Club"
-  since: string;          // "since March 2026" | "2026–2027" (lapsed)
+  tier: string;           // "Club · since March 2026"
+  since: string;          // the plan - "Silver" | "Gold"
   state?: 'active' | 'pending' | 'lapsed';
 }
 
-/** The membership as a possession you hold (UX-1) - real card elevation, an
- *  edge of light, a status chip. Pending keeps its dignity without dimming to
- *  the point of doubt. */
 export default function MemberCard({ name, tier, since, state = 'active' }: MemberCardProps) {
-  const dim = state === 'lapsed';
-  const chip =
-    state === 'active'  ? { tone: 'ok' as const, label: 'Member' }
-    : state === 'pending' ? { tone: 'neutral' as const, label: 'Confirming' }
-    : { tone: 'neutral' as const, label: 'Lapsed' };
+  const lapsed = state === 'lapsed';
+  const statusText = state === 'active' ? 'MEMBER' : state === 'pending' ? 'CONFIRMING' : 'LAPSED';
+
+  // the metal: warm brushed silver, cooled and dimmed when lapsed
+  const metal = lapsed
+    ? 'linear-gradient(130deg, #9fa3a8 0%, #babec3 26%, #8f9398 52%, #adb1b6 76%, #969a9f 100%)'
+    : 'linear-gradient(130deg, #cfd3d8 0%, #f4f6f8 24%, #b9bdc3 50%, #eceef1 74%, #c6cace 100%)';
+  const engrave = lapsed ? '#3d4045' : '#26292e';
+
   return (
     <div style={{
-      background: 'var(--st-card-fill)', borderRadius: 'var(--st-r-sheet)',
-      border: '1px solid var(--st-hairline)', boxShadow: 'var(--st-raise), var(--st-edge)',
-      overflow: 'hidden',
+      position: 'relative', width: '100%', aspectRatio: '1.586 / 1', borderRadius: 20,
+      overflow: 'hidden', background: metal, color: engrave,
+      boxShadow: 'var(--st-lift), inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -10px 24px rgba(20,22,25,0.18)',
+      isolation: 'isolate',
     }}>
-      <div aria-hidden style={{ height: 3, background: dim ? 'var(--st-hairline)' : 'var(--st-assent)' }} />
-      <div style={{ padding: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
-          <Emphasis tone={dim ? 'ink-3' : 'ink'} as="p">{name}</Emphasis>
-          <Chip tone={chip.tone}>{chip.label}</Chip>
+      {/* brushed grain */}
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, opacity: 0.5, mixBlendMode: 'overlay',
+        background: 'repeating-linear-gradient(112deg, rgba(255,255,255,0.10) 0px, rgba(255,255,255,0.10) 1px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 3px)',
+      }} />
+      {/* raking specular sheen */}
+      <div aria-hidden style={{
+        position: 'absolute', inset: '-40%', pointerEvents: 'none',
+        background: 'linear-gradient(118deg, transparent 38%, rgba(255,255,255,0.55) 48%, transparent 58%)',
+      }} />
+
+      <div style={{
+        position: 'relative', height: '100%', display: 'flex', flexDirection: 'column',
+        justifyContent: 'space-between', padding: 22,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <span style={{
+            fontFamily: 'var(--st-display)', fontWeight: 700, fontSize: 13, letterSpacing: '0.34em',
+            paddingLeft: '0.34em', textShadow: '0 1px 0 rgba(255,255,255,0.5)',
+          }}>
+            AUTOMODZ
+          </span>
+          <span style={{
+            fontFamily: 'var(--st-data)', fontSize: 10, letterSpacing: '0.14em',
+            padding: '4px 8px', borderRadius: 999,
+            background: 'rgba(255,255,255,0.28)', border: '1px solid rgba(255,255,255,0.4)',
+          }}>
+            {statusText}
+          </span>
         </div>
-        <Data tone={dim ? 'ink-3' : 'ink-2'} style={{ display: 'block', marginTop: 8 }}>
-          {tier} · {since}
-        </Data>
-        {state === 'pending' && (
-          <Whisper style={{ marginTop: 12 }}>
-            The studio is confirming - your card goes live within hours.
-          </Whisper>
-        )}
+
+        <div>
+          <span style={{
+            display: 'block', fontFamily: 'var(--st-display)', fontWeight: 640,
+            fontSize: 'clamp(24px, 7vw, 32px)', letterSpacing: '-0.01em', lineHeight: 1,
+            textShadow: '0 1px 0 rgba(255,255,255,0.45)',
+          }}>
+            {name}
+          </span>
+          <span style={{
+            display: 'block', marginTop: 8, fontFamily: 'var(--st-data)', fontSize: 12,
+            letterSpacing: '0.06em', opacity: 0.82,
+          }}>
+            {since.toUpperCase()} · {tier.toUpperCase()}
+          </span>
+        </div>
       </div>
     </div>
   );
