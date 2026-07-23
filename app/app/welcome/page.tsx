@@ -63,21 +63,42 @@ export default function WelcomePage() {
 
   return (
     <main style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      position: 'relative', overflow: 'hidden',
+      minHeight: '100svh', display: 'flex', flexDirection: 'column', justifyContent: 'center',
       padding: 'calc(env(safe-area-inset-top) + var(--st-rest)) var(--st-inset) calc(env(safe-area-inset-bottom) + var(--st-rest))',
-      maxWidth: 560, marginLeft: 'auto', marginRight: 'auto', width: '100%',
+      background: 'radial-gradient(130% 80% at 50% 26%, var(--st-paper) 0%, var(--st-gallery) 58%, var(--st-linen) 100%)',
     }}>
+      {/* ambient light the opener develops out of */}
+      <div aria-hidden className="st-bloom" style={{
+        position: 'absolute', top: '16%', left: '50%', width: 'min(120vw, 620px)', height: '48%',
+        transform: 'translateX(-50%)', pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 62%)',
+        mixBlendMode: 'soft-light',
+      }} />
+      <div style={{ position: 'relative', maxWidth: 560, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
       {moment === 'welcome' && (
-        <motion.section {...rise}>
-          <Display>Welcome to AutoModz.</Display>
-          <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>
-            This is where your car will live - its care, its protection, its story.
+        <section className="st-overture-monument" style={{ textAlign: 'center' }}>
+          <span style={{
+            display: 'block', fontFamily: 'var(--st-display)', fontWeight: 500, fontSize: 12,
+            letterSpacing: '0.4em', paddingLeft: '0.4em', textTransform: 'uppercase',
+            color: 'var(--st-ink-3)', marginBottom: 'var(--st-rest)',
+          }}>
+            AUTOMODZ
+          </span>
+          <span className="st-chrome st-chrome-sweep" style={{
+            display: 'block', fontFamily: 'var(--st-display)', fontWeight: 700,
+            fontSize: 'clamp(48px, 16vw, 96px)', lineHeight: 0.98, letterSpacing: '-0.03em',
+          }}>
+            Welcome.
+          </span>
+          <Body tone="ink-2" style={{ marginTop: 'var(--st-inset)', maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
+            This is where your car will live — its care, its protection, its story.
             It starts with the car.
           </Body>
-          <div style={{ marginTop: 'var(--st-rest)' }}>
+          <div style={{ marginTop: 'var(--st-rest)', maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>
             <Action variant="primary" onClick={() => setMoment('you')}>Begin</Action>
           </div>
-        </motion.section>
+        </section>
       )}
 
       {moment === 'you' && (
@@ -96,6 +117,7 @@ export default function WelcomePage() {
           <Action onClick={leave}>Later</Action>
         </motion.section>
       )}
+      </div>
     </main>
   );
 }
