@@ -23,7 +23,7 @@ import { claimReferral } from '@/lib/services/referrals';
 import { useAppStore } from '@/lib/store';
 import { StudioLoading } from '@/components/os/StudioBoot';
 import Action from '@/components/os/Action';
-import { Display, Body, Data, Whisper } from '@/components/os/text';
+import { Body, Data, Whisper } from '@/components/os/text';
 
 /** Only ever return to an internal customer path - never an attacker's URL. */
 const safeDest = (redirect: string | null): string | null =>
@@ -115,29 +115,47 @@ function Login() {
       <div
         className="studio"
         style={{
-          minHeight: '100vh', background: 'var(--st-paper)',
+          position: 'relative', overflow: 'hidden',
+          minHeight: '100svh',
+          background: 'radial-gradient(130% 78% at 50% 24%, var(--st-paper) 0%, var(--st-gallery) 58%, var(--st-linen) 100%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'space-between', overflowX: 'clip',
+          justifyContent: 'space-between',
           padding: 'calc(env(safe-area-inset-top) + var(--st-rest)) var(--st-inset) calc(env(safe-area-inset-bottom) + var(--st-inset))',
         }}
       >
-        <Whisper tone="ink-2" style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em' }}>
-          AUTOMODZ
-        </Whisper>
+        {/* ambient light the door develops out of */}
+        <div aria-hidden className="st-bloom" style={{
+          position: 'absolute', top: '14%', left: '50%', width: 'min(120vw, 620px)', height: '46%',
+          transform: 'translateX(-50%)', pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 62%)',
+          mixBlendMode: 'soft-light',
+        }} />
 
-        <main style={{ width: '100%', maxWidth: 420, padding: 'var(--st-rest) 0' }}>
-          <Display style={{ fontSize: 'clamp(26px, 7vw, 32px)' }}>Welcome to the studio.</Display>
-          <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }}>
-            This is where your car lives - its care, its protection, its story.
+        <span style={{
+          position: 'relative', fontFamily: 'var(--st-display)', fontWeight: 500, fontSize: 12,
+          letterSpacing: '0.4em', paddingLeft: '0.4em', textTransform: 'uppercase', color: 'var(--st-ink-3)',
+        }}>
+          AUTOMODZ
+        </span>
+
+        <main className="st-overture-monument" style={{ position: 'relative', width: '100%', maxWidth: 460, padding: 'var(--st-rest) 0', textAlign: 'center' }}>
+          <span className="st-chrome st-chrome-sweep" style={{
+            display: 'block', fontFamily: 'var(--st-display)', fontWeight: 700,
+            fontSize: 'clamp(40px, 13vw, 72px)', lineHeight: 0.98, letterSpacing: '-0.03em',
+          }}>
+            Your studio
+          </span>
+          <Body tone="ink-2" style={{ marginTop: 'var(--st-inset)', maxWidth: 380, marginLeft: 'auto', marginRight: 'auto' }}>
+            Where your car lives — its care, its protection, its story.
           </Body>
 
-          <div style={{ marginTop: 'var(--st-rest)' }}>
+          <div style={{ marginTop: 'var(--st-rest)', maxWidth: 340, marginLeft: 'auto', marginRight: 'auto' }}>
             <Action variant="primary" onClick={handleGoogle} loading={loading}>
               Continue with Google
             </Action>
             {error
               ? <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }} aria-live="polite">{error}</Body>
-              : <Whisper style={{ marginTop: 'var(--st-line)' }}>One tap - no password to remember.</Whisper>}
+              : <Whisper style={{ marginTop: 'var(--st-line)' }}>One tap — no password to remember.</Whisper>}
           </div>
         </main>
 
