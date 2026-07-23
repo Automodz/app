@@ -34,7 +34,6 @@ import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/pro
 import { isDevUser, DEV_JOBS, DEV_MEMBERSHIP } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
 import IdentityPlate, { plateSurface } from '@/components/os/IdentityPlate';
-import StudioIntro from '@/components/os/StudioIntro';
 import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
 import JoinClub from '@/components/os/JoinClub';
 import CarForm from '@/components/os/CarForm';
@@ -440,6 +439,53 @@ function Glance() {
       {!onAddPage && vehicle && model && (
         <div style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement))' }}>
 
+          {/* GLANCE - a row of stat tiles that answers, without a sentence:
+              where is my car, what protects it, what do I own. */}
+          {(() => {
+            const p0 = model.protections[0];
+            const tiles: { label: string; value: string; sub?: string; onTap?: () => void }[] = [];
+            tiles.push({
+              label: 'Status',
+              value: model.live ? 'In care'
+                : model.agreed ? (visitPhase(model.agreed.status) === 'agreed' ? 'Booked' : 'Requested')
+                : model.proposal ? 'Care due'
+                : model.completed.length ? 'Cared for' : 'New',
+              sub: model.agreed ? fmtDay(model.agreed.scheduledDate) : undefined,
+              onTap: model.live ? () => router.push(`/app/visit/${model.live!.id}`)
+                : model.agreed ? () => router.replace('/app?sheet=manage')
+                : () => router.replace('/app?sheet=arrange'),
+            });
+            if (model.protections.length > 0 || model.completed.length > 0) {
+              tiles.push({
+                label: 'Protection',
+                value: p0 ? (p0.active ? 'Protected' : 'Lapsed') : 'None',
+                sub: p0?.until ? `until ${p0.until.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}` : undefined,
+                onTap: p0
+                  ? (model.protections.length > 1 ? () => router.replace('/app?focus=protection') : undefined)
+                  : () => router.replace('/app?sheet=arrange'),
+              });
+            }
+            if (club.state !== 'none') {
+              tiles.push({
+                label: 'The Club',
+                value: club.state === 'active' || club.state === 'grace' ? `${club.washesLeft} wash${club.washesLeft === 1 ? '' : 'es'}` : club.state === 'pending' ? 'Confirming' : 'Lapsed',
+                sub: club.plan ?? undefined,
+                onTap: (club.state === 'lapsed' || club.state === 'grace') ? () => router.replace('/app?sheet=join-club') : undefined,
+              });
+            } else if (club.invited) {
+              tiles.push({ label: 'The Club', value: 'Invited', sub: 'have a look', onTap: () => router.replace('/app?sheet=join-club') });
+            }
+            return (
+              <div style={{
+                marginTop: 'var(--st-rest)', display: 'flex', gap: 'var(--st-line)',
+                overflowX: 'auto', scrollbarWidth: 'none',
+                padding: '0 var(--st-inset)',
+              }}>
+                {tiles.map(t => <StatTile key={t.label} {...t} />)}
+              </div>
+            );
+          })()}
+
           {/* B3 · Now - the next thing for this car. An agreed visit takes the
               floor; otherwise the studio's one standing suggestion (live lives
               in the capsule until P3). The two are mutually exclusive. */}
@@ -556,39 +602,27 @@ function Glance() {
             <Action variant="quiet" onClick={() => openCarForm(vehicle)}>Edit details</Action>
           </div>
 
-          {/* trust before there is a story of their own (new cars only) */}
-          {model.completed.length === 0 && (
-            <Layer title="The studio">
-              <StudioIntro />
-            </Layer>
-          )}
-
           {/* PROTECTION - always a status: photographed when it is living,
               otherwise a single "not protected" line. (The car's identity is
               already the hero - it is never repeated here.) */}
+          {/* PROTECTION - status panels; no label, the shield speaks for itself */}
           {(model.protections.length > 0 || model.completed.length > 0) && (
-            <Layer
-              title="Protection"
-              action={model.protections.length > 1
-                ? { label: 'All protection', onClick: () => router.replace('/app?focus=protection') }
-                : undefined}
-            >
+            <Layer>
               {model.protections.length > 0 ? (
-                <div style={{ display: 'grid' }}>
-                  {model.protections.map((p, i) => {
+                <div style={{ display: 'grid', gap: 'var(--st-line)' }}>
+                  {model.protections.map(p => {
                     const src = protectionSource(model, p);
                     return (
-                      <div key={p.kind} style={{ borderTop: i > 0 ? '1px solid var(--st-hairline)' : undefined }}>
-                        <ProtectionRecord
-                          compact
-                          protection={p}
-                          vehicleName={vehicle.name}
-                          daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
-                          photo={src.photo}
-                          installer={src.installer}
-                          onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
-                        />
-                      </div>
+                      <ProtectionRecord
+                        key={p.kind}
+                        compact
+                        protection={p}
+                        vehicleName={vehicle.name}
+                        daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
+                        photo={src.photo}
+                        installer={src.installer}
+                        onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
+                      />
                     );
                   })}
                 </div>
@@ -597,47 +631,54 @@ function Glance() {
                   onClick={() => router.replace(model.proposal
                     ? `/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`
                     : '/app?sheet=arrange')}
-                  className="st-tap"
+                  className="st-tap st-card"
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
-                    width: '100%', padding: 0, background: 'transparent', border: 'none',
-                    cursor: 'pointer', textAlign: 'left',
+                    width: '100%', textAlign: 'left', cursor: 'pointer',
+                    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+                    boxShadow: 'var(--st-hold), var(--st-edge)', borderRadius: 'var(--st-r-sheet)',
+                    padding: 'var(--st-inset)',
                   }}
                 >
-                  <Body>Not protected yet</Body>
+                  <span>
+                    <Emphasis as="span" style={{ display: 'block' }}>Not protected yet</Emphasis>
+                    <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>Ceramic & PPF keep the paint safe</Whisper>
+                  </span>
                   <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>Add →</span>
                 </button>
               )}
             </Layer>
           )}
 
-          {/* PAPERS - the car's documents as files, not cards */}
+          {/* DOCUMENTS - a horizontal file stack, each paper a card you swipe */}
           {papers.length > 0 && (
-            <Layer title="Papers">
-              <div>
-                {papers.map((paper, i) => (
+            <div style={{ marginTop: 'var(--st-rest)' }}>
+              <div style={{
+                display: 'flex', gap: 'var(--st-line)', overflowX: 'auto', scrollbarWidth: 'none',
+                padding: '0 var(--st-inset)',
+              }}>
+                {papers.map(paper => (
                   <button
                     key={paper.id}
                     onClick={() => router.push(`/app/chapter/${paper.bookingId}`)}
-                    className="st-tap"
+                    className="st-tap st-card"
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 'var(--st-gap)',
-                      width: '100%', padding: '14px 0',
-                      background: 'transparent', border: 'none',
-                      borderTop: i > 0 ? '1px solid var(--st-hairline)' : undefined,
-                      cursor: 'pointer', textAlign: 'left',
+                      flex: '0 0 auto', width: 152, textAlign: 'left', cursor: 'pointer',
+                      display: 'flex', flexDirection: 'column', gap: 'var(--st-line)',
+                      background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+                      boxShadow: 'var(--st-hold), var(--st-edge)', borderRadius: 'var(--st-r-card)',
+                      padding: 'var(--st-gap)',
                     }}
                   >
-                    <FileGlyph />
-                    <span style={{ flex: 1, minWidth: 0 }}>
+                    <FileGlyph size={22} />
+                    <span style={{ minWidth: 0 }}>
                       <Body as="span" style={{ display: 'block' }}>{paper.title}</Body>
                       <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>{paper.detail}</Whisper>
                     </span>
-                    <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>→</span>
                   </button>
                 ))}
               </div>
-            </Layer>
+            </div>
           )}
 
           {/* RECENT ACTIVITY - a timeline, not stacked photo cards. History
@@ -699,9 +740,9 @@ function Glance() {
             )}
           </Layer>
 
-          {/* OWNERSHIP - the membership as a possession; the invite folded in */}
+          {/* OWNERSHIP - the membership card speaks for itself, no label */}
           {(club.state !== 'none' || club.invited) && (
-            <Layer title="Ownership">
+            <Layer>
               {club.state !== 'none' ? (
                 <div>
                   <MemberCard
@@ -741,13 +782,8 @@ function Glance() {
             </Layer>
           )}
 
-          {/* the signature - one quiet line */}
-          <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
-            <div aria-hidden style={{ height: 1, background: 'var(--st-hairline)', marginBottom: 'var(--st-gap)' }} />
-            <Whisper tone="ink-3" style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.06em' }}>
-              AUTOMODZ · {COMPANY.address}
-            </Whisper>
-          </div>
+          {/* STUDIO - the destination card closes the page */}
+          <StudioCard />
         </div>
       )}
 
@@ -859,14 +895,78 @@ const fmtDay = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
 
 /* ── the add-a-car page (B1 last page / first-run) ── */
-/** A small document mark - the one glyph that makes a paper read as a file. */
-function FileGlyph() {
+/** A document mark - the glyph that makes a paper read as a file. */
+function FileGlyph({ size = 16 }: { size?: number }) {
+  const w = size, h = Math.round(size * 1.125);
   return (
-    <svg aria-hidden width="16" height="18" viewBox="0 0 16 18" fill="none" style={{ flex: '0 0 auto' }}>
+    <svg aria-hidden width={w} height={h} viewBox="0 0 16 18" fill="none" style={{ flex: '0 0 auto' }}>
       <path d="M2.75 1.75h5.5l5 5v9.5a1 1 0 0 1-1 1H2.75a1 1 0 0 1-1-1V2.75a1 1 0 0 1 1-1z"
         stroke="var(--st-ink-3)" strokeWidth="1.2" strokeLinejoin="round" />
       <path d="M8.25 1.75v5.25h5" stroke="var(--st-ink-3)" strokeWidth="1.2" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+/** A location pin - marks the studio as a destination, not a text block. */
+function PinGlyph() {
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flex: '0 0 auto', marginTop: 2 }}>
+      <path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z" stroke="var(--st-ink)" strokeWidth="1.3" strokeLinejoin="round" />
+      <circle cx="10" cy="8" r="2.1" stroke="var(--st-ink)" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+/** GLANCE tile - one number the customer reads without a sentence. A row of
+ *  these (Wallet/Health) answers where/protected/owned at a glance. */
+function StatTile({ label, value, sub, onTap }: {
+  label: string; value: string; sub?: string; onTap?: () => void;
+}) {
+  const body = (
+    <>
+      <span style={{
+        display: 'block', fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.08em',
+        textTransform: 'uppercase', color: 'var(--st-ink-3)',
+      }}>{label}</span>
+      <Emphasis as="span" style={{ display: 'block', marginTop: 6 }}>{value}</Emphasis>
+      {sub && <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>{sub}</Whisper>}
+    </>
+  );
+  const style: React.CSSProperties = {
+    display: 'block', textAlign: 'left', flex: '0 0 auto', minWidth: 128, maxWidth: 200,
+    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+    boxShadow: 'var(--st-hold), var(--st-edge)', borderRadius: 'var(--st-r-card)',
+    padding: 'var(--st-gap)', cursor: onTap ? 'pointer' : 'default',
+  };
+  return onTap
+    ? <button onClick={onTap} className="st-tap st-card" style={style}>{body}</button>
+    : <div style={style}>{body}</div>;
+}
+
+/** STUDIO - a destination card (Apple Maps-style), not a signature footer. */
+function StudioCard() {
+  return (
+    <div style={{ padding: '0 var(--st-inset)', marginTop: 'var(--st-rest)' }}>
+      <div style={{
+        background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+        boxShadow: 'var(--st-hold), var(--st-edge)', borderRadius: 'var(--st-r-sheet)', padding: 'var(--st-inset)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--st-gap)' }}>
+          <PinGlyph />
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <Emphasis as="p">{COMPANY.name} · Maninagar</Emphasis>
+            <Whisper as="p" style={{ marginTop: 2 }}>{COMPANY.address}</Whisper>
+            <Data tone="ink-2" style={{ display: 'block', marginTop: 6 }}>
+              Open {COMPANY.hours.open}–{COMPANY.hours.close}
+            </Data>
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--st-inset)', marginTop: 'var(--st-gap)' }}>
+          <Action variant="external" onClick={() => window.open(COMPANY.mapsUrl, '_blank', 'noopener,noreferrer')}>Directions</Action>
+          <Action variant="external" onClick={() => window.open(COMPANY.googleReviewUrl, '_blank', 'noopener,noreferrer')}>Reviews</Action>
+        </div>
+      </div>
+    </div>
   );
 }
 

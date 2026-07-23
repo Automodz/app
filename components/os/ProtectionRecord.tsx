@@ -18,6 +18,22 @@ import Action from './Action';
 import Chip from './Chip';
 import { Emphasis, Body, Whisper } from './text';
 
+/** The shield - protection as an emblem when there is no photograph. */
+function ShieldGlyph({ active }: { active: boolean }) {
+  const c = active ? 'var(--st-assent)' : 'var(--st-ink-3)';
+  return (
+    <span style={{
+      width: 52, height: 52, borderRadius: 12, flex: '0 0 auto',
+      display: 'grid', placeItems: 'center', background: 'var(--st-gallery)',
+    }}>
+      <svg aria-hidden width="24" height="26" viewBox="0 0 24 26" fill="none">
+        <path d="M12 1.5 21 5v7c0 6-4 10-9 12.5C7 21 3 17 3 11V5l9-3.5z" stroke={c} strokeWidth="1.4" strokeLinejoin="round" />
+        {active && <path d="M8.5 12.5 11 15l4.5-5" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />}
+      </svg>
+    </span>
+  );
+}
+
 const fmtMonthYear = (d: Date) =>
   d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 const fmtLong = (iso: string) =>
@@ -78,32 +94,54 @@ export default function ProtectionRecord({
     </>
   );
 
-  /* Home: one glanceable status row - word, condition, a chip, a small frame of
-     the evidence; the full record is one tap away in its chapter. */
+  /* Home: PROTECTION AS A STATUS PANEL - the shield/evidence, the word, the
+     condition, a chip, and a warranty term bar showing how much life is left.
+     The full photographed record is one tap away in its chapter. */
   if (compact) {
+    const appliedMs = new Date(`${p.applied}T12:00:00`).getTime();
+    const untilMs = p.until?.getTime();
+    const remaining = p.active && untilMs && untilMs > appliedMs
+      ? Math.max(0, Math.min(1, (untilMs - Date.now()) / (untilMs - appliedMs)))
+      : null;
+    const barColor = status.tone === 'warn' ? 'var(--st-caution)' : 'var(--st-assent)';
     return (
       <button
         onClick={onOpenChapter}
-        className="st-tap"
+        className="st-tap st-card"
         style={{
-          display: 'flex', alignItems: 'center', gap: 'var(--st-gap)', width: '100%',
-          padding: 'var(--st-line) 0', background: 'transparent', border: 'none',
-          cursor: onOpenChapter ? 'pointer' : 'default', textAlign: 'left',
+          display: 'block', width: '100%', textAlign: 'left',
+          background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+          boxShadow: 'var(--st-hold), var(--st-edge)', borderRadius: 'var(--st-r-sheet)',
+          padding: 'var(--st-inset)', cursor: onOpenChapter ? 'pointer' : 'default',
         }}
       >
-        {p.active && photo && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={photo} alt="" style={{
-            width: 44, height: 44, borderRadius: 10, objectFit: 'cover',
-            flex: '0 0 auto', background: 'var(--st-gallery)',
-          }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--st-gap)' }}>
+          {p.active && photo ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={photo} alt="" style={{
+              width: 52, height: 52, borderRadius: 12, objectFit: 'cover',
+              flex: '0 0 auto', background: 'var(--st-gallery)',
+            }} />
+          ) : (
+            <ShieldGlyph active={p.active} />
+          )}
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <Emphasis as="span" style={{ display: 'block' }}>{word}</Emphasis>
+            <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>{condition}</Whisper>
+          </span>
+          <Chip tone={status.tone}>{status.label}</Chip>
+        </div>
+        {remaining != null && (
+          <div aria-hidden style={{
+            height: 4, borderRadius: 999, background: 'var(--st-hairline)',
+            overflow: 'hidden', marginTop: 'var(--st-gap)',
+          }}>
+            <div style={{ width: `${Math.round(remaining * 100)}%`, height: '100%', borderRadius: 999, background: barColor }} />
+          </div>
         )}
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <Body as="span" style={{ display: 'block' }}>{word}</Body>
-          <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>{condition}</Whisper>
-        </span>
-        <Chip tone={status.tone}>{status.label}</Chip>
-        {onOpenChapter && <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>→</span>}
+        {installer && (
+          <Whisper style={{ marginTop: 'var(--st-breath)' }}>Applied by {installer}</Whisper>
+        )}
       </button>
     );
   }
