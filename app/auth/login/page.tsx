@@ -5,10 +5,14 @@
  * The first frame of the customer product, so it renders in the customer's
  * own language: paper, the text primitives, the one Action, one sentence of
  * welcome. Authentication itself is unchanged - only the experience around it.
+ *
+ * It also closes the auth loop: a customer who arrives already signed in is
+ * sent straight in (never shown the door twice), and a customer sent here from
+ * a guarded deep link is returned to exactly where they were headed.
  */
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -16,24 +20,57 @@ import { COMPANY } from '@/lib/company';
 import { linkEmployeeRole } from '@/lib/services/auth';
 import { getUserProfile, stashReferralCode, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
+import { StudioLoading } from '@/components/os/StudioBoot';
 import Action from '@/components/os/Action';
 import { Display, Body, Data, Whisper } from '@/components/os/text';
 
+/** Only ever return to an internal customer path - never an attacker's URL. */
+const safeDest = (redirect: string | null): string | null =>
+  redirect && redirect.startsWith('/app') && !redirect.startsWith('//') ? redirect : null;
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<StudioLoading />}>
+      <Login />
+    </Suspense>
+  );
+}
+
+function Login() {
   const router = useRouter();
-  const { setUser } = useAppStore();
+  const params = useSearchParams();
+  const { user, authLoading, setUser } = useAppStore();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const dest = safeDest(params.get('redirect'));
+
+  // where a signed-in customer belongs - a deep link if they were sent here
+  // from one, otherwise their garage; staff always land in the studio OS
+  const homeFor = (role?: string) =>
+    role === 'admin' || role === 'employee' ? '/admin' : (dest ?? '/app');
+
+  // already signed in? never show the door twice - go straight in
+  useEffect(() => {
+    if (authLoading || !user) return;
+    router.replace(homeFor(user.role));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading]);
+
   // Capture an incoming referral code (?ref=CODE) before sign-in
   useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get('ref');
+    const ref = params.get('ref');
     if (ref) stashReferralCode(ref);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Google sign-in - the only way in ──────────────────────────────────
   const handleGoogle = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setError('You’re offline — reconnect to sign in.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -49,15 +86,17 @@ export default function LoginPage() {
 
       profile = await linkEmployeeRole(profile);
       setUser(profile);
-
-      if (profile.role === 'admin' || profile.role === 'employee') {
-        router.replace('/admin');
-      } else {
-        router.replace('/app');
-      }
+      router.replace(homeFor(profile.role));
     } catch (err: unknown) {
-      const authError = err as { code?: string };
-      if (authError.code !== 'auth/popup-closed-by-user') {
+      const code = (err as { code?: string }).code;
+      // the customer cancelling the Google window is not an error
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        // stay silent - they simply changed their mind
+      } else if (code === 'auth/popup-blocked') {
+        setError('Allow pop-ups for AutoModz, then try again.');
+      } else if (code === 'auth/network-request-failed') {
+        setError('That didn’t reach Google — check your connection and try again.');
+      } else {
         setError('That did not go through. Please try again.');
       }
     } finally {

@@ -8,7 +8,12 @@ import { useAppStore } from '@/lib/store';
 const AuthContext = createContext<null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { setUser, setAuthLoading } = useAppStore();
+  const { setUser, setAuthLoading, setVehicles, setBookings } = useAppStore();
+
+  // sign-out and session expiry both land here as a null user; wipe the
+  // in-memory garage so the next person on a shared device never sees the
+  // last customer's cars or visits
+  const clearSession = () => { setUser(null); setVehicles([]); setBookings([]); };
 
   useEffect(() => {
     // ── DEV-ONLY auth shim ────────────────────────────────────────────────
@@ -39,10 +44,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Reconciles employee promotion/revocation on every session restore
           setUser(await linkEmployeeRole(profile));
         } catch {
-          setUser(null);
+          clearSession();
         }
       } else {
-        setUser(null);
+        clearSession();
       }
       setAuthLoading(false);
     });

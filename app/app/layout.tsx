@@ -36,7 +36,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { router.replace('/auth/login'); return; }
+    if (!user) {
+      // carry where they were headed through the door, so a shared deep link
+      // (a chapter, a live visit) returns them there after signing in
+      const here = typeof window !== 'undefined'
+        ? window.location.pathname + window.location.search : '/app';
+      const q = here && here !== '/app' ? `?redirect=${encodeURIComponent(here)}` : '';
+      router.replace(`/auth/login${q}`);
+      return;
+    }
     if (user.role === 'admin') router.replace('/admin');
   }, [user, authLoading, router]);
 
