@@ -1440,6 +1440,12 @@ function ArrangeSheet({
   const { user, addBookingToStore } = useAppStore();
   const online = useOnline();
   const active = useMemo(() => services.filter(s => s.active !== false), [services]);
+  // group the menu by category so it reads as a few objects, never a flat list
+  const grouped = useMemo(() => {
+    const m = new Map<string, Service[]>();
+    active.forEach(s => { if (!m.has(s.category)) m.set(s.category, []); m.get(s.category)!.push(s); });
+    return [...m.entries()];
+  }, [active]);
 
   const [service, setService] = useState<Service | null>(null);
   const [date, setDate] = useState<string | null>(null);
@@ -1503,24 +1509,40 @@ function ArrangeSheet({
   return (
     <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="Arrange a visit">
       <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
-        <Title>Arrange a visit</Title>
-        {/* the car this visit belongs to, in the plate's own language - it
-            stays in view for every step, so the answer is never a guess */}
-        <IdentityPlate
-          name={vehicle.name}
-          registration={vehicle.registrationNumber}
-          variant="row"
-        />
+        {/* the car this visit belongs to - a large object, not a white plate */}
+        <div>
+          <span style={{
+            fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.14em',
+            textTransform: 'uppercase', color: 'var(--st-ink-3)',
+          }}>Arrange · {vehicle.registrationNumber}</span>
+          <p style={{
+            margin: '6px 0 0', fontFamily: 'var(--st-display)', fontWeight: 660, letterSpacing: '-0.03em',
+            fontSize: 'clamp(34px, 11vw, 52px)', lineHeight: 0.95, color: 'var(--st-ink)',
+          }}>
+            {vehicle.name}
+          </p>
+        </div>
 
-        {/* 1 · the care */}
+        {/* 1 · the care - grouped under large category objects, not a flat list */}
         {!service ? (
-          <div style={{ display: 'grid', gap: 16 }}>
-            {active.map(s => (
-              <button key={s.id} onClick={() => setService(s)}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
-                <Body style={{ fontSize: 19 }}>{s.name}</Body>
-                <Data>from ₹{s.price.toLocaleString('en-IN')}</Data>
-              </button>
+          <div style={{ display: 'grid', gap: 'var(--st-rest)' }}>
+            {grouped.map(([cat, items]) => (
+              <div key={cat}>
+                <span style={{
+                  display: 'block', marginBottom: 'var(--st-gap)',
+                  fontFamily: 'var(--st-display)', fontWeight: 600, letterSpacing: '-0.01em',
+                  fontSize: 'clamp(22px, 6vw, 28px)', color: 'var(--st-ink)',
+                }}>{cat}</span>
+                <div style={{ display: 'grid', gap: 'var(--st-gap)' }}>
+                  {items.map(s => (
+                    <button key={s.id} onClick={() => setService(s)} className="st-tap"
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 'var(--st-gap)', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
+                      <Body style={{ fontSize: 19, color: 'var(--st-ink-2)' }}>{s.name}</Body>
+                      <Data tone="ink-3">from ₹{s.price.toLocaleString('en-IN')}</Data>
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         ) : (
