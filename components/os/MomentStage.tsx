@@ -68,31 +68,7 @@ export default function MomentStage({
 
         {children && <div style={{ marginTop: 'var(--st-rest)' }}>{children}</div>}
 
-        <ol
-          aria-label="The five acts of this visit"
-          style={{
-            display: 'flex', gap: 'var(--st-gap)', flexWrap: 'wrap',
-            marginTop: 'var(--st-rest)', padding: 0, listStyle: 'none',
-          }}
-        >
-          {acts.map(a => (
-            <li
-              key={a.act}
-              aria-label={`${a.title} - ${STATE_WORD[a.state]}`}
-              aria-current={a.state === 'current' ? 'step' : undefined}
-              style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--st-hair)' }}
-            >
-              {a.state === 'done' && <Check />}
-              <span aria-hidden style={{
-                fontFamily: 'var(--st-text)', fontSize: 14, lineHeight: 1.45,
-                color: a.state === 'coming' ? 'var(--st-over-2)' : 'var(--st-over)',
-                fontWeight: a.state === 'current' ? 520 : 400,
-              }}>
-                {a.title}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <ActRail acts={acts} />
 
         {timing && <Whisper tone="over-2" style={{ marginTop: 'var(--st-gap)' }}>{timing}</Whisper>}
       </div>
@@ -100,13 +76,85 @@ export default function MomentStage({
   );
 }
 
-/** The assent tick - drawn once; instant under reduced motion (MotionConfig). */
-function Check() {
+/**
+ * THE ACT RAIL - the five acts as an engineered timeline on the stage: a rail
+ * filled to the work's position, done acts checked, the current act a live
+ * heartbeat. No bar, no percentage - the rail *is* the progress language.
+ */
+function ActRail({ acts }: { acts: StayAct[] }) {
+  const n = acts.length;
+  const curIdx = acts.findIndex(a => a.state === 'current');
+  const doneCount = acts.filter(a => a.state === 'done').length;
+  // the fill reaches the current node (or the last done node when none is current)
+  const reached = curIdx >= 0 ? curIdx : Math.max(0, doneCount - 1);
+  const fillPct = n > 1 ? (reached / (n - 1)) * 100 : 0;
+
   return (
-    <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flex: '0 0 auto' }}>
+    <ol
+      aria-label="The five acts of this visit"
+      style={{
+        position: 'relative', display: 'flex', justifyContent: 'space-between',
+        marginTop: 'var(--st-rest)', padding: 0, listStyle: 'none',
+      }}
+    >
+      {/* the rail: a dim track with a bright fill to the work's position */}
+      <div aria-hidden style={{
+        position: 'absolute', top: 6, left: '7px', right: '7px', height: 2, borderRadius: 999,
+        background: 'rgba(247,247,245,0.16)',
+      }} />
+      <div aria-hidden style={{
+        position: 'absolute', top: 6, left: '7px', width: `calc(${fillPct}% - 14px * ${fillPct / 100} + 0px)`,
+        maxWidth: `calc(100% - 14px)`, height: 2, borderRadius: 999,
+        background: 'linear-gradient(90deg, var(--st-over-2), var(--st-over))',
+        transition: 'width 480ms var(--st-ease)',
+      }} />
+      {acts.map(a => (
+        <li
+          key={a.act}
+          aria-label={`${a.title} - ${STATE_WORD[a.state]}`}
+          aria-current={a.state === 'current' ? 'step' : undefined}
+          style={{
+            position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', gap: 8, flex: '1 1 0', minWidth: 0,
+          }}
+        >
+          {/* the node */}
+          <span aria-hidden style={{ position: 'relative', width: 14, height: 14, display: 'grid', placeItems: 'center' }}>
+            <span
+              className={a.state === 'current' ? 'st-node-live' : undefined}
+              style={{
+                width: a.state === 'coming' ? 10 : 14, height: a.state === 'coming' ? 10 : 14,
+                borderRadius: '50%',
+                background: a.state === 'coming' ? 'var(--st-stage)' : 'var(--st-over)',
+                border: a.state === 'coming' ? '2px solid rgba(247,247,245,0.28)' : 'none',
+                display: 'grid', placeItems: 'center',
+              }}
+            >
+              {a.state === 'done' && <Check onStage />}
+            </span>
+          </span>
+          {/* the label - the current act named in full, the rest recede */}
+          <span aria-hidden style={{
+            fontFamily: 'var(--st-text)', fontSize: 11, lineHeight: 1.25, textAlign: 'center',
+            color: a.state === 'coming' ? 'var(--st-over-2)' : 'var(--st-over)',
+            fontWeight: a.state === 'current' ? 520 : 400,
+            opacity: a.state === 'current' ? 1 : 0.82,
+          }}>
+            {a.title}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** The assent tick - drawn once; instant under reduced motion (MotionConfig). */
+function Check({ onStage }: { onStage?: boolean } = {}) {
+  return (
+    <svg aria-hidden width="9" height="9" viewBox="0 0 12 12" fill="none" style={{ flex: '0 0 auto' }}>
       <motion.path
         d="M1.5 6.5 L4.5 9.5 L10.5 2.5"
-        stroke="var(--st-assent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+        stroke={onStage ? 'var(--st-stage)' : 'var(--st-assent)'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
         initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
         transition={{ duration: tick, ease: studioEase }}
       />

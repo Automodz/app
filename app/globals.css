@@ -1197,6 +1197,16 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   70%  { transform: scale(3.2); opacity: 0;    }
   100% { transform: scale(3.2); opacity: 0;    }
 }
+/* the current node on the Stay's live timeline - a light heartbeat on the stage */
+.studio .st-node-live { position: relative; }
+.studio .st-node-live::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: var(--st-over); animation: st-heartbeat 2.4s var(--st-ease) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio .st-node-live::after { animation: none; opacity: 0; }
+}
+
 /* soft horizontal fade so a scrolling rail dissolves at its inset edges */
 .studio .st-rail-fade {
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
