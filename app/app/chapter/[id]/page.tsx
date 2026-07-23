@@ -19,10 +19,12 @@ import { visitPhase } from '@/lib/os/visit';
 import { deriveProtection } from '@/lib/cx/protection';
 import Chapter from '@/components/os/Chapter';
 import Action from '@/components/os/Action';
+import { useStudioRouter } from '@/lib/os/navigate';
 import { Body } from '@/components/os/text';
 
 export default function OwnerChapterPage() {
   const router = useRouter();
+  const nav = useStudioRouter();
   const { id } = useParams<{ id: string }>();
   const { user, bookings } = useAppStore();
 
@@ -99,7 +101,7 @@ export default function OwnerChapterPage() {
         protections={protections}
         owner
         shareUrl={shareUrl}
-        onBack={() => router.replace('/app')}
+        onBack={() => nav.replace('/app')}
       />
     </main>
   );

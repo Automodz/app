@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { crossfade, studioEase, tick } from '@/lib/os/motion';
+import { vtName } from '@/lib/os/navigate';
 import type { StayAct } from '@/lib/os/stay';
 import { ACT_TITLE, type CareAct } from '@/lib/os/visit';
 import { Display, Body, Whisper } from './text';
@@ -42,7 +43,7 @@ export default function MomentStage({
       minHeight: '100dvh', background: 'var(--st-stage)',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ position: 'relative', flex: '0 0 55%', minHeight: '52vh' }}>
+      <div style={{ position: 'relative', flex: '0 0 55%', minHeight: '52vh', ...vtName('hero-vehicle') }}>
         {photo
           ? <Image src={photo} alt={photoAlt ?? `${ACT_TITLE[act]} - the studio’s photograph`} fill
               style={{ objectFit: 'cover' }} sizes="100vw" priority />

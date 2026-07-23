@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { useAppStore } from '@/lib/store';
+import { useStudioRouter } from '@/lib/os/navigate';
 import {
   getServices, getJobsForCustomer, getUserSubscription,
   updateUserProfile, logoutUser, STATIC_SERVICES,
@@ -88,6 +89,7 @@ export default function GlancePage() {
 
 function Glance() {
   const router = useRouter();
+  const nav = useStudioRouter();
   const params = useSearchParams();
   const { user, vehicles, bookings } = useAppStore();
 
@@ -237,11 +239,11 @@ function Glance() {
       // the capsule is the Stay's glass live header: it carries the act and
       // taps straight back into it
       if (act === 'ready') {
-        return { line: `The ${modelWord} is ready.`, ready: true, tap: () => router.push(`/app/visit/${model.live!.id}`) };
+        return { line: `The ${modelWord} is ready.`, ready: true, tap: () => nav.push(`/app/visit/${model.live!.id}`) };
       }
       return {
         line: act ? `${ACT_TITLE[act]} - the ${modelWord} is with us.` : 'In the studio.',
-        tap: () => router.push(`/app/visit/${model.live!.id}`),
+        tap: () => nav.push(`/app/visit/${model.live!.id}`),
       };
     }
     if (model.agreed) {
@@ -322,7 +324,7 @@ function Glance() {
     };
     // a live visit opens the Stay; a finished one opens its record (P4: the Chapter)
     const openVisit = (b: Booking) => () =>
-      router.push(visitPhase(b.status) === 'live' ? `/app/visit/${b.id}` : `/app/chapter/${b.id}`);
+      nav.push(visitPhase(b.status) === "live" ? `/app/visit/${b.id}` : `/app/chapter/${b.id}`);
     const visitsFeed: ThreadVisit[] = model.visits.slice(0, 6).reverse().map(b => ({
       id: b.id,
       line: line(b),
@@ -333,7 +335,7 @@ function Glance() {
       ...model.visits.map(b => ({ label: line(b), group: 'Visits', onTap: openVisit(b) })),
       ...model.completed.filter(b => b.invoiceId).map(b => ({
         label: `Care record - ${fmtLong(b.scheduledDate)}`, group: 'Records',
-        onTap: () => router.push(`/app/chapter/${b.id}`),
+        onTap: () => nav.push(`/app/chapter/${b.id}`),
       })),
       ...model.protections.map(p => ({ label: PROTECTION_WORD[p.kind], group: 'Protection', onTap: () => router.replace('/app?focus=protection') })),
       /* the Conversation answers membership from the same model - real
@@ -396,6 +398,7 @@ function Glance() {
               photo={v.photo}
               truth={v.id === vehicle?.id && model ? model.truth : ''}
               minHeight="100svh"
+              continuous={v.id === vehicle?.id}
             >
               {/* avatar → you sheet */}
               <button
@@ -467,7 +470,7 @@ function Glance() {
                 : model.proposal ? 'Care due'
                 : model.completed.length ? 'Cared for' : 'New',
               sub: model.agreed ? fmtDay(model.agreed.scheduledDate) : undefined,
-              onTap: model.live ? () => router.push(`/app/visit/${model.live!.id}`)
+              onTap: model.live ? () => nav.push(`/app/visit/${model.live!.id}`)
                 : model.agreed ? () => router.replace('/app?sheet=manage')
                 : () => router.replace('/app?sheet=arrange'),
             });
@@ -670,7 +673,7 @@ function Glance() {
                         daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
                         photo={src.photo}
                         installer={src.installer}
-                        onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
+                        onOpenChapter={src.bookingId ? () => nav.push(`/app/chapter/${src.bookingId}`) : undefined}
                       />
                     );
                   })}
@@ -709,7 +712,7 @@ function Glance() {
                 {papers.map(paper => (
                   <button
                     key={paper.id}
-                    onClick={() => router.push(`/app/chapter/${paper.bookingId}`)}
+                    onClick={() => nav.push(`/app/chapter/${paper.bookingId}`)}
                     className="st-tap st-card"
                     style={{
                       flex: '0 0 auto', width: 152, textAlign: 'left', cursor: 'pointer',
@@ -748,7 +751,7 @@ function Glance() {
               vehicleName={vehicle.name}
               moreCount={!showAllStory ? Math.max(0, model.completed.length - STORY_PREVIEW) : 0}
               onMore={() => setShowAllStory(true)}
-              onOpen={id => router.push(`/app/chapter/${id}`)}
+              onOpen={id => nav.push(`/app/chapter/${id}`)}
             />
           )}
 
@@ -831,7 +834,7 @@ function Glance() {
                   daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
                   photo={src.photo}
                   installer={src.installer}
-                  onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
+                  onOpenChapter={src.bookingId ? () => nav.push(`/app/chapter/${src.bookingId}`) : undefined}
                   onRenew={model.proposal?.serviceCategory === p.kind
                     ? () => router.replace(`/app?sheet=arrange&cat=${p.kind}`)
                     : undefined}

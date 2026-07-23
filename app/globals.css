@@ -1130,6 +1130,45 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 .studio ::selection { background: var(--st-linen); }
 
 /* ═══════════════════════════════════════════════════════════════════
+   VIEW TRANSITIONS — the app is one object; routes morph, they never cut.
+   The shared vehicle (view-transition-name: hero-vehicle) is lifted out and
+   morphed between surfaces; everything else pushes in with depth / recedes.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 460ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-old(root) { animation-name: vt-recede; }
+  ::view-transition-new(root) { animation-name: vt-advance; }
+  @keyframes vt-advance {
+    from { opacity: 0; transform: translateY(14px) scale(0.992); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes vt-recede {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: scale(1.018); }
+  }
+  /* the vehicle morphs on its own, slower and eased - object continuity */
+  ::view-transition-group(hero-vehicle) {
+    animation-duration: 620ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-image-pair(hero-vehicle) {
+    isolation: isolate;
+  }
+  ::view-transition-old(hero-vehicle),
+  ::view-transition-new(hero-vehicle) {
+    animation-duration: 620ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    /* cross-fade the contents while the box morphs - the car "opens up" */
+    mix-blend-mode: normal;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    THE OVERTURE — the photo-less hero rendered as a lit chrome monument.
    Brushed-metal text, a slow specular sweep, an ambient light bloom and
    a floor reflection. Monochrome, GPU-only, dropped under reduced motion.

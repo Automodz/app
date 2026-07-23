@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { COMPANY } from '@/lib/company';
 import { studioEase, scene } from '@/lib/os/motion';
+import { vtName } from '@/lib/os/navigate';
 import { timeInCare, type ChapterModel } from '@/lib/os/chapter';
 import { PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import IdentityPlate from './IdentityPlate';
@@ -70,6 +71,7 @@ export default function Chapter({ chapter, protections, owner, shareUrl, onBack 
       <header style={{
         position: 'relative', minHeight: '100svh', display: 'flex', alignItems: 'flex-end',
         background: chapter.hero ? 'var(--st-stage)' : undefined, overflow: 'hidden',
+        ...vtName('hero-vehicle'),
       }}>
         {chapter.hero ? (
           <>

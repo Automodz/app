@@ -11,7 +11,7 @@
  * all of it is dropped under reduced motion.
  */
 import Image from 'next/image';
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { studioEase, scene } from '@/lib/os/motion';
 import { DisplayLarge } from './text';
@@ -24,10 +24,13 @@ interface PortraitProps {
   photo?: string;            // customer/studio portrait URL
   plate?: string;            // shown only in typographic state
   minHeight?: string;        // default 92vh
+  /** the active vehicle owns the shared `hero-vehicle` object so it morphs
+   *  into the Visit stage / Chapter masthead across a route change */
+  continuous?: boolean;
   children?: ReactNode;      // overlay extras (avatar, page dots)
 }
 
-export default function Portrait({ name, truth, photo, plate, minHeight = '92vh', children }: PortraitProps) {
+export default function Portrait({ name, truth, photo, plate, minHeight = '92vh', continuous, children }: PortraitProps) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const [loaded, setLoaded] = useState(false);
@@ -44,6 +47,7 @@ export default function Portrait({ name, truth, photo, plate, minHeight = '92vh'
   return (
     <div ref={ref} style={{
       position: 'relative', minHeight, width: '100%', overflow: 'hidden',
+      ...(continuous ? ({ viewTransitionName: 'hero-vehicle' } as unknown as CSSProperties) : {}),
       // stage is for photography only; without a photo the portrait is its own
       // studio-lit field (rendered by IdentityPlate)
       background: photo ? 'var(--st-stage)' : undefined,

@@ -21,6 +21,7 @@ import { useAppStore } from '@/lib/store';
 import { useVisitJob } from '@/components/os/useVisitJob';
 import { deriveStay, fmtClock } from '@/lib/os/stay';
 import { scene, studioEase, rise } from '@/lib/os/motion';
+import { useStudioRouter, vtName } from '@/lib/os/navigate';
 import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';
 import IdentityPlate from '@/components/os/IdentityPlate';
 import MomentStage from '@/components/os/MomentStage';
@@ -46,6 +47,7 @@ const chapterHref = (bookingId: string) => `/app/chapter/${bookingId}`;
 
 export default function StayPage() {
   const router = useRouter();
+  const nav = useStudioRouter();
   const { id } = useParams<{ id: string }>();
   const { user, bookings, vehicles } = useAppStore();
   const reduced = useReducedMotion();
@@ -62,12 +64,12 @@ export default function StayPage() {
   const isArchived = stay?.archived ?? false;
   const isCancelled = stay?.cancelled ?? false;
   useEffect(() => {
-    if (isArchived) router.replace(chapterHref(id));
+    if (isArchived) nav.replace(chapterHref(id));
     else if (isCancelled) router.replace('/app');
-  }, [isArchived, isCancelled, id, router]);
+  }, [isArchived, isCancelled, id, router, nav]);
 
   /** Put the visit down - the car (and the capsule's live line) is behind it. */
-  const collapse = () => router.replace('/app');
+  const collapse = () => nav.replace('/app');
   const onDragEnd = (_: unknown, info: PanInfo) => {
     if (info.offset.y > 120 || info.velocity.y > 500) collapse();
   };
@@ -194,7 +196,7 @@ function Reveal({
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ position: 'relative', flex: '0 0 60%', minHeight: '56vh' }}>
+      <div style={{ position: 'relative', flex: '0 0 60%', minHeight: '56vh', ...vtName('hero-vehicle') }}>
         {finished
           ? <motion.img
               src={finished} alt={`The finished ${name}`}
