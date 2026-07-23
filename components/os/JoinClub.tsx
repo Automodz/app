@@ -95,21 +95,29 @@ export default function JoinClub({ vehicleName, washes, rejoining, onJoined }: J
               key={p.id}
               onClick={() => setPlan(p.id)}
               aria-pressed={selected}
-              className="st-tap"
+              className="st-tap st-card"
               style={{
-                display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
-                background: 'var(--st-paper)', borderRadius: 'var(--st-r-card)',
-                border: '1px solid var(--st-hairline)',
-                boxShadow: selected ? 'var(--st-hold)' : 'none',
+                position: 'relative', display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
+                background: 'var(--st-card-fill)', borderRadius: 'var(--st-r-card)',
+                border: `1px solid ${selected ? 'var(--st-ink)' : 'var(--st-hairline)'}`,
+                boxShadow: selected ? 'var(--st-raise), var(--st-edge)' : 'var(--st-hold), var(--st-edge)',
                 overflow: 'hidden', padding: 0,
+                transition: 'box-shadow var(--st-move) var(--st-ease), border-color var(--st-move) var(--st-ease)',
               }}
             >
+              {/* the selected tier catches a brushed-silver header - a card you hold */}
               <div aria-hidden style={{
-                height: 3, background: selected ? 'var(--st-assent)' : 'var(--st-hairline)',
+                height: selected ? 6 : 3, transition: 'height var(--st-move) var(--st-ease)',
+                background: selected
+                  ? 'linear-gradient(90deg, #cfd4d9 0%, #ffffff 34%, #a3a8af 62%, #eef0f2 100%)'
+                  : 'var(--st-hairline)',
               }} />
               <div style={{ padding: 'var(--st-inset)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 'var(--st-gap)' }}>
-                  <Emphasis as="p">{p.label}</Emphasis>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    {selected && <span aria-hidden className="st-live-dot" style={{ ['--st-ok' as string]: 'var(--st-assent)' }} />}
+                    <Emphasis as="span">{p.label}</Emphasis>
+                  </span>
                   <Data>₹{p.price.toLocaleString('en-IN')} / month</Data>
                 </div>
                 <Body tone="ink-2" style={{ marginTop: 'var(--st-breath)' }}>
