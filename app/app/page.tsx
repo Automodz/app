@@ -40,6 +40,8 @@ import JoinClub from '@/components/os/JoinClub';
 import CarForm from '@/components/os/CarForm';
 import { markWelcomed, hasBeenWelcomed } from '@/lib/os/welcome';
 import { useOnline } from '@/components/os/useOnline';
+import { getMyReferralCode, referralShareLink, referralWhatsAppLink } from '@/lib/services/referrals';
+import { REFERRAL } from '@/lib/config/storeConfig';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
 import ProtectionRecord from '@/components/os/ProtectionRecord';
@@ -109,6 +111,7 @@ function Glance() {
   const carFormOpen = params.get('sheet') === 'car-form';
   const editingCarId = params.get('car-id');
   const [showAllStory, setShowAllStory] = useState(false);
+  const [refCopied, setRefCopied] = useState(false);
 
   // the story summarises to its most recent chapters; the rest reveal on demand
   const STORY_PREVIEW = 3;
@@ -288,6 +291,28 @@ function Glance() {
 
   /* ── the conversation feed: real visits + a global search index (IA D) ── */
   const messageStudio = () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank');
+
+  /* the referral - carries the customer's real code so the friend is credited
+     and both sides earn the reward. Without the code the link is worthless, so
+     minting it is the whole point. Falls back to WhatsApp / clipboard by
+     platform; a cancelled share or an offline mint is safe to retry. */
+  const shareReferral = async () => {
+    if (!user) return;
+    try {
+      const code = await getMyReferralCode(user);
+      const link = referralShareLink(code);
+      const text = `My car lives at AutoModz — here’s ${REFERRAL.label} on your first detail. ${link}`;
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ text });
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(link);
+        setRefCopied(true);
+        setTimeout(() => setRefCopied(false), 2500);
+      } else {
+        window.open(referralWhatsAppLink(code, user.name), '_blank', 'noopener,noreferrer');
+      }
+    } catch { /* cancelled share or offline mint - the button can be tapped again */ }
+  };
 
   const deskFeed = useMemo(() => {
     if (!model || !vehicle) return { visits: [] as ThreadVisit[], search: [] as SearchItem[] };
@@ -668,12 +693,11 @@ function Glance() {
               )}
 
               <div style={{ marginTop: 'var(--st-rest)' }}>
-                <Body>A friend’s first detail is on us.</Body>
+                <Body>Give a friend {REFERRAL.label} — and get {REFERRAL.label} yourself.</Body>
                 <div style={{ marginTop: 'var(--st-breath)' }}>
-                  <Action variant="quiet" onClick={() => {
-                    const url = typeof window !== 'undefined' ? window.location.origin : '';
-                    if (navigator.share) navigator.share({ text: `My car lives at AutoModz - first detail's on me. ${url}` }).catch(() => {});
-                  }}>Share</Action>
+                  <Action variant="forward" onClick={shareReferral}>
+                    {refCopied ? 'Link copied' : 'Share your invite'}
+                  </Action>
                 </div>
               </div>
             </Layer>

@@ -19,6 +19,7 @@ import { auth } from '@/lib/firebase';
 import { COMPANY } from '@/lib/company';
 import { linkEmployeeRole } from '@/lib/services/auth';
 import { getUserProfile, stashReferralCode, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
+import { claimReferral } from '@/lib/services/referrals';
 import { useAppStore } from '@/lib/store';
 import { StudioLoading } from '@/components/os/StudioBoot';
 import Action from '@/components/os/Action';
@@ -86,6 +87,11 @@ function Login() {
 
       profile = await linkEmployeeRole(profile);
       setUser(profile);
+      // redeem a referral the customer arrived with (?ref=CODE stashed above) -
+      // best-effort so it never blocks entry; the promo is created server-side
+      if (profile.role !== 'admin' && profile.role !== 'employee') {
+        void claimReferral().catch(() => {});
+      }
       router.replace(homeFor(profile.role));
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
