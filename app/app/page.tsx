@@ -45,8 +45,6 @@ import { REFERRAL } from '@/lib/config/storeConfig';
 import Capsule from '@/components/os/Capsule';
 import Layer from '@/components/os/Layer';
 import ProtectionRecord from '@/components/os/ProtectionRecord';
-import DocumentCard, { DocumentGrid } from '@/components/os/DocumentCard';
-import MomentEntry from '@/components/os/MomentEntry';
 import MemberCard from '@/components/os/MemberCard';
 import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/components/os/Desk';
 import StudioSheet from '@/components/os/StudioSheet';
@@ -547,17 +545,79 @@ function Glance() {
             </Layer>
           ) : null}
 
-          {/* B3.5 · The studio - trust before there is a story of their own.
-              Leaves for good once the first visit is completed (◆audit #2). */}
+          {/* QUICK ACTIONS - the two things a customer does, as a row of
+              actions (not cards), right under the status: the app feels like an
+              app, not a document. */}
+          <div style={{
+            marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)',
+            display: 'flex', gap: 'var(--st-inset)', flexWrap: 'wrap', alignItems: 'baseline',
+          }}>
+            <Action variant="forward" onClick={() => router.replace('/app?sheet=arrange')}>Arrange a visit</Action>
+            <Action variant="external" onClick={messageStudio}>Message the studio</Action>
+          </div>
+
+          {/* trust before there is a story of their own (new cars only) */}
           {model.completed.length === 0 && (
             <Layer title="The studio">
               <StudioIntro />
             </Layer>
           )}
 
-          {/* B4 · Protection - one record per layer, told by the protection
-              engine; renewal appears only when the studio's proposal cites it */}
-          {model.protections.length > 0 ? (
+          {/* YOUR VEHICLE - one ownership block: what you own, and its papers as
+              files. Protection has its own status below when it is living; here
+              we only note its absence, in one line. */}
+          <Layer title="Your vehicle" action={{ label: 'Edit', onClick: () => openCarForm(vehicle) }}>
+            <IdentityPlate name={vehicle.name} registration={vehicle.registrationNumber} variant="row" />
+
+            {model.protections.length === 0 && model.completed.length > 0 && (
+              <button
+                onClick={() => router.replace(model.proposal
+                  ? `/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`
+                  : '/app?sheet=arrange')}
+                className="st-tap"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
+                  width: '100%', padding: '14px 0', marginTop: 'var(--st-gap)',
+                  borderTop: '1px solid var(--st-hairline)', background: 'transparent', border: 'none',
+                  cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <span>
+                  <Whisper as="span" style={{ display: 'block' }}>Protection</Whisper>
+                  <Body as="span" style={{ display: 'block' }}>Not protected yet</Body>
+                </span>
+                <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>Add →</span>
+              </button>
+            )}
+
+            {papers.length > 0 && (
+              <div style={{ marginTop: 'var(--st-gap)' }}>
+                {papers.map(paper => (
+                  <button
+                    key={paper.id}
+                    onClick={() => router.push(`/app/chapter/${paper.bookingId}`)}
+                    className="st-tap"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 'var(--st-gap)',
+                      width: '100%', padding: '14px 0',
+                      borderTop: '1px solid var(--st-hairline)', background: 'transparent', border: 'none',
+                      cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <FileGlyph />
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <Body as="span" style={{ display: 'block' }}>{paper.title}</Body>
+                      <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>{paper.detail}</Whisper>
+                    </span>
+                    <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>→</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </Layer>
+
+          {/* PROTECTION - a real status, photographed when it is living */}
+          {model.protections.length > 0 && (
             <Layer
               title="Protection"
               action={model.protections.length > 1
@@ -584,21 +644,11 @@ function Glance() {
                 })}
               </div>
             </Layer>
-          ) : model.completed.length > 0 ? (
-            /* the car has a story but nothing shields it - say so plainly */
-            <Layer title="Protection">
-              <EmptyState
-                line="Not protected yet."
-                actionLabel="Add protection"
-                onAction={() => router.replace(model.proposal
-                  ? `/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`
-                  : '/app?sheet=arrange')}
-              />
-            </Layer>
-          ) : null}
+          )}
 
-          {/* B5 · The story */}
-          <Layer title="The story">
+          {/* RECENT ACTIVITY - a timeline, not stacked photo cards. History
+              recedes: date, work, who, a small frame - one tap to the chapter. */}
+          <Layer title="Recent activity">
             {model.completed.length === 0 ? (
               <EmptyState
                 line={`The ${vehicle.name}’s story starts with its first visit.`}
@@ -606,64 +656,58 @@ function Glance() {
                 onAction={() => router.replace('/app?sheet=arrange')}
               />
             ) : (
-              <div style={{ display: 'grid', gap: 'var(--st-inset)' }}>
+              <div style={{ position: 'relative', paddingLeft: 'var(--st-inset)' }}>
+                <div aria-hidden style={{ position: 'absolute', left: 4, top: 10, bottom: 10, width: 1, background: 'var(--st-hairline)' }} />
                 {(showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)).map(b => {
                   const job = model.jobByBooking.get(b.id);
                   const photos = job?.photos ?? [];
                   const best = photos.find(x => x.kind === 'after') ?? photos[0];
                   const tech = job?.assignments?.filter(a => !a.removedAt && a.role === 'lead')[0]?.employeeName;
                   return (
-                    <MomentEntry
+                    <button
                       key={b.id}
-                      photo={best?.url}
-                      caption={`${b.serviceName} · ${fmtLong(b.scheduledDate)}`}
-                      whisper={best
-                        ? `${photos.length} photo${photos.length === 1 ? '' : 's'}${tech ? ` · ${tech}` : ''}`
-                        : `₹${b.totalAmount.toLocaleString('en-IN')}`}
-                      onTap={() => router.push(`/app/chapter/${b.id}`)}
-                    />
+                      onClick={() => router.push(`/app/chapter/${b.id}`)}
+                      className="st-tap"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 'var(--st-gap)', width: '100%',
+                        padding: 'var(--st-line) 0', background: 'transparent', border: 'none',
+                        cursor: 'pointer', textAlign: 'left', position: 'relative',
+                      }}
+                    >
+                      <span aria-hidden style={{
+                        position: 'absolute', left: -18, width: 7, height: 7, borderRadius: 999,
+                        background: 'var(--st-ink-3)',
+                      }} />
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <Body as="span" style={{ display: 'block' }}>{b.serviceName}</Body>
+                        <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>
+                          {fmtLong(b.scheduledDate)}{tech ? ` · ${tech}` : ''}
+                        </Whisper>
+                      </span>
+                      {best && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={best.url} alt="" style={{
+                          width: 48, height: 48, borderRadius: 10, objectFit: 'cover',
+                          flex: '0 0 auto', background: 'var(--st-gallery)',
+                        }} />
+                      )}
+                    </button>
                   );
                 })}
                 {!showAllStory && model.completed.length > STORY_PREVIEW && (
-                  <Action variant="quiet" onClick={() => setShowAllStory(true)}>
-                    Show earlier visits ({model.completed.length - STORY_PREVIEW})
-                  </Action>
+                  <div style={{ marginTop: 'var(--st-breath)' }}>
+                    <Action variant="quiet" onClick={() => setShowAllStory(true)}>
+                      Show earlier visits ({model.completed.length - STORY_PREVIEW})
+                    </Action>
+                  </div>
                 )}
               </div>
             )}
           </Layer>
 
-          {/* B6 · Papers - the vault. The plate is the permanent header; each
-              paper opens the Chapter that holds it (no second record). */}
-          <Layer title="Papers">
-            <IdentityPlate
-              name={vehicle.name}
-              registration={vehicle.registrationNumber}
-              variant="row"
-            />
-            {papers.length > 0 && (
-              <div style={{ marginTop: 'var(--st-inset)' }}>
-                <DocumentGrid>
-                  {papers.map(paper => (
-                    <DocumentCard
-                      key={paper.id}
-                      title={paper.title}
-                      detail={paper.detail}
-                      onOpen={() => router.push(`/app/chapter/${paper.bookingId}`)}
-                    />
-                  ))}
-                </DocumentGrid>
-              </div>
-            )}
-            <div style={{ marginTop: 'var(--st-inset)' }}>
-              <Action variant="quiet" onClick={() => openCarForm(vehicle)}>Edit details</Action>
-            </div>
-          </Layer>
-
-          {/* B7 · The Club - the relationship, told by the club model. The
-              card is the object; one true line sits under it. */}
+          {/* OWNERSHIP - the membership as a possession; the invite folded in */}
           {(club.state !== 'none' || club.invited) && (
-            <Layer title="The Club">
+            <Layer title="Ownership">
               {club.state !== 'none' ? (
                 <div>
                   <MemberCard
@@ -692,27 +736,22 @@ function Glance() {
                 />
               )}
 
-              <div style={{ marginTop: 'var(--st-rest)' }}>
-                <Body>Give a friend {REFERRAL.label} — and get {REFERRAL.label} yourself.</Body>
-                <div style={{ marginTop: 'var(--st-breath)' }}>
-                  <Action variant="forward" onClick={shareReferral}>
-                    {refCopied ? 'Link copied' : 'Share your invite'}
-                  </Action>
-                </div>
+              <div style={{
+                marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)',
+                borderTop: '1px solid var(--st-hairline)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
+              }}>
+                <Body tone="ink-2" style={{ flex: 1 }}>Give a friend {REFERRAL.label}, get {REFERRAL.label}.</Body>
+                <Action variant="forward" onClick={shareReferral}>{refCopied ? 'Copied' : 'Share'}</Action>
               </div>
             </Layer>
           )}
 
-          {/* the signature - the dossier closes on a hairline, then the mark */}
+          {/* the signature - quiet close */}
           <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
             <div aria-hidden style={{ height: 1, background: 'var(--st-hairline)', marginBottom: 'var(--st-rest)' }} />
             <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em', display: 'block' }}>AUTOMODZ</Whisper>
             <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 'var(--st-breath)' }}>{COMPANY.address}</Data>
-            <div style={{ marginTop: 'var(--st-line)' }}>
-              <Action variant="forward" onClick={() => router.replace('/app?sheet=desk')}>
-                Message the studio
-              </Action>
-            </div>
           </div>
         </div>
       )}
@@ -825,6 +864,17 @@ const fmtDay = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
 
 /* ── the add-a-car page (B1 last page / first-run) ── */
+/** A small document mark - the one glyph that makes a paper read as a file. */
+function FileGlyph() {
+  return (
+    <svg aria-hidden width="16" height="18" viewBox="0 0 16 18" fill="none" style={{ flex: '0 0 auto' }}>
+      <path d="M2.75 1.75h5.5l5 5v9.5a1 1 0 0 1-1 1H2.75a1 1 0 0 1-1-1V2.75a1 1 0 0 1 1-1z"
+        stroke="var(--st-ink-3)" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M8.25 1.75v5.25h5" stroke="var(--st-ink-3)" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: boolean }) {
   return (
     <div style={{
