@@ -396,7 +396,7 @@ function Glance() {
               plate={v.registrationNumber}
               photo={v.photo}
               truth={v.id === vehicle?.id && model ? model.truth : ''}
-              minHeight="92vh"
+              minHeight="80vh"
             >
               {/* avatar → you sheet */}
               <button
@@ -545,15 +545,15 @@ function Glance() {
             </Layer>
           ) : null}
 
-          {/* QUICK ACTIONS - the two things a customer does, as a row of
-              actions (not cards), right under the status: the app feels like an
-              app, not a document. */}
+          {/* QUICK ACTIONS - the two things a customer does to this vehicle, as
+              a row of actions (not cards). Messaging is the Capsule's job, so it
+              is not duplicated here. */}
           <div style={{
             marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)',
             display: 'flex', gap: 'var(--st-inset)', flexWrap: 'wrap', alignItems: 'baseline',
           }}>
             <Action variant="forward" onClick={() => router.replace('/app?sheet=arrange')}>Arrange a visit</Action>
-            <Action variant="external" onClick={messageStudio}>Message the studio</Action>
+            <Action variant="quiet" onClick={() => openCarForm(vehicle)}>Edit details</Action>
           </div>
 
           {/* trust before there is a story of their own (new cars only) */}
@@ -563,36 +563,59 @@ function Glance() {
             </Layer>
           )}
 
-          {/* YOUR VEHICLE - one ownership block: what you own, and its papers as
-              files. Protection has its own status below when it is living; here
-              we only note its absence, in one line. */}
-          <Layer title="Your vehicle" action={{ label: 'Edit', onClick: () => openCarForm(vehicle) }}>
-            <IdentityPlate name={vehicle.name} registration={vehicle.registrationNumber} variant="row" />
+          {/* PROTECTION - always a status: photographed when it is living,
+              otherwise a single "not protected" line. (The car's identity is
+              already the hero - it is never repeated here.) */}
+          {(model.protections.length > 0 || model.completed.length > 0) && (
+            <Layer
+              title="Protection"
+              action={model.protections.length > 1
+                ? { label: 'All protection', onClick: () => router.replace('/app?focus=protection') }
+                : undefined}
+            >
+              {model.protections.length > 0 ? (
+                <div style={{ display: 'grid' }}>
+                  {model.protections.map((p, i) => {
+                    const src = protectionSource(model, p);
+                    return (
+                      <div key={p.kind} style={{ borderTop: i > 0 ? '1px solid var(--st-hairline)' : undefined }}>
+                        <ProtectionRecord
+                          compact
+                          protection={p}
+                          vehicleName={vehicle.name}
+                          daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
+                          photo={src.photo}
+                          installer={src.installer}
+                          onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <button
+                  onClick={() => router.replace(model.proposal
+                    ? `/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`
+                    : '/app?sheet=arrange')}
+                  className="st-tap"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
+                    width: '100%', padding: 0, background: 'transparent', border: 'none',
+                    cursor: 'pointer', textAlign: 'left',
+                  }}
+                >
+                  <Body>Not protected yet</Body>
+                  <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>Add →</span>
+                </button>
+              )}
+            </Layer>
+          )}
 
-            {model.protections.length === 0 && model.completed.length > 0 && (
-              <button
-                onClick={() => router.replace(model.proposal
-                  ? `/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`
-                  : '/app?sheet=arrange')}
-                className="st-tap"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
-                  width: '100%', padding: '14px 0', marginTop: 'var(--st-gap)',
-                  borderTop: '1px solid var(--st-hairline)', background: 'transparent', border: 'none',
-                  cursor: 'pointer', textAlign: 'left',
-                }}
-              >
-                <span>
-                  <Whisper as="span" style={{ display: 'block' }}>Protection</Whisper>
-                  <Body as="span" style={{ display: 'block' }}>Not protected yet</Body>
-                </span>
-                <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>Add →</span>
-              </button>
-            )}
-
-            {papers.length > 0 && (
-              <div style={{ marginTop: 'var(--st-gap)' }}>
-                {papers.map(paper => (
+          {/* PAPERS - the car's documents as files, not cards */}
+          {papers.length > 0 && (
+            <Layer title="Papers">
+              <div>
+                {papers.map((paper, i) => (
                   <button
                     key={paper.id}
                     onClick={() => router.push(`/app/chapter/${paper.bookingId}`)}
@@ -600,7 +623,8 @@ function Glance() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 'var(--st-gap)',
                       width: '100%', padding: '14px 0',
-                      borderTop: '1px solid var(--st-hairline)', background: 'transparent', border: 'none',
+                      background: 'transparent', border: 'none',
+                      borderTop: i > 0 ? '1px solid var(--st-hairline)' : undefined,
                       cursor: 'pointer', textAlign: 'left',
                     }}
                   >
@@ -612,36 +636,6 @@ function Glance() {
                     <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>→</span>
                   </button>
                 ))}
-              </div>
-            )}
-          </Layer>
-
-          {/* PROTECTION - a real status, photographed when it is living */}
-          {model.protections.length > 0 && (
-            <Layer
-              title="Protection"
-              action={model.protections.length > 1
-                ? { label: 'All protection', onClick: () => router.replace('/app?focus=protection') }
-                : undefined}
-            >
-              <div style={{ display: 'grid', gap: 'var(--st-inset)' }}>
-                {model.protections.map(p => {
-                  const src = protectionSource(model, p);
-                  return (
-                    <ProtectionRecord
-                      key={p.kind}
-                      protection={p}
-                      vehicleName={vehicle.name}
-                      daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
-                      photo={src.photo}
-                      installer={src.installer}
-                      onOpenChapter={src.bookingId ? () => router.push(`/app/chapter/${src.bookingId}`) : undefined}
-                      onRenew={model.proposal?.serviceCategory === p.kind
-                        ? () => router.replace(`/app?sheet=arrange&cat=${p.kind}`)
-                        : undefined}
-                    />
-                  );
-                })}
               </div>
             </Layer>
           )}
@@ -747,11 +741,12 @@ function Glance() {
             </Layer>
           )}
 
-          {/* the signature - quiet close */}
+          {/* the signature - one quiet line */}
           <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
-            <div aria-hidden style={{ height: 1, background: 'var(--st-hairline)', marginBottom: 'var(--st-rest)' }} />
-            <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em', display: 'block' }}>AUTOMODZ</Whisper>
-            <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 'var(--st-breath)' }}>{COMPANY.address}</Data>
+            <div aria-hidden style={{ height: 1, background: 'var(--st-hairline)', marginBottom: 'var(--st-gap)' }} />
+            <Whisper tone="ink-3" style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.06em' }}>
+              AUTOMODZ · {COMPANY.address}
+            </Whisper>
           </div>
         </div>
       )}

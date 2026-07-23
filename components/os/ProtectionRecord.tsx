@@ -36,10 +36,13 @@ export interface ProtectionRecordProps {
   onOpenChapter?: () => void;
   /** offered only when the studio's proposal engine truly cites this layer */
   onRenew?: () => void;
+  /** Home reads protection as a *status* row (thumb + word + condition + chip);
+   *  the full photographed record lives in the focus sheet and the chapter. */
+  compact?: boolean;
 }
 
 export default function ProtectionRecord({
-  protection: p, vehicleName, daysLeft, photo, installer, onOpenChapter, onRenew,
+  protection: p, vehicleName, daysLeft, photo, installer, onOpenChapter, onRenew, compact,
 }: ProtectionRecordProps) {
   const word = PROTECTION_WORD[p.kind];
   const renewing = p.term === 'waning' || p.term === 'expiring';
@@ -74,6 +77,36 @@ export default function ProtectionRecord({
       )}
     </>
   );
+
+  /* Home: one glanceable status row - word, condition, a chip, a small frame of
+     the evidence; the full record is one tap away in its chapter. */
+  if (compact) {
+    return (
+      <button
+        onClick={onOpenChapter}
+        className="st-tap"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 'var(--st-gap)', width: '100%',
+          padding: 'var(--st-line) 0', background: 'transparent', border: 'none',
+          cursor: onOpenChapter ? 'pointer' : 'default', textAlign: 'left',
+        }}
+      >
+        {p.active && photo && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={photo} alt="" style={{
+            width: 44, height: 44, borderRadius: 10, objectFit: 'cover',
+            flex: '0 0 auto', background: 'var(--st-gallery)',
+          }} />
+        )}
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <Body as="span" style={{ display: 'block' }}>{word}</Body>
+          <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>{condition}</Whisper>
+        </span>
+        <Chip tone={status.tone}>{status.label}</Chip>
+        {onOpenChapter && <span aria-hidden style={{ color: 'var(--st-ink-3)', flex: '0 0 auto' }}>→</span>}
+      </button>
+    );
+  }
 
   /* photography belongs to living protection only (design law) - the status
      chip rides the top-right corner over the scrim */
