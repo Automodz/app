@@ -443,9 +443,10 @@ function Glance() {
               where is my car, what protects it, what do I own. */}
           {(() => {
             const p0 = model.protections[0];
-            const tiles: { label: string; value: string; sub?: string; onTap?: () => void }[] = [];
+            const tiles: { label: string; value: string; sub?: string; onTap?: () => void; live?: boolean }[] = [];
             tiles.push({
               label: 'Status',
+              live: !!model.live,
               value: model.live ? 'In care'
                 : model.agreed ? (visitPhase(model.agreed.status) === 'agreed' ? 'Booked' : 'Requested')
                 : model.proposal ? 'Care due'
@@ -476,12 +477,12 @@ function Glance() {
               tiles.push({ label: 'The Club', value: 'Invited', sub: 'have a look', onTap: () => router.replace('/app?sheet=join-club') });
             }
             return (
-              <div style={{
+              <div className="st-rail-fade" style={{
                 marginTop: 'var(--st-rest)', display: 'flex', gap: 'var(--st-line)',
                 overflowX: 'auto', scrollbarWidth: 'none',
-                padding: '0 var(--st-inset)',
+                padding: '2px var(--st-inset)',
               }}>
-                {tiles.map(t => <StatTile key={t.label} {...t} />)}
+                {tiles.map((t, i) => <StatTile key={t.label} index={i} {...t} />)}
               </div>
             );
           })()}
@@ -919,28 +920,40 @@ function PinGlyph() {
 
 /** GLANCE tile - one number the customer reads without a sentence. A row of
  *  these (Wallet/Health) answers where/protected/owned at a glance. */
-function StatTile({ label, value, sub, onTap }: {
+function StatTile({ label, value, sub, onTap, live, index = 0 }: {
   label: string; value: string; sub?: string; onTap?: () => void;
+  live?: boolean; index?: number;
 }) {
   const body = (
     <>
       <span style={{
-        display: 'block', fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.08em',
+        display: 'flex', alignItems: 'center', gap: 6,
+        fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.08em',
         textTransform: 'uppercase', color: 'var(--st-ink-3)',
-      }}>{label}</span>
-      <Emphasis as="span" style={{ display: 'block', marginTop: 6 }}>{value}</Emphasis>
-      {sub && <Whisper as="span" style={{ display: 'block', marginTop: 2 }}>{sub}</Whisper>}
+      }}>
+        {live && <span aria-hidden className="st-live-dot" />}
+        {label}
+      </span>
+      {/* the value carries the tile - large enough to read across the room */}
+      <span style={{
+        display: 'block', marginTop: 10, fontFamily: 'var(--st-display)', fontWeight: 600,
+        fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.01em',
+        color: live ? 'var(--st-ok)' : 'var(--st-ink)',
+      }}>{value}</span>
+      {sub && <Whisper as="span" style={{ display: 'block', marginTop: 3 }}>{sub}</Whisper>}
     </>
   );
   const style: React.CSSProperties = {
-    display: 'block', textAlign: 'left', flex: '0 0 auto', minWidth: 128, maxWidth: 200,
+    display: 'block', textAlign: 'left', flex: '0 0 auto', minWidth: 138, maxWidth: 210,
     background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
     boxShadow: 'var(--st-hold), var(--st-edge)', borderRadius: 'var(--st-r-card)',
-    padding: 'var(--st-gap)', cursor: onTap ? 'pointer' : 'default',
+    padding: 'var(--st-inset) var(--st-gap)', cursor: onTap ? 'pointer' : 'default',
+    animationDelay: `${index * 70}ms`,
   };
+  const className = `st-tile-in st-card${onTap ? ' st-tap' : ''}`;
   return onTap
-    ? <button onClick={onTap} className="st-tap st-card" style={style}>{body}</button>
-    : <div style={style}>{body}</div>;
+    ? <button onClick={onTap} className={className} style={style}>{body}</button>
+    : <div className={className} style={style}>{body}</div>;
 }
 
 /** STUDIO - a destination card (Apple Maps-style), not a signature footer. */

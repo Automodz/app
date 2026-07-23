@@ -1180,6 +1180,38 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   .studio .st-overture-monument { animation: none !important; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   LIVING STATUS — a breathing indicator for a car in care / ready. The
+   only pulse in the product: a calm heartbeat, never a busy spinner.
+   ═══════════════════════════════════════════════════════════════════ */
+.studio .st-live-dot {
+  position: relative; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--st-ok); flex: 0 0 auto;
+}
+.studio .st-live-dot::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: var(--st-ok); animation: st-heartbeat 2.4s var(--st-ease) infinite;
+}
+@keyframes st-heartbeat {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { transform: scale(3.2); opacity: 0;    }
+  100% { transform: scale(3.2); opacity: 0;    }
+}
+/* soft horizontal fade so a scrolling rail dissolves at its inset edges */
+.studio .st-rail-fade {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio .st-live-dot::after { animation: none; opacity: 0; }
+}
+/* stat-rail tiles settle in with a gentle stagger (delay set inline by index) */
+@keyframes st-tile-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.studio .st-tile-in { animation: st-tile-in 480ms var(--st-ease) both; }
+@media (prefers-reduced-motion: reduce) {
+  .studio .st-tile-in { animation: none; }
+}
+
 /* the one permitted spinner - inside a pressed Action only (§13) */
 .st-spin { animation: spin-cw 0.7s linear infinite; }
 /* a calm image-loading placeholder - a breathe, never a shimmer (§13) */
