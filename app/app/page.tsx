@@ -507,41 +507,74 @@ function Glance() {
               in the capsule until P3). The two are mutually exclusive. */}
           {model.agreed ? (
             <Layer>
-              {/* the focus card - the single most important thing after the
-                  hero: the visit as an object, its status read at a glance
-                  (UX-1). Object-first: the day is the hero, not a sentence. */}
+              {/* THE PASS - the next visit as a single graphite object, the one
+                  dark surface on the deck. The day is the hero; the pass reads
+                  like a boarding card, not another white section. */}
               {(() => {
                 const confirmed = visitPhase(model.agreed.status) === 'agreed';
                 return (
-                  <div style={{
-                    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
-                    borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-raise), var(--st-edge)',
-                    padding: 'var(--st-inset)',
+                  <div className="st-card" style={{
+                    position: 'relative', overflow: 'hidden',
+                    background: 'linear-gradient(155deg, #23262B 0%, #16181B 56%, #0D0E10 100%)',
+                    borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-lift)',
+                    padding: 'var(--st-inset)', color: 'var(--st-over)',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
-                      <Whisper as="p">{confirmed ? 'Your next visit' : 'Requested'}</Whisper>
-                      <Chip tone={confirmed ? 'ok' : 'neutral'}>{confirmed ? 'Confirmed' : 'Requested'}</Chip>
+                    {/* top specular edge + a faint corner bloom - machined metal */}
+                    <div aria-hidden style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent)',
+                    }} />
+                    <div aria-hidden style={{
+                      position: 'absolute', top: '-30%', right: '-20%', width: '70%', height: '80%',
+                      background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.10) 0%, transparent 65%)',
+                      pointerEvents: 'none',
+                    }} />
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
+                      <span style={{
+                        fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.1em',
+                        textTransform: 'uppercase', color: 'var(--st-over-2)',
+                      }}>{confirmed ? 'Next visit' : 'Requested'}</span>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '4px 10px', borderRadius: 999,
+                        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)',
+                        fontFamily: 'var(--st-text)', fontSize: 12, color: 'var(--st-over)',
+                      }}>
+                        {confirmed && <span aria-hidden className="st-live-dot" style={{ ['--st-ok' as string]: '#5FBF8F' }} />}
+                        {confirmed ? 'Confirmed' : 'Awaiting the studio'}
+                      </span>
                     </div>
-                    <DisplayLarge style={{ marginTop: 'var(--st-line)', fontSize: 'clamp(28px, 8vw, 40px)' }}>
+                    <p style={{
+                      position: 'relative', marginTop: 'var(--st-gap)',
+                      fontFamily: 'var(--st-display)', fontWeight: 640, letterSpacing: '-0.02em',
+                      fontSize: 'clamp(34px, 10vw, 52px)', lineHeight: 1.02, color: 'var(--st-over)',
+                    }}>
                       {fmtDayDate(model.agreed.scheduledDate)}
-                    </DisplayLarge>
-                    <Data tone="ink-2" style={{ display: 'block', marginTop: 'var(--st-hair)', fontSize: 15 }}>
+                    </p>
+                    <span style={{
+                      display: 'block', marginTop: 6, fontFamily: 'var(--st-data)', fontSize: 15,
+                      color: 'var(--st-over-2)',
+                    }}>
                       {model.agreed.scheduledTime}
-                    </Data>
-                    <div style={{ marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)', borderTop: '1px solid var(--st-hairline)' }}>
+                    </span>
+                    <div style={{ position: 'relative', marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
-                        <Body tone="ink-2">
+                        <span style={{ fontFamily: 'var(--st-text)', fontSize: 16, color: 'var(--st-over-2)' }}>
                           {model.agreed.serviceName}
                           {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
-                        </Body>
-                        <Data>₹{model.agreed.totalAmount.toLocaleString('en-IN')}</Data>
+                        </span>
+                        <span style={{ fontFamily: 'var(--st-data)', fontSize: 14, color: 'var(--st-over)' }}>
+                          ₹{model.agreed.totalAmount.toLocaleString('en-IN')}
+                        </span>
                       </div>
                       {!confirmed && (
-                        <Whisper as="p" style={{ marginTop: 'var(--st-breath)' }}>{PHASE_LINE.proposed}</Whisper>
+                        <p style={{ marginTop: 'var(--st-breath)', fontFamily: 'var(--st-text)', fontSize: 12, color: 'var(--st-over-2)' }}>
+                          {PHASE_LINE.proposed}
+                        </p>
                       )}
                     </div>
-                    <div style={{ marginTop: 'var(--st-line)' }}>
-                      <Action variant="quiet" onClick={() => router.replace('/app?sheet=manage')}>Change or cancel</Action>
+                    <div style={{ position: 'relative', marginTop: 'var(--st-gap)' }}>
+                      <Action variant="on-photo" onClick={() => router.replace('/app?sheet=manage')}>Change or cancel</Action>
                     </div>
                   </div>
                 );
