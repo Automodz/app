@@ -98,7 +98,7 @@ export default function ProtectionRecord({
   return (
     <div style={{
       background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
-      borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-hold), var(--st-edge)',
+      borderRadius: 'var(--st-r-card)', boxShadow: 'var(--st-hold), var(--st-edge)',
       padding: 'var(--st-inset)',
     }}>
       <div style={{

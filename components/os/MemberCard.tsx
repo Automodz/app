@@ -24,7 +24,7 @@ export default function MemberCard({ name, tier, since, state = 'active' }: Memb
     : { tone: 'neutral' as const, label: 'Lapsed' };
   return (
     <div style={{
-      background: 'var(--st-card-fill)', borderRadius: 'var(--st-r-card)',
+      background: 'var(--st-card-fill)', borderRadius: 'var(--st-r-sheet)',
       border: '1px solid var(--st-hairline)', boxShadow: 'var(--st-raise), var(--st-edge)',
       overflow: 'hidden',
     }}>

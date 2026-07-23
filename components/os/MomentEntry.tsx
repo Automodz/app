@@ -26,8 +26,8 @@ export default function MomentEntry({ photo, caption, whisper, milestone, date, 
   if (photo) {
     return <PhotoBand src={photo} alt={caption} ratio="memory" caption={caption} whisper={whisper} onTap={onTap} />;
   }
-  // migrated / photo-less visit: a crafted moment-card, never a bare paragraph
-  // (UX-1) - material, an edge of light, a quiet forward affordance
+  // migrated / photo-less visit: a quiet, recessed moment in the story - history
+  // reads lighter than the raised cards above it, so importance descends the page
   const body = (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
@@ -41,13 +41,12 @@ export default function MomentEntry({ photo, caption, whisper, milestone, date, 
   );
   const surface = {
     display: 'block', width: '100%', textAlign: 'left' as const,
-    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
-    boxShadow: 'var(--st-hold), var(--st-edge)',
+    background: 'var(--st-gallery-fill)',
     borderRadius: 'var(--st-r-card)', padding: 'var(--st-gap)',
   };
   if (!onTap) return <div style={surface}>{body}</div>;
   return (
-    <button onClick={onTap} className="st-tap st-card" style={{ ...surface, cursor: 'pointer' }}>
+    <button onClick={onTap} className="st-tap" style={{ ...surface, border: 'none', cursor: 'pointer' }}>
       {body}
     </button>
   );
