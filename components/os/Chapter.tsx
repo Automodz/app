@@ -36,6 +36,22 @@ interface ChapterProps {
   onBack?: () => void;
 }
 
+/** Cinematic scroll reveal - the editorial rises into frame, once, with depth. */
+function Reveal({ children, y = 24 }: { children: React.ReactNode; y?: number }) {
+  const reduced = useReducedMotion();
+  if (reduced) return <>{children}</>;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y, filter: 'blur(6px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      viewport={{ once: true, margin: '-12%' }}
+      transition={{ duration: scene, ease: studioEase }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 /** A small mono kicker - the editorial device that replaces a section heading. */
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -128,38 +144,42 @@ export default function Chapter({ chapter, protections, owner, shareUrl, onBack 
       </header>
 
       {/* ── THE OPENING LINE: the work, no heading ── */}
-      <section style={{ padding: 'var(--st-movement) var(--st-inset) 0' }}>
-        {lead && (
-          <p style={{
-            fontFamily: 'var(--st-display)', fontWeight: 500, letterSpacing: '-0.01em',
-            fontSize: 'clamp(22px, 6vw, 30px)', lineHeight: 1.3, color: 'var(--st-ink)', margin: 0,
-          }}>
-            {lead}
-          </p>
-        )}
-        {rest.length > 0 && (
-          <div style={{ display: 'grid', gap: 'var(--st-line)', marginTop: 'var(--st-inset)' }}>
-            {rest.map((line, i) => <Body key={i} tone="ink-2">{line}</Body>)}
-          </div>
-        )}
-      </section>
+      <Reveal>
+        <section style={{ padding: 'var(--st-movement) var(--st-inset) 0' }}>
+          {lead && (
+            <p style={{
+              fontFamily: 'var(--st-display)', fontWeight: 500, letterSpacing: '-0.01em',
+              fontSize: 'clamp(22px, 6vw, 30px)', lineHeight: 1.3, color: 'var(--st-ink)', margin: 0,
+            }}>
+              {lead}
+            </p>
+          )}
+          {rest.length > 0 && (
+            <div style={{ display: 'grid', gap: 'var(--st-line)', marginTop: 'var(--st-inset)' }}>
+              {rest.map((line, i) => <Body key={i} tone="ink-2">{line}</Body>)}
+            </div>
+          )}
+        </section>
+      </Reveal>
 
       {/* ── THE EVIDENCE: full-bleed photography, cinematic, figure-numbered ── */}
       {chapter.evidence.map((shot, i) => (
-        <figure key={`${shot.url}-${i}`} style={{ margin: 'var(--st-movement) 0 0' }}>
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5', background: 'var(--st-stage)', overflow: 'hidden' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={shot.url} alt={`${shot.label} - the ${chapter.vehicleName}`} loading="lazy"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-          <figcaption style={{
-            display: 'flex', alignItems: 'baseline', gap: 'var(--st-line)',
-            padding: 'var(--st-gap) var(--st-inset) 0',
-          }}>
-            <Kicker>{String(i + 1).padStart(2, '0')}</Kicker>
-            <Body tone="ink-2">{shot.label}</Body>
-          </figcaption>
-        </figure>
+        <Reveal key={`${shot.url}-${i}`} y={40}>
+          <figure style={{ margin: 'var(--st-movement) 0 0' }}>
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5', background: 'var(--st-stage)', overflow: 'hidden' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={shot.url} alt={`${shot.label} - the ${chapter.vehicleName}`} loading="lazy"
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <figcaption style={{
+              display: 'flex', alignItems: 'baseline', gap: 'var(--st-line)',
+              padding: 'var(--st-gap) var(--st-inset) 0',
+            }}>
+              <Kicker>{String(i + 1).padStart(2, '0')}</Kicker>
+              <Body tone="ink-2">{shot.label}</Body>
+            </figcaption>
+          </figure>
+        </Reveal>
       ))}
 
       {/* ── THE BYLINE: the craft, as a bylined line, not a section ── */}
