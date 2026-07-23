@@ -20,7 +20,7 @@ import { useAppStore } from '@/lib/store';
 import {
   getVehicles, getUserBookings, subscribeUserBookings,
 } from '@/lib/firebaseService';
-import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING } from '@/lib/cx/devseed';
+import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING, DEV_DECLINED_BOOKING } from '@/lib/cx/devseed';
 import OfflineBar from '@/components/os/OfflineBar';
 import { StudioLoading, StudioError, bootReveal } from '@/components/os/StudioBoot';
 
@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     if (isDevUser(user.uid)) {
       setVehicles([DEV_VEHICLE]);
-      setBookings([DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING]);
+      setBookings([DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING, DEV_DECLINED_BOOKING]);
       setStatus('ready');
       return;
     }

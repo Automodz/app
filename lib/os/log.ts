@@ -69,10 +69,15 @@ export function conciergeLog(args: {
     }
 
     if (phase === 'cancelled') {
+      const line = b.noShow
+        ? `The ${b.serviceName} on ${fmtLong(b.scheduledDate)} was missed.`
+        : b.rejectionReason
+        ? `The studio couldn’t take ${b.serviceName} on ${fmtLong(b.scheduledDate)}${b.rejectionReason ? ` - ${b.rejectionReason}` : ''}`
+        : `${b.serviceName} on ${fmtLong(b.scheduledDate)} was cancelled.`;
       out.push({
         id: `${b.id}-cancelled`,
-        at: b.updatedAt?.toDate?.() ?? created,
-        line: `${b.serviceName} on ${fmtLong(b.scheduledDate)} was cancelled.`,
+        at: b.cancelledAt?.toDate?.() ?? b.updatedAt?.toDate?.() ?? created,
+        line,
       });
     }
 

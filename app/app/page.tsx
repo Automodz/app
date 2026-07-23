@@ -168,13 +168,23 @@ function Glance() {
     const agreed = visits
       .filter(v => ['proposed', 'agreed'].includes(visitPhase(v.status)))
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null;
+    /* the declined fork: a request the studio couldn't take (rejected) or a
+       missed slot (no-show). It only speaks when nothing is in flight for the
+       car, and it retires on its own after two weeks so it never lingers. */
+    const DECLINE_WINDOW = 14 * 86400000;
+    const declinedRaw = bookings
+      .filter(b => b.vehicleId === vehicle.id && b.status === 'cancelled'
+        && (b.rejectionReason != null || b.noShow === true))
+      .filter(b => Date.now() - (b.cancelledAt?.toMillis?.() ?? b.updatedAt?.toMillis?.() ?? 0) <= DECLINE_WINDOW)
+      .sort((a, b) => (b.cancelledAt?.toMillis?.() ?? 0) - (a.cancelledAt?.toMillis?.() ?? 0))[0] ?? null;
+    const declined = live || agreed ? null : declinedRaw;
     const jobByBooking = new Map(jobs.filter(j => j.bookingId).map(j => [j.bookingId!, j]));
     // one open proposal per vehicle - suppressed while a visit is already in flight
     const proposal = (live || agreed) ? null : proposalFor({
       vehicleId: vehicle.id, protections, lastCaredOn: completed[0]?.scheduledDate,
     });
     return {
-      visits, completed, protections, live, agreed, jobByBooking, proposal,
+      visits, completed, protections, live, agreed, declined, jobByBooking, proposal,
       truth: truthOf({
         visits,
         protections: facts,
@@ -446,6 +456,47 @@ function Glance() {
                     </div>
                     <div style={{ marginTop: 'var(--st-line)' }}>
                       <Action variant="quiet" onClick={() => router.replace('/app?sheet=manage')}>Change or cancel</Action>
+                    </div>
+                  </div>
+                );
+              })()}
+            </Layer>
+          ) : model.declined ? (
+            <Layer>
+              {/* the declined fork - the studio couldn't take a request, or a
+                  slot was missed. The reason the studio gave is finally shown,
+                  and the way forward is one tap to another time. */}
+              {(() => {
+                const d = model.declined!;
+                const missed = d.noShow === true;
+                return (
+                  <div style={{
+                    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
+                    borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-raise), var(--st-edge)',
+                    padding: 'var(--st-inset)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
+                      <Whisper as="p">A note from the studio</Whisper>
+                      <Chip tone="neutral">{missed ? 'Missed' : 'Not accepted'}</Chip>
+                    </div>
+                    <Emphasis style={{ display: 'block', marginTop: 'var(--st-line)' }}>
+                      {missed
+                        ? `The ${fmtDayDate(d.scheduledDate)} visit was missed.`
+                        : `${fmtDayDate(d.scheduledDate)} couldn’t be taken.`}
+                    </Emphasis>
+                    <Data tone="ink-2" style={{ display: 'block', marginTop: 'var(--st-hair)', fontSize: 15 }}>
+                      {d.serviceName} · {d.scheduledTime}
+                    </Data>
+                    <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>
+                      {missed
+                        ? `The ${vehicle.name}’s slot went unused. Arrange another whenever suits you.`
+                        : d.rejectionReason}
+                    </Body>
+                    <div style={{ marginTop: 'var(--st-inset)' }}>
+                      <Action variant="forward"
+                        onClick={() => router.replace(`/app?sheet=arrange&cat=${d.serviceCategory}`)}>
+                        {missed ? 'Arrange another' : 'Find another time'}
+                      </Action>
                     </div>
                   </div>
                 );

@@ -51,6 +51,20 @@ export const DEV_COMPLETED_BOOKING = {
   jobId: 'dev-job-done',
 } as unknown as Booking;
 
+/** A request the studio couldn't take (approval workflow) - carries the reason,
+ *  so the "declined" fork of the lifecycle is exercisable locally. */
+export const DEV_DECLINED_BOOKING = {
+  id: 'dev-declined', userId: 'dev-customer', vehicleId: 'dev-car',
+  vehicleName: 'BMW M340i', vehicleRegNo: 'GJ01AB1234',
+  serviceName: 'Signature Wash', serviceCategory: 'Washing',
+  serviceDurationMinutes: 60, status: 'cancelled',
+  scheduledDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
+  scheduledTime: '14:00',
+  totalAmount: 1200, paymentMethod: 'cash', paymentStatus: 'pending',
+  rejectionReason: 'That afternoon was fully booked — mornings this week are wide open.',
+  cancelledAt: tsMinAgo(60 * 20), createdAt: tsMinAgo(60 * 30), updatedAt: tsMinAgo(60 * 20),
+} as unknown as Booking;
+
 /** An active Club membership, mid-cycle - the Club layer needs a real one. */
 export const DEV_MEMBERSHIP = {
   id: 'dev-sub', userId: 'dev-customer', userName: 'Aarav Mehta',
