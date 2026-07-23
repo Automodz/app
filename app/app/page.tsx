@@ -1088,16 +1088,44 @@ function StudioCard() {
 function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: boolean }) {
   return (
     <div style={{
-      ...plateSurface,
-      minWidth: '100%', minHeight: full ? '100vh' : '92vh',
+      position: 'relative', overflow: 'hidden',
+      minWidth: '100%', minHeight: full ? '100svh' : '100svh',
       scrollSnapAlign: 'start',
+      background: 'radial-gradient(130% 86% at 50% 34%, var(--st-paper) 0%, var(--st-gallery) 56%, var(--st-linen) 100%)',
+      boxShadow: 'var(--st-edge)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 12, padding: 24, textAlign: 'center',
+      gap: 'var(--st-line)', padding: 'var(--st-inset)', textAlign: 'center',
     }}>
-      <Display>{full ? 'Welcome to AutoModz.' : 'Another car?'}</Display>
+      {/* ambient bloom */}
+      <div aria-hidden className="st-bloom" style={{
+        position: 'absolute', top: '22%', left: '50%', width: 'min(120vw, 560px)', height: '46%',
+        transform: 'translateX(-50%)', pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 62%)',
+        mixBlendMode: 'soft-light',
+      }} />
+      {/* the empty bay - a ghosted monument awaiting a car */}
+      <button
+        onClick={onAdd} aria-label="Add a car" className="st-tap"
+        style={{
+          position: 'relative', width: 132, height: 132, borderRadius: '50%',
+          border: '1.5px dashed var(--st-ink-3)', background: 'transparent', cursor: 'pointer',
+          display: 'grid', placeItems: 'center', marginBottom: 'var(--st-gap)',
+          boxShadow: 'var(--st-hold)',
+        }}
+      >
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden>
+          <path d="M20 9v22M9 20h22" stroke="var(--st-ink-2)" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      </button>
+      <p style={{
+        fontFamily: 'var(--st-display)', fontWeight: 640, letterSpacing: '-0.02em',
+        fontSize: 'clamp(28px, 8vw, 40px)', lineHeight: 1.05, color: 'var(--st-ink)', margin: 0,
+      }}>
+        {full ? 'Welcome to AutoModz.' : 'Another car?'}
+      </p>
       <Body tone="ink-2">The garage has room.</Body>
-      <div style={{ marginTop: 24 }}>
-        <Action onClick={onAdd}>Add a car</Action>
+      <div style={{ marginTop: 'var(--st-inset)' }}>
+        <Action variant="forward" onClick={onAdd}>Add a car</Action>
       </div>
     </div>
   );
@@ -1198,7 +1226,34 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <StudioSheet open={open} onOpenChange={o => { if (!o) save(); }} label="You">
       <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
-        <Title>You</Title>
+        {/* the identity moment - a machined monogram, not a settings title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--st-gap)' }}>
+          <div aria-hidden style={{
+            position: 'relative', width: 68, height: 68, borderRadius: 999, flex: '0 0 auto',
+            display: 'grid', placeItems: 'center', overflow: 'hidden',
+            background: 'radial-gradient(circle at 34% 28%, #ffffff 0%, #eef0f2 14%, #d3d7db 42%, #a3a8af 72%, #74797f 100%)',
+            boxShadow: 'var(--st-raise), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -6px 14px rgba(20,22,25,0.28)',
+          }}>
+            <span style={{
+              fontFamily: 'var(--st-display)', fontWeight: 700, fontSize: 30, color: '#1a1c1f',
+              textShadow: '0 1px 0 rgba(255,255,255,0.5)',
+            }}>
+              {(user?.name?.charAt(0) || 'Y').toUpperCase()}
+            </span>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p style={{
+              fontFamily: 'var(--st-display)', fontWeight: 620, fontSize: 26, letterSpacing: '-0.02em',
+              lineHeight: 1.05, color: 'var(--st-ink)', margin: 0,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {user?.name || 'Your account'}
+            </p>
+            {user?.email && (
+              <Data tone="ink-3" style={{ display: 'block', marginTop: 4 }}>{user.email}</Data>
+            )}
+          </div>
+        </div>
 
         <Field label="Name" value={name} onChange={setName} />
         <Field label="Phone" value={phone} onChange={setPhone} kind="phone" />
