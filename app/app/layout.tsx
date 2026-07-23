@@ -15,20 +15,25 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MotionConfig, motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import {
   getVehicles, getUserBookings, subscribeUserBookings,
 } from '@/lib/firebaseService';
 import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING, DEV_DECLINED_BOOKING } from '@/lib/cx/devseed';
 import OfflineBar from '@/components/os/OfflineBar';
+import SmoothScroll from '@/components/home/SmoothScroll';
 import { StudioLoading, StudioError, bootReveal } from '@/components/os/StudioBoot';
 
 type BootStatus = 'loading' | 'ready' | 'error';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, authLoading, vehicles, setVehicles, setBookings } = useAppStore();
+  // the Visit surface owns the vertical gesture (drag-to-dismiss), so inertial
+  // scroll steps aside there; every other customer surface gets it
+  const smoothScroll = !pathname?.startsWith('/app/visit');
 
   const [status, setStatus] = useState<BootStatus>('loading');
   const [errorKind, setErrorKind] = useState<'offline' | 'server'>('server');
@@ -107,6 +112,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // reusable guard instead of per-component checks.
     <MotionConfig reducedMotion="user">
       <motion.div {...bootReveal} className="studio" style={{ minHeight: '100vh', background: 'var(--st-paper)' }}>
+        {/* one continuous inertial scroll across every customer surface */}
+        {smoothScroll && <SmoothScroll />}
         <OfflineBar />
         {children}
       </motion.div>
