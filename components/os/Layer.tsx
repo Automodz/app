@@ -25,23 +25,22 @@ export default function Layer({ title, action, children }: LayerProps) {
       whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-10%' }}
       transition={rise.transition}
-      style={{ marginTop: 'var(--st-movement)', paddingLeft: 'var(--st-inset)', paddingRight: 'var(--st-inset)' }}
+      style={{ marginTop: 'var(--st-rest)', paddingLeft: 'var(--st-inset)', paddingRight: 'var(--st-inset)' }}
     >
       {title && (
-        <div style={{ marginBottom: 24 }}>
-          {/* the mark - one repeating letterhead motif that ties every section
-              of the Glance into a single crafted record (UX-1) */}
-          <div aria-hidden style={{
-            width: 28, height: 2, borderRadius: 2,
-            background: 'var(--st-ink)', marginBottom: 'var(--st-line)',
-          }} />
-          <div style={{
-            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-            gap: 'var(--st-gap)',
+        <div style={{
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+          gap: 'var(--st-gap)', marginBottom: 'var(--st-line)',
+        }}>
+          {/* a quiet section label, not a heavy repeated heading - the eye scans
+              past it to the content (Wallet/Linear-style section label) */}
+          <Title as="h2" style={{
+            fontSize: 13, fontWeight: 560, letterSpacing: '0.06em',
+            lineHeight: 1.2, textTransform: 'uppercase', color: 'var(--st-ink-3)',
           }}>
-            <Title>{title}</Title>
-            {action && <Action variant="forward" onClick={action.onClick}>{action.label}</Action>}
-          </div>
+            {title}
+          </Title>
+          {action && <Action variant="forward" onClick={action.onClick}>{action.label}</Action>}
         </div>
       )}
       {children}

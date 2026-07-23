@@ -564,7 +564,7 @@ function Glance() {
                 ? { label: 'All protection', onClick: () => router.replace('/app?focus=protection') }
                 : undefined}
             >
-              <div style={{ display: 'grid', gap: 'var(--st-rest)' }}>
+              <div style={{ display: 'grid', gap: 'var(--st-inset)' }}>
                 {model.protections.map(p => {
                   const src = protectionSource(model, p);
                   return (
@@ -588,11 +588,11 @@ function Glance() {
             /* the car has a story but nothing shields it - say so plainly */
             <Layer title="Protection">
               <EmptyState
-                line={`Nothing protects the ${vehicle.name} yet.`}
-                actionLabel={model.proposal ? 'Arrange it' : undefined}
-                onAction={model.proposal
-                  ? () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`)
-                  : undefined}
+                line="Not protected yet."
+                actionLabel="Add protection"
+                onAction={() => router.replace(model.proposal
+                  ? `/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`
+                  : '/app?sheet=arrange')}
               />
             </Layer>
           ) : null}
@@ -606,7 +606,7 @@ function Glance() {
                 onAction={() => router.replace('/app?sheet=arrange')}
               />
             ) : (
-              <div style={{ display: 'grid', gap: 'var(--st-rest)' }}>
+              <div style={{ display: 'grid', gap: 'var(--st-inset)' }}>
                 {(showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)).map(b => {
                   const job = model.jobByBooking.get(b.id);
                   const photos = job?.photos ?? [];
@@ -704,7 +704,7 @@ function Glance() {
           )}
 
           {/* the signature - the dossier closes on a hairline, then the mark */}
-          <div style={{ marginTop: 'var(--st-movement)', padding: '0 var(--st-inset)' }}>
+          <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
             <div aria-hidden style={{ height: 1, background: 'var(--st-hairline)', marginBottom: 'var(--st-rest)' }} />
             <Whisper style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em', display: 'block' }}>AUTOMODZ</Whisper>
             <Data tone="ink-3" style={{ fontSize: 14, display: 'block', marginTop: 'var(--st-breath)' }}>{COMPANY.address}</Data>
@@ -732,7 +732,7 @@ function Glance() {
       {/* the protection panel - the Desk's focus reading of every layer (§C6) */}
       <StudioSheet open={protectionOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="Protection">
         {vehicle && model && (
-          <div style={{ display: 'grid', gap: 'var(--st-rest)', paddingBottom: 'var(--st-breath)' }}>
+          <div style={{ display: 'grid', gap: 'var(--st-inset)', paddingBottom: 'var(--st-breath)' }}>
             <Title>Protection</Title>
             <IdentityPlate
               name={vehicle.name}
