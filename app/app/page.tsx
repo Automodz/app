@@ -20,6 +20,7 @@ import {
   createBooking, getAvailability,
 } from '@/lib/firebaseService';
 import { cancelBooking, rescheduleBooking } from '@/lib/services/bookings';
+import { enablePush, disablePush, pushEnabled, pushSupported } from '@/lib/services/push';
 import { generateTimeSlots, getAvailableDates } from '@/lib/utils';
 import type { Booking, Job, Service, Subscription, Vehicle } from '@/lib/types';
 import { truthOf, type ProtectionFact } from '@/lib/os/truth';
@@ -833,9 +834,45 @@ function CarFormSheet({ open, editing, onClose }: {
 function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const { user, setUser } = useAppStore();
+  const online = useOnline();
   const [name, setName] = useState(user?.name ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [installEvent, setInstallEvent] = useState<Event | null>(null);
+
+  /* device push - the delivery channel for every visit update the studio sends
+     (confirmed, in care, ready, and so on). Without registering this device
+     the notifications reach nothing, so this is where the customer turns it on. */
+  const [pushState, setPushState] = useState<'on' | 'off' | 'unsupported'>('off');
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushErr, setPushErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setPushErr(null);
+    setPushState(!pushSupported() ? 'unsupported' : pushEnabled() ? 'on' : 'off');
+  }, [open]);
+
+  const turnOnPush = async () => {
+    if (!user) return;
+    if (!online) { setPushErr('You’re offline — reconnect to turn these on.'); return; }
+    setPushBusy(true); setPushErr(null);
+    const ok = await enablePush(user.uid);
+    setPushBusy(false);
+    if (ok) { setPushState('on'); return; }
+    setPushErr(
+      typeof Notification !== 'undefined' && Notification.permission === 'denied'
+        ? 'Notifications are blocked — allow them for AutoModz in your browser settings.'
+        : 'That didn’t go through — try again.',
+    );
+  };
+
+  const turnOffPush = async () => {
+    if (!user) return;
+    setPushBusy(true);
+    await disablePush(user.uid);
+    setPushBusy(false);
+    setPushState('off');
+  };
 
   useEffect(() => { setName(user?.name ?? ''); setPhone(user?.phone ?? ''); }, [user?.uid, open]);
 
@@ -885,6 +922,31 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         <div>
           <Body tone="ink-2" style={{ marginBottom: 12 }}>Notifications</Body>
           <div style={{ display: 'grid', gap: 16 }}>
+            {/* the device itself - the channel the studio's updates arrive on */}
+            {pushState === 'unsupported' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ flex: 1 }}><Body>Alerts on this device.</Body></span>
+                <Whisper>Not available here.</Whisper>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ flex: 1 }}>
+                  <Body>Alerts on this device.</Body>
+                  <Whisper as="p" style={{ marginTop: 'var(--st-hair)' }}>
+                    {pushState === 'on'
+                      ? 'On — we’ll tell you the moment the car’s ready.'
+                      : 'Off — turn on to hear the moment the car’s ready.'}
+                  </Whisper>
+                </span>
+                <Action variant="quiet" onClick={pushState === 'on' ? turnOffPush : turnOnPush} loading={pushBusy}>
+                  {pushState === 'on' ? 'Turn off' : 'Turn on'}
+                </Action>
+              </div>
+            )}
+            {pushErr && (
+              <div role="status" aria-live="polite"><Whisper tone="ink-2">{pushErr}</Whisper></div>
+            )}
+
             {rows.map(r => (
               <label key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
                 <span style={{ flex: 1 }}><Body>{r.line}</Body></span>
