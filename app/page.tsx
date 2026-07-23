@@ -247,8 +247,9 @@ export default function HomePage() {
       </section>
 
       {/* ═══ SERVICES - image cards with glass overlay + price/warranty/duration ═══ */}
-      <section id="services" className="relative z-10 px-6 py-14 md:py-20">
-        <SectionHead kicker="THE CRAFT" title="Four disciplines. One standard." />
+      <section id="services" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
+        <ChapterSeam />
+        <SectionHead index={1} kicker="THE CRAFT" title="Four disciplines. One standard." />
         <div className="grid sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
           {SERVICE_ORDER.map((cat, i) => {
             const s = SERVICES[cat];
@@ -286,8 +287,9 @@ export default function HomePage() {
       </section>
 
       {/* ═══ BUY / SELL - the marketplace, two doors ═══ */}
-      <section id="cars" className="relative z-10 px-6 py-14 md:py-20">
-        <SectionHead kicker="MARKETPLACE" title="Cars, kept honest." />
+      <section id="cars" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
+        <ChapterSeam />
+        <SectionHead index={2} kicker="MARKETPLACE" title="Cars, kept honest." />
         <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
           {[
             { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: MEDIA.fallbacks.car },
@@ -314,8 +316,9 @@ export default function HomePage() {
       </section>
 
       {/* ═══ MEMBERSHIP - benefit first, plans second ═══ */}
-      <section id="membership" className="relative z-10 px-6 py-14 md:py-20">
-        <SectionHead kicker="MEMBERSHIP" title="Protect your car, all year." />
+      <section id="membership" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
+        <ChapterSeam />
+        <SectionHead index={3} kicker="MEMBERSHIP" title="Protect your car, all year." />
         <motion.div {...reveal} className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap max-w-2xl mx-auto -mt-4 mb-10">
           {['MONTHLY PREMIUM WASHES', 'PRIORITY BOOKING', 'MEMBER PRICING'].map((b, i, arr) => (
             <span key={b} className="font-mono inline-flex items-center gap-6" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.5)' }}>
@@ -363,8 +366,9 @@ export default function HomePage() {
       </section>
 
       {/* ═══ BEFORE / AFTER - visual proof, no labels needed ═══ */}
-      <section id="gallery" className="relative z-10 px-6 py-14 md:py-20">
-        <SectionHead kicker="THE DIFFERENCE" title="Drag. See for yourself." />
+      <section id="gallery" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
+        <ChapterSeam />
+        <SectionHead index={4} kicker="THE DIFFERENCE" title="Drag. See for yourself." />
         <motion.div {...reveal} className="relative max-w-3xl mx-auto">
           {/* cinematic frame: bloom under, glass rim around */}
           <div aria-hidden className="absolute -inset-6 pointer-events-none" style={{ background: 'radial-gradient(55% 50% at 50% 60%, rgba(255,140,60,0.08), transparent 70%)', filter: 'blur(24px)' }} />
@@ -382,8 +386,9 @@ export default function HomePage() {
       </section>
 
       {/* ═══ CONTACT - closing ═══ */}
-      <section id="contact" className="relative z-10 px-6 py-14 md:py-20">
-        <SectionHead kicker="CONTACT" title="Bring it by. We’ll take it from here." />
+      <section id="contact" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
+        <ChapterSeam />
+        <SectionHead index={5} kicker="CONTACT" title="Bring it by. We’ll take it from here." />
         <div className="max-w-2xl mx-auto">
           <motion.div {...reveal} className="rounded-[26px] overflow-hidden" style={glass(0.035)}>
             <div className="relative h-44">
@@ -459,15 +464,42 @@ export default function HomePage() {
 
 /* ── shared bits ── */
 
-function SectionHead({ kicker, title, sub }: { kicker: string; title: string; sub?: string }) {
+/** The seam that opens a chapter: a full-bleed hairline horizon so each section
+ *  reads as a new page rather than the next paragraph of one long document. */
+function ChapterSeam() {
   return (
-    <div className="text-center max-w-2xl mx-auto mb-10">
-      <motion.p {...reveal} className="font-mono mb-3" style={{ fontSize: 10.5, letterSpacing: '0.24em', color: 'rgba(255,255,255,0.38)' }}>{kicker}</motion.p>
-      <motion.h2 {...reveal} transition={{ ...reveal.transition, delay: 0.05 }} className="font-hero"
+    <div aria-hidden className="absolute inset-x-0 top-0 pointer-events-none">
+      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.11) 50%, transparent)' }} />
+      <div className="h-24" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.022), transparent)' }} />
+    </div>
+  );
+}
+
+function SectionHead({ index, kicker, title, sub }: { index: number; kicker: string; title: string; sub?: string }) {
+  return (
+    <div className="relative text-center max-w-2xl mx-auto mb-12 md:mb-16">
+      {/* the chapter number, ghosted behind the head - the editorial page mark.
+          Static (not a reveal) so its centering transform is never clobbered by
+          an animated one, and so the page mark is always present. */}
+      <span
+        aria-hidden
+        className="font-hero pointer-events-none select-none absolute left-1/2 -translate-x-1/2"
+        style={{
+          top: 'clamp(-46px, -7vw, -34px)', lineHeight: 1, whiteSpace: 'nowrap',
+          fontSize: 'clamp(76px, 15vw, 132px)', fontWeight: 800, letterSpacing: '-0.04em',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,178,122,0.05) 58%, transparent)',
+          WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+        }}
+      >
+        {String(index).padStart(2, '0')}
+      </span>
+      <motion.p {...reveal} transition={{ ...reveal.transition, delay: 0.04 }} className="relative font-mono mb-3"
+        style={{ fontSize: 10.5, letterSpacing: '0.24em', color: 'rgba(255,255,255,0.42)' }}>{kicker}</motion.p>
+      <motion.h2 {...reveal} transition={{ ...reveal.transition, delay: 0.08 }} className="relative font-hero"
         style={{ fontSize: 'clamp(27px, 5.5vw, 44px)', fontWeight: 800, lineHeight: 1.04, letterSpacing: '-0.02em', color: '#fff' }}>
         {title}
       </motion.h2>
-      {sub && <motion.p {...reveal} transition={{ ...reveal.transition, delay: 0.1 }} className="font-body mt-4"
+      {sub && <motion.p {...reveal} transition={{ ...reveal.transition, delay: 0.12 }} className="relative font-body mt-4"
         style={{ fontSize: 14.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.5)' }}>{sub}</motion.p>}
     </div>
   );
