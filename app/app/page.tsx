@@ -9,7 +9,7 @@
  * Interim targets (tracked; each dies with its phase):
  *   TODO(P6): "Have a look" → join-club sheet (interim: legacy club page)
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Timestamp } from 'firebase/firestore';
@@ -30,6 +30,7 @@ import { daysLeft } from '@/lib/os/term';
 import { proposalFor } from '@/lib/os/proposal';
 import { papersFor } from '@/lib/os/papers';
 import { clubModel } from '@/lib/os/club';
+import { ownershipState, type ModuleKey } from '@/lib/os/ownership';
 import { conciergeLog } from '@/lib/os/log';
 import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS, DEV_MEMBERSHIP } from '@/lib/cx/devseed';
@@ -201,6 +202,22 @@ function Glance() {
   const club = useMemo(
     () => clubModel({ membership, completed: bookings.filter(b => visitPhase(b.status) === 'archived') }),
     [membership, bookings],
+  );
+
+  /* where this owner actually stands - the one state that decides what the
+     deck leads with. Derived, never stored; no two customers get the same
+     Home (lib/os/ownership.ts). */
+  const own = useMemo(
+    () => ownershipState({
+      vehicleCount: vehicles.length,
+      live: model?.live ?? null,
+      agreed: model?.agreed ?? null,
+      declined: model?.declined ?? null,
+      completed: model?.completed ?? [],
+      protections: model?.protections ?? [],
+      club,
+    }),
+    [vehicles.length, model, club],
   );
 
   /* this customer's own wash cadence - the join sheet's honest arithmetic */
@@ -679,72 +696,83 @@ function Glance() {
               rides the hairline control under the status; every paper lives
               inside its Chapter's receipt. The deck stays large objects only. */}
 
-          {/* THE STORY - the car's history as an editorial filmstrip: tall
-              cinematic frames you swipe through, the work named over its own
-              photograph. No heading - the photography is the section. */}
-          {model.completed.length === 0 ? (
-            <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
-              <EmptyState
-                line={`The ${vehicle.name}’s story starts with its first visit.`}
-                actionLabel="Arrange one"
-                onAction={() => router.replace('/app?sheet=arrange')}
-              />
-            </div>
-          ) : (
-            <StoryFilm
-              completed={showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)}
-              jobByBooking={model.jobByBooking}
-              vehicleName={vehicle.name}
-              moreCount={!showAllStory ? Math.max(0, model.completed.length - STORY_PREVIEW) : 0}
-              onMore={() => setShowAllStory(true)}
-              onOpen={id => nav.push(`/app/chapter/${id}`)}
-            />
-          )}
-
-          {/* OWNERSHIP - the membership card speaks for itself, no label */}
-          {(club.state !== 'none' || club.invited) && (
-            <Layer>
-              {club.state !== 'none' ? (
-                <div>
-                  <MemberCard
-                    name={user.name}
-                    tier={`Club · since ${fmtMonthYear(club.since!)}`}
-                    since={club.plan!}
-                    state={club.state === 'pending' ? 'pending'
-                      : club.state === 'lapsed' ? 'lapsed' : 'active'}
+          {/* THE DECK, ORDERED BY OWNERSHIP STATE (lib/os/ownership.ts).
+              The objects below are the same objects; which one the owner meets
+              first is decided by where they actually stand - a lapsed Club
+              leads for a lapsed member, the story leads for a dormant car.
+              Status and its actions stay pinned above: every state leads with
+              them. No two customers get the same deck. */}
+          {(() => {
+            const deck: Partial<Record<ModuleKey, ReactNode>> = {
+              activity: model.completed.length === 0 ? (
+                <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
+                  <EmptyState
+                    line={`The ${vehicle.name}’s story starts with its first visit.`}
+                    actionLabel="Arrange one"
+                    onAction={() => router.replace('/app?sheet=arrange')}
                   />
-                  {club.context && (
-                    <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>{club.context}</Body>
-                  )}
-                  {(club.state === 'lapsed' || club.state === 'grace') && (
-                    <div style={{ marginTop: 'var(--st-breath)' }}>
-                      <Action variant="forward" onClick={() => router.replace('/app?sheet=join-club')}>
-                        {club.state === 'grace' ? 'Renew' : 'Rejoin'}
-                      </Action>
-                    </div>
-                  )}
                 </div>
               ) : (
-                <EmptyState
-                  line={`You wash often. The Club would suit the ${vehicle.name}.`}
-                  actionLabel="Have a look"
-                  onAction={() => router.replace('/app?sheet=join-club')}
+                <StoryFilm
+                  completed={showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)}
+                  jobByBooking={model.jobByBooking}
+                  vehicleName={vehicle.name}
+                  moreCount={!showAllStory ? Math.max(0, model.completed.length - STORY_PREVIEW) : 0}
+                  onMore={() => setShowAllStory(true)}
+                  onOpen={id => nav.push(`/app/chapter/${id}`)}
                 />
-              )}
+              ),
 
-              <div style={{
-                marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)',
-                borderTop: '1px solid var(--st-hairline)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
-              }}>
-                <Body tone="ink-2" style={{ flex: 1 }}>Give a friend {REFERRAL.label}, get {REFERRAL.label}.</Body>
-                <Action variant="forward" onClick={shareReferral}>{refCopied ? 'Copied' : 'Share'}</Action>
-              </div>
-            </Layer>
-          )}
+              ...(club.state !== 'none' || club.invited ? {
+                ownership: (
+                  <Layer>
+                    {club.state !== 'none' ? (
+                      <div>
+                        <MemberCard
+                          name={user.name}
+                          tier={`Club · since ${fmtMonthYear(club.since!)}`}
+                          since={club.plan!}
+                          state={club.state === 'pending' ? 'pending'
+                            : club.state === 'lapsed' ? 'lapsed' : 'active'}
+                        />
+                        {club.context && (
+                          <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>{club.context}</Body>
+                        )}
+                        {(club.state === 'lapsed' || club.state === 'grace') && (
+                          <div style={{ marginTop: 'var(--st-breath)' }}>
+                            <Action variant="forward" onClick={() => router.replace('/app?sheet=join-club')}>
+                              {club.state === 'grace' ? 'Renew' : 'Rejoin'}
+                            </Action>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <EmptyState
+                        line={`You wash often. The Club would suit the ${vehicle.name}.`}
+                        actionLabel="Have a look"
+                        onAction={() => router.replace('/app?sheet=join-club')}
+                      />
+                    )}
 
-          {/* STUDIO - the destination card closes the page */}
-          <StudioCard />
+                    <div style={{
+                      marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)',
+                      borderTop: '1px solid var(--st-hairline)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
+                    }}>
+                      <Body tone="ink-2" style={{ flex: 1 }}>Give a friend {REFERRAL.label}, get {REFERRAL.label}.</Body>
+                      <Action variant="forward" onClick={shareReferral}>{refCopied ? 'Copied' : 'Share'}</Action>
+                    </div>
+                  </Layer>
+                ),
+              } : {}),
+
+              studio: <StudioCard />,
+            };
+
+            return own.order
+              .filter(k => deck[k])
+              .map(k => <Fragment key={k}>{deck[k]}</Fragment>);
+          })()}
         </div>
       )}
 
