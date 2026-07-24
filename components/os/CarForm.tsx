@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { Vehicle } from '@/lib/types';
 import { addVehicle, updateVehicle } from '@/lib/firebaseService';
-import { uploadImage } from '@/lib/services/storage';
+import VehiclePhotos from './VehiclePhotos';
 import { useAppStore } from '@/lib/store';
 import { isDevUser } from '@/lib/cx/devseed';
 import { useOnline } from './useOnline';
@@ -25,7 +25,7 @@ import { rise } from '@/lib/os/motion';
 import Field from './Field';
 import Action from './Action';
 import IdentityPlate from './IdentityPlate';
-import { Title, Display, Body, Whisper } from './text';
+import { Title, Display, Body } from './text';
 
 interface CarFormProps {
   /** pass a vehicle to edit it; omit to add one */
@@ -46,13 +46,15 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
   const { user, vehicles, addVehicleToStore, setVehicles } = useAppStore();
   const online = useOnline();
   const reduced = useReducedMotion();
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(editing?.name ?? '');
   const [plate, setPlate] = useState(editing?.registrationNumber ?? '');
-  const [photo, setPhoto] = useState<string | undefined>(editing?.photo);
+  // the gallery, in the owner's order; photos[0] is the cover. A car saved
+  // before the gallery existed still opens with its single photograph.
+  const [photos, setPhotos] = useState<string[]>(
+    editing?.photos?.length ? editing.photos : editing?.photo ? [editing.photo] : [],
+  );
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nameErr, setNameErr] = useState<string | null>(null);
   const [plateErr, setPlateErr] = useState<string | null>(null);
@@ -80,29 +82,20 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
     return ok;
   };
 
-  const pickPhoto = async (file: File) => {
-    setUploading(true); setError(null);
-    try {
-      const { url } = await uploadImage(`vehicles/${user?.uid ?? 'new'}-${Date.now()}`, file);
-      setPhoto(url);
-    } catch {
-      // uploads are optional - the plate is a first-class portrait
-      setError('That photo didn’t reach us. The car looks good without one too.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const save = async () => {
     if (!user || busy) return;
     if (!validate()) return;
     if (!online) { setError('You’re offline — reconnect to add the car.'); return; }
 
     setBusy(true); setError(null);
+    // `photo` always mirrors the cover so every existing reader (the Glance
+    // hero, the chapters, the plate) keeps working unchanged; clearing the
+    // gallery clears the cover to '' rather than leaving a stale portrait.
     const data = {
       name: name.trim(),
       registrationNumber: normPlate(plate),
-      ...(photo ? { photo } : {}),
+      photos,
+      photo: photos[0] ?? '',
     };
 
     // a new car earns a beat before the Glance assembles over it; an edit is
@@ -203,30 +196,15 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
 
       {showPreview && (
         <div style={{ position: 'relative', aspectRatio: '3 / 2', borderRadius: 'var(--st-r-sheet)', overflow: 'hidden' }}>
-          {photo
+          {photos[0]
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={photo} alt={`The ${name || 'car'}`}
+            ? <img src={photos[0]} alt={`The ${name || 'car'}`}
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
             : <IdentityPlate name={name || 'Your car'} registration={normPlate(plate)} variant="band" />}
         </div>
       )}
 
-      <div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={e => { const f = e.target.files?.[0]; if (f) pickPhoto(f); }}
-          style={{ display: 'none' }}
-        />
-        <Action onClick={() => fileRef.current?.click()} loading={uploading}>
-          {photo ? 'Change the photo' : 'Add a photo'}
-        </Action>
-        <Whisper style={{ marginTop: 'var(--st-hair)' }}>
-          A front three-quarter, in good light - it becomes your home screen.
-        </Whisper>
-      </div>
+      <VehiclePhotos photos={photos} onChange={setPhotos} uid={user?.uid} />
 
       {error && (
         <div role="status" aria-live="polite">

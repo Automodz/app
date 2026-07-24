@@ -29,8 +29,11 @@ export interface Vehicle {
   id: string;
   name: string;
   registrationNumber: string;
-  /** the owner's portrait of the car - the Glance's hero when it exists */
+  /** the cover - the Glance's hero. Always mirrors photos[0] so every existing
+   *  reader keeps working; `photos` is the full, ordered gallery. */
   photo?: string;
+  /** the car's gallery, in the owner's own order. photos[0] is the cover. */
+  photos?: string[];
   /** legacy descriptors; the photograph replaced the pickers that set them */
   category?: 'Hatchback' | 'Sedan' | 'Compact SUV' | 'Full SUV' | 'Luxury';
   color?: string;
