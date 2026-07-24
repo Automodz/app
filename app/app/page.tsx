@@ -99,7 +99,8 @@ function Glance() {
   const [membership, setMembership] = useState<Subscription | null>(null);
   /* the car they were last looking at - a garage never reopens on someone
      else's car just because it happens to be first */
-  const { selectedVehicleId, setSelectedVehicleId } = useAppStore();
+  const { session, patchSession } = useAppStore();
+  const selectedVehicleId = session.selectedVehicleId;
   const [page, setPage] = useState(() => {
     const i = vehicles.findIndex(v => v.id === selectedVehicleId);
     return i >= 0 ? i : 0;
@@ -165,7 +166,7 @@ function Glance() {
   // remember the car in view, so the next launch opens on it
   useEffect(() => {
     const v = vehicles[page];
-    if (v && v.id !== selectedVehicleId) setSelectedVehicleId(v.id);
+    if (v && v.id !== selectedVehicleId) patchSession({ selectedVehicleId: v.id });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, vehicles.length]);
 

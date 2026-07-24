@@ -1,6 +1,17 @@
+/**
+ * The runtime store.
+ *
+ * Business objects live here for the lifetime of the tab ONLY - they are never
+ * written to disk. Their offline copy is Firestore's persistent cache
+ * (lib/firebase.ts), which owns freshness and invalidation; a second copy in
+ * localStorage would be a duplicated source of truth that goes stale silently.
+ *
+ * The session slice below is different: it is ours, it has no server-side
+ * owner, and it is persisted - by SessionManager, versioned and migrated.
+ */
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { User, Vehicle, Booking, Notification } from './types';
+import { SessionManager, emptySession, type SessionState, type ThemeName } from './os/session';
 
 interface AppState {
   user: User | null;
@@ -24,28 +35,22 @@ interface AppState {
   unreadCount: number;
   setUnreadCount: (n: number) => void;
 
-  theme: 'dark' | 'light';
-  toggleTheme: () => void;
+  /* ── the session slice (persisted by SessionManager) ──────────────────
+     Ours alone: no server owns it, so it is the one thing worth keeping on
+     disk. Every write goes through `patchSession`, which saves synchronously,
+     so there is no rehydration race and no second writer. */
 
-  /* ── session continuity (persisted) ───────────────────────────────────
-     The customer is never asked to sign in again, and never lands back on
-     car #1 at the top of the page. The cached session renders instantly on
-     a cold launch while Firebase revalidates behind it. */
-
-  /** true once the persisted session has been read off disk */
-  hydrated: boolean;
-  setHydrated: (v: boolean) => void;
-
-  /** the car they were last looking at, by id */
-  selectedVehicleId: string | null;
-  setSelectedVehicleId: (id: string | null) => void;
-
-  /** the last customer surface they had open, restored on cold launch */
-  lastRoute: string | null;
-  setLastRoute: (r: string | null) => void;
-
-  /** wipes every trace of the customer - sign-out and session expiry */
+  session: SessionState;
+  /** merge a change into the session and persist it in one step */
+  patchSession: (patch: Partial<SessionState>) => void;
+  /** read the session off disk (migrating it) - called once, at startup */
+  restoreSession: () => void;
+  /** wipes every trace of the customer - sign-out, expiry, another account */
   clearSession: () => void;
+
+  /** theme is session UI state; this is the ergonomic accessor for it */
+  theme: ThemeName;
+  toggleTheme: () => void;
 
   /** Kiosk "Store Mode": which employee is unlocked via PIN (sessionStorage, not persisted) */
   kioskEmployee: { id: string; name: string; role: string } | null;
@@ -53,8 +58,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+  ((set, get) => ({
       user: null, authLoading: true,
       setUser: (user) => set({ user }),
       setAuthLoading: (authLoading) => set({ authLoading }),
@@ -75,24 +79,40 @@ export const useAppStore = create<AppState>()(
       unreadCount: 0,
       setUnreadCount: (unreadCount) => set({ unreadCount }),
 
-      theme: 'light',
-      toggleTheme: () => set({ theme: get().theme === 'dark' ? 'light' : 'dark' }),
+      /* ── the session slice ── */
+      session: emptySession(),
 
-      hydrated: false,
-      setHydrated: (hydrated) => set({ hydrated }),
+      patchSession: (patch) => {
+        const next = { ...get().session, ...patch };
+        set({ session: next, theme: next.ui.theme });
+        SessionManager.save(next);
+      },
 
-      selectedVehicleId: null,
-      setSelectedVehicleId: (selectedVehicleId) => set({ selectedVehicleId }),
-
-      lastRoute: null,
-      setLastRoute: (lastRoute) => set({ lastRoute }),
+      restoreSession: () => {
+        const restored = SessionManager.restore();
+        set({ session: restored, theme: restored.ui.theme });
+      },
 
       // sign-out / expiry / a different account: nothing of the last customer
-      // may survive on a shared device
-      clearSession: () => set({
-        user: null, vehicles: [], bookings: [], notifications: [], unreadCount: 0,
-        selectedVehicleId: null, lastRoute: null,
-      }),
+      // may survive on a shared device - memory and disk both
+      clearSession: () => {
+        SessionManager.clear();
+        const fresh = emptySession();
+        // the interface preference is the customer's, not the account's
+        fresh.ui.theme = get().session.ui.theme;
+        set({
+          user: null, vehicles: [], bookings: [], notifications: [], unreadCount: 0,
+          session: fresh,
+        });
+        SessionManager.save(fresh);
+      },
+
+      theme: 'light',
+      toggleTheme: () => {
+        const s = get().session;
+        const theme: ThemeName = s.ui.theme === 'dark' ? 'light' : 'dark';
+        get().patchSession({ ui: { ...s.ui, theme } });
+      },
 
       kioskEmployee: null,
       setKioskEmployee: (kioskEmployee) => {
@@ -102,29 +122,5 @@ export const useAppStore = create<AppState>()(
         } catch {}
         set({ kioskEmployee });
       },
-    }),
-    {
-      name: 'automodz-v5',
-      /* The session, kept on disk so a cold launch renders the customer's own
-         garage instantly instead of a loading screen. Firebase remains the
-         authority: this is cached *display* truth, revalidated on every launch
-         and wiped the moment auth reports no one (clearSession).
-         Jobs are deliberately not cached - their Firestore Timestamps are read
-         with non-optional .toDate(), which JSON cannot round-trip. */
-      partialize: (s) => ({
-        theme: s.theme,
-        user: s.user,
-        vehicles: s.vehicles,
-        bookings: s.bookings,
-        selectedVehicleId: s.selectedVehicleId,
-        lastRoute: s.lastRoute,
-      }),
-      /* Hydration is manual (skipHydration) so the server-rendered HTML and the
-         first client paint always agree; AuthProvider rehydrates in its first
-         effect, one tick later - far inside the 300ms budget and with no
-         hydration mismatch. */
-      skipHydration: true,
-      onRehydrateStorage: () => (state) => { state?.setHydrated(true); },
-    }
-  )
+  }))
 );

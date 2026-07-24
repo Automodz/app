@@ -20,12 +20,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
        synchronous-ish (localStorage) and lands within a tick, so a returning
        customer's own garage is on screen immediately - no splash, no "opening
        your garage", no reset to car #1. Firebase then revalidates behind it. */
-    /* rehydrate() is asynchronous - anything written before it settles would be
-       overwritten by the disk snapshot, so the session is only considered
-       restored (and only then written to) once it resolves. */
-    Promise.resolve(useAppStore.persist.rehydrate()).then(() => {
-      if (useAppStore.getState().user) setAuthLoading(false);
-    });
+    /* The session is read off disk synchronously, before anything can write to
+       it - so where the customer was is known on the very first frame, and no
+       later restore can clobber a fresh write. Business objects are not here:
+       Firestore's own cache serves those (lib/firebase.ts). */
+    useAppStore.getState().restoreSession();
 
     // ── DEV-ONLY auth shim ────────────────────────────────────────────────
     // Lets local design work render the auth-guarded surfaces without a real

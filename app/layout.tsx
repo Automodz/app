@@ -43,7 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Outfit:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap"
         />
         <script dangerouslySetInnerHTML={{
-          __html: `(function(){try{var r=document.documentElement;var dark=false;if(location.pathname==='/'){dark=true;}else{var t=localStorage.getItem('automodz-v5');if(t){var d=JSON.parse(t);if(d.state&&d.state.theme==='dark')dark=true;}}if(dark){r.classList.replace('light','dark');r.setAttribute('data-theme','dark');}}catch(e){}})()`,
+          /* theme before first paint - reads the SessionManager payload, and
+             still understands the pre-SessionManager store so an existing
+             customer never gets a light flash on the upgrade */
+          __html: `(function(){try{var r=document.documentElement;var dark=false;if(location.pathname==='/'){dark=true;}else{var s=localStorage.getItem('automodz-session');if(s){var j=JSON.parse(s);if(j&&j.ui&&j.ui.theme==='dark')dark=true;}else{var t=localStorage.getItem('automodz-v5');if(t){var d=JSON.parse(t);if(d.state&&d.state.theme==='dark')dark=true;}}}if(dark){r.classList.replace('light','dark');r.setAttribute('data-theme','dark');}}catch(e){}})()`,
         }} />
       </head>
       <body>

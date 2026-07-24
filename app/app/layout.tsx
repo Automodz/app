@@ -30,7 +30,7 @@ type BootStatus = 'loading' | 'ready' | 'error';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, authLoading, vehicles, setVehicles, setBookings, lastRoute, setLastRoute, hydrated } = useAppStore();
+  const { user, authLoading, vehicles, setVehicles, setBookings, session, patchSession } = useAppStore();
   // the Visit surface owns the vertical gesture (drag-to-dismiss), so inertial
   // scroll steps aside there; every other customer surface gets it
   const smoothScroll = !pathname?.startsWith('/app/visit');
@@ -104,18 +104,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
      launch only - after that, going Home means Home. */
   const restored = useRef(false);
   useEffect(() => {
-    // never write before the disk snapshot has landed, or it overwrites us
-    if (!hydrated || authLoading || !user || !pathname) return;
+    if (authLoading || !user || !pathname) return;
     if (!restored.current) {
       restored.current = true;
+      const { lastRoute } = session;
       if (pathname === '/app' && lastRoute && lastRoute !== '/app') {
         router.replace(lastRoute);
         return;
       }
     }
-    if (pathname.startsWith('/app')) setLastRoute(pathname);
+    if (pathname.startsWith('/app') && pathname !== session.lastRoute) {
+      // the stack is how they got here, so Back stays truthful
+      const stack = session.navStack;
+      const next = stack[stack.length - 1] === pathname ? stack : [...stack, pathname].slice(-10);
+      patchSession({ lastRoute: pathname, navStack: next });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, authLoading, user?.uid, hydrated]);
+  }, [pathname, authLoading, user?.uid]);
 
   // auth itself, then the first garage load - one calm breath, never a spinner
   if (authLoading || !user) return <StudioLoading />;
