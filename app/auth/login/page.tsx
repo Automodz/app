@@ -24,6 +24,7 @@ import { useAppStore } from '@/lib/store';
 import { StudioLoading } from '@/components/os/StudioBoot';
 import Action from '@/components/os/Action';
 import { Body, Data, Whisper } from '@/components/os/text';
+import Wordmark from '@/components/ui/Wordmark';
 
 /** Only ever return to an internal customer path - never an attacker's URL. */
 const safeDest = (redirect: string | null): string | null =>
@@ -135,7 +136,7 @@ function Login() {
           position: 'relative', fontFamily: 'var(--st-display)', fontWeight: 500, fontSize: 12,
           letterSpacing: '0.4em', paddingLeft: '0.4em', textTransform: 'uppercase', color: 'var(--st-ink-3)',
         }}>
-          AUTOMODZ
+          <Wordmark height={13} />
         </span>
 
         <main className="st-overture-monument" style={{ position: 'relative', width: '100%', maxWidth: 460, padding: 'var(--st-rest) 0', textAlign: 'center' }}>

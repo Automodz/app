@@ -5,6 +5,8 @@
  * engraved name; the one literal object that says "you belong here". Active /
  * pending / lapsed change the metal's temperature, never the object.
  */
+import Wordmark from '@/components/ui/Wordmark';
+
 interface MemberCardProps {
   name: string;
   tier: string;           // "Club · since March 2026"
@@ -45,12 +47,7 @@ export default function MemberCard({ name, tier, since, state = 'active' }: Memb
         justifyContent: 'space-between', padding: 22,
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <span style={{
-            fontFamily: 'var(--st-display)', fontWeight: 700, fontSize: 13, letterSpacing: '0.34em',
-            paddingLeft: '0.34em', textShadow: '0 1px 0 rgba(255,255,255,0.5)',
-          }}>
-            AUTOMODZ
-          </span>
+          <Wordmark height={13} variant="ink" />
           <span style={{
             fontFamily: 'var(--st-data)', fontSize: 10, letterSpacing: '0.14em',
             padding: '4px 8px', borderRadius: 999,

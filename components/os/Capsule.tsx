@@ -5,6 +5,7 @@
  */
 import { AnimatePresence, motion } from 'framer-motion';
 import { crossfade, press, studioEase, tick } from '@/lib/os/motion';
+import Wordmark from '@/components/ui/Wordmark';
 
 interface CapsuleProps {
   line: string;                       // state sentence ('' → wordmark rest state)
@@ -70,7 +71,7 @@ export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPr
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}
           >
-            {resting ? 'AUTOMODZ' : line}
+            {resting ? <Wordmark height={13} variant={onPhoto ? 'white' : 'auto'} /> : line}
           </motion.span>
         </AnimatePresence>
         {actionWord && (

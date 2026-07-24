@@ -17,6 +17,7 @@ import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion';
 import { DisplayLarge, Display, Emphasis, Whisper } from './text';
+import Wordmark from '@/components/ui/Wordmark';
 
 /** The shared photo-less material: gallery ground, one hairline, no graphics. */
 export const plateSurface: CSSProperties = {
@@ -195,14 +196,13 @@ function OvertureHero({ name, registration }: { name: string; registration?: str
       </motion.div>
 
       {/* the studio's mark, held quiet at the base */}
-      <Whisper tone="ink-3" style={{
-        position: 'absolute', left: 0, right: 0, zIndex: 1,
+      <span style={{
+        position: 'absolute', left: 0, right: 0, zIndex: 1, textAlign: 'center',
         bottom: 'calc(env(safe-area-inset-bottom) + var(--st-rest))',
-        fontFamily: 'var(--st-display)', letterSpacing: '0.4em', paddingLeft: '0.4em',
-        fontSize: 11, opacity: 0.7,
+        opacity: 0.7,
       }}>
-        AUTOMODZ
-      </Whisper>
+        <Wordmark height={12} />
+      </span>
     </div>
   );
 }

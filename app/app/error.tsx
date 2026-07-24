@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Action from '@/components/os/Action';
 import { Display, Body, Whisper } from '@/components/os/text';
+import Wordmark from '@/components/ui/Wordmark';
 
 export default function AppError({
   error, reset,
@@ -33,9 +34,7 @@ export default function AppError({
       }}
     >
       <div style={{ width: '100%', maxWidth: 420 }}>
-        <Whisper tone="ink-3" style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em' }}>
-          AUTOMODZ
-        </Whisper>
+        <Wordmark height={14} />
         <Display style={{ marginTop: 'var(--st-gap)' }}>A quiet hiccup.</Display>
         <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }}>
           Something didn’t load as it should. Your car and its history are safe.

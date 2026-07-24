@@ -22,6 +22,7 @@ import CarForm from '@/components/os/CarForm';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
 import { Display, Body, Whisper } from '@/components/os/text';
+import Wordmark from '@/components/ui/Wordmark';
 
 type Moment = 'welcome' | 'you' | 'car';
 
@@ -83,7 +84,7 @@ export default function WelcomePage() {
             letterSpacing: '0.4em', paddingLeft: '0.4em', textTransform: 'uppercase',
             color: 'var(--st-ink-3)', marginBottom: 'var(--st-rest)',
           }}>
-            AUTOMODZ
+            <Wordmark height={13} />
           </span>
           <span className="st-chrome st-chrome-sweep" style={{
             display: 'block', fontFamily: 'var(--st-display)', fontWeight: 700,

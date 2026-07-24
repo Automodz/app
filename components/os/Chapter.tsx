@@ -20,6 +20,7 @@ import IdentityPlate from './IdentityPlate';
 import DocumentCard, { DocumentGrid } from './DocumentCard';
 import Action from './Action';
 import { Emphasis, Body, Data, Whisper } from './text';
+import Wordmark from '@/components/ui/Wordmark';
 
 const fmtLong = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -279,9 +280,7 @@ export default function Chapter({ chapter, protections, owner, shareUrl, onBack 
           {onBack && <Action onClick={onBack}>Back to the car</Action>}
           {shareUrl && <Action variant="forward" onClick={share}>{shared ? 'Link copied' : 'Share this chapter'}</Action>}
         </div>
-        <Whisper style={{ marginTop: 'var(--st-rest)', fontFamily: 'var(--st-display)', letterSpacing: '0.32em', paddingLeft: '0.32em' }}>
-          AUTOMODZ
-        </Whisper>
+        <span style={{ display: 'block', marginTop: 'var(--st-rest)' }}><Wordmark height={14} /></span>
         {owner && <Data tone="ink-3" style={{ display: 'block', marginTop: 'var(--st-breath)' }}>{COMPANY.address}</Data>}
       </section>
     </article>

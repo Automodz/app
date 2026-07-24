@@ -14,6 +14,7 @@ import { COMPANY, waLink } from '@/lib/company';
 import { studioEase, move, rise } from '@/lib/os/motion';
 import Action from './Action';
 import { Display, Body, Data, Whisper } from './text';
+import Wordmark from '@/components/ui/Wordmark';
 
 /** The paper frame both states share - the wordmark caption sits at the top. */
 function BootFrame({
@@ -57,12 +58,7 @@ export function StudioLoading({ caption }: { caption?: string }) {
         gap: 'var(--st-inset)', width: '100%', maxWidth: 280,
       }}>
         {/* the wordmark, machined in chrome, a slow specular passing over it */}
-        <span className="st-chrome st-chrome-sweep" style={{
-          fontFamily: 'var(--st-display)', fontWeight: 700, fontSize: 26,
-          letterSpacing: '0.24em', paddingLeft: '0.24em',
-        }}>
-          AUTOMODZ
-        </span>
+        <Wordmark height={22} />
         {/* the calm progress hairline - it breathes toward completion, no spinner */}
         <span aria-hidden style={{
           position: 'relative', width: '100%', height: 2, borderRadius: 999,
@@ -102,9 +98,7 @@ export function StudioError({
 
   return (
     <BootFrame justify="space-between">
-      <Whisper tone="ink-2" style={{ fontFamily: 'var(--st-display)', letterSpacing: '0.08em' }}>
-        AUTOMODZ
-      </Whisper>
+      <Wordmark height={14} />
 
       <motion.main {...rise} style={{ width: '100%', maxWidth: 420, padding: 'var(--st-rest) 0' }}>
         <Display style={{ fontSize: 'clamp(26px, 7vw, 32px)' }}>{copy.title}</Display>
