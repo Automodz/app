@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Images live on Cloudinary (see lib/services/storage.ts) - Firebase Storage
@@ -22,6 +22,18 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = firebaseConfig.apiKey
   ? getAuth(app)
   : (undefined as unknown as ReturnType<typeof getAuth>);
+
+/* The session survives closing the app. This is Firebase's default, but it is
+   stated explicitly because it is a product promise, not an implementation
+   detail: a customer signs in once and is only ever asked again if they sign
+   out, the token is revoked, or the account is disabled. (Safari/PWA storage
+   quirks have silently downgraded the default before.) */
+if (auth && typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch(() => {
+    /* private mode with storage denied - the session lasts the tab, and the
+       customer is told nothing they cannot act on */
+  });
+}
 export const db   = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });

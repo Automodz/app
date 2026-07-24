@@ -8,14 +8,25 @@ import { useAppStore } from '@/lib/store';
 const AuthContext = createContext<null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { setUser, setAuthLoading, setVehicles, setBookings } = useAppStore();
+  const { setUser, setAuthLoading } = useAppStore();
 
-  // sign-out and session expiry both land here as a null user; wipe the
-  // in-memory garage so the next person on a shared device never sees the
-  // last customer's cars or visits
-  const clearSession = () => { setUser(null); setVehicles([]); setBookings([]); };
+  // sign-out and session expiry both land here as a null user; wipe the cached
+  // session (memory *and* disk) so the next person on a shared device never
+  // sees the last customer's cars or visits
+  const clearSession = () => useAppStore.getState().clearSession();
 
   useEffect(() => {
+    /* Read the persisted session off disk before anything else. It is
+       synchronous-ish (localStorage) and lands within a tick, so a returning
+       customer's own garage is on screen immediately - no splash, no "opening
+       your garage", no reset to car #1. Firebase then revalidates behind it. */
+    /* rehydrate() is asynchronous - anything written before it settles would be
+       overwritten by the disk snapshot, so the session is only considered
+       restored (and only then written to) once it resolves. */
+    Promise.resolve(useAppStore.persist.rehydrate()).then(() => {
+      if (useAppStore.getState().user) setAuthLoading(false);
+    });
+
     // ── DEV-ONLY auth shim ────────────────────────────────────────────────
     // Lets local design work render the auth-guarded surfaces without a real
     // Google session. Gated by NODE_ENV=development AND an explicit localStorage
@@ -39,14 +50,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // a different account signed in on this device: the cached garage is
+        // not theirs, so drop it before the new profile lands
+        const cachedUser = useAppStore.getState().user;
+        if (cachedUser && cachedUser.uid !== firebaseUser.uid) clearSession();
+
         try {
           const profile = await getUserProfile(firebaseUser.uid) ?? await ensureUserProfile(firebaseUser);
           // Reconciles employee promotion/revocation on every session restore
           setUser(await linkEmployeeRole(profile));
         } catch {
-          clearSession();
+          /* Firebase says this session is valid; only the profile read failed
+             (offline, a blip). Signing them out here would break the product's
+             promise, so the cached session stands and the next launch retries.
+             With no cache there is nothing to stand on - fall back to the door. */
+          if (useAppStore.getState().user?.uid !== firebaseUser.uid) clearSession();
         }
       } else {
+        // the one true sign-out: no Firebase session (logged out, revoked,
+        // disabled). Everything cached goes with it.
         clearSession();
       }
       setAuthLoading(false);

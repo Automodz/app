@@ -30,7 +30,7 @@ type BootStatus = 'loading' | 'ready' | 'error';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, authLoading, vehicles, setVehicles, setBookings } = useAppStore();
+  const { user, authLoading, vehicles, setVehicles, setBookings, lastRoute, setLastRoute, hydrated } = useAppStore();
   // the Visit surface owns the vertical gesture (drag-to-dismiss), so inertial
   // scroll steps aside there; every other customer surface gets it
   const smoothScroll = !pathname?.startsWith('/app/visit');
@@ -61,7 +61,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!user) return;
     unsubRef.current?.();
     unsubRef.current = undefined;
-    setStatus('loading');
+    /* A returning customer already has their garage on screen from the cached
+       session - revalidate behind it rather than tearing it down for a loading
+       breath. Only a genuinely empty garage waits. */
+    setStatus(useAppStore.getState().vehicles.length > 0 ? 'ready' : 'loading');
 
     if (isDevUser(user.uid)) {
       setVehicles([DEV_VEHICLE]);
@@ -94,6 +97,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => { unsubRef.current?.(); unsubRef.current = undefined; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, authLoading]);
+
+  /* WHERE THEY LEFT OFF.
+     Every customer surface they open is remembered; on a cold launch that lands
+     on the garage door we hand them straight back to it. Restored once per
+     launch only - after that, going Home means Home. */
+  const restored = useRef(false);
+  useEffect(() => {
+    // never write before the disk snapshot has landed, or it overwrites us
+    if (!hydrated || authLoading || !user || !pathname) return;
+    if (!restored.current) {
+      restored.current = true;
+      if (pathname === '/app' && lastRoute && lastRoute !== '/app') {
+        router.replace(lastRoute);
+        return;
+      }
+    }
+    if (pathname.startsWith('/app')) setLastRoute(pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, authLoading, user?.uid, hydrated]);
 
   // auth itself, then the first garage load - one calm breath, never a spinner
   if (authLoading || !user) return <StudioLoading />;

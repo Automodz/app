@@ -97,7 +97,13 @@ function Glance() {
   const [services, setServices] = useState<Service[]>(STATIC_SERVICES);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [membership, setMembership] = useState<Subscription | null>(null);
-  const [page, setPage] = useState(0);
+  /* the car they were last looking at - a garage never reopens on someone
+     else's car just because it happens to be first */
+  const { selectedVehicleId, setSelectedVehicleId } = useAppStore();
+  const [page, setPage] = useState(() => {
+    const i = vehicles.findIndex(v => v.id === selectedVehicleId);
+    return i >= 0 ? i : 0;
+  });
   const pagerRef = useRef<HTMLDivElement>(null);
 
   const youOpen = params.get('sheet') === 'you';
@@ -142,17 +148,26 @@ function Glance() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
-  // ?car= deep link → pager position
+  /* Where the pager opens: an explicit ?car= deep link wins, otherwise the car
+     they were last looking at. Jumped to without animation - restoring a
+     position should look like it was never lost, not like a scroll. */
   useEffect(() => {
-    const carId = params.get('car');
-    if (!carId) return;
-    const i = vehicles.findIndex(v => v.id === carId);
+    if (!vehicles.length) return;
+    const carId = params.get('car') ?? selectedVehicleId;
+    const i = carId ? vehicles.findIndex(v => v.id === carId) : -1;
     if (i >= 0) {
       setPage(i);
-      pagerRef.current?.scrollTo({ left: i * (pagerRef.current?.clientWidth ?? 0) });
+      pagerRef.current?.scrollTo({ left: i * (pagerRef.current?.clientWidth ?? 0), behavior: 'instant' as ScrollBehavior });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vehicles.length]);
+
+  // remember the car in view, so the next launch opens on it
+  useEffect(() => {
+    const v = vehicles[page];
+    if (v && v.id !== selectedVehicleId) setSelectedVehicleId(v.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, vehicles.length]);
 
   const vehicle: Vehicle | null = vehicles[Math.min(page, vehicles.length - 1)] ?? null;
   const onAddPage = vehicles.length > 0 && page >= vehicles.length;
