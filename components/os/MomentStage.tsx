@@ -5,8 +5,9 @@
  * the ones that are done. No bar, no percentage, no countdown - the act row is
  * the whole of the progress language.
  */
-import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
+import HeroMedia from './HeroMedia';
+import { glass } from '@/lib/os/surfaces';
 import type { ReactNode } from 'react';
 import { crossfade, studioEase, tick } from '@/lib/os/motion';
 import { vtName } from '@/lib/os/navigate';
@@ -40,38 +41,46 @@ export default function MomentStage({
 }: MomentStageProps) {
   return (
     <div style={{
-      minHeight: '100dvh', background: 'var(--st-stage)',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ position: 'relative', flex: '0 0 55%', minHeight: '52vh', ...vtName('hero-vehicle') }}>
-        {photo
-          ? <Image src={photo} alt={photoAlt ?? `${ACT_TITLE[act]} - the studio’s photograph`} fill
-              style={{ objectFit: 'cover' }} sizes="100vw" priority />
-          : fallback}
-        <div aria-hidden style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
-          background: 'linear-gradient(transparent, var(--st-stage))',
-        }} />
+      {/* the hero image - the same component, crop and scrim as the Glance
+          (components/os/HeroMedia), so the two surfaces read as one product */}
+      <div style={{
+        position: 'relative', height: '52vh', minHeight: 340, overflow: 'hidden',
+        background: 'var(--st-stage)', ...vtName('hero-vehicle'),
+      }}>
+        <HeroMedia
+          photo={photo}
+          fallback={fallback}
+          alt={photoAlt ?? `${ACT_TITLE[act]} - the studio’s photograph`}
+          priority
+          scrimTo="var(--st-stage)"
+        />
       </div>
 
+      {/* the moment, on the shared card surface (lib/os/surfaces) - the Stay's
+          content given the same material, radius and spacing as the Glance's
+          cards, so it reads as Home continued rather than a different page */}
       <div style={{
         padding: '0 var(--st-inset) calc(env(safe-area-inset-bottom) + var(--st-rest))',
-        marginTop: -24, position: 'relative',
+        marginTop: 'calc(-1 * var(--st-inset))', position: 'relative',
       }}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={act} {...crossfade}>
-            <Display tone="over">{ACT_TITLE[act]}</Display>
-            <Body tone="over-2" style={{ fontSize: 19, marginTop: 'var(--st-line)' }}>{narration}</Body>
-          </motion.div>
-        </AnimatePresence>
+        <div style={{ ...glass, borderRadius: 'var(--st-r-sheet)', padding: 'var(--st-inset)' }}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={act} {...crossfade}>
+              <Display tone="over">{ACT_TITLE[act]}</Display>
+              <Body tone="over-2" style={{ marginTop: 'var(--st-line)' }}>{narration}</Body>
+            </motion.div>
+          </AnimatePresence>
 
-        {meta && <div style={{ marginTop: 'var(--st-line)' }}>{meta}</div>}
+          {meta && <div style={{ marginTop: 'var(--st-line)' }}>{meta}</div>}
 
-        {children && <div style={{ marginTop: 'var(--st-rest)' }}>{children}</div>}
+          {children && <div style={{ marginTop: 'var(--st-rest)' }}>{children}</div>}
 
-        <ActRail acts={acts} />
+          <ActRail acts={acts} />
 
-        {timing && <Whisper tone="over-2" style={{ marginTop: 'var(--st-gap)' }}>{timing}</Whisper>}
+          {timing && <Whisper tone="over-2" style={{ marginTop: 'var(--st-gap)' }}>{timing}</Whisper>}
+        </div>
       </div>
     </div>
   );
@@ -101,7 +110,7 @@ function ActRail({ acts }: { acts: StayAct[] }) {
       {/* the rail: a dim track with a bright fill to the work's position */}
       <div aria-hidden style={{
         position: 'absolute', top: 6, left: '7px', right: '7px', height: 2, borderRadius: 999,
-        background: 'rgba(247,247,245,0.16)',
+        background: 'color-mix(in srgb, var(--st-over) 16%, transparent)',
       }} />
       <div aria-hidden style={{
         position: 'absolute', top: 6, left: '7px', width: `calc(${fillPct}% - 14px * ${fillPct / 100} + 0px)`,
@@ -127,7 +136,7 @@ function ActRail({ acts }: { acts: StayAct[] }) {
                 width: a.state === 'coming' ? 10 : 14, height: a.state === 'coming' ? 10 : 14,
                 borderRadius: '50%',
                 background: a.state === 'coming' ? 'var(--st-stage)' : 'var(--st-over)',
-                border: a.state === 'coming' ? '2px solid rgba(247,247,245,0.28)' : 'none',
+                border: a.state === 'coming' ? '2px solid color-mix(in srgb, var(--st-over) 28%, transparent)' : 'none',
                 display: 'grid', placeItems: 'center',
               }}
             >

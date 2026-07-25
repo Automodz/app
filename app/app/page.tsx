@@ -51,6 +51,8 @@ import StudioSheet from '@/components/os/StudioSheet';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
 import Chip, { type Tone } from '@/components/os/Chip';
+import HomeV2, { type StatusPill, type PriorityCard } from '@/components/home/HomeV2';
+import { MEDIA } from '@/lib/media';
 
 /** the colour language, as ink for status text and dots (see Chip) */
 const TONE_INK: Record<Tone, string> = {
@@ -59,7 +61,7 @@ const TONE_INK: Record<Tone, string> = {
 };
 import EmptyState from '@/components/os/EmptyState';
 import { Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
-import { COMPANY } from '@/lib/company';
+import { COMPANY, telLink } from '@/lib/company';
 
 const fmtLong = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -394,6 +396,115 @@ function Glance() {
     return { visits: visitsFeed, search };
   }, [model, vehicle, club, router]);
 
+  /* ── the Home V2 view props: the pills, the priority card and the bell
+     count, each derived from the same engines the rest of the screen reads.
+     Presentation only - no new truth is minted here. ── */
+
+  // status pills: active protection layers (most-waning first) + the live Club,
+  // capped at the two the design carries
+  const homePills = useMemo<StatusPill[]>(() => {
+    const out: StatusPill[] = [];
+    [...(model?.protections ?? [])]
+      .filter(p => p.active)
+      .sort((a, b) => (TERM_RANK[b.term] ?? 0) - (TERM_RANK[a.term] ?? 0))
+      .slice(0, 2)
+      .forEach(p => out.push({
+        key: `prot-${p.kind}`,
+        tone: p.term === 'expiring' ? 'urgent' : p.term === 'waning' ? 'warn' : 'ok',
+        label: PROTECTION_WORD[p.kind],
+        onTap: () => router.replace('/app?focus=protection'),
+      }));
+    if (club.state === 'active' || club.state === 'grace') {
+      out.push({
+        key: 'club',
+        tone: club.state === 'grace' ? 'warn' : 'ok',
+        label: `${club.washesLeft} wash${club.washesLeft === 1 ? '' : 'es'} left`,
+        onTap: () => router.replace('/app'),
+      });
+    }
+    return out.slice(0, 2);
+  }, [model, club, router]);
+
+  // the priority card: the one thing that matters, chosen by the ownership state
+  const homePriority = useMemo<PriorityCard | null>(() => {
+    if (!vehicle || !model) return null;
+    const car = vehicle.name;
+    const renewProposal = model.proposal ? {
+      tone: 'warn' as Tone, kicker: 'A suggestion',
+      chip: 'Care due', headline: `${model.proposal.headline}.`, note: model.proposal.reason,
+      ctaLabel: model.proposal.serviceCategory === 'Washing' ? 'Arrange it' : 'Renew it',
+      onCta: () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`),
+      icon: IconShield,
+    } : null;
+
+    switch (own.state) {
+      case 'ready':
+        return {
+          tone: 'ok', kicker: 'From the studio', chip: 'Ready',
+          headline: `The ${car} is ready to collect.`,
+          detail: model.live?.serviceName,
+          ctaLabel: 'See the visit', icon: IconReady,
+          onCta: () => nav.push(`/app/visit/${model.live!.id}`),
+        };
+      case 'in_studio': {
+        const act = model.live ? careAct(model.live.status) : null;
+        return {
+          tone: 'info', kicker: 'In the studio', chip: act ? ACT_TITLE[act] : 'In care',
+          headline: `The ${car} is with us.`,
+          detail: model.live?.serviceName,
+          ctaLabel: 'Follow the visit', icon: IconStudio,
+          onCta: () => nav.push(`/app/visit/${model.live!.id}`),
+        };
+      }
+      case 'booked': {
+        const b = model.agreed!;
+        const confirmed = visitPhase(b.status) === 'agreed';
+        return {
+          tone: confirmed ? 'ok' : 'info', kicker: 'Your next visit',
+          chip: confirmed ? 'Confirmed' : 'Requested',
+          headline: `${b.serviceName}, ${fmtDay(b.scheduledDate)}.`,
+          detail: `${fmtDayDate(b.scheduledDate)} · ${b.scheduledTime}`,
+          ctaLabel: 'Manage the visit', icon: IconCalendar,
+          onCta: () => router.replace('/app?sheet=manage'),
+        };
+      }
+      case 'declined': {
+        const b = model.declined!;
+        return {
+          tone: 'urgent', kicker: 'A note from the studio',
+          chip: b.noShow ? 'Missed' : 'Not accepted',
+          headline: b.noShow
+            ? `The ${car} missed its slot.`
+            : 'We couldn’t take that visit.',
+          note: b.rejectionReason ?? undefined,
+          ctaLabel: 'Arrange again', icon: IconAlert,
+          onCta: () => router.replace('/app?sheet=arrange'),
+        };
+      }
+      case 'membership_attention':
+        return {
+          tone: club.state === 'lapsed' ? 'urgent' : 'warn', kicker: 'The Club',
+          chip: club.state === 'lapsed' ? 'Lapsed' : 'Grace period',
+          headline: club.state === 'lapsed'
+            ? 'Your membership has lapsed.'
+            : 'Your membership needs renewing.',
+          detail: club.context ?? undefined,
+          ctaLabel: club.state === 'lapsed' ? 'Rejoin the Club' : 'Renew the Club',
+          icon: IconClub,
+          onCta: () => router.replace('/app?sheet=join-club'),
+        };
+      case 'warranty_expiring':
+        return renewProposal;
+      default:
+        // dormant / unvisited / protected / settled: only speaks when the
+        // proposal engine has something honest to suggest
+        return renewProposal;
+    }
+  }, [vehicle, model, own, club, router, nav]);
+
+  // no unread model exists yet - the bell opens the Desk without a false badge
+  const unreadCount = 0;
+
   if (!user) return null;
 
   /* an empty garage: the invitation is the whole Glance (a customer who met
@@ -410,416 +521,85 @@ function Glance() {
 
   return (
     <div>
-      {/* ── portrait pager ── */}
-      <div
-        ref={pagerRef}
-        onScroll={e => {
-          const el = e.currentTarget;
-          const next = Math.round(el.scrollLeft / el.clientWidth);
-          if (next !== page) { setPage(next); setShowAllStory(false); }
+      {/* ── HOME V2 ──────────────────────────────────────────────────────
+          The screen is a pure view (components/home/HomeV2.tsx). Everything
+          below is only the wiring: the controller keeps the data, the engines,
+          the sheets and every callback - the view decides nothing. */}
+      <HomeV2
+        vehicles={vehicles.map(v => ({
+          id: v.id, name: v.name, registration: v.registrationNumber, photo: v.photo,
+        }))}
+        page={page}
+        onPage={i => { if (i !== page) { setPage(i); setShowAllStory(false); } }}
+        onAddCar={() => openCarForm()}
+        stateWord={
+          model?.live ? 'In care'
+          : model?.agreed ? (visitPhase(model.agreed.status) === 'agreed' ? 'Booked in' : 'Requested')
+          : model?.proposal ? 'Care due'
+          : model?.completed.length ? 'Cared for' : 'New'
+        }
+        onStateTap={
+          model?.live ? () => nav.push(`/app/visit/${model.live!.id}`)
+          : model?.agreed ? () => router.replace('/app?sheet=manage')
+          : () => router.replace('/app?sheet=arrange')
+        }
+        pills={homePills}
+        priority={homePriority}
+        quickActions={[
+          {
+            key: 'arrange', title: 'Arrange', subtitle: 'a visit', tone: 'warn',
+            onTap: () => router.replace('/app?sheet=arrange'),
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden fill="none"
+                stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3.5" y="5.2" width="17" height="15.3" rx="2.4" />
+                <path d="M3.5 9.8h17M8.2 3.5v3.2M15.8 3.5v3.2M12 12.6v4.2M9.9 14.7h4.2" />
+              </svg>
+            ),
+          },
+          {
+            key: 'edit', title: 'Edit', subtitle: 'details', tone: 'info',
+            onTap: () => { if (vehicle) openCarForm(vehicle); },
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden fill="none"
+                stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 20h4l10-10a2.6 2.6 0 0 0-3.7-3.7L4.3 16.3z" />
+                <path d="M13.6 7.2 16.8 10.4" />
+              </svg>
+            ),
+          },
+        ]}
+        studio={{
+          name: COMPANY.name,
+          area: COMPANY.city === 'Ahmedabad' ? 'Maninagar' : COMPANY.city,
+          address: COMPANY.address,
+          hours: `Open ${COMPANY.hours.open} – ${COMPANY.hours.close}`,
+          photo: MEDIA.surfaces.garage,
+          onDirections: () => window.open(COMPANY.mapsUrl, '_blank', 'noopener,noreferrer'),
+          onCall: () => window.open(telLink(), '_self'),
+          onWhatsApp: messageStudio,
         }}
-        style={{
-          display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory',
-          scrollbarWidth: 'none',
-        }}
-      >
-        {vehicles.map(v => (
-          <div key={v.id} style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
-            <Portrait
-              name={v.name}
-              plate={v.registrationNumber}
-              photo={v.photo}
-              truth={v.id === vehicle?.id && model ? model.truth : ''}
-              minHeight="100svh"
-              continuous={v.id === vehicle?.id}
-            >
-              {/* avatar → you sheet */}
-              <button
-                onClick={() => router.replace('/app?sheet=you')}
-                aria-label="You"
-                className="st-tap"
-                style={{
-                  position: 'absolute', top: 'calc(env(safe-area-inset-top) + 16px)', right: 24,
-                  width: 36, height: 36, borderRadius: 999, border: 'none', cursor: 'pointer',
-                  background: 'var(--st-linen)', color: 'var(--st-ink)',
-                  fontFamily: 'var(--st-text)', fontWeight: 520, fontSize: 14, zIndex: 2,
-                }}
-              >
-                {user.name?.charAt(0).toUpperCase() || 'Y'}
-              </button>
+        unread={unreadCount}
+        onNotifications={() => router.replace('/app?sheet=desk')}
+      />
 
-              {/* page dots - only when vehicles ≥ 2 (◆R4) */}
-              {vehicles.length >= 2 && (
-                <div aria-hidden style={{
-                  position: 'absolute', bottom: 96, left: 0, right: 0,
-                  display: 'flex', justifyContent: 'center', gap: 8, zIndex: 2,
-                }}>
-                  {[...vehicles, null].map((_, i) => (
-                    <span key={i} style={{
-                      width: 4, height: 4, borderRadius: 999,
-                      background: i === page ? 'var(--st-portrait-fg)' : 'var(--st-portrait-fg-2)',
-                    }} />
-                  ))}
-                </div>
-              )}
-            </Portrait>
-          </div>
-        ))}
-        {/* last page: add-a-car (◆R14) */}
-        <div style={{ minWidth: '100%', scrollSnapAlign: 'start' }}>
-          <AddCarInvitation onAdd={() => openCarForm()} />
-        </div>
-      </div>
-
-      {/* ── the DECK: a physical surface that lifts over the vehicle stage,
-          carrying the car's live world. Not sections under a hero - a raised
-          deck floating over the car, Wallet/car-OS depth. ── */}
-      {!onAddPage && vehicle && model && (
-        <div style={{
-          position: 'relative', zIndex: 1,
-          marginTop: 'calc(-1 * var(--st-rest))',
-          borderTopLeftRadius: 30, borderTopRightRadius: 30,
-          background: 'var(--st-paper)',
-          boxShadow: '0 -28px 64px -28px rgba(12,13,14,0.22), var(--st-edge)',
-          paddingTop: 'var(--st-hair)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement) + 72px)',
-        }}>
-          {/* grab handle - the deck reads as a liftable surface */}
-          <div aria-hidden style={{
-            width: 38, height: 4, borderRadius: 999, background: 'var(--st-hairline)',
-            margin: '12px auto 0',
-          }} />
-
-          {/* STATUS - one enormous asymmetric statement, read from ten feet.
-              Not a row of tiles: the car's state IS the object; protection and
-              the Club recede to hairline controls beneath it. */}
-          {(() => {
-            const p0 = model.protections[0];
-            const stateWord = model.live ? 'In care'
-              : model.agreed ? (visitPhase(model.agreed.status) === 'agreed' ? 'Booked in' : 'Requested')
-              : model.proposal ? 'Care due'
-              : model.completed.length ? 'Cared for' : 'New';
-            const onState = model.live ? () => nav.push(`/app/visit/${model.live!.id}`)
-              : model.agreed ? () => router.replace('/app?sheet=manage')
-              : () => router.replace('/app?sheet=arrange');
-            const controls: { text: string; tone: Tone; onTap?: () => void }[] = [];
-            if (p0 || model.completed.length > 0) {
-              const waning = p0?.active && (p0.term === 'waning' || p0.term === 'expiring');
-              controls.push({
-                // green protected · amber running out · red expired · amber none
-                tone: !p0 ? 'warn' : !p0.active ? 'urgent' : waning ? 'warn' : 'ok',
-                text: p0
-                  ? `${p0.active ? 'Protected' : 'Expired'}${p0.until ? ` · ${p0.until.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}` : ''}`
-                  : 'Unprotected',
-                onTap: p0
-                  ? (model.protections.length > 1 ? () => router.replace('/app?focus=protection') : undefined)
-                  : () => router.replace('/app?sheet=arrange'),
-              });
-            }
-            if (club.state !== 'none') {
-              controls.push({
-                // blue membership · amber confirming or in grace · red lapsed
-                tone: club.state === 'lapsed' ? 'urgent'
-                  : club.state === 'pending' || club.state === 'grace' ? 'warn' : 'info',
-                text: club.state === 'active' || club.state === 'grace'
-                  ? `Club · ${club.washesLeft} wash${club.washesLeft === 1 ? '' : 'es'}`
-                  : club.state === 'pending' ? 'Club · confirming' : 'Club · lapsed',
-                onTap: (club.state === 'lapsed' || club.state === 'grace') ? () => router.replace('/app?sheet=join-club') : undefined,
-              });
-            } else if (club.invited) {
-              controls.push({ tone: 'info', text: 'The Club', onTap: () => router.replace('/app?sheet=join-club') });
-            }
-            return (
-              <section style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
-                <button onClick={onState} className="st-tap" style={{
-                  display: 'block', width: '100%', textAlign: 'left', background: 'transparent',
-                  border: 'none', padding: 0, cursor: 'pointer',
-                }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 14 }}>
-                    {model.live && <span aria-hidden className="st-live-dot" style={{ width: 12, height: 12 }} />}
-                    <span style={{
-                      fontFamily: 'var(--st-display)', fontWeight: 700, letterSpacing: '-0.045em',
-                      fontSize: 'clamp(56px, 19vw, 116px)', lineHeight: 0.86,
-                      color: model.live ? 'var(--st-ok)' : 'var(--st-ink)',
-                    }}>
-                      {stateWord}
-                    </span>
-                  </span>
-                </button>
-                {controls.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--st-inset)', marginTop: 'var(--st-gap)' }}>
-                    {controls.map((c, i) => (
-                      <button key={i} onClick={c.onTap} disabled={!c.onTap} className="st-tap"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 7,
-                          background: 'transparent', border: 'none', padding: 0,
-                          cursor: c.onTap ? 'pointer' : 'default',
-                          fontFamily: 'var(--st-data)', fontSize: 12, letterSpacing: '0.04em',
-                          color: TONE_INK[c.tone], textTransform: 'uppercase',
-                        }}>
-                        <span aria-hidden style={{
-                          width: 6, height: 6, borderRadius: 999, flex: '0 0 auto',
-                          background: TONE_INK[c.tone],
-                        }} />
-                        {c.text}{c.onTap ? '  ↗' : ''}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })()}
-
-          {/* B3 · Now - the next thing for this car. An agreed visit takes the
-              floor; otherwise the studio's one standing suggestion (live lives
-              in the capsule until P3). The two are mutually exclusive. */}
-          {model.agreed ? (
-            <Layer>
-              {/* THE PASS - the next visit as a single graphite object, the one
-                  dark surface on the deck. The day is the hero; the pass reads
-                  like a boarding card, not another white section. */}
-              {(() => {
-                const confirmed = visitPhase(model.agreed.status) === 'agreed';
-                return (
-                  <div className="st-card" style={{
-                    position: 'relative', overflow: 'hidden',
-                    background: 'linear-gradient(155deg, #23262B 0%, #16181B 56%, #0D0E10 100%)',
-                    borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-lift)',
-                    padding: 'var(--st-inset)', color: 'var(--st-over)',
-                  }}>
-                    {/* top specular edge + a faint corner bloom - machined metal */}
-                    <div aria-hidden style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent)',
-                    }} />
-                    <div aria-hidden style={{
-                      position: 'absolute', top: '-30%', right: '-20%', width: '70%', height: '80%',
-                      background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.10) 0%, transparent 65%)',
-                      pointerEvents: 'none',
-                    }} />
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
-                      <span style={{
-                        fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.1em',
-                        textTransform: 'uppercase', color: 'var(--st-over-2)',
-                      }}>{confirmed ? 'Next visit' : 'Requested'}</span>
-                      {/* the colour language, on graphite: a confirmed visit is
-                          blue (booked), one the studio hasn't taken yet is amber
-                          (waiting). The dark-surface values are used directly
-                          because this card is a dark object inside a light page. */}
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '4px 10px', borderRadius: 999,
-                        background: confirmed ? 'rgba(111,168,201,0.16)' : 'rgba(217,169,74,0.16)',
-                        border: `1px solid ${confirmed ? 'rgba(111,168,201,0.34)' : 'rgba(217,169,74,0.34)'}`,
-                        fontFamily: 'var(--st-text)', fontSize: 12,
-                        color: confirmed ? '#9FCBE2' : '#E8C57E',
-                      }}>
-                        {confirmed && <span aria-hidden className="st-live-dot" style={{ ['--st-ok' as string]: '#6FA8C9' }} />}
-                        {confirmed ? 'Confirmed' : 'Awaiting the studio'}
-                      </span>
-                    </div>
-                    <p style={{
-                      position: 'relative', marginTop: 'var(--st-gap)',
-                      fontFamily: 'var(--st-display)', fontWeight: 640, letterSpacing: '-0.02em',
-                      fontSize: 'clamp(34px, 10vw, 52px)', lineHeight: 1.02, color: 'var(--st-over)',
-                    }}>
-                      {fmtDayDate(model.agreed.scheduledDate)}
-                    </p>
-                    <span style={{
-                      display: 'block', marginTop: 6, fontFamily: 'var(--st-data)', fontSize: 15,
-                      color: 'var(--st-over-2)',
-                    }}>
-                      {model.agreed.scheduledTime}
-                    </span>
-                    <div style={{ position: 'relative', marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
-                        <span style={{ fontFamily: 'var(--st-text)', fontSize: 16, color: 'var(--st-over-2)' }}>
-                          {model.agreed.serviceName}
-                          {model.agreed.paymentMethod === 'cash' ? ' · pay at the studio' : ''}
-                        </span>
-                        <span style={{ fontFamily: 'var(--st-data)', fontSize: 14, color: 'var(--st-over)' }}>
-                          ₹{model.agreed.totalAmount.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                      {!confirmed && (
-                        <p style={{ marginTop: 'var(--st-breath)', fontFamily: 'var(--st-text)', fontSize: 12, color: 'var(--st-over-2)' }}>
-                          {PHASE_LINE.proposed}
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ position: 'relative', marginTop: 'var(--st-gap)' }}>
-                      <Action variant="on-photo" onClick={() => router.replace('/app?sheet=manage')}>Change or cancel</Action>
-                    </div>
-                  </div>
-                );
-              })()}
-            </Layer>
-          ) : model.declined ? (
-            <Layer>
-              {/* the declined fork - the studio couldn't take a request, or a
-                  slot was missed. The reason the studio gave is finally shown,
-                  and the way forward is one tap to another time. */}
-              {(() => {
-                const d = model.declined!;
-                const missed = d.noShow === true;
-                return (
-                  <div style={{
-                    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
-                    borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-raise), var(--st-edge)',
-                    padding: 'var(--st-inset)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
-                      <Whisper as="p">A note from the studio</Whisper>
-                      <Chip tone="urgent">{missed ? 'Missed' : 'Not accepted'}</Chip>
-                    </div>
-                    <Emphasis style={{ display: 'block', marginTop: 'var(--st-line)' }}>
-                      {missed
-                        ? `The ${fmtDayDate(d.scheduledDate)} visit was missed.`
-                        : `${fmtDayDate(d.scheduledDate)} couldn’t be taken.`}
-                    </Emphasis>
-                    <Data tone="ink-2" style={{ display: 'block', marginTop: 'var(--st-hair)', fontSize: 15 }}>
-                      {d.serviceName} · {d.scheduledTime}
-                    </Data>
-                    <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>
-                      {missed
-                        ? `The ${vehicle.name}’s slot went unused. Arrange another whenever suits you.`
-                        : d.rejectionReason}
-                    </Body>
-                    <div style={{ marginTop: 'var(--st-inset)' }}>
-                      <Action variant="forward"
-                        onClick={() => router.replace(`/app?sheet=arrange&cat=${d.serviceCategory}`)}>
-                        {missed ? 'Arrange another' : 'Find another time'}
-                      </Action>
-                    </div>
-                  </div>
-                );
-              })()}
-            </Layer>
-          ) : model.proposal ? (
-            <Layer>
-              <div style={{
-                background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
-                borderRadius: 'var(--st-r-sheet)', boxShadow: 'var(--st-raise), var(--st-edge)',
-                padding: 'var(--st-inset)',
-              }}>
-                <Whisper as="p" style={{ marginBottom: 'var(--st-line)' }}>A suggestion from the studio</Whisper>
-                <Emphasis>{model.proposal.reason}</Emphasis>
-                <div style={{ marginTop: 'var(--st-inset)' }}>
-                  <Action variant="forward"
-                    onClick={() => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`)}>
-                    Arrange it
-                  </Action>
-                </div>
-              </div>
-            </Layer>
-          ) : null}
-
-          {/* QUICK ACTIONS - the two things a customer does to this vehicle, as
-              a row of actions (not cards). Messaging is the Capsule's job, so it
-              is not duplicated here. */}
-          <div style={{
-            marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)',
-            display: 'flex', gap: 'var(--st-inset)', flexWrap: 'wrap', alignItems: 'baseline',
-          }}>
-            <Action variant="forward" onClick={() => router.replace('/app?sheet=arrange')}>Arrange a visit</Action>
-            <Action variant="quiet" onClick={() => openCarForm(vehicle)}>Edit details</Action>
-          </div>
-
-          {/* Protection and papers are no longer cards on the deck: protection
-              rides the hairline control under the status; every paper lives
-              inside its Chapter's receipt. The deck stays large objects only. */}
-
-          {/* THE DECK, ORDERED BY OWNERSHIP STATE (lib/os/ownership.ts).
-              The objects below are the same objects; which one the owner meets
-              first is decided by where they actually stand - a lapsed Club
-              leads for a lapsed member, the story leads for a dormant car.
-              Status and its actions stay pinned above: every state leads with
-              them. No two customers get the same deck. */}
-          {(() => {
-            const deck: Partial<Record<ModuleKey, ReactNode>> = {
-              activity: model.completed.length === 0 ? (
-                <div style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
-                  <EmptyState
-                    line={`The ${vehicle.name}’s story starts with its first visit.`}
-                    actionLabel="Arrange one"
-                    onAction={() => router.replace('/app?sheet=arrange')}
-                  />
-                </div>
-              ) : (
-                <StoryFilm
-                  completed={showAllStory ? model.completed : model.completed.slice(0, STORY_PREVIEW)}
-                  jobByBooking={model.jobByBooking}
-                  vehicleName={vehicle.name}
-                  moreCount={!showAllStory ? Math.max(0, model.completed.length - STORY_PREVIEW) : 0}
-                  onMore={() => setShowAllStory(true)}
-                  onOpen={id => nav.push(`/app/chapter/${id}`)}
-                />
-              ),
-
-              ...(club.state !== 'none' || club.invited ? {
-                ownership: (
-                  <Layer>
-                    {club.state !== 'none' ? (
-                      <div>
-                        <MemberCard
-                          name={user.name}
-                          tier={`Club · since ${fmtMonthYear(club.since!)}`}
-                          since={club.plan!}
-                          state={club.state === 'pending' ? 'pending'
-                            : club.state === 'lapsed' ? 'lapsed' : 'active'}
-                        />
-                        {club.context && (
-                          <Body tone="ink-2" style={{ marginTop: 'var(--st-gap)' }}>{club.context}</Body>
-                        )}
-                        {(club.state === 'lapsed' || club.state === 'grace') && (
-                          <div style={{ marginTop: 'var(--st-breath)' }}>
-                            <Action variant="forward" onClick={() => router.replace('/app?sheet=join-club')}>
-                              {club.state === 'grace' ? 'Renew' : 'Rejoin'}
-                            </Action>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <EmptyState
-                        line={`You wash often. The Club would suit the ${vehicle.name}.`}
-                        actionLabel="Have a look"
-                        onAction={() => router.replace('/app?sheet=join-club')}
-                      />
-                    )}
-
-                    <div style={{
-                      marginTop: 'var(--st-inset)', paddingTop: 'var(--st-gap)',
-                      borderTop: '1px solid var(--st-hairline)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--st-gap)',
-                    }}>
-                      <Body tone="ink-2" style={{ flex: 1 }}>Give a friend {REFERRAL.label}, get {REFERRAL.label}.</Body>
-                      <Action variant="forward" onClick={shareReferral}>{refCopied ? 'Copied' : 'Share'}</Action>
-                    </div>
-                  </Layer>
-                ),
-              } : {}),
-
-              studio: <StudioCard />,
-            };
-
-            return own.order
-              .filter(k => deck[k])
-              .map(k => <Fragment key={k}>{deck[k]}</Fragment>);
-          })()}
-        </div>
-      )}
 
       {/* the one-time nudge at the capsule - never over a sheet (◆audit #5) */}
       <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen && !protectionOpen && !joinClubOpen} />
 
-      <Capsule
-        line={capsule.line}
-        actionWord={capsule.actionWord}
-        onActionTap={capsule.onAction}
-        onTap={capsule.tap}
-        onPhoto={false}
-        ready={capsule.ready}
-      />
+      {/* the concierge capsule speaks only when the studio has something live to
+          say (a visit in flight, an agreed slot, an open proposal). With nothing
+          happening it does not sit there as a bare wordmark - the space collapses. */}
+      {capsule.line !== '' && (
+        <Capsule
+          line={capsule.line}
+          actionWord={capsule.actionWord}
+          onActionTap={capsule.onAction}
+          onTap={capsule.tap}
+          onPhoto={false}
+          ready={capsule.ready}
+        />
+      )}
 
       {/* the protection panel - the Desk's focus reading of every layer (§C6) */}
       <StudioSheet open={protectionOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="Protection">
@@ -915,6 +695,47 @@ function Glance() {
 
 const fmtDay = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
+
+/* ── the glyphs the Priority Card leads with, one per state family. Passed in
+   as props (icon: ReactNode) so the view resolves nothing itself. ── */
+const stroke = {
+  fill: 'none', stroke: 'currentColor', strokeWidth: 1.7,
+  strokeLinecap: 'round', strokeLinejoin: 'round',
+} as const;
+const IconReady = (
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
+    <circle cx="12" cy="12" r="9" /><path d="M8.2 12.2 11 15l4.8-6" />
+  </svg>
+);
+const IconStudio = (
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
+    <path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><path d="M12 8.5 13.4 11 12 13.5 10.6 11z" />
+  </svg>
+);
+const IconCalendar = (
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
+    <rect x="3.5" y="5.2" width="17" height="15.3" rx="2.4" />
+    <path d="M3.5 9.8h17M8.2 3.5v3.2M15.8 3.5v3.2" />
+  </svg>
+);
+const IconShield = (
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
+    <path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" /><path d="M9.2 12 11 13.8 15 9.6" />
+  </svg>
+);
+const IconClub = (
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
+    <path d="M12 4.2 14.1 8.5 18.8 9.2 15.4 12.5 16.2 17.2 12 15 7.8 17.2 8.6 12.5 5.2 9.2 9.9 8.5z" />
+  </svg>
+);
+const IconAlert = (
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
+    <path d="M12 3 1.8 20.5h20.4z" /><path d="M12 9.5v4.5M12 17.2h.01" />
+  </svg>
+);
+
+/** protection lifecycle → urgency, so the most-waning layer leads the pills */
+const TERM_RANK: Record<string, number> = { expiring: 3, waning: 2, grace: 2, active: 1, lapsed: 0 };
 
 /* ── the add-a-car page (B1 last page / first-run) ── */
 /** A document mark - the glyph that makes a paper read as a file. */

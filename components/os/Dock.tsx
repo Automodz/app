@@ -130,15 +130,18 @@ export default function Dock() {
           whileTap={{ scale: 0.95 }}
           transition={{ duration: tick, ease: studioEase }}
           style={{
-            flex: '0 0 auto', margin: '0 4px', cursor: 'pointer',
+            flex: '0 0 auto', margin: '0 6px', cursor: 'pointer',
             display: 'grid', placeItems: 'center',
-            width: 92, height: 46, borderRadius: 22,
+            // the island sizes itself from the mark: no fixed width - the
+            // wordmark's own width plus an equal cushion of horizontal padding.
+            // Swap the logo and the pedestal still fits it perfectly.
+            height: 60, padding: '0 28px', borderRadius: 20,
             background: 'var(--st-linen)',
             border: '1px solid var(--st-hairline)',
-            boxShadow: 'var(--st-hold), var(--st-edge)',
+            boxShadow: 'var(--st-hold)',
           }}
         >
-          <Wordmark height={12} />
+          <Wordmark height={14} />
         </motion.button>
 
         {right.map(s => <Item key={s.key} slot={s} />)}

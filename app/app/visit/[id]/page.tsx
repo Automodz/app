@@ -13,34 +13,20 @@
  * glass live header (it carries the act line and taps straight back in), so
  * putting the visit down simply returns to the car, exactly as specified.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, useReducedMotion, type PanInfo } from 'framer-motion';
-import { COMPANY } from '@/lib/company';
 import { useAppStore } from '@/lib/store';
 import { useVisitJob } from '@/components/os/useVisitJob';
-import { deriveStay, fmtClock } from '@/lib/os/stay';
-import { scene, studioEase, rise } from '@/lib/os/motion';
-import { useStudioRouter, vtName } from '@/lib/os/navigate';
-import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';
+import { deriveStay } from '@/lib/os/stay';
+import { scene, studioEase, breath } from '@/lib/os/motion';
+import { useStudioRouter } from '@/lib/os/navigate';
 import IdentityPlate from '@/components/os/IdentityPlate';
+import { getHeroImage } from '@/lib/os/hero';
 import MomentStage from '@/components/os/MomentStage';
+import StayReveal, { StayFacts } from '@/components/os/StayReveal';
 import Action from '@/components/os/Action';
-import { Display, Emphasis, Body, Data, Whisper } from '@/components/os/text';
-
-/**
- * The takeover breath - the evidence settles from 1.04 as the stage fades up.
- * Under reduced motion the transform is dropped entirely (an `initial` scale
- * would otherwise stay applied, since framer holds transforms still).
- */
-const breath = (reduced: boolean | null) =>
-  reduced
-    ? {}
-    : {
-        initial: { scale: 1.04 },
-        animate: { scale: 1 },
-        transition: { duration: scene, ease: studioEase },
-      };
+import { Body } from '@/components/os/text';
 
 /** A finished visit is a Chapter - the Stay hands it straight over. */
 const chapterHref = (bookingId: string) => `/app/chapter/${bookingId}`;
@@ -92,20 +78,16 @@ export default function StayPage() {
   const name = vehicle?.name ?? booking.vehicleName;
   const registration = vehicle?.registrationNumber ?? booking.vehicleRegNo;
 
-  /* the plate speaks the stage's rendering - the photo-less Stay is never a
-     black box, and the identity language is not duplicated to achieve it */
+  /* the hero image, resolved by the one shared rule every surface uses
+     (lib/os/hero → getHeroImage): the studio's latest progress photo, else the
+     car's cover, else the branded plate below - never a black box. */
+  const heroPhoto = getHeroImage(vehicle, stay);
+
+  /* the photo-less fallback: the identical band plate HomeV2 uses (a designed
+     monument, never solid black). No per-surface token override - the two heroes
+     fall back the same way. */
   const plate = (
-    <div style={{
-      position: 'absolute', inset: 0,
-      ['--st-gallery' as string]: 'var(--st-stage)',
-      ['--st-linen' as string]: 'rgba(247,247,245,0.10)',
-      ['--st-hairline' as string]: 'rgba(247,247,245,0.10)',
-      ['--st-ink' as string]: 'var(--st-over)',
-      ['--st-ink-2' as string]: 'var(--st-over-2)',
-      ['--st-ink-3' as string]: 'var(--st-over-2)',
-    }}>
-      <IdentityPlate name={name} registration={registration} variant="band" />
-    </div>
+    <IdentityPlate name={name} registration={registration} variant="band" />
   );
 
   const isReveal = stay.act === 'ready';
@@ -121,12 +103,15 @@ export default function StayPage() {
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={{ top: 0, bottom: 0.4 }}
       onDragEnd={onDragEnd}
-      style={{ background: 'var(--st-stage)', minHeight: '100dvh', position: 'relative' }}
+      // transparent so the Stay floats on the shared environment (the shell's
+      // Ambient), never a separate black page
+      style={{ background: 'transparent', minHeight: '100dvh', position: 'relative' }}
     >
       {isReveal
-        ? <Reveal
+        ? <StayReveal
             name={name} stay={stay}
             covered={!!booking.usedMembershipWash}
+            heroPhoto={heroPhoto}
             fallback={plate}
           />
         : (
@@ -135,11 +120,11 @@ export default function StayPage() {
               act={stay.act}
               acts={stay.acts}
               narration={stay.narration}
-              photo={stay.latestPhoto}
+              photo={heroPhoto}
               photoAlt={`The ${name} at the studio - ${stay.acts.find(a => a.state === 'current')?.title.toLowerCase()}`}
               fallback={plate}
               timing={stay.timing}
-              meta={<Facts stay={stay} name={name} />}
+              meta={<StayFacts stay={stay} name={name} />}
             />
           </motion.div>
         )}
@@ -160,94 +145,3 @@ export default function StayPage() {
   );
 }
 
-/** The quiet facts: who has the car, and since when. Silent when unknown. */
-function Facts({ stay, name }: { stay: NonNullable<ReturnType<typeof deriveStay>>; name: string }) {
-  const lines: string[] = [];
-  if (stay.craftsman) lines.push(`${stay.craftsman} has the ${name}.`);
-  if (stay.arrivedAt) lines.push(`Arrived ${fmtClock(stay.arrivedAt)}.`);
-  if (!lines.length) return null;
-  return <Whisper tone="over-2">{lines.join(' ')}</Whisper>;
-}
-
-/**
- * THE REVEAL (act 5). The finished car holds the screen alone, and only then
- * does the rest rise: the word, the change, the person, the amount, and how
- * to collect. Nothing is sold beside a finished car.
- */
-function Reveal({
-  name, stay, covered, fallback,
-}: {
-  name: string;
-  stay: NonNullable<ReturnType<typeof deriveStay>>;
-  covered: boolean;
-  fallback: React.ReactNode;
-}) {
-  const reduced = useReducedMotion();
-  const [held, setHeld] = useState(!reduced);
-
-  useEffect(() => {
-    if (!held) return;
-    const t = setTimeout(() => setHeld(false), 1200);
-    return () => clearTimeout(t);
-  }, [held]);
-
-  const finished = stay.finishedPhoto;
-  const arrival = stay.arrivalPhoto;
-
-  return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ position: 'relative', flex: '0 0 60%', minHeight: '56vh', ...vtName('hero-vehicle') }}>
-        {finished
-          ? <motion.img
-              src={finished} alt={`The finished ${name}`}
-              {...breath(reduced)}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          : fallback}
-        <div aria-hidden style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
-          background: 'linear-gradient(transparent, var(--st-stage))',
-        }} />
-      </div>
-
-      {!held && (
-        <motion.div
-          {...rise}
-          style={{
-            padding: '0 var(--st-inset) calc(env(safe-area-inset-bottom) + var(--st-movement))',
-            marginTop: -24, position: 'relative',
-          }}
-        >
-          <Display tone="over" aria-live="polite">Ready.</Display>
-
-          {finished && arrival && (
-            <div style={{ marginTop: 'var(--st-inset)', borderRadius: 'var(--st-r-sheet)', overflow: 'hidden' }}>
-              <BeforeAfterSlider
-                before={arrival} after={finished} showLabels={false}
-                alt={`The ${name} on arrival and finished`}
-              />
-            </div>
-          )}
-
-          {stay.craftsman && (
-            <Emphasis tone="over" style={{ marginTop: 'var(--st-inset)' }}>
-              {stay.craftsman} finished the {name}.
-            </Emphasis>
-          )}
-
-          <Body tone="over-2" style={{ marginTop: 'var(--st-line)' }}>
-            {covered
-              ? 'Covered by the Club.'
-              : stay.paid
-              ? 'Paid - thank you.'
-              : <>Pay at the desk · <Data tone="over-2">₹{stay.amount.toLocaleString('en-IN')}</Data></>}
-          </Body>
-
-          <Body tone="over" style={{ marginTop: 'var(--st-inset)' }}>
-            Collect any time before {COMPANY.hours.close}.
-          </Body>
-        </motion.div>
-      )}
-    </div>
-  );
-}

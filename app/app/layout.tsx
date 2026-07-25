@@ -22,6 +22,7 @@ import {
 } from '@/lib/firebaseService';
 import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING, DEV_DECLINED_BOOKING } from '@/lib/cx/devseed';
 import OfflineBar from '@/components/os/OfflineBar';
+import Ambient from '@/components/os/Ambient';
 import Dock from '@/components/os/Dock';
 import SmoothScroll from '@/components/home/SmoothScroll';
 import { StudioLoading, StudioError, bootReveal } from '@/components/os/StudioBoot';
@@ -139,11 +140,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // tree honour the OS setting (transform/reveal off, opacity kept) - one
     // reusable guard instead of per-component checks.
     <MotionConfig reducedMotion="user">
-      <motion.div {...bootReveal} className="studio" style={{ minHeight: '100vh', background: 'var(--st-paper)' }}>
+      <motion.div {...bootReveal} className="studio st-os" style={{ minHeight: '100vh', position: 'relative' }}>
+        {/* the one living environment - a fixed, cinematic backdrop every room
+            floats on, so navigation feels like moving through one lit space */}
+        <Ambient />
         {/* one continuous inertial scroll across every customer surface */}
         {smoothScroll && <SmoothScroll />}
-        <OfflineBar />
-        {children}
+        {/* content rides above the environment */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <OfflineBar />
+          {children}
+        </div>
         {/* the one persistent control surface - it steps aside for takeovers */}
         <Dock />
       </motion.div>

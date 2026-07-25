@@ -27,3 +27,18 @@ export const press = {
   whileTap: { scale: 0.98 },
   transition: { duration: tick, ease: studioEase },
 } as const;
+
+/**
+ * The settle - a hero image that eases from 1.04 to rest as it fades up. The
+ * one entrance for evidence (the Stay's photograph). Under reduced motion the
+ * transform is dropped entirely, since framer holds an `initial` transform in
+ * place; opacity is left to the surface's own fade.
+ */
+export const breath = (reduced: boolean | null) =>
+  reduced
+    ? {}
+    : {
+        initial: { scale: 1.04 },
+        animate: { scale: 1 },
+        transition: { duration: scene, ease: studioEase },
+      };

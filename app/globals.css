@@ -1154,6 +1154,75 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-neutral-bg:   var(--st-linen);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   AUTOMODZ OS - the immersive environment layer. The customer app is one
+   lit space carved from a single dark material; every room inherits this.
+   `.st-os` refines the dark tokens into the OS look (deeper graphite, glassier
+   glass, a brighter carved edge, deeper float) and rides on top of the dark
+   theme the shell forces. Scoped to the customer shell, so the styleguide and
+   ops surfaces are untouched.
+   ═══════════════════════════════════════════════════════════════════ */
+.studio.st-os {
+  /* the environment base - deep graphite the ambient light plays across */
+  --st-paper:    #0A0B0D;
+  --st-gallery:  #131417;
+  --st-linen:    #1C1E21;
+  --st-hairline: rgba(242,242,239,0.10);
+
+  /* liquid glass - darker, more translucent, more blur; a pane, not a card */
+  --st-glass:      rgba(18,20,23,0.55);
+  --st-glass-blur: blur(30px) saturate(150%);
+  /* the carved top-sheen - a brighter machined highlight on every surface */
+  --st-edge:       inset 0 1px 0 rgba(255,255,255,0.08);
+
+  /* depth deepened so panels float above the environment, not sit on paper */
+  --st-hold:  0 1px 2px rgba(0,0,0,0.40), 0 10px 34px rgba(0,0,0,0.38);
+  --st-raise: 0 3px 10px rgba(0,0,0,0.42), 0 26px 74px rgba(0,0,0,0.52);
+  --st-lift:  0 22px 64px rgba(0,0,0,0.55);
+
+  /* the shell paints only the deep base; the ambient light is a real layer */
+  background: var(--st-paper);
+  isolation: isolate;
+}
+
+/* THE ENVIRONMENT LAYER (components/os/Ambient) - one fixed, cinematic backdrop
+   behind every room, so navigation feels like moving through a lit space. */
+.st-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+}
+.st-ambient > div { position: absolute; inset: -20%; }
+/* a cool key light from high-left, a warmer graphite fill pooling low-right -
+   near-neutral and barely there, so glass reads as glass and text stays legible */
+.st-ambient-key {
+  background: radial-gradient(46% 40% at 24% 12%, rgba(126,152,188,0.12), transparent 72%);
+  will-change: transform;
+}
+.st-ambient-fill {
+  background: radial-gradient(52% 46% at 82% 92%, rgba(150,138,120,0.08), transparent 74%);
+  will-change: transform;
+}
+.st-ambient-vignette {
+  inset: 0;
+  background: radial-gradient(132% 108% at 50% 26%, transparent 54%, rgba(0,0,0,0.55) 100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .st-ambient-key  { animation: st-ambient-drift-a 34s var(--st-ease) infinite alternate; }
+  .st-ambient-fill { animation: st-ambient-drift-b 42s var(--st-ease) infinite alternate; }
+}
+@keyframes st-ambient-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(4%, 3%, 0) scale(1.08); }
+}
+@keyframes st-ambient-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.04); }
+  to   { transform: translate3d(-3%, -4%, 0) scale(1); }
+}
+
 .studio ::selection { background: var(--st-linen); }
 
 /* ═══════════════════════════════════════════════════════════════════

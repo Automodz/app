@@ -7,9 +7,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { theme } = useAppStore();
   const pathname = usePathname();
   // The marketing homepage is always dark. The admin + store surfaces are the
-  // operations OS - always dark too (layered graphite, liquid glass). The
-  // light/dark toggle only governs the customer-facing app.
-  const forceDark = pathname === '/' || pathname.startsWith('/admin') || pathname.startsWith('/store');
+  // operations OS - always dark. The customer app (/app) is now the immersive
+  // AutoModz OS: one lit, carved-from-graphite environment, always dark too, so
+  // every room shares the same material (see .st-os + components/os/Ambient).
+  const forceDark = pathname === '/'
+    || pathname.startsWith('/admin')
+    || pathname.startsWith('/store')
+    || pathname.startsWith('/app');
   const effective = forceDark ? 'dark' : theme;
   useEffect(() => {
     const root = document.documentElement;
