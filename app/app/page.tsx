@@ -482,7 +482,7 @@ function Glance() {
           background: 'var(--st-paper)',
           boxShadow: '0 -28px 64px -28px rgba(12,13,14,0.22), var(--st-edge)',
           paddingTop: 'var(--st-hair)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement))',
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--st-movement) + 72px)',
         }}>
           {/* grab handle - the deck reads as a liftable surface */}
           <div aria-hidden style={{

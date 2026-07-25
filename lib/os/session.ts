@@ -56,7 +56,7 @@ export const emptySession = (): SessionState => ({
   navStack: [],
   onboardingCompleted: false,
   drafts: {},
-  ui: { theme: 'light', scrollPositions: {} },
+  ui: { theme: 'dark', scrollPositions: {} },
   lastSyncedAt: null,
 });
 

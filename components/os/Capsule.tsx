@@ -23,7 +23,7 @@ export default function Capsule({ line, actionWord, onTap, onActionTap, onLongPr
 
   return (
     <div style={{
-      position: 'fixed', left: 0, right: 0, bottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+      position: 'fixed', left: 0, right: 0, bottom: 'calc(env(safe-area-inset-bottom) + var(--st-dock-clear, 16px))',
       display: 'flex', justifyContent: 'center', zIndex: 50, pointerEvents: 'none',
       paddingLeft: 24, paddingRight: 24,
     }}>

@@ -1089,6 +1089,9 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-r-chip:   12px;
   --st-r-pill:   999px;
 
+  /* height the floating dock reserves at the bottom of every customer surface */
+  --st-dock-clear: 78px;
+
   /* spacing scale (the seven numbers - §2) */
   --st-hair:      4px;
   --st-breath:    8px;

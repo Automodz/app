@@ -22,6 +22,7 @@ import {
 } from '@/lib/firebaseService';
 import { isDevUser, DEV_VEHICLE, DEV_ACTIVE_BOOKING, DEV_COMPLETED_BOOKING, DEV_CERAMIC_BOOKING, DEV_DECLINED_BOOKING } from '@/lib/cx/devseed';
 import OfflineBar from '@/components/os/OfflineBar';
+import Dock from '@/components/os/Dock';
 import SmoothScroll from '@/components/home/SmoothScroll';
 import { StudioLoading, StudioError, bootReveal } from '@/components/os/StudioBoot';
 
@@ -143,6 +144,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {smoothScroll && <SmoothScroll />}
         <OfflineBar />
         {children}
+        {/* the one persistent control surface - it steps aside for takeovers */}
+        <Dock />
       </motion.div>
     </MotionConfig>
   );

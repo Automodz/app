@@ -44,7 +44,7 @@ describe('session migration', () => {
   it('fills gaps a partial payload leaves, without dropping what it has', () => {
     const s = migrate({ version: SESSION_VERSION, selectedVehicleId: 'car-2' });
     expect(s.selectedVehicleId).toBe('car-2');
-    expect(s.ui.theme).toBe('light');       // defaulted
+    expect(s.ui.theme).toBe('dark');        // defaulted - the studio is dark
     expect(s.ui.scrollPositions).toEqual({}); // defaulted
     expect(s.drafts).toEqual({});
   });

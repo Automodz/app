@@ -107,7 +107,7 @@ export const useAppStore = create<AppState>()(
         SessionManager.save(fresh);
       },
 
-      theme: 'light',
+      theme: 'dark',
       toggleTheme: () => {
         const s = get().session;
         const theme: ThemeName = s.ui.theme === 'dark' ? 'light' : 'dark';

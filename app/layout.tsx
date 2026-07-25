@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           /* theme before first paint - reads the SessionManager payload, and
              still understands the pre-SessionManager store so an existing
              customer never gets a light flash on the upgrade */
-          __html: `(function(){try{var r=document.documentElement;var dark=false;if(location.pathname==='/'){dark=true;}else{var s=localStorage.getItem('automodz-session');if(s){var j=JSON.parse(s);if(j&&j.ui&&j.ui.theme==='dark')dark=true;}else{var t=localStorage.getItem('automodz-v5');if(t){var d=JSON.parse(t);if(d.state&&d.state.theme==='dark')dark=true;}}}if(dark){r.classList.replace('light','dark');r.setAttribute('data-theme','dark');}}catch(e){}})()`,
+          __html: `(function(){try{var r=document.documentElement;var dark=true;var s=localStorage.getItem('automodz-session');if(s){var j=JSON.parse(s);if(j&&j.ui&&j.ui.theme==='light')dark=false;}else{var t=localStorage.getItem('automodz-v5');if(t){var d=JSON.parse(t);if(d.state&&d.state.theme==='light')dark=false;}}if(dark){r.classList.replace('light','dark');r.setAttribute('data-theme','dark');}}catch(e){}})()`,
         }} />
       </head>
       <body>
