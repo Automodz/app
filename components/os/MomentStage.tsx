@@ -43,10 +43,10 @@ export default function MomentStage({
     <div style={{
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* the hero image - the same component, crop and scrim as the Glance
-          (components/os/HeroMedia), so the two surfaces read as one product */}
+      {/* the hero image - the car fills the screen (the studio's own photograph),
+          the same HeroMedia component and scrim as the Glance */}
       <div style={{
-        position: 'relative', height: '52vh', minHeight: 340, overflow: 'hidden',
+        position: 'relative', height: '66vh', minHeight: 420, overflow: 'hidden',
         background: 'var(--st-stage)', ...vtName('hero-vehicle'),
       }}>
         <HeroMedia

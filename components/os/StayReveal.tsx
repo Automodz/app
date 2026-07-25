@@ -58,7 +58,7 @@ export default function StayReveal({
       <motion.div
         {...breath(reduced)}
         style={{
-          position: 'relative', height: '52vh', minHeight: 340, overflow: 'hidden',
+          position: 'relative', height: '68vh', minHeight: 440, overflow: 'hidden',
           background: 'var(--st-stage)', ...vtName('hero-vehicle'),
         }}
       >
