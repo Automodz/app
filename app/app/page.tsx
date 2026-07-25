@@ -28,14 +28,13 @@ import { truthOf, type ProtectionFact } from '@/lib/os/truth';
 import { visitPhase, careAct, ACT_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import { daysLeft } from '@/lib/os/term';
 import { proposalFor } from '@/lib/os/proposal';
-import { papersFor } from '@/lib/os/papers';
 import { clubModel } from '@/lib/os/club';
 import { ownershipState, type ModuleKey } from '@/lib/os/ownership';
 import { conciergeLog } from '@/lib/os/log';
 import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS, DEV_MEMBERSHIP } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
-import IdentityPlate, { plateSurface } from '@/components/os/IdentityPlate';
+import IdentityPlate from '@/components/os/IdentityPlate';
 import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
 import JoinClub from '@/components/os/JoinClub';
 import CarForm from '@/components/os/CarForm';
@@ -59,7 +58,7 @@ const TONE_INK: Record<Tone, string> = {
   urgent: 'var(--st-urgent)', neutral: 'var(--st-ink-3)',
 };
 import EmptyState from '@/components/os/EmptyState';
-import { Display, DisplayLarge, Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
+import { Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
 import { COMPANY } from '@/lib/company';
 
 const fmtLong = (iso: string) =>
@@ -250,11 +249,6 @@ function Glance() {
     [bookings],
   );
 
-  /* the car's own papers - warranties that still protect, receipts that exist */
-  const papers = useMemo(
-    () => (model ? papersFor({ completed: model.completed, protections: model.protections }) : []),
-    [model],
-  );
 
   /* what the studio has already told this customer - one timeline, no inbox */
   const log = useMemo(() => {
@@ -924,64 +918,11 @@ const fmtDay = (iso: string) =>
 
 /* ── the add-a-car page (B1 last page / first-run) ── */
 /** A document mark - the glyph that makes a paper read as a file. */
-function FileGlyph({ size = 16 }: { size?: number }) {
-  const w = size, h = Math.round(size * 1.125);
-  return (
-    <svg aria-hidden width={w} height={h} viewBox="0 0 16 18" fill="none" style={{ flex: '0 0 auto' }}>
-      <path d="M2.75 1.75h5.5l5 5v9.5a1 1 0 0 1-1 1H2.75a1 1 0 0 1-1-1V2.75a1 1 0 0 1 1-1z"
-        stroke="var(--st-ink-3)" strokeWidth="1.2" strokeLinejoin="round" />
-      <path d="M8.25 1.75v5.25h5" stroke="var(--st-ink-3)" strokeWidth="1.2" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 /** A location pin - marks the studio as a destination, not a text block. */
-function PinGlyph() {
-  return (
-    <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flex: '0 0 auto', marginTop: 2 }}>
-      <path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z" stroke="var(--st-ink)" strokeWidth="1.3" strokeLinejoin="round" />
-      <circle cx="10" cy="8" r="2.1" stroke="var(--st-ink)" strokeWidth="1.3" />
-    </svg>
-  );
-}
 
 /** GLANCE tile - one number the customer reads without a sentence. A row of
  *  these (Wallet/Health) answers where/protected/owned at a glance. */
-function StatTile({ label, value, sub, onTap, live, index = 0 }: {
-  label: string; value: string; sub?: string; onTap?: () => void;
-  live?: boolean; index?: number;
-}) {
-  const body = (
-    <>
-      <span style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.08em',
-        textTransform: 'uppercase', color: 'var(--st-ink-3)',
-      }}>
-        {live && <span aria-hidden className="st-live-dot" />}
-        {label}
-      </span>
-      {/* the value carries the tile - large enough to read across the room */}
-      <span style={{
-        display: 'block', marginTop: 10, fontFamily: 'var(--st-display)', fontWeight: 600,
-        fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.01em',
-        color: live ? 'var(--st-ok)' : 'var(--st-ink)',
-      }}>{value}</span>
-      {sub && <Whisper as="span" style={{ display: 'block', marginTop: 3 }}>{sub}</Whisper>}
-    </>
-  );
-  const style: React.CSSProperties = {
-    display: 'block', textAlign: 'left', flex: '0 0 auto', minWidth: 138, maxWidth: 210,
-    background: 'var(--st-card-fill)', border: '1px solid var(--st-hairline)',
-    boxShadow: 'var(--st-hold), var(--st-edge)', borderRadius: 'var(--st-r-card)',
-    padding: 'var(--st-inset) var(--st-gap)', cursor: onTap ? 'pointer' : 'default',
-    animationDelay: `${index * 70}ms`,
-  };
-  const className = `st-tile-in st-card${onTap ? ' st-tap' : ''}`;
-  return onTap
-    ? <button onClick={onTap} className={className} style={style}>{body}</button>
-    : <div className={className} style={style}>{body}</div>;
-}
 
 /** THE STORY - the car's history as a filmstrip of tall cinematic frames.
  *  Each visit is named over its own photograph; no heading, the images lead. */
@@ -1261,12 +1202,6 @@ function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
     try { await updateUserProfile(user.uid, { notificationPrefs: next }); } catch {}
   };
 
-  const rows: { key: keyof typeof prefs; line: string }[] = [
-    { key: 'whatsapp',            line: 'Message me on WhatsApp about my visits.' },
-    { key: 'serviceReminders',    line: 'Tell me when the car’s care is due.' },
-    { key: 'membershipReminders', line: 'Tell me about my membership.' },
-    { key: 'promotions',          line: 'Occasionally, a word about offers.' },
-  ];
 
   return (
     <StudioSheet open={open} onOpenChange={o => { if (!o) save(); }} label="You">
