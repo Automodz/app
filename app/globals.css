@@ -1056,10 +1056,26 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   /* status scale (M1) - monochrome + the two brand accents only. Fuels the
      forthcoming Chip primitive; `ok`=protected/live, `warn`=attention,
      `neutral`=pending/quiet. Backgrounds are whisper-tints, never fills. */
-  --st-ok:         var(--st-assent);
-  --st-ok-bg:      rgba(46,94,72,0.10);
-  --st-warn:       var(--st-caution);
+  /* ── THE COLOUR LANGUAGE ──────────────────────────────────────────────
+     Five meanings, and colour is used for nothing else - never decoration,
+     never a gradient, never a brand flourish. One accent dominates a surface
+     at a time, always the most urgent one present.
+
+       green   protected · completed · ready · active
+       amber   waiting · upcoming · approval required
+       blue    booked · membership
+       red     urgent · expired · payment · warranty issue
+       neutral quiet · nothing owed
+
+     Tuned for 4.5:1 on paper; the -bg tints are whispers a chip sits on. */
+  --st-ok:         #1F6B4A;   /* green  - protected, ready, done */
+  --st-ok-bg:      rgba(31,107,74,0.10);
+  --st-warn:       #8A5A2E;   /* amber  - waiting, due, approve */
   --st-warn-bg:    rgba(138,90,46,0.10);
+  --st-info:       #1F4E79;   /* blue   - booked, membership */
+  --st-info-bg:    rgba(31,78,121,0.10);
+  --st-urgent:     #A32020;   /* red    - expired, payment, fault */
+  --st-urgent-bg:  rgba(163,32,32,0.10);
   --st-neutral:    var(--st-ink-2);
   --st-neutral-bg: var(--st-linen);
   /* type */
@@ -1122,8 +1138,16 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-edge:         inset 0 1px 0 rgba(255,255,255,0.05);
   --st-card-fill:    linear-gradient(180deg, #16181B 0%, #111214 100%);
   --st-gallery-fill: linear-gradient(180deg, #1D1E21 0%, #191A1C 100%);
+  /* the colour language, lifted for graphite: the same five meanings, opened
+     up so they read on a dark surface without ever glowing */
+  --st-ok:           #5FBF8F;
   --st-ok-bg:        rgba(95,191,143,0.14);
+  --st-warn:         #D9A94A;
   --st-warn-bg:      rgba(217,169,74,0.14);
+  --st-info:         #6FA8C9;
+  --st-info-bg:      rgba(111,168,201,0.14);
+  --st-urgent:       #E0736C;
+  --st-urgent-bg:    rgba(224,115,108,0.14);
   --st-neutral-bg:   var(--st-linen);
 }
 

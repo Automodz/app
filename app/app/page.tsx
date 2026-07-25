@@ -51,7 +51,13 @@ import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/compon
 import StudioSheet from '@/components/os/StudioSheet';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
-import Chip from '@/components/os/Chip';
+import Chip, { type Tone } from '@/components/os/Chip';
+
+/** the colour language, as ink for status text and dots (see Chip) */
+const TONE_INK: Record<Tone, string> = {
+  ok: 'var(--st-ok)', warn: 'var(--st-warn)', info: 'var(--st-info)',
+  urgent: 'var(--st-urgent)', neutral: 'var(--st-ink-3)',
+};
 import EmptyState from '@/components/os/EmptyState';
 import { Display, DisplayLarge, Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
 import { COMPANY } from '@/lib/company';
@@ -502,11 +508,14 @@ function Glance() {
             const onState = model.live ? () => nav.push(`/app/visit/${model.live!.id}`)
               : model.agreed ? () => router.replace('/app?sheet=manage')
               : () => router.replace('/app?sheet=arrange');
-            const controls: { text: string; onTap?: () => void }[] = [];
+            const controls: { text: string; tone: Tone; onTap?: () => void }[] = [];
             if (p0 || model.completed.length > 0) {
+              const waning = p0?.active && (p0.term === 'waning' || p0.term === 'expiring');
               controls.push({
+                // green protected · amber running out · red expired · amber none
+                tone: !p0 ? 'warn' : !p0.active ? 'urgent' : waning ? 'warn' : 'ok',
                 text: p0
-                  ? `${p0.active ? 'Protected' : 'Lapsed'}${p0.until ? ` · ${p0.until.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}` : ''}`
+                  ? `${p0.active ? 'Protected' : 'Expired'}${p0.until ? ` · ${p0.until.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}` : ''}`
                   : 'Unprotected',
                 onTap: p0
                   ? (model.protections.length > 1 ? () => router.replace('/app?focus=protection') : undefined)
@@ -515,13 +524,16 @@ function Glance() {
             }
             if (club.state !== 'none') {
               controls.push({
+                // blue membership · amber confirming or in grace · red lapsed
+                tone: club.state === 'lapsed' ? 'urgent'
+                  : club.state === 'pending' || club.state === 'grace' ? 'warn' : 'info',
                 text: club.state === 'active' || club.state === 'grace'
                   ? `Club · ${club.washesLeft} wash${club.washesLeft === 1 ? '' : 'es'}`
                   : club.state === 'pending' ? 'Club · confirming' : 'Club · lapsed',
                 onTap: (club.state === 'lapsed' || club.state === 'grace') ? () => router.replace('/app?sheet=join-club') : undefined,
               });
             } else if (club.invited) {
-              controls.push({ text: 'The Club', onTap: () => router.replace('/app?sheet=join-club') });
+              controls.push({ tone: 'info', text: 'The Club', onTap: () => router.replace('/app?sheet=join-club') });
             }
             return (
               <section style={{ marginTop: 'var(--st-rest)', padding: '0 var(--st-inset)' }}>
@@ -545,11 +557,16 @@ function Glance() {
                     {controls.map((c, i) => (
                       <button key={i} onClick={c.onTap} disabled={!c.onTap} className="st-tap"
                         style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 7,
                           background: 'transparent', border: 'none', padding: 0,
                           cursor: c.onTap ? 'pointer' : 'default',
                           fontFamily: 'var(--st-data)', fontSize: 12, letterSpacing: '0.04em',
-                          color: 'var(--st-ink-3)', textTransform: 'uppercase',
+                          color: TONE_INK[c.tone], textTransform: 'uppercase',
                         }}>
+                        <span aria-hidden style={{
+                          width: 6, height: 6, borderRadius: 999, flex: '0 0 auto',
+                          background: TONE_INK[c.tone],
+                        }} />
                         {c.text}{c.onTap ? '  ↗' : ''}
                       </button>
                     ))}
@@ -591,13 +608,19 @@ function Glance() {
                         fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.1em',
                         textTransform: 'uppercase', color: 'var(--st-over-2)',
                       }}>{confirmed ? 'Next visit' : 'Requested'}</span>
+                      {/* the colour language, on graphite: a confirmed visit is
+                          blue (booked), one the studio hasn't taken yet is amber
+                          (waiting). The dark-surface values are used directly
+                          because this card is a dark object inside a light page. */}
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                         padding: '4px 10px', borderRadius: 999,
-                        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)',
-                        fontFamily: 'var(--st-text)', fontSize: 12, color: 'var(--st-over)',
+                        background: confirmed ? 'rgba(111,168,201,0.16)' : 'rgba(217,169,74,0.16)',
+                        border: `1px solid ${confirmed ? 'rgba(111,168,201,0.34)' : 'rgba(217,169,74,0.34)'}`,
+                        fontFamily: 'var(--st-text)', fontSize: 12,
+                        color: confirmed ? '#9FCBE2' : '#E8C57E',
                       }}>
-                        {confirmed && <span aria-hidden className="st-live-dot" style={{ ['--st-ok' as string]: '#5FBF8F' }} />}
+                        {confirmed && <span aria-hidden className="st-live-dot" style={{ ['--st-ok' as string]: '#6FA8C9' }} />}
                         {confirmed ? 'Confirmed' : 'Awaiting the studio'}
                       </span>
                     </div>
@@ -653,7 +676,7 @@ function Glance() {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
                       <Whisper as="p">A note from the studio</Whisper>
-                      <Chip tone="neutral">{missed ? 'Missed' : 'Not accepted'}</Chip>
+                      <Chip tone="urgent">{missed ? 'Missed' : 'Not accepted'}</Chip>
                     </div>
                     <Emphasis style={{ display: 'block', marginTop: 'var(--st-line)' }}>
                       {missed

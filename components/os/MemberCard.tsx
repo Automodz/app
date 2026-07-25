@@ -48,10 +48,16 @@ export default function MemberCard({ name, tier, since, state = 'active' }: Memb
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <Wordmark height={13} variant="ink" />
+          {/* the colour language on milled metal: membership reads blue, a
+              lapsed card reads red, one still being confirmed reads amber */}
           <span style={{
             fontFamily: 'var(--st-data)', fontSize: 10, letterSpacing: '0.14em',
             padding: '4px 8px', borderRadius: 999,
-            background: 'rgba(255,255,255,0.28)', border: '1px solid rgba(255,255,255,0.4)',
+            color: lapsed ? '#8E1F1F' : state === 'pending' ? '#7A4E22' : '#1F4E79',
+            background: lapsed ? 'rgba(163,32,32,0.14)'
+              : state === 'pending' ? 'rgba(138,90,46,0.14)' : 'rgba(31,78,121,0.14)',
+            border: `1px solid ${lapsed ? 'rgba(163,32,32,0.30)'
+              : state === 'pending' ? 'rgba(138,90,46,0.30)' : 'rgba(31,78,121,0.30)'}`,
           }}>
             {statusText}
           </span>

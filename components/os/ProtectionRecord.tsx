@@ -65,7 +65,7 @@ export default function ProtectionRecord({
 
   /* the one-glance status - protected, needs attention, or run its course */
   const status = !p.active
-    ? { tone: 'neutral' as const, label: 'Lapsed' }
+    ? { tone: 'urgent' as const, label: 'Expired' }
     : renewing
     ? { tone: 'warn' as const, label: typeof daysLeft === 'number' ? `${daysLeft}d left` : 'Renewal soon' }
     : { tone: 'ok' as const, label: 'Protected' };

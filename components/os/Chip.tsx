@@ -1,19 +1,28 @@
 'use client';
 /**
- * The status chip (UX-1) - the one at-a-glance status object in the customer
- * product. Monochrome + the two brand accents only: `ok` (protected / live),
- * `warn` (needs attention), `neutral` (pending / quiet). A whisper-tint ground,
- * a status dot, one word of `st-data`. Never a fill, never a colour block.
+ * The status chip - the one at-a-glance status object in the customer product,
+ * and the primary carrier of the colour language:
+ *
+ *   ok      green   protected · ready · completed · active
+ *   warn    amber   waiting · due · approval required
+ *   info    blue    booked · membership
+ *   urgent  red     expired · payment · warranty issue
+ *   neutral quiet   nothing owed
+ *
+ * A whisper-tint ground, a status dot, one word of `st-data`. Never a fill,
+ * never a colour block, never decoration - the colour IS the meaning.
  */
 import type { ReactNode } from 'react';
 
-type Tone = 'ok' | 'warn' | 'neutral';
+export type Tone = 'ok' | 'warn' | 'info' | 'urgent' | 'neutral';
 
 const FG: Record<Tone, string> = {
-  ok: 'var(--st-ok)', warn: 'var(--st-warn)', neutral: 'var(--st-neutral)',
+  ok: 'var(--st-ok)', warn: 'var(--st-warn)', info: 'var(--st-info)',
+  urgent: 'var(--st-urgent)', neutral: 'var(--st-neutral)',
 };
 const BG: Record<Tone, string> = {
-  ok: 'var(--st-ok-bg)', warn: 'var(--st-warn-bg)', neutral: 'var(--st-neutral-bg)',
+  ok: 'var(--st-ok-bg)', warn: 'var(--st-warn-bg)', info: 'var(--st-info-bg)',
+  urgent: 'var(--st-urgent-bg)', neutral: 'var(--st-neutral-bg)',
 };
 
 export default function Chip({
