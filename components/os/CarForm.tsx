@@ -155,7 +155,7 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
             : <IdentityPlate name={saved.name} registration={saved.registrationNumber} variant="band" />}
         </div>
-        <Display style={{ fontSize: 'clamp(24px, 7vw, 32px)' }}>The {saved.name} is in.</Display>
+        <Display>The {saved.name} is in.</Display>
         <Body tone="ink-2">Welcome to the garage.</Body>
       </motion.div>
     );

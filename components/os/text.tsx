@@ -31,17 +31,31 @@ function make(base: CSSProperties, defaultTone: Tone, defaultTag: ElementType) {
   };
 }
 
-/** 24 / 32 / 44 - the car's name, act titles, chapter titles. */
+/** 24 / 32 / 44 - the car's name, act titles, chapter titles.
+ *
+ *  The display sizes are FLUID at the source: each holds its designed size on a
+ *  comfortable screen and eases down on a narrow one, so a heading never crowds
+ *  a 320px phone and never has to be hand-patched per screen. Every clamp keeps
+ *  the same optical ratio, so the scale stays a scale at any width. */
 export const Display = make(
-  { fontFamily: 'var(--st-display)', fontWeight: 620, fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.02em' },
+  {
+    fontFamily: 'var(--st-display)', fontWeight: 620,
+    fontSize: 'clamp(26px, 7vw, 32px)', lineHeight: 1.1, letterSpacing: '-0.02em',
+  },
   'ink', 'h1',
 );
 export const DisplayLarge = make(
-  { fontFamily: 'var(--st-display)', fontWeight: 620, fontSize: 44, lineHeight: 1.05, letterSpacing: '-0.02em' },
+  {
+    fontFamily: 'var(--st-display)', fontWeight: 620,
+    fontSize: 'clamp(32px, 9.5vw, 44px)', lineHeight: 1.05, letterSpacing: '-0.02em',
+  },
   'ink', 'h1',
 );
 export const Title = make(
-  { fontFamily: 'var(--st-display)', fontWeight: 560, fontSize: 24, lineHeight: 1.2, letterSpacing: '-0.01em' },
+  {
+    fontFamily: 'var(--st-display)', fontWeight: 560,
+    fontSize: 'clamp(20px, 5.4vw, 24px)', lineHeight: 1.2, letterSpacing: '-0.01em',
+  },
   'ink', 'h2',
 );
 

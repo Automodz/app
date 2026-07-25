@@ -101,7 +101,7 @@ export function StudioError({
       <Wordmark height={14} />
 
       <motion.main {...rise} style={{ width: '100%', maxWidth: 420, padding: 'var(--st-rest) 0' }}>
-        <Display style={{ fontSize: 'clamp(26px, 7vw, 32px)' }}>{copy.title}</Display>
+        <Display>{copy.title}</Display>
         <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }} aria-live="polite">
           {copy.body}
         </Body>
