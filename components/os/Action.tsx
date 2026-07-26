@@ -19,6 +19,11 @@ import Spinner from './Spinner';
 
 type Variant = 'primary' | 'forward' | 'external' | 'quiet' | 'destructive' | 'on-photo';
 
+/** Scale. `lead` is the working size; `inline` sits beside a section kicker
+ *  without outweighing it - an action never shouts louder than the thing it
+ *  belongs to (Design Language §7.1, one Display per screen). */
+type Scale = 'lead' | 'inline';
+
 const GLYPH: Partial<Record<Variant, string>> = { forward: '→', external: '↗' };
 
 interface ActionProps {
@@ -28,11 +33,13 @@ interface ActionProps {
   loading?: boolean;
   disabled?: boolean;
   disabledReason?: string;
+  scale?: Scale;
   type?: 'button' | 'submit';
 }
 
 export default function Action({
-  children, onClick, variant = 'quiet', loading, disabled, disabledReason, type = 'button',
+  children, onClick, variant = 'quiet', loading, disabled, disabledReason,
+  scale = 'lead', type = 'button',
 }: ActionProps) {
   const isPrimary = variant === 'primary';
   const glyph = GLYPH[variant];
@@ -58,7 +65,7 @@ export default function Action({
         transition={{ duration: tick, ease: studioEase }}
         style={{
           fontFamily: 'var(--st-text)', fontWeight: isPrimary ? 600 : 520,
-          fontSize: isPrimary ? 16 : 19, lineHeight: 1.45, color,
+          fontSize: scale === 'inline' ? 14 : isPrimary ? 16 : 19, lineHeight: 1.45, color,
           background: isPrimary ? (disabled ? 'var(--st-linen)' : 'var(--st-ink)') : 'transparent',
           border: 'none', borderRadius: isPrimary ? 'var(--st-r-chip)' : 0,
           padding: isPrimary ? '14px 24px' : '10px 0',

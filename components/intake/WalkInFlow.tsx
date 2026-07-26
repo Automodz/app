@@ -1,14 +1,15 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Search, UserCheck, ArrowRight, ArrowLeft, Check, Minus, Plus } from 'lucide-react';
 import {
-  findCustomerByPhone, createWalkInJob, getServices, listEmployees, deductMembershipWash,
-  getEligiblePromos, getUserSubscription, computeBestDiscount, recordPromoRedemption,
+  findCustomerByPhone, createWalkInJob, getServices, listEmployees,
+  getEligiblePromos, getUserSubscription, computeBestDiscount,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
+import { applyDiscount } from '@/lib/services/pricing';
 import { subscribeTodaysJobs } from '@/lib/firebaseService';
 import { fmtMin } from '@/lib/services/washMetrics';
 import { categoryToResource, RESOURCE_LABELS } from '@/lib/availability';
@@ -63,6 +64,8 @@ export default function WalkInFlow({ onDone }: {
   const [creating, setCreating] = useState(false);
   const [staff, setStaff] = useState<Employee[]>([]);
   const [assignees, setAssignees] = useState<Map<string, string>>(new Map()); // id -> name
+  /* A QUOTE for the counter to read out. The Booking Service recomputes it
+     from the same line items when it creates the job - this never travels. */
   const [discount, setDiscount] = useState<BookingDiscount | undefined>(undefined);
   const [memberSub, setMemberSub] = useState<Subscription | null>(null);
   const [useMemberWash, setUseMemberWash] = useState(false);
@@ -124,34 +127,40 @@ export default function WalkInFlow({ onDone }: {
     ? rawItems.map(i => i === washItem ? { ...i, price: 0 } : i)
     : rawItems;
   const subtotal = items.reduce((s, i) => s + i.price, 0);
+  // quoted through the one engine - the server reaches the same number
+  const quoted = applyDiscount(subtotal, discount);
 
   const canNext =
     step === 0 ? phone.replace(/\D/g, '').length >= 10 && name.trim().length > 1 :
     step === 1 ? vehicleName.trim().length > 1 && regNo.trim().length >= 4 :
     step === 2 ? items.length > 0 : true;
 
+  /* One key per ticket, so a double-tap or a retry on a bad counter connection
+     returns the job that already exists instead of opening a second one. */
+  const idemRef = useRef<string>('');
+  if (!idemRef.current) {
+    idemRef.current = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
+      .replace(/[^A-Za-z0-9_-]/g, '');
+  }
+
   const create = async () => {
     if (!operator) { toast.error('Kiosk locked'); return; }
     setCreating(true);
     try {
-      const id = await createWalkInJob({
+      /* Line prices are ours to set; the BENEFIT is not. The wash deduction and
+         the promo count now happen inside the same commit as the job, so the
+         two follow-up calls that used to live here - and could each fail on
+         their own - are gone. */
+      const { id } = await createWalkInJob({
         customerId: matched?.uid,
         customerName: name.trim(), customerPhone: phone,
         vehicleName: vehicleName.trim(), vehicleRegNo: regNo,
-        serviceItems: items,
-        discount: memberWashActive && discount ? undefined : discount,
+        serviceItems: rawItems,
+        useMembershipWash: useMemberWash,
         byEmployee: operator,
         assignees: [...assignees].map(([id, name]) => ({ id, name })),
+        idempotencyKey: idemRef.current,
       });
-      if (memberWashActive && matched) {
-        deductMembershipWash(matched.uid, { forUserId: matched.uid }).catch(() => {});
-      }
-      if (discount?.source === 'promo' && discount.promoId) {
-        recordPromoRedemption({
-          promoId: discount.promoId, userId: matched?.uid,
-          customerPhone: phone, jobId: id, discountAmount: discount.amount,
-        }).catch(() => {});
-      }
       toast.success('Job created');
       if (onDone) onDone(id);
       else router.replace(`/admin/jobs/${id}`);
@@ -363,7 +372,7 @@ export default function WalkInFlow({ onDone }: {
               <div className="flex justify-between pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
                 <span className="font-body font-600" style={{ color: 'var(--chrome)' }}>Total</span>
                 <span className="font-mono font-700 text-lg" style={{ color: 'var(--ember)' }}>
-                  {formatCurrency(Math.max(0, subtotal - (discount?.amount ?? 0)))}
+                  {formatCurrency(quoted)}
                 </span>
               </div>
             </div>
@@ -386,7 +395,7 @@ export default function WalkInFlow({ onDone }: {
         ) : (
           <button onClick={create} disabled={creating}
             className="btn-ember flex-1 flex items-center justify-center gap-2 py-3.5">
-            {creating ? 'Creating…' : `Start Job · ${formatCurrency(Math.max(0, subtotal - (discount?.amount ?? 0)))}`}
+            {creating ? 'Creating…' : `Start Job · ${formatCurrency(quoted)}`}
           </button>
         )}
       </div>

@@ -1,5 +1,5 @@
 import {
-  collection, doc, getDoc, getDocs, setDoc, serverTimestamp, increment,
+  collection, doc, getDocs, setDoc, serverTimestamp, increment,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Timestamp } from 'firebase/firestore';
@@ -24,26 +24,9 @@ export interface WalkinCustomer {
 
 const clean = (phone: string) => phone.replace(/\D/g, '').slice(-10);
 
-/** Upsert on job creation - never blocks intake. */
-export const recordWalkinVisit = async (data: {
-  name: string; phone: string; vehicleName: string; date: string;
-}) => {
-  const phone = clean(data.phone);
-  if (phone.length < 10) return;
-  const ref = doc(db, 'walkinCustomers', phone);
-  const snap = await getDoc(ref);
-  const prev = snap.exists() ? (snap.data() as WalkinCustomer) : null;
-  const vehicles = new Set([...(prev?.vehicleNames ?? []), data.vehicleName]);
-  await setDoc(ref, {
-    name: data.name, phone,
-    vehicleNames: [...vehicles].slice(0, 10),
-    visits: increment(1),
-    totalSpent: prev?.totalSpent ?? 0,
-    lastVisit: data.date,
-    firstVisit: prev?.firstVisit ?? data.date,
-    updatedAt: serverTimestamp(),
-  }, { merge: true });
-};
+/* The intake upsert lived here. It now happens inside the Booking Service's
+   transaction (lib/server/bookingService.ts) so a walk-in and its CRM row are
+   one commit rather than a fire-and-forget that could silently miss. */
 
 /** Add revenue on job completion. */
 export const recordWalkinSpend = async (phone: string, amount: number) => {

@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import type { Term } from './os/term';
 
 /** Customer-controlled notification channels/categories (Profile → Notifications). */
 export interface NotificationPrefs {
@@ -371,6 +372,10 @@ export interface Job {
   bay?: 1 | 2 | 3;
   status: JobStatus;
   discount?: BookingDiscount;
+  /** A membership wash paid for this visit - the deduction happened in the same
+   *  commit as the job, so this is the audit trail for the wash that was spent. */
+  usedMembershipWash?: boolean;
+  membershipId?: string;
   subtotal: number;
   totalAmount: number;
   paymentMethod?: 'upi' | 'cash';
@@ -633,6 +638,203 @@ export interface SellRequest {
   photos: CarPhoto[];
   status: LeadStatus;
   adminNotes?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// ─── THE VISIT (the anchor) ──────────────────────────────────────────────────
+
+/**
+ * THE ANCHOR (Constitution Art. 3 · docs/VISIT-OBJECT.md).
+ *
+ * One service event. Append-only while it runs, SEALED on completion - after
+ * `sealedAt` nothing that references it can be rewritten. `Booking` + `Job`
+ * collapse into this; until that migration completes a Visit is derived from
+ * the pair (lib/services/visits.ts) and verified against it.
+ */
+export type VisitStatus = 'requested' | 'agreed' | 'open' | 'sealed' | 'cancelled';
+
+export interface VisitService {
+  serviceId: string;
+  name: string;
+  category: string;
+  price: number;
+}
+
+/**
+ * The terms of a promise AS SOLD, copied onto the visit at seal.
+ *
+ * This is the whole reason the anchor exists. Warranties used to be resolved
+ * by looking up the live `services` catalogue on every read, so editing a
+ * warranty string in admin silently rewrote what past customers had been
+ * promised. A captured term cannot be rewritten by a later catalogue edit.
+ */
+export interface CapturedTerm {
+  kind: ProtectionKind;
+  provider?: string;
+  plan?: string;
+  coverage?: string;
+  term: Term;
+  /** how this term came to exist - see Protection.termsSource */
+  source: TermsSource;
+}
+
+export interface Visit {
+  id: string;
+  vehicleId: string;
+  locationId: string;
+  source: 'requested' | 'walk_in';
+  /** who authored it, per Art. 6 */
+  authoredBy: 'system' | 'studio' | 'customer';
+
+  requestedFor?: { date: string; time: string };
+  services: VisitService[];
+  discount?: BookingDiscount;
+  amounts: { subtotal: number; discount: number; total: number };
+
+  /** append-only while open - see JOURNEY-STAGES.md */
+  stages: VisitStage[];
+  bay?: number;
+
+  /** what this visit promised, frozen at seal */
+  termsCaptured: CapturedTerm[];
+
+  status: VisitStatus;
+  /** once set, the record is permanent */
+  sealedAt?: Timestamp;
+
+  /** the pair this was derived from, during the migration window */
+  bookingId?: string;
+  jobId?: string;
+
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/** One recorded moment of the transformation (docs/JOURNEY-STAGES.md). */
+export type VisitStageName =
+  | 'received' | 'condition_recorded' | 'deep_clean'
+  | 'surface_prep' | 'paint_corrected' | 'film_applied'
+  | 'protection_applied' | 'coating_applied'
+  | 'final_inspection' | 'ready';
+
+export interface VisitStage {
+  stage: VisitStageName;
+  at: Timestamp;
+  /** the studio's own sentence - rendered verbatim, never with a byline */
+  note?: string;
+  media: { url: string; kind: 'photo' | 'video' }[];
+  /** recorded for the studio, NEVER rendered customer-side (Art. 8) */
+  byEmployeeId?: string;
+}
+
+// ─── MOMENT (the atom of memory) ─────────────────────────────────────────────
+
+/**
+ * One photograph, clip or note, with a time and an author (Constitution Art. 3
+ * and Art. 10, as amended 2026-07-25).
+ *
+ * A Moment belongs to the VEHICLE for the life of the car, not to the job that
+ * produced it. That is the whole distinction: the studio's arrival shot and the
+ * owner's photograph from a mountain road are the same atom, differing only by
+ * `authorKind`. The Media Library is a VIEW over these - there is no second
+ * media store and no per-job gallery.
+ *
+ * `visitId` is optional on purpose. A stage photo carries one, so "what did you
+ * actually do?" is answerable from any image; a road-trip photo carries none,
+ * because it exists for the car, not for anything AutoModz did.
+ */
+export type MomentKind = 'photo' | 'video' | 'note';
+export type MomentAuthor = 'studio' | 'owner';
+
+export interface MomentMedia {
+  url: string;
+  kind: 'photo' | 'video';
+  /** poster frame for a clip */
+  poster?: string;
+}
+
+export interface Moment {
+  id: string;
+  vehicleId: string;
+  /** the work that produced it, when work did */
+  visitId?: string;
+  at: Timestamp;
+  kind: MomentKind;
+  media: MomentMedia[];
+  caption?: string;
+  authorKind: MomentAuthor;
+  createdAt?: Timestamp;
+}
+
+// ─── PROTECTION (stored) ─────────────────────────────────────────────────────
+
+/**
+ * Everything that shields a car - physical, financial and legal alike
+ * (docs/AUTOMODZ-LIVING-STATES.md §2). A new kind is data, not code: if a
+ * new kind needs a new card, the kind is wrong.
+ */
+export type ProtectionKind =
+  // physical - created by our own work
+  | 'ppf' | 'ceramic' | 'glass' | 'interior'
+  // legal
+  | 'warranty' | 'puc' | 'rc'
+  // financial
+  | 'insurance' | 'fastag'
+  // relational
+  | 'membership';
+
+export type ProtectionClass = 'physical' | 'legal' | 'financial' | 'relational';
+
+export const PROTECTION_CLASS: Record<ProtectionKind, ProtectionClass> = {
+  ppf: 'physical', ceramic: 'physical', glass: 'physical', interior: 'physical',
+  warranty: 'legal', puc: 'legal', rc: 'legal',
+  insurance: 'financial', fastag: 'financial',
+  membership: 'relational',
+};
+
+/** The customer-facing word. Never a catalogue SKU. */
+export const PROTECTION_TITLE: Record<ProtectionKind, string> = {
+  ppf: 'Paint protection film',
+  ceramic: 'Ceramic coating',
+  glass: 'Glass coating',
+  interior: 'Interior protection',
+  warranty: 'Warranty',
+  puc: 'Pollution certificate',
+  rc: 'Registration',
+  insurance: 'Insurance',
+  fastag: 'FASTag',
+  membership: 'Membership',
+};
+
+/**
+ * `captured`      - the term was frozen at the moment it was sold. Trustworthy.
+ * `reconstructed` - inferred from the catalogue during the one-time migration,
+ *                   the last moment that was legitimate. Never permitted again.
+ * `declared`      - the owner (or the studio on their behalf) entered it, e.g.
+ *                   an insurance policy that AutoModz did not sell.
+ */
+export type TermsSource = 'captured' | 'reconstructed' | 'declared';
+
+export interface Protection {
+  id: string;
+  vehicleId: string;
+  locationId?: string;
+  kind: ProtectionKind;
+  /** "ICICI Lombard", "Garware Platinum" */
+  provider?: string;
+  /** "Comprehensive", "Lifetime warranty" */
+  plan?: string;
+  /** "Full body" */
+  coverage?: string;
+  /** installed / issued, YYYY-MM-DD */
+  since?: string;
+  term: Term;
+  /** the work that created it - required when studio-applied. Opens its Chapter. */
+  visitId?: string;
+  /** View Original. Never a primary surface. */
+  document?: { url: string; label: string };
+  termsSource: TermsSource;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

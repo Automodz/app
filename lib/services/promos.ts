@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, updateDoc, getDoc, getDocs,
-  query, where, increment, serverTimestamp,
+  query, where, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { isPromoEligible, type PromoEligibilityContext } from './pricing';
@@ -82,18 +82,11 @@ export const validatePromoCode = async (
   return { promo };
 };
 
-export const recordPromoRedemption = async (data: {
-  promoId: string; userId?: string; customerPhone?: string;
-  bookingId?: string; jobId?: string; discountAmount: number;
-}) => {
-  const clean: Record<string, unknown> = { promoId: data.promoId, discountAmount: data.discountAmount };
-  if (data.userId) clean.userId = data.userId;
-  if (data.customerPhone) clean.customerPhone = data.customerPhone;
-  if (data.bookingId) clean.bookingId = data.bookingId;
-  if (data.jobId) clean.jobId = data.jobId;
-  await addDoc(collection(db, 'promoRedemptions'), { ...clean, createdAt: serverTimestamp() });
-  await updateDoc(doc(db, 'promos', data.promoId), { usedCount: increment(1) });
-};
+/* `recordPromoRedemption` lived here. It is gone, not moved: redemption is no
+   longer a separate act a client can perform at all. A promo's count moves in
+   the same Firestore commit as the booking or job that spends it - see
+   `settleBenefits` in lib/server/bookingService.ts. There is nothing left to
+   retry, reconcile or order. */
 
 export const getPromo = async (id: string): Promise<Promo | null> => {
   const snap = await getDoc(doc(db, 'promos', id));

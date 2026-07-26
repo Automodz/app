@@ -9,6 +9,7 @@
  * nothing is invented when the studio has been quiet.
  */
 import type { Booking, Job } from '@/lib/types';
+import { expandIntervals } from '@/lib/availability';
 import {
   ACT_ORDER, ACT_LINE, ACT_TITLE, actFromJobStatus, actIndex, careAct, visitPhase,
   type CareAct,
@@ -35,7 +36,6 @@ export interface StayModel {
   narration: string;
   /** true when the sentence is the studio's, not the app's */
   narrationIsStudio: boolean;
-  craftsman: string | null;
   arrivedAt: Date | null;
   /** the evidence chain, as far as it exists */
   arrivalPhoto?: string;
@@ -51,6 +51,9 @@ export interface StayModel {
 
 export const fmtClock = (d: Date) =>
   d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+/** "Tuesday" - named only when the finish falls on a later day than arrival. */
+const fmtDay = (d: Date) => d.toLocaleDateString('en-IN', { weekday: 'long' });
 
 /** The act the visit is in, preferring the job (the floor's own record). */
 function currentAct(booking: Booking, job: Job | null): CareAct {
@@ -83,8 +86,11 @@ export function deriveStay(booking: Booking, job: Job | null, now = new Date()):
   const note = entryFor(act)?.note?.trim();
   const narration = note || ACT_LINE[act];
 
-  const lead = job?.assignments?.filter(a => !a.removedAt)
-    .sort(a => (a.role === 'lead' ? -1 : 1))[0];
+  /* Assignments are deliberately NOT read here. The floor records who worked
+     the car - the studio needs it for payroll and accountability - but the
+     actor law (Constitution Art. 8) forbids naming an individual on any
+     customer surface: AutoModz is the craftsman. `job.assignments` stays
+     intact in the model and simply never crosses this boundary. */
 
   const arrival = entryFor('received');
   const arrivedAt = arrival ? arrival.at.toDate() : null;
@@ -100,13 +106,34 @@ export function deriveStay(booking: Booking, job: Job | null, now = new Date()):
   return {
     act, acts, archived, cancelled,
     narration, narrationIsStudio: !!note,
-    craftsman: lead?.employeeName ?? null,
     arrivedAt,
     arrivalPhoto, craftPhoto, finishedPhoto, latestPhoto,
     timing: timingLine({ booking, arrivedAt, act, archived, cancelled, now }),
     amount: booking.totalAmount ?? 0,
     paid: job?.paymentStatus === 'collected' || booking.paymentStatus === 'verified',
   };
+}
+
+/**
+ * The planned finish, in real studio time.
+ *
+ * The studio works 09:00-19:00 and does not run overnight, so wall-clock
+ * arithmetic lies: an 8h ceramic taken in at 18:49 is not finished at 02:49.
+ * `expandIntervals` (lib/availability) is the one implementation of "spread
+ * this duration across working days" - the booking engine already uses it for
+ * capacity, and reusing it here means a customer is never promised a time the
+ * studio could not possibly deliver.
+ */
+function plannedFinish(arrivedAt: Date, durationMin: number): Date {
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const startMin = arrivedAt.getHours() * 60 + arrivedAt.getMinutes();
+  const parts = expandIntervals({ date: iso(arrivedAt), startMin, durationMin });
+  const last = parts[parts.length - 1];
+  if (!last) return new Date(arrivedAt.getTime() + durationMin * 60000);
+  const end = new Date(`${last.date}T00:00:00`);
+  end.setMinutes(last.endMin);
+  return end;
 }
 
 /**
@@ -122,7 +149,11 @@ function timingLine(a: {
   if (!a.arrivedAt) return null;
   const durationMin = a.booking.serviceDurationMinutes;
   if (!durationMin) return null;
-  const planned = new Date(a.arrivedAt.getTime() + durationMin * 60000);
+  const planned = plannedFinish(a.arrivedAt, durationMin);
   if (a.now > planned) return 'Running longer than planned - the work sets the pace.';
-  return `Planned finish around ${fmtClock(planned)}.`;
+  // a finish on another day names the day; today's needs only the clock
+  const sameDay = planned.toDateString() === a.arrivedAt.toDateString();
+  return sameDay
+    ? `Planned finish around ${fmtClock(planned)}.`
+    : `Planned finish ${fmtDay(planned)} around ${fmtClock(planned)}.`;
 }

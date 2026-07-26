@@ -2,10 +2,10 @@
   "name": "AutoModz - Premium Car Detailing",
   "short_name": "AutoModz",
   "description": "Book premium car detailing services in Maninagar, Ahmedabad - PPF, ceramic coating, washing & more.",
-  "start_url": "/",
+  "start_url": "/app",
   "display": "standalone",
-  "background_color": "#F7F7F6",
-  "theme_color": "#F7F7F6",
+  "background_color": "#0A0B0D",
+  "theme_color": "#0A0B0D",
   "orientation": "portrait",
   "categories": [
     "lifestyle",
@@ -33,10 +33,10 @@
   ],
   "shortcuts": [
     {
-      "name": "Book Service",
-      "short_name": "Book",
-      "description": "Quick book a detailing service",
-      "url": "/dashboard/booking",
+      "name": "Your car",
+      "short_name": "Garage",
+      "description": "Open your garage",
+      "url": "/app",
       "icons": [
         {
           "src": "/icons/icon-192.png",
@@ -45,10 +45,10 @@
       ]
     },
     {
-      "name": "Cars for Sale",
-      "short_name": "Cars",
-      "description": "Browse cars for sale at AutoModz",
-      "url": "/cars",
+      "name": "Book a visit",
+      "short_name": "Book",
+      "description": "Arrange a visit",
+      "url": "/app?sheet=arrange",
       "icons": [
         {
           "src": "/icons/icon-192.png",
@@ -56,5 +56,7 @@
         }
       ]
     }
-  ]
+  ],
+  "id": "/app",
+  "scope": "/"
 }

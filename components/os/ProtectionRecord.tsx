@@ -46,8 +46,6 @@ export interface ProtectionRecordProps {
   daysLeft?: number | null;
   /** the finished photograph from the visit that applied this layer */
   photo?: string;
-  /** who applied it, when the floor recorded it */
-  installer?: string | null;
   /** the visit that created it - its Chapter */
   onOpenChapter?: () => void;
   /** offered only when the studio's proposal engine truly cites this layer */
@@ -58,7 +56,7 @@ export interface ProtectionRecordProps {
 }
 
 export default function ProtectionRecord({
-  protection: p, vehicleName, daysLeft, photo, installer, onOpenChapter, onRenew, compact,
+  protection: p, vehicleName, daysLeft, photo, onOpenChapter, onRenew, compact,
 }: ProtectionRecordProps) {
   const word = PROTECTION_WORD[p.kind];
   const renewing = p.term === 'waning' || p.term === 'expiring';
@@ -83,7 +81,6 @@ export default function ProtectionRecord({
       <Whisper style={{ marginTop: 'var(--st-breath)' }}>
         {p.service}
         {p.warranty ? ` · ${p.warranty} warranty` : ''}
-        {installer ? ` · applied by ${installer}` : ''}
       </Whisper>
       {(onOpenChapter || onRenew) && (
         <div style={{ marginTop: 'var(--st-line)', display: 'flex', gap: 'var(--st-inset)', flexWrap: 'wrap' }}>
@@ -138,9 +135,6 @@ export default function ProtectionRecord({
           }}>
             <div style={{ width: `${Math.round(remaining * 100)}%`, height: '100%', borderRadius: 999, background: barColor }} />
           </div>
-        )}
-        {installer && (
-          <Whisper style={{ marginTop: 'var(--st-breath)' }}>Applied by {installer}</Whisper>
         )}
       </button>
     );

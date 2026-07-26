@@ -110,7 +110,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!restored.current) {
       restored.current = true;
       const { lastRoute } = session;
-      if (pathname === '/app' && lastRoute && lastRoute !== '/app') {
+      /* A URL carrying an intent is an INSTRUCTION, not a cold launch: a
+         shared link, a legacy redirect (`/dashboard/booking` → `?sheet=arrange`),
+         a push notification's deep link. Restoring over it sent people
+         somewhere they never asked to go - only a bare `/app` is the door. */
+      const deepLink = typeof window !== 'undefined' && window.location.search !== '';
+      if (pathname === '/app' && !deepLink && lastRoute && lastRoute !== '/app') {
         router.replace(lastRoute);
         return;
       }

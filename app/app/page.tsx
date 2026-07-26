@@ -1,80 +1,69 @@
 'use client';
 /**
- * The Glance - `/app` (Product Design Part B). One vertical composition:
- * portrait region → Now → Protection → The story → Papers → The Club →
- * signature. Layers render only when true (silence law). The Capsule is
- * the only fixed element. Vehicle switching is a horizontal pager; the
- * last page is the add-a-car invitation.
+ * HOME - `/app`, the Garage. THE CONTROLLER.
  *
- * Interim targets (tracked; each dies with its phase):
- *   TODO(P6): "Have a look" → join-club sheet (interim: legacy club page)
+ * The screen itself is a pure view (components/home/Home.tsx); everything here
+ * is wiring: Firebase, the session, the ownership/club/protection engines, the
+ * sheets and every callback. The view decides nothing and mints no materials.
+ *
+ * The Glance it replaces was one adaptive composition fronted by a Capsule and
+ * a CoachMark. Both retire here: the live visit now surfaces as the Garage's
+ * own current state (IA §2), which also removes the three-way collision the
+ * audit measured at the bottom of the screen.
  */
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { useAppStore } from '@/lib/store';
 import { useStudioRouter } from '@/lib/os/navigate';
 import {
-  getServices, getJobsForCustomer, getUserSubscription,
-  updateUserProfile, logoutUser, STATIC_SERVICES,
-  createBooking, getAvailability,
+  getServices, getJobsForCustomer, getUserSubscription, STATIC_SERVICES,
+  getAvailability,
 } from '@/lib/firebaseService';
-import { cancelBooking, rescheduleBooking } from '@/lib/services/bookings';
-import { enablePush, disablePush, pushEnabled, pushSupported } from '@/lib/services/push';
+import { cancelBooking, rescheduleBooking, requestBooking } from '@/lib/services/bookings';
+import { getEligiblePromos } from '@/lib/services/promos';
+import { computeBestDiscount, applyDiscount } from '@/lib/services/pricing';
+import type { BookingDiscount } from '@/lib/types';
 import { generateTimeSlots, getAvailableDates } from '@/lib/utils';
 import type { Booking, Job, Service, Subscription, Vehicle } from '@/lib/types';
 import { truthOf, type ProtectionFact } from '@/lib/os/truth';
-import { visitPhase, careAct, ACT_TITLE, PHASE_LINE } from '@/lib/os/visit';
+import { visitPhase, careAct, ACT_TITLE } from '@/lib/os/visit';
 import { daysLeft } from '@/lib/os/term';
 import { proposalFor } from '@/lib/os/proposal';
 import { clubModel } from '@/lib/os/club';
-import { ownershipState, type ModuleKey } from '@/lib/os/ownership';
+import { ownershipState } from '@/lib/os/ownership';
 import { conciergeLog } from '@/lib/os/log';
 import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS, DEV_MEMBERSHIP } from '@/lib/cx/devseed';
 import Portrait from '@/components/os/Portrait';
 import IdentityPlate from '@/components/os/IdentityPlate';
-import CoachMark, { markCoachSeen } from '@/components/os/CoachMark';
 import JoinClub from '@/components/os/JoinClub';
 import CarForm from '@/components/os/CarForm';
 import { markWelcomed, hasBeenWelcomed } from '@/lib/os/welcome';
 import { useOnline } from '@/components/os/useOnline';
-import { getMyReferralCode, referralShareLink, referralWhatsAppLink } from '@/lib/services/referrals';
-import { REFERRAL } from '@/lib/config/storeConfig';
-import Capsule from '@/components/os/Capsule';
-import Layer from '@/components/os/Layer';
 import ProtectionRecord from '@/components/os/ProtectionRecord';
-import MemberCard from '@/components/os/MemberCard';
 import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/components/os/Desk';
 import StudioSheet from '@/components/os/StudioSheet';
-import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
 import Chip, { type Tone } from '@/components/os/Chip';
-import HomeV2, { type StatusPill, type PriorityCard } from '@/components/home/HomeV2';
-import { MEDIA } from '@/lib/media';
+import Home, { type HomeState, type HomeJourneyEntry, type HomeTransformation } from '@/components/home/Home';
+import { projectProtections, type LiveProtection } from '@/lib/os/protection';
 
-/** the colour language, as ink for status text and dots (see Chip) */
-const TONE_INK: Record<Tone, string> = {
-  ok: 'var(--st-ok)', warn: 'var(--st-warn)', info: 'var(--st-info)',
-  urgent: 'var(--st-urgent)', neutral: 'var(--st-ink-3)',
-};
-import EmptyState from '@/components/os/EmptyState';
 import { Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
 import { COMPANY, telLink } from '@/lib/company';
 
 const fmtLong = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-const fmtMonthYear = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 const fmtDayDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-/** The visit a protection came from - its photograph, its craftsman, its Chapter. */
+/** The visit a protection came from - its photograph and its Chapter. No
+ *  individual is named (Constitution Art. 8, the actor law). */
 function protectionSource(
   model: { visits: Booking[]; jobByBooking: Map<string, Job> },
   p: Protection,
-): { bookingId?: string; photo?: string; installer?: string | null } {
+): { bookingId?: string; photo?: string } {
   const source = model.visits.find(
     v => v.serviceName === p.service && visitPhase(v.status) === 'archived',
   );
@@ -83,7 +72,6 @@ function protectionSource(
   return {
     bookingId: source.id,
     photo: job?.photos?.find(x => x.kind === 'after')?.url,
-    installer: job?.assignments?.filter(a => !a.removedAt).find(a => a.role === 'lead')?.employeeName ?? null,
   };
 }
 
@@ -114,6 +102,9 @@ function Glance() {
   });
   const pagerRef = useRef<HTMLDivElement>(null);
 
+  /* You became an entrance (IA §2), so its old sheet address forwards to it.
+     The Dock still points at `?sheet=you` and is frozen this phase - this
+     keeps that slot working without touching it. */
   const youOpen = params.get('sheet') === 'you';
   const deskOpen = params.get('sheet') === 'desk';
   const arrangeOpen = params.get('sheet') === 'arrange';
@@ -124,14 +115,12 @@ function Glance() {
   // every sheet is addressable (design D1), the car form included
   const carFormOpen = params.get('sheet') === 'car-form';
   const editingCarId = params.get('car-id');
-  const [showAllStory, setShowAllStory] = useState(false);
-  const [refCopied, setRefCopied] = useState(false);
 
-  // the story summarises to its most recent chapters; the rest reveal on demand
-  const STORY_PREVIEW = 3;
 
   const openCarForm = (v?: Vehicle) =>
     router.replace(`/app?sheet=car-form${v ? `&car-id=${v.id}` : ''}`);
+
+  useEffect(() => { if (youOpen) router.replace('/app/you'); }, [youOpen, router]);
 
   /* a first authenticated open with an empty garage belongs to the welcome;
      a customer who skipped the car keeps the garage invitation instead */
@@ -142,9 +131,6 @@ function Glance() {
 
   // a garage with a car in it has met the welcome
   useEffect(() => { if (vehicles.length > 0) markWelcomed(); }, [vehicles.length]);
-
-  // reaching the Desk *is* the lesson - the nudge retires the moment it opens
-  useEffect(() => { if (deskOpen) markCoachSeen(); }, [deskOpen]);
 
   useEffect(() => { getServices().then(setServices).catch(() => {}); }, []);
   useEffect(() => {
@@ -178,7 +164,6 @@ function Glance() {
   }, [page, vehicles.length]);
 
   const vehicle: Vehicle | null = vehicles[Math.min(page, vehicles.length - 1)] ?? null;
-  const onAddPage = vehicles.length > 0 && page >= vehicles.length;
 
   /* ── derivations for the visible vehicle (objects own truth) ── */
   const model = useMemo(() => {
@@ -264,42 +249,6 @@ function Glance() {
     });
   }, [vehicle, model, bookings, membership]);
 
-  /* ── capsule state (design B2) ── */
-  const capsule = useMemo<{ line: string; tap: () => void; actionWord?: string; onAction?: () => void; ready?: boolean }>(() => {
-    // quiet state (line: '') opens the Desk - the concierge's index
-    if (!model || !vehicle) return { line: '', tap: () => router.replace('/app?sheet=desk') };
-    const modelWord = vehicle.name;
-    if (model.live) {
-      const act = careAct(model.live.status);
-      // the capsule is the Stay's glass live header: it carries the act and
-      // taps straight back into it
-      if (act === 'ready') {
-        return { line: `The ${modelWord} is ready.`, ready: true, tap: () => nav.push(`/app/visit/${model.live!.id}`) };
-      }
-      return {
-        line: act ? `${ACT_TITLE[act]} - the ${modelWord} is with us.` : 'In the studio.',
-        tap: () => nav.push(`/app/visit/${model.live!.id}`),
-      };
-    }
-    if (model.agreed) {
-      // a just-arranged visit is `proposed` (pending) until the studio confirms
-      const stateWord = visitPhase(model.agreed.status) === 'agreed' ? 'confirmed' : 'requested';
-      return {
-        line: `${fmtDay(model.agreed.scheduledDate)} ${model.agreed.scheduledTime} · ${stateWord}`,
-        tap: () => router.replace('/app?sheet=desk'),
-      };
-    }
-    if (model.proposal) {
-      return {
-        line: model.proposal.headline,
-        actionWord: 'Yes',
-        onAction: () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`),
-        tap: () => router.replace('/app?sheet=desk'),
-      };
-    }
-    return { line: '', tap: () => router.replace('/app?sheet=desk') }; // quiet → Desk
-  }, [model, vehicle, router]);
-
   /* ── the Desk shelf (design system §7.4 · IA D2) - adaptive: a row exists
      only when its object does. Thread & search land in P2. ── */
   const deskRows: ShelfRow[] = useMemo(() => {
@@ -325,28 +274,6 @@ function Glance() {
 
   /* ── the conversation feed: real visits + a global search index (IA D) ── */
   const messageStudio = () => window.open(`https://wa.me/${COMPANY.phoneIntl}`, '_blank');
-
-  /* the referral - carries the customer's real code so the friend is credited
-     and both sides earn the reward. Without the code the link is worthless, so
-     minting it is the whole point. Falls back to WhatsApp / clipboard by
-     platform; a cancelled share or an offline mint is safe to retry. */
-  const shareReferral = async () => {
-    if (!user) return;
-    try {
-      const code = await getMyReferralCode(user);
-      const link = referralShareLink(code);
-      const text = `My car lives at AutoModz — here’s ${REFERRAL.label} on your first detail. ${link}`;
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ text });
-      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(link);
-        setRefCopied(true);
-        setTimeout(() => setRefCopied(false), 2500);
-      } else {
-        window.open(referralWhatsAppLink(code, user.name), '_blank', 'noopener,noreferrer');
-      }
-    } catch { /* cancelled share or offline mint - the button can be tapped again */ }
-  };
 
   const deskFeed = useMemo(() => {
     if (!model || !vehicle) return { visits: [] as ThreadVisit[], search: [] as SearchItem[] };
@@ -396,113 +323,129 @@ function Glance() {
     return { visits: visitsFeed, search };
   }, [model, vehicle, club, router]);
 
-  /* ── the Home V2 view props: the pills, the priority card and the bell
-     count, each derived from the same engines the rest of the screen reads.
-     Presentation only - no new truth is minted here. ── */
+  /* ── the Home view props. Presentation only - every value comes from an
+     engine that already exists (ownership, protection, club, visit); no new
+     truth is minted here. ── */
 
-  // status pills: active protection layers (most-waning first) + the live Club,
-  // capped at the two the design carries
-  const homePills = useMemo<StatusPill[]>(() => {
-    const out: StatusPill[] = [];
-    [...(model?.protections ?? [])]
-      .filter(p => p.active)
-      .sort((a, b) => (TERM_RANK[b.term] ?? 0) - (TERM_RANK[a.term] ?? 0))
-      .slice(0, 2)
-      .forEach(p => out.push({
-        key: `prot-${p.kind}`,
-        tone: p.term === 'expiring' ? 'urgent' : p.term === 'waning' ? 'warn' : 'ok',
-        label: PROTECTION_WORD[p.kind],
-        onTap: () => router.replace('/app?focus=protection'),
-      }));
-    if (club.state === 'active' || club.state === 'grace') {
-      out.push({
-        key: 'club',
-        tone: club.state === 'grace' ? 'warn' : 'ok',
-        label: `${club.washesLeft} wash${club.washesLeft === 1 ? '' : 'es'} left`,
-        onTap: () => router.replace('/app'),
-      });
-    }
-    return out.slice(0, 2);
-  }, [model, club, router]);
+  /* THE LIVING STATES. Stored protections are the destination; until the
+     migration has run for this car, `projectProtections` derives them from
+     completed work with the SAME capture function the migration persists
+     (lib/os/protection). Marked `reconstructed`, never merged with stored. */
+  const protections = useMemo<LiveProtection[]>(() => {
+    if (!vehicle || !model) return [];
+    return projectProtections({
+      vehicleId: vehicle.id,
+      completed: model.completed.map(b => ({
+        id: b.id, serviceName: b.serviceName,
+        serviceCategory: b.serviceCategory, scheduledDate: b.scheduledDate,
+      })),
+      catalogue: services,
+    });
+  }, [vehicle, model, services]);
 
-  // the priority card: the one thing that matters, chosen by the ownership state
-  const homePriority = useMemo<PriorityCard | null>(() => {
-    if (!vehicle || !model) return null;
-    const car = vehicle.name;
-    const renewProposal = model.proposal ? {
-      tone: 'warn' as Tone, kicker: 'A suggestion',
-      chip: 'Care due', headline: `${model.proposal.headline}.`, note: model.proposal.reason,
-      ctaLabel: model.proposal.serviceCategory === 'Washing' ? 'Arrange it' : 'Renew it',
-      onCta: () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`),
-      icon: IconShield,
-    } : null;
-
+  /* CURRENT STATE - the one Display of the screen, from the ownership engine.
+     The Capsule used to carry this; it is the Garage's own state now. */
+  const homeState = useMemo<HomeState>(() => {
+    const car = vehicle?.name ?? 'your car';
     switch (own.state) {
       case 'ready':
         return {
-          tone: 'ok', kicker: 'From the studio', chip: 'Ready',
-          headline: `The ${car} is ready to collect.`,
-          detail: model.live?.serviceName,
-          ctaLabel: 'See the visit', icon: IconReady,
-          onCta: () => nav.push(`/app/visit/${model.live!.id}`),
+          word: 'Ready', tone: 'ok',
+          line: `The ${car} is ready to collect.`,
+          note: model?.live?.serviceName,
+          actionLabel: 'See the visit',
+          onAction: () => nav.push(`/app/visit/${model!.live!.id}`),
         };
-      case 'in_studio': {
-        const act = model.live ? careAct(model.live.status) : null;
+      case 'in_studio':
         return {
-          tone: 'info', kicker: 'In the studio', chip: act ? ACT_TITLE[act] : 'In care',
-          headline: `The ${car} is with us.`,
-          detail: model.live?.serviceName,
-          ctaLabel: 'Follow the visit', icon: IconStudio,
-          onCta: () => nav.push(`/app/visit/${model.live!.id}`),
+          word: 'In care', tone: 'info',
+          line: `The ${car} is with us.`,
+          note: model?.live?.serviceName,
+          actionLabel: 'Follow the visit',
+          onAction: () => nav.push(`/app/visit/${model!.live!.id}`),
         };
-      }
       case 'booked': {
-        const b = model.agreed!;
+        const b = model!.agreed!;
         const confirmed = visitPhase(b.status) === 'agreed';
         return {
-          tone: confirmed ? 'ok' : 'info', kicker: 'Your next visit',
-          chip: confirmed ? 'Confirmed' : 'Requested',
-          headline: `${b.serviceName}, ${fmtDay(b.scheduledDate)}.`,
-          detail: `${fmtDayDate(b.scheduledDate)} · ${b.scheduledTime}`,
-          ctaLabel: 'Manage the visit', icon: IconCalendar,
-          onCta: () => router.replace('/app?sheet=manage'),
+          word: confirmed ? 'Booked in' : 'Requested', tone: confirmed ? 'ok' : 'info',
+          line: `${b.serviceName}, ${fmtDayDate(b.scheduledDate)} at ${b.scheduledTime}.`,
+          actionLabel: 'Manage the visit',
+          onAction: () => router.replace('/app?sheet=manage'),
         };
       }
       case 'declined': {
-        const b = model.declined!;
+        const b = model!.declined!;
         return {
-          tone: 'urgent', kicker: 'A note from the studio',
-          chip: b.noShow ? 'Missed' : 'Not accepted',
-          headline: b.noShow
-            ? `The ${car} missed its slot.`
-            : 'We couldn’t take that visit.',
+          word: b.noShow ? 'Missed' : 'Not taken', tone: 'urgent',
+          line: b.noShow ? `The ${car} missed its slot.` : 'We couldn’t take that visit.',
           note: b.rejectionReason ?? undefined,
-          ctaLabel: 'Arrange again', icon: IconAlert,
-          onCta: () => router.replace('/app?sheet=arrange'),
+          actionLabel: 'Arrange again',
+          onAction: () => router.replace('/app?sheet=arrange'),
         };
       }
       case 'membership_attention':
         return {
-          tone: club.state === 'lapsed' ? 'urgent' : 'warn', kicker: 'The Club',
-          chip: club.state === 'lapsed' ? 'Lapsed' : 'Grace period',
-          headline: club.state === 'lapsed'
-            ? 'Your membership has lapsed.'
-            : 'Your membership needs renewing.',
-          detail: club.context ?? undefined,
-          ctaLabel: club.state === 'lapsed' ? 'Rejoin the Club' : 'Renew the Club',
-          icon: IconClub,
-          onCta: () => router.replace('/app?sheet=join-club'),
+          word: 'The Club', tone: club.state === 'lapsed' ? 'urgent' : 'warn',
+          line: club.state === 'lapsed'
+            ? 'Your membership has lapsed.' : 'Your membership needs renewing.',
+          note: club.context ?? undefined,
+          actionLabel: club.state === 'lapsed' ? 'Rejoin the Club' : 'Renew the Club',
+          onAction: () => router.replace('/app?sheet=join-club'),
         };
-      case 'warranty_expiring':
-        return renewProposal;
+      case 'new':
+      case 'unvisited':
+        return {
+          word: 'New', tone: 'neutral',
+          line: `The ${car} hasn’t been in yet.`,
+          actionLabel: 'Arrange a visit',
+          onAction: () => router.replace('/app?sheet=arrange'),
+        };
       default:
-        // dormant / unvisited / protected / settled: only speaks when the
-        // proposal engine has something honest to suggest
-        return renewProposal;
+        // steady states speak only when the proposal engine has something true
+        return model?.proposal
+          ? {
+              word: 'Care due', tone: 'warn',
+              line: `${model.proposal.headline}.`,
+              note: model.proposal.reason,
+              actionLabel: model.proposal.serviceCategory === 'Washing' ? 'Arrange it' : 'Renew it',
+              onAction: () => router.replace(`/app?sheet=arrange&cat=${model.proposal!.serviceCategory}`),
+            }
+          : {
+              word: own.state === 'dormant' ? 'Resting' : 'Cared for',
+              tone: 'ok',
+              actionLabel: 'Arrange a visit',
+              onAction: () => router.replace('/app?sheet=arrange'),
+            };
     }
-  }, [vehicle, model, own, club, router, nav]);
+  }, [own.state, vehicle, model, club, router, nav]);
 
-  // no unread model exists yet - the bell opens the Desk without a false badge
+  /* THE LATEST TRANSFORMATION - the most recent finished work, as evidence. */
+  const latest = useMemo<HomeTransformation | null>(() => {
+    const b = model?.completed[0];
+    if (!b) return null;
+    const job = model!.jobByBooking.get(b.id);
+    return {
+      id: b.id,
+      title: b.serviceName,
+      date: fmtLong(b.scheduledDate),
+      photo: job?.photos?.find(x => x.kind === 'after')?.url
+        ?? job?.photos?.[job.photos.length - 1]?.url,
+      onOpen: () => nav.push(`/app/chapter/${b.id}`),
+    };
+  }, [model, nav]);
+
+  /* THE JOURNEY - what happened, newest first. */
+  const journey = useMemo<HomeJourneyEntry[]>(() => {
+    if (!model) return [];
+    return model.completed.slice(0, 4).map(b => ({
+      id: b.id,
+      title: b.serviceName,
+      detail: fmtLong(b.scheduledDate),
+      onOpen: () => nav.push(`/app/chapter/${b.id}`),
+    }));
+  }, [model, nav]);
+
   const unreadCount = 0;
 
   if (!user) return null;
@@ -513,7 +456,6 @@ function Glance() {
     return (
       <div style={{ minHeight: '100vh' }}>
         <AddCarInvitation onAdd={() => openCarForm()} full />
-        <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
         <CarFormSheet open={carFormOpen} editing={null} onClose={() => router.replace('/app')} />
       </div>
     );
@@ -521,85 +463,32 @@ function Glance() {
 
   return (
     <div>
-      {/* ── HOME V2 ──────────────────────────────────────────────────────
-          The screen is a pure view (components/home/HomeV2.tsx). Everything
+      {/* ── HOME ─────────────────────────────────────────────────────────
+          The screen is a pure view (components/home/Home.tsx). Everything
           below is only the wiring: the controller keeps the data, the engines,
           the sheets and every callback - the view decides nothing. */}
-      <HomeV2
+      <Home
         vehicles={vehicles.map(v => ({
           id: v.id, name: v.name, registration: v.registrationNumber, photo: v.photo,
         }))}
         page={page}
-        onPage={i => { if (i !== page) { setPage(i); setShowAllStory(false); } }}
+        onPage={(i: number) => { if (i !== page) setPage(i); }}
         onAddCar={() => openCarForm()}
-        stateWord={
-          model?.live ? 'In care'
-          : model?.agreed ? (visitPhase(model.agreed.status) === 'agreed' ? 'Booked in' : 'Requested')
-          : model?.proposal ? 'Care due'
-          : model?.completed.length ? 'Cared for' : 'New'
-        }
-        onStateTap={
-          model?.live ? () => nav.push(`/app/visit/${model.live!.id}`)
-          : model?.agreed ? () => router.replace('/app?sheet=manage')
-          : () => router.replace('/app?sheet=arrange')
-        }
-        pills={homePills}
-        priority={homePriority}
-        quickActions={[
-          {
-            key: 'arrange', title: 'Arrange', subtitle: 'a visit', tone: 'warn',
-            onTap: () => router.replace('/app?sheet=arrange'),
-            icon: (
-              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden fill="none"
-                stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3.5" y="5.2" width="17" height="15.3" rx="2.4" />
-                <path d="M3.5 9.8h17M8.2 3.5v3.2M15.8 3.5v3.2M12 12.6v4.2M9.9 14.7h4.2" />
-              </svg>
-            ),
-          },
-          {
-            key: 'edit', title: 'Edit', subtitle: 'details', tone: 'info',
-            onTap: () => { if (vehicle) openCarForm(vehicle); },
-            icon: (
-              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden fill="none"
-                stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 20h4l10-10a2.6 2.6 0 0 0-3.7-3.7L4.3 16.3z" />
-                <path d="M13.6 7.2 16.8 10.4" />
-              </svg>
-            ),
-          },
-        ]}
+        state={homeState}
+        protections={protections}
+        onOpenProtection={() => router.replace('/app?focus=protection')}
+        latest={latest}
+        journey={journey}
+        onOpenJourney={() => router.replace('/app?sheet=desk')}
         studio={{
           name: COMPANY.name,
           area: COMPANY.city === 'Ahmedabad' ? 'Maninagar' : COMPANY.city,
-          address: COMPANY.address,
           hours: `Open ${COMPANY.hours.open} – ${COMPANY.hours.close}`,
-          photo: MEDIA.surfaces.garage,
           onDirections: () => window.open(COMPANY.mapsUrl, '_blank', 'noopener,noreferrer'),
           onCall: () => window.open(telLink(), '_self'),
-          onWhatsApp: messageStudio,
+          onMessage: messageStudio,
         }}
-        unread={unreadCount}
-        onNotifications={() => router.replace('/app?sheet=desk')}
       />
-
-
-      {/* the one-time nudge at the capsule - never over a sheet (◆audit #5) */}
-      <CoachMark show={!deskOpen && !arrangeOpen && !youOpen && !carFormOpen && !protectionOpen && !joinClubOpen} />
-
-      {/* the concierge capsule speaks only when the studio has something live to
-          say (a visit in flight, an agreed slot, an open proposal). With nothing
-          happening it does not sit there as a bare wordmark - the space collapses. */}
-      {capsule.line !== '' && (
-        <Capsule
-          line={capsule.line}
-          actionWord={capsule.actionWord}
-          onActionTap={capsule.onAction}
-          onTap={capsule.tap}
-          onPhoto={false}
-          ready={capsule.ready}
-        />
-      )}
 
       {/* the protection panel - the Desk's focus reading of every layer (§C6) */}
       <StudioSheet open={protectionOpen} onOpenChange={o => { if (!o) router.replace('/app'); }} label="Protection">
@@ -620,7 +509,6 @@ function Glance() {
                   vehicleName={vehicle.name}
                   daysLeft={p.until ? daysLeft(p.until.toISOString().split('T')[0]) : null}
                   photo={src.photo}
-                  installer={src.installer}
                   onOpenChapter={src.bookingId ? () => nav.push(`/app/chapter/${src.bookingId}`) : undefined}
                   onRenew={model.proposal?.serviceCategory === p.kind
                     ? () => router.replace(`/app?sheet=arrange&cat=${p.kind}`)
@@ -683,7 +571,6 @@ function Glance() {
         )}
       </StudioSheet>
 
-      <YouSheet open={youOpen} onClose={() => router.replace('/app')} />
       <CarFormSheet
         open={carFormOpen}
         editing={vehicles.find(v => v.id === editingCarId) ?? null}
@@ -696,46 +583,6 @@ function Glance() {
 const fmtDay = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
 
-/* ── the glyphs the Priority Card leads with, one per state family. Passed in
-   as props (icon: ReactNode) so the view resolves nothing itself. ── */
-const stroke = {
-  fill: 'none', stroke: 'currentColor', strokeWidth: 1.7,
-  strokeLinecap: 'round', strokeLinejoin: 'round',
-} as const;
-const IconReady = (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
-    <circle cx="12" cy="12" r="9" /><path d="M8.2 12.2 11 15l4.8-6" />
-  </svg>
-);
-const IconStudio = (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
-    <path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><path d="M12 8.5 13.4 11 12 13.5 10.6 11z" />
-  </svg>
-);
-const IconCalendar = (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
-    <rect x="3.5" y="5.2" width="17" height="15.3" rx="2.4" />
-    <path d="M3.5 9.8h17M8.2 3.5v3.2M15.8 3.5v3.2" />
-  </svg>
-);
-const IconShield = (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
-    <path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" /><path d="M9.2 12 11 13.8 15 9.6" />
-  </svg>
-);
-const IconClub = (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
-    <path d="M12 4.2 14.1 8.5 18.8 9.2 15.4 12.5 16.2 17.2 12 15 7.8 17.2 8.6 12.5 5.2 9.2 9.9 8.5z" />
-  </svg>
-);
-const IconAlert = (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
-    <path d="M12 3 1.8 20.5h20.4z" /><path d="M12 9.5v4.5M12 17.2h.01" />
-  </svg>
-);
-
-/** protection lifecycle → urgency, so the most-waning layer leads the pills */
-const TERM_RANK: Record<string, number> = { expiring: 3, waning: 2, grace: 2, active: 1, lapsed: 0 };
 
 /* ── the add-a-car page (B1 last page / first-run) ── */
 /** A document mark - the glyph that makes a paper read as a file. */
@@ -744,120 +591,6 @@ const TERM_RANK: Record<string, number> = { expiring: 3, waning: 2, grace: 2, ac
 
 /** GLANCE tile - one number the customer reads without a sentence. A row of
  *  these (Wallet/Health) answers where/protected/owned at a glance. */
-
-/** THE STORY - the car's history as a filmstrip of tall cinematic frames.
- *  Each visit is named over its own photograph; no heading, the images lead. */
-function StoryFilm({
-  completed, jobByBooking, vehicleName, moreCount, onMore, onOpen,
-}: {
-  completed: Booking[];
-  jobByBooking: Map<string, Job>;
-  vehicleName: string;
-  moreCount: number;
-  onMore: () => void;
-  onOpen: (id: string) => void;
-}) {
-  const [loaded, setLoaded] = useState<Record<string, boolean>>({});
-  return (
-    <div className="st-rail-fade" style={{
-      marginTop: 'var(--st-rest)', display: 'flex', gap: 'var(--st-line)',
-      overflowX: 'auto', scrollbarWidth: 'none', padding: '2px var(--st-inset)',
-      scrollSnapType: 'x proximity',
-    }}>
-      {completed.map(b => {
-        const job = jobByBooking.get(b.id);
-        const photos = job?.photos ?? [];
-        const best = photos.find(x => x.kind === 'after') ?? photos[0];
-        const tech = job?.assignments?.filter(a => !a.removedAt && a.role === 'lead')[0]?.employeeName;
-        return (
-          <button
-            key={b.id}
-            onClick={() => onOpen(b.id)}
-            className="st-tap st-card"
-            style={{
-              position: 'relative', flex: '0 0 auto', width: 'min(64vw, 244px)',
-              aspectRatio: '3 / 4', borderRadius: 'var(--st-r-card)', overflow: 'hidden',
-              border: 'none', cursor: 'pointer', textAlign: 'left', scrollSnapAlign: 'start',
-              background: best ? 'var(--st-stage)' : 'var(--st-gallery-fill)',
-              boxShadow: 'var(--st-raise), var(--st-edge)', padding: 0,
-              display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-            }}
-          >
-            {best ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={best.url} alt=""
-                  onLoad={() => setLoaded(m => ({ ...m, [b.id]: true }))}
-                  className={`st-img${loaded[b.id] ? ' is-loaded' : ''}`}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <div aria-hidden style={{
-                  position: 'absolute', inset: 0,
-                  background: 'linear-gradient(to top, var(--st-scrim-strong) 0%, transparent 46%)',
-                }} />
-              </>
-            ) : (
-              <span aria-hidden style={{
-                position: 'absolute', top: 'var(--st-gap)', left: 'var(--st-gap)',
-                fontFamily: 'var(--st-data)', fontSize: 11, letterSpacing: '0.08em',
-                textTransform: 'uppercase', color: 'var(--st-ink-3)',
-              }}>{vehicleName}</span>
-            )}
-            <span style={{ position: 'relative', zIndex: 1, padding: 'var(--st-gap)' }}>
-              <Emphasis as="span" tone={best ? 'over' : 'ink'} style={{ display: 'block' }}>
-                {b.serviceName}
-              </Emphasis>
-              <Whisper as="span" tone={best ? 'over-2' : 'ink-3'} style={{ display: 'block', marginTop: 2 }}>
-                {fmtLong(b.scheduledDate)}{tech ? ` · ${tech}` : ''}
-              </Whisper>
-            </span>
-          </button>
-        );
-      })}
-      {moreCount > 0 && (
-        <button
-          onClick={onMore}
-          className="st-tap st-card"
-          style={{
-            flex: '0 0 auto', width: 132, aspectRatio: '3 / 4', borderRadius: 'var(--st-r-card)',
-            border: '1px solid var(--st-hairline)', cursor: 'pointer',
-            background: 'var(--st-card-fill)', boxShadow: 'var(--st-hold), var(--st-edge)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-          }}
-        >
-          <span style={{
-            fontFamily: 'var(--st-display)', fontWeight: 600, fontSize: 26, color: 'var(--st-ink)',
-          }}>+{moreCount}</span>
-          <Whisper as="span">earlier</Whisper>
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** STUDIO - the sign-off: a large place-name and two hairline controls, no card. */
-function StudioCard() {
-  return (
-    <div style={{ padding: '0 var(--st-inset)', marginTop: 'var(--st-movement)' }}>
-      <div style={{ height: 1, background: 'var(--st-hairline)', marginBottom: 'var(--st-inset)' }} />
-      <p style={{
-        fontFamily: 'var(--st-display)', fontWeight: 620, letterSpacing: '-0.02em',
-        fontSize: 'clamp(30px, 9vw, 48px)', lineHeight: 0.98, color: 'var(--st-ink)', margin: 0,
-      }}>
-        {COMPANY.name}
-        <span style={{ color: 'var(--st-ink-3)' }}> · Maninagar</span>
-      </p>
-      <Whisper as="p" style={{ marginTop: 'var(--st-line)' }}>
-        {COMPANY.address} · Open {COMPANY.hours.open}–{COMPANY.hours.close}
-      </Whisper>
-      <div style={{ display: 'flex', gap: 'var(--st-inset)', marginTop: 'var(--st-gap)' }}>
-        <Action variant="external" onClick={() => window.open(COMPANY.mapsUrl, '_blank', 'noopener,noreferrer')}>Directions</Action>
-        <Action variant="external" onClick={() => window.open(COMPANY.googleReviewUrl, '_blank', 'noopener,noreferrer')}>Reviews</Action>
-      </div>
-    </div>
-  );
-}
 
 function AddCarInvitation({ onAdd, full = false }: { onAdd: () => void; full?: boolean }) {
   return (
@@ -912,179 +645,6 @@ function CarFormSheet({ open, editing, onClose }: {
   return (
     <StudioSheet open={open} onOpenChange={o => { if (!o) onClose(); }} label="The car">
       <CarForm editing={editing} onSaved={onClose} />
-    </StudioSheet>
-  );
-}
-
-/** A notification preference as a tactile toggle pill - on: filled ink with a
- *  check; off: a quiet hairline outline. A cluster of these replaces the list. */
-function NotifPill({ on, label, onTap, busy }: {
-  on: boolean; label: string; onTap: () => void; busy?: boolean;
-}) {
-  return (
-    <button onClick={onTap} disabled={busy} aria-pressed={on} className="st-tap"
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7, cursor: busy ? 'default' : 'pointer',
-        padding: '10px 16px', borderRadius: 999,
-        background: on ? 'var(--st-ink)' : 'transparent',
-        border: `1px solid ${on ? 'var(--st-ink)' : 'var(--st-border-2, var(--st-hairline))'}`,
-        color: on ? 'var(--st-paper)' : 'var(--st-ink-3)',
-        fontFamily: 'var(--st-text)', fontWeight: 500, fontSize: 15,
-        transition: 'background var(--st-move) var(--st-ease), color var(--st-move) var(--st-ease), border-color var(--st-move) var(--st-ease)',
-      }}>
-      <span aria-hidden style={{
-        width: 15, height: 15, display: 'grid', placeItems: 'center', flex: '0 0 auto',
-      }}>
-        {on ? (
-          <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
-            <path d="M1.5 6.5 L4.5 9.5 L10.5 2.5" stroke="var(--st-paper)" strokeWidth="1.6"
-              strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ) : (
-          <span style={{ width: 11, height: 11, borderRadius: 999, border: '1.5px solid var(--st-ink-3)' }} />
-        )}
-      </span>
-      {label}
-    </button>
-  );
-}
-
-/* ── the You sheet (design E1) ── */
-function YouSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const router = useRouter();
-  const { user, setUser } = useAppStore();
-  const online = useOnline();
-  const [name, setName] = useState(user?.name ?? '');
-  const [phone, setPhone] = useState(user?.phone ?? '');
-  const [installEvent, setInstallEvent] = useState<Event | null>(null);
-
-  /* device push - the delivery channel for every visit update the studio sends
-     (confirmed, in care, ready, and so on). Without registering this device
-     the notifications reach nothing, so this is where the customer turns it on. */
-  const [pushState, setPushState] = useState<'on' | 'off' | 'unsupported'>('off');
-  const [pushBusy, setPushBusy] = useState(false);
-  const [pushErr, setPushErr] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    setPushErr(null);
-    setPushState(!pushSupported() ? 'unsupported' : pushEnabled() ? 'on' : 'off');
-  }, [open]);
-
-  const turnOnPush = async () => {
-    if (!user) return;
-    if (!online) { setPushErr('You’re offline — reconnect to turn these on.'); return; }
-    setPushBusy(true); setPushErr(null);
-    const ok = await enablePush(user.uid);
-    setPushBusy(false);
-    if (ok) { setPushState('on'); return; }
-    setPushErr(
-      typeof Notification !== 'undefined' && Notification.permission === 'denied'
-        ? 'Notifications are blocked — allow them for AutoModz in your browser settings.'
-        : 'That didn’t go through — try again.',
-    );
-  };
-
-  const turnOffPush = async () => {
-    if (!user) return;
-    setPushBusy(true);
-    await disablePush(user.uid);
-    setPushBusy(false);
-    setPushState('off');
-  };
-
-  useEffect(() => { setName(user?.name ?? ''); setPhone(user?.phone ?? ''); }, [user?.uid, open]);
-
-  useEffect(() => {
-    const onPrompt = (e: Event) => { e.preventDefault(); setInstallEvent(e); };
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
-  }, []);
-
-  const prefs = {
-    whatsapp: true, serviceReminders: true, membershipReminders: true, promotions: true,
-    ...(user?.notificationPrefs ?? {}),
-  };
-
-  const save = async () => {
-    if (!user) return;
-    const dirty = name !== user.name || phone !== (user.phone ?? '');
-    if (dirty && name.trim()) {
-      setUser({ ...user, name: name.trim(), phone: phone.trim() });
-      try { await updateUserProfile(user.uid, { name: name.trim(), phone: phone.trim() }); } catch {}
-    }
-    onClose();
-  };
-
-  const togglePref = async (key: keyof typeof prefs) => {
-    if (!user) return;
-    const next = { ...prefs, [key]: !prefs[key] };
-    setUser({ ...user, notificationPrefs: next });
-    try { await updateUserProfile(user.uid, { notificationPrefs: next }); } catch {}
-  };
-
-
-  return (
-    <StudioSheet open={open} onOpenChange={o => { if (!o) save(); }} label="You">
-      <div style={{ display: 'grid', gap: 24, paddingBottom: 8 }}>
-        {/* the identity moment - a machined monogram, not a settings title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--st-gap)' }}>
-          <div aria-hidden style={{
-            position: 'relative', width: 68, height: 68, borderRadius: 999, flex: '0 0 auto',
-            display: 'grid', placeItems: 'center', overflow: 'hidden',
-            background: 'radial-gradient(circle at 34% 28%, #ffffff 0%, #eef0f2 14%, #d3d7db 42%, #a3a8af 72%, #74797f 100%)',
-            boxShadow: 'var(--st-raise), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -6px 14px rgba(20,22,25,0.28)',
-          }}>
-            <span style={{
-              fontFamily: 'var(--st-display)', fontWeight: 700, fontSize: 30, color: '#1a1c1f',
-              textShadow: '0 1px 0 rgba(255,255,255,0.5)',
-            }}>
-              {(user?.name?.charAt(0) || 'Y').toUpperCase()}
-            </span>
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{
-              fontFamily: 'var(--st-display)', fontWeight: 620, fontSize: 26, letterSpacing: '-0.02em',
-              lineHeight: 1.05, color: 'var(--st-ink)', margin: 0,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {user?.name || 'Your account'}
-            </p>
-            {user?.email && (
-              <Data tone="ink-3" style={{ display: 'block', marginTop: 4 }}>{user.email}</Data>
-            )}
-          </div>
-        </div>
-
-        <Field label="Name" value={name} onChange={setName} />
-        <Field label="Phone" value={phone} onChange={setPhone} kind="phone" />
-
-        {/* how we reach you - a cluster of toggle pills, never a settings list */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {pushState !== 'unsupported' && (
-            <NotifPill on={pushState === 'on'} busy={pushBusy} label="This device"
-              onTap={pushState === 'on' ? turnOffPush : turnOnPush} />
-          )}
-          <NotifPill on={prefs.whatsapp} label="WhatsApp" onTap={() => togglePref('whatsapp')} />
-          <NotifPill on={prefs.serviceReminders} label="Care due" onTap={() => togglePref('serviceReminders')} />
-          <NotifPill on={prefs.membershipReminders} label="Membership" onTap={() => togglePref('membershipReminders')} />
-          <NotifPill on={prefs.promotions} label="Offers" onTap={() => togglePref('promotions')} />
-        </div>
-        {pushErr && (
-          <div role="status" aria-live="polite"><Whisper tone="ink-2">{pushErr}</Whisper></div>
-        )}
-        <Whisper>While the car’s in care we always message — it’s your car.</Whisper>
-
-        {installEvent && (
-          <Action variant="quiet" onClick={() => (installEvent as { prompt?: () => void }).prompt?.()}>
-            Install AutoModz
-          </Action>
-        )}
-
-        <Action variant="quiet" onClick={async () => { await logoutUser(); router.replace('/auth/login'); }}>
-          Sign out
-        </Action>
-      </div>
     </StudioSheet>
   );
 }
@@ -1250,9 +810,28 @@ function ManageVisitSheet({
   );
 }
 
+/* The studio's answer, in the studio's voice. The Booking Service refuses in
+   codes; a customer is owed a sentence. Anything unmapped falls back to the
+   honest generic rather than leaking an identifier. */
+const bookingError = (e: unknown): string => {
+  const code = e instanceof Error ? e.message : '';
+  switch (code) {
+    case 'slot-taken':      return 'That time just went — pick another and we’ll hold it.';
+    case 'slot-in-the-past':
+    case 'not-a-slot':
+    case 'bad-slot':        return 'That time isn’t one we can work. Pick another.';
+    case 'service-not-offered':
+    case 'unknown-service': return 'We’ve stopped offering that one. Choose another service.';
+    case 'service-not-priced': return 'That service isn’t priced yet — call the studio and we’ll sort it.';
+    case 'vehicle-not-yours': return 'We couldn’t find that car in your garage.';
+    case 'not-signed-in':   return 'Sign in again and we’ll pick this up where you left it.';
+    default:                return 'That didn’t reach us - try again.';
+  }
+};
+
 /* ── the arrange sheet (design E1) - care is agreed, not filed. Three
-   pre-answered questions; reuses the booking engine (createBooking +
-   availability + membership-wash) untouched. A visit is born `pending`
+   pre-answered questions. The sheet QUOTES a price; the Booking Service
+   decides it and returns the record. A visit is born `pending`
    (= proposed); the studio confirms. ── */
 function ArrangeSheet({
   open, vehicle, services, membership, prefillCat, onClose,
@@ -1276,6 +855,9 @@ function ArrangeSheet({
   const [full, setFull] = useState<{ fullDates: string[]; fullSlots: Record<string, string[]> }>({ fullDates: [], fullSlots: {} });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* the discount this customer is actually owed - membership % or the best
+     auto-applying promo, never stacked (lib/services/pricing) */
+  const [discount, setDiscount] = useState<BookingDiscount | undefined>();
 
   const dates = useMemo(() => getAvailableDates(), []);
 
@@ -1298,33 +880,103 @@ function ArrangeSheet({
 
   const washCovered = !!service && service.category === 'Washing' && !!membership
     && membership.status === 'active' && (membership.washesTotal - membership.washesUsed) > 0;
-  const total = washCovered ? 0 : (service?.price ?? 0);
+
+  /* WHAT THIS WILL COST - a QUOTE, not a decision.
+     Same pure engine the counter and the server use, so the number shown here
+     is the number the Booking Service will reach. But it is only shown: the
+     server prices the visit from the catalogue when it creates it, and if the
+     owner has changed a price in the meantime the server's figure is the real
+     one. Nothing computed in this browser is ever written. */
+  useEffect(() => {
+    if (!open || !service || !user || washCovered) { setDiscount(undefined); return; }
+    let live = true;
+    (async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const activeMember = membership?.status === 'active' && membership.endDate >= today
+        ? membership : null;
+
+      /* The promo lookup is a network read and may fail; the MEMBERSHIP
+         discount is already in hand and must never depend on it. Wrapping
+         both in one try meant a Firestore hiccup silently quoted a member
+         full price - the exact overcharge this item exists to remove. */
+      let eligible: Awaited<ReturnType<typeof getEligiblePromos>> = [];
+      try {
+        eligible = await getEligiblePromos(
+          { serviceId: service.id, category: service.category, userId: user.uid, date: today },
+          { autoApplyOnly: true },
+        );
+      } catch { /* no promos reachable - the membership still stands */ }
+
+      const best = computeBestDiscount({
+        price: service.price,
+        membershipPlan: activeMember?.plan ?? null,
+        eligiblePromos: eligible,
+      });
+      if (live) setDiscount(best);
+    })();
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, service?.id, user?.uid, washCovered, membership?.id]);
+
+  const total = washCovered ? 0 : applyDiscount(service?.price ?? 0, discount);
 
   const times = service && date
     ? generateTimeSlots(service.duration).filter(t => !(full.fullSlots[date] ?? []).includes(t))
     : [];
 
+  /* One key per selection. A retry of the same car+service+slot returns the
+     booking that already exists instead of making a second one; changing the
+     selection is a new intent and gets a new key. */
+  const idemRef = useRef<{ sig: string; key: string } | null>(null);
+  const idempotencyKey = () => {
+    const sig = `${vehicle.id}|${service?.id}|${date}|${time}`;
+    if (idemRef.current?.sig !== sig) {
+      idemRef.current = {
+        sig,
+        key: (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
+          .replace(/[^A-Za-z0-9_-]/g, ''),
+      };
+    }
+    return idemRef.current.key;
+  };
+
   const confirm = async () => {
     if (!user || !service || !date || !time) return;
     if (!online) { setError('You’re offline — reconnect to arrange this visit.'); return; }
     setBusy(true); setError(null);
-    const now = Timestamp.now();
-    const payload: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
-      userId: user.uid, userName: user.name, userPhone: user.phone || '', userEmail: user.email,
-      vehicleId: vehicle.id, vehicleName: vehicle.name, vehicleRegNo: vehicle.registrationNumber,
-      serviceId: service.id, serviceName: service.name, serviceCategory: service.category,
-      serviceBasePrice: service.price, serviceDurationMinutes: service.duration,
-      pickupDropRequired: false, pickupRequired: false, dropRequired: false, pickupDropFee: 0, pickupAddress: '',
-      totalAmount: total, scheduledDate: date, scheduledTime: time,
-      status: 'pending', paymentMethod: 'cash', paymentStatus: 'pending', transactionId: '',
-      usedMembershipWash: washCovered, membershipId: washCovered ? membership!.id : undefined,
-    };
     try {
-      const id = await createBooking(payload);
-      addBookingToStore({ ...payload, id, createdAt: now, updatedAt: now });
-    } catch {
-      if (isDevUser(user.uid)) addBookingToStore({ ...payload, id: `dev-${Date.now()}`, createdAt: now, updatedAt: now });
-      else { setError('That didn’t reach us - try again.'); setBusy(false); return; }
+      // intent only - the studio decides the price and returns the record
+      const booking = await requestBooking({
+        vehicleId: vehicle.id,
+        serviceId: service.id,
+        scheduledDate: date,
+        scheduledTime: time,
+        useMembershipWash: washCovered,
+        idempotencyKey: idempotencyKey(),
+      });
+      addBookingToStore(booking);
+    } catch (e) {
+      if (isDevUser(user.uid)) {
+        // the dev shim has no studio behind it; keep the flow walkable
+        const now = Timestamp.now();
+        addBookingToStore({
+          id: `dev-${Date.now()}`, userId: user.uid, userName: user.name,
+          userPhone: user.phone || '', userEmail: user.email,
+          vehicleId: vehicle.id, vehicleName: vehicle.name, vehicleRegNo: vehicle.registrationNumber,
+          serviceId: service.id, serviceName: service.name, serviceCategory: service.category,
+          serviceBasePrice: service.price, serviceDurationMinutes: service.duration,
+          pickupDropRequired: false, pickupRequired: false, dropRequired: false,
+          pickupDropFee: 0, pickupAddress: '', totalAmount: total,
+          scheduledDate: date, scheduledTime: time, status: 'pending',
+          paymentMethod: 'cash', paymentStatus: 'pending', transactionId: '',
+          usedMembershipWash: washCovered, discount,
+          createdAt: now, updatedAt: now,
+        } as Booking);
+      } else {
+        setError(bookingError(e));
+        setBusy(false);
+        return;
+      }
     }
     onClose();
   };
@@ -1410,6 +1062,24 @@ function ArrangeSheet({
                         fontFamily: 'var(--st-text)', fontSize: 14, color: 'var(--st-ink)',
                       }}>{t}</button>
                   )) : <Whisper>No room that day - try another.</Whisper>}
+                </div>
+              </div>
+            )}
+
+            {/* the price, and WHY it is that price. A number that quietly
+                drops is as untrustworthy as one that quietly rises. */}
+            {!washCovered && service && (
+              <div style={{ display: 'grid', gap: 'var(--st-hair)' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--st-gap)' }}>
+                  <Body tone="ink-2">{discount ? discount.label : 'Total'}</Body>
+                  <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
+                    {discount && (
+                      <Data tone="ink-3" style={{ textDecoration: 'line-through' }}>
+                        ₹{service.price.toLocaleString('en-IN')}
+                      </Data>
+                    )}
+                    <Data tone="ink" style={{ fontSize: 18 }}>₹{total.toLocaleString('en-IN')}</Data>
+                  </span>
                 </div>
               </div>
             )}

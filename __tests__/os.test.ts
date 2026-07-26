@@ -162,12 +162,67 @@ describe('the Stay model', () => {
     expect(s.narration).toBe('Your vehicle has arrived safely.');
   });
 
-  it('names the lead and the arrival, and chains the evidence', () => {
+  it('records the arrival and chains the evidence', () => {
     const s = deriveStay(booking(), job(), NOW);
-    expect(s.craftsman).toBe('Ravi Sharma');
+    expect(s.arrivedAt).not.toBeNull();
     expect(s.arrivalPhoto).toBe('a.jpg');
     expect(s.craftPhoto).toBe('b.jpg');
     expect(s.latestPhoto).toBe('b.jpg');
+  });
+
+  /* THE PLANNED FINISH must be a time the studio could actually deliver.
+     The studio works 09:00-19:00 and does not run overnight, so wall-clock
+     arithmetic lies. Audit finding B7: an 8h ceramic taken in at 18:49
+     was promised "around 2:49 am". */
+  describe('the planned finish', () => {
+    // arrival is derived from the `checked_in` entry, so drive it from there
+    const arrivedAt = (d: Date) =>
+      job({
+        statusHistory: [{ status: 'checked_in', at: ts(d), byEmployeeId: 'e', byEmployeeName: 'R' }],
+        status: 'checked_in',
+      });
+
+    it('never promises a time outside opening hours', () => {
+      const evening = new Date('2026-07-20T18:49:00');       // 11 minutes before close
+      const s = deriveStay(
+        booking({ status: 'vehicle_received', serviceDurationMinutes: 480 }), // 8 hours
+        arrivedAt(evening),
+        evening,
+      );
+      expect(s.timing).not.toMatch(/\b(1[012]|[1-9]):\d\d am\b/); // no small hours
+      expect(s.timing).toMatch(/Planned finish Tuesday around/);   // rolls to the next day
+    });
+
+    it('names only the clock when the work finishes the same day', () => {
+      const morning = new Date('2026-07-20T10:00:00');
+      const s = deriveStay(
+        booking({ status: 'vehicle_received', serviceDurationMinutes: 120 }),
+        arrivedAt(morning),
+        morning,
+      );
+      expect(s.timing).toBe('Planned finish around 12:00 pm.');
+    });
+
+    it('says so plainly once it runs past the plan', () => {
+      const morning = new Date('2026-07-20T09:30:00');
+      const s = deriveStay(
+        booking({ status: 'vehicle_received', serviceDurationMinutes: 60 }),
+        arrivedAt(morning),
+        new Date('2026-07-20T14:00:00'),
+      );
+      expect(s.timing).toBe('Running longer than planned - the work sets the pace.');
+    });
+  });
+
+  /* THE ACTOR LAW (Constitution Art. 8): AutoModz performs the work; no
+     individual is ever named on a customer surface. The job carries real
+     assignments - the studio needs them - and none of them may cross into
+     the Stay's model. */
+  it('never names an individual, however the floor recorded it', () => {
+    const s = deriveStay(booking(), job(), NOW);
+    expect(job()!.assignments.length).toBeGreaterThan(0); // the data is there
+    expect(JSON.stringify(s)).not.toContain('Ravi Sharma'); // and it never leaks
+    expect(JSON.stringify(s)).not.toContain('Karan Patel');
   });
 
   it('offers a planned finish only while it is still a plan', () => {
@@ -243,13 +298,19 @@ describe('the Chapter model', () => {
     expect(c.work).toEqual(['Kovalent Graphene', 'In care - Two-stage paint correction.']);
   });
 
-  it('names the people and measures the time actually recorded', () => {
+  it('measures the time actually recorded', () => {
     const c = deriveChapter({ booking: booking(), job: job(), invoice: null });
-    expect(c.lead).toBe('Ravi Sharma');
-    expect(c.helpers).toEqual(['Karan Patel']);
     expect(c.minutesInCare).toBe(380);
     expect(timeInCare(380)).toBe('6h 20m in the studio');
     expect(timeInCare(45)).toBe('45 minutes in the studio');
+  });
+
+  /* THE ACTOR LAW (Constitution Art. 8) - the Chapter is the permanent record
+     of a visit, and it credits the studio, never a person. */
+  it('never names an individual in the permanent record', () => {
+    const c = deriveChapter({ booking: booking(), job: job(), invoice: null });
+    expect(JSON.stringify(c)).not.toContain('Ravi Sharma');
+    expect(JSON.stringify(c)).not.toContain('Karan Patel');
   });
 
   it('has no time when the studio never recorded an arrival or a finish', () => {

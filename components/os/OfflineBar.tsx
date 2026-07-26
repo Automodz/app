@@ -15,6 +15,12 @@ export default function OfflineBar() {
     <AnimatePresence>
       {!online && (
         <motion.div
+          /* AnimatePresence tracks children by key; a conditional child should
+             carry one so enter/exit is unambiguous. (This did NOT turn out to
+             be the source of the shell's "unique key" warning - see the
+             carry-forward note in the shell phase - but it is correct either
+             way and framer's own docs call for it.) */
+          key="offline"
           {...crossfade}
           role="status"
           style={{

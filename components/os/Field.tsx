@@ -54,7 +54,9 @@ export default function Field({
           borderBottom: `1px solid ${error ? 'var(--st-ink-2)' : 'var(--st-hairline)'}`,
           fontFamily: mono ? 'var(--st-data)' : 'var(--st-text)',
           fontSize: 19, fontWeight: mono ? 400 : 520, color: 'var(--st-ink)',
-          padding: '6px 0', borderRadius: 0,
+          // an input is a tap target before it is a line of type: 6px of
+          // padding left it 42px tall, under the 44 minimum (Design Language §8)
+          padding: '8px 0', minHeight: 44, borderRadius: 0,
           textTransform: kind === 'data' ? 'uppercase' : undefined,
         }}
         onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--st-ink)'; }}

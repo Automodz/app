@@ -11,16 +11,69 @@ import {
   serverTimestamp,
   onSnapshot,
   setDoc,
+  Timestamp,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import type { Booking, Notification } from '../types';
 
-export const createBooking = async (booking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>) => {
-  // JSON round-trip drops all undefined fields (Firestore rejects them)
-  const stripped = JSON.parse(JSON.stringify({ ...booking, status: 'pending' }));
-  const clean = { ...stripped, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-  const r = await addDoc(collection(db, 'bookings'), clean);
-  return r.id;
+/**
+ * A Timestamp that crossed JSON.
+ *
+ * `lib/types.ts` is written against the CLIENT Timestamp - the one with
+ * `.seconds` and `.toDate()`. The Booking Service runs on the admin SDK, whose
+ * Timestamp serialises to `{_seconds, _nanoseconds}`: no methods, and the
+ * underscore means `.seconds` reads undefined. Handed straight to the store
+ * that would have sorted the new booking to the bottom of the garage and
+ * thrown the first time `conciergeLog` called `.toDate()` on it.
+ */
+const reviveTimestamp = (v: unknown): Timestamp => {
+  if (v instanceof Timestamp) return v;
+  const o = v as { _seconds?: number; seconds?: number; _nanoseconds?: number; nanoseconds?: number };
+  const s = o?._seconds ?? o?.seconds;
+  return typeof s === 'number'
+    ? new Timestamp(s, o?._nanoseconds ?? o?.nanoseconds ?? 0)
+    : Timestamp.now();
+};
+
+/**
+ * Ask the studio for a visit.
+ *
+ * This is a WRAPPER, not an implementation. It used to build the booking
+ * document itself - including `totalAmount` and `discount` - and write it
+ * straight to Firestore, which meant the browser decided what the customer
+ * paid. Now it posts intent to the Booking Service and returns whatever the
+ * server decided (`/api/booking/create` → lib/server/bookingService.ts).
+ *
+ * `idempotencyKey` must be stable for one intent: retrying the same selection
+ * returns the same booking instead of making a second one.
+ */
+export const requestBooking = async (intent: {
+  vehicleId: string;
+  serviceId: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  paymentMethod?: 'upi' | 'cash';
+  pickup?: boolean;
+  drop?: boolean;
+  pickupAddress?: string;
+  useMembershipWash?: boolean;
+  idempotencyKey: string;
+}): Promise<Booking> => {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('not-signed-in');
+  const res = await fetch('/api/booking/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ kind: 'appointment', ...intent }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error ?? 'booking-failed');
+  const b = data.booking as Booking;
+  return {
+    ...b,
+    createdAt: reviveTimestamp(b.createdAt),
+    updatedAt: reviveTimestamp(b.updatedAt),
+  };
 };
 
 export const getUserBookings = async (uid: string): Promise<Booking[]> => {

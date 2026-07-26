@@ -15,13 +15,41 @@ import Portrait from '@/components/os/Portrait';
 import PhotoBand from '@/components/os/PhotoBand';
 import MomentEntry from '@/components/os/MomentEntry';
 import { ACT_ORDER, ACT_TITLE } from '@/lib/os/visit';
-import MomentStage from '@/components/os/MomentStage';
+import StageRail from '@/components/os/StageRail';
 import MemberCard from '@/components/os/MemberCard';
 import Desk from '@/components/os/Desk';
 import StudioSheet from '@/components/os/StudioSheet';
 import EmptyState from '@/components/os/EmptyState';
 import Skeleton from '@/components/os/Skeleton';
 import Spinner from '@/components/os/Spinner';
+import StateCard, { StateChips } from '@/components/os/StateCard';
+import { liveProtection, sortByUrgency } from '@/lib/os/protection';
+import type { Protection } from '@/lib/types';
+
+/** Ten kinds across every term shape and health, so the one card is provable. */
+const days = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+};
+const state = (p: Partial<Protection> & Pick<Protection, 'id' | 'kind' | 'term'>): Protection =>
+  ({ vehicleId: 'demo', termsSource: 'captured', ...p } as Protection);
+
+const DEMO_STATES = sortByUrgency([
+  // physical - ours, created by a sealed visit
+  state({ id: '1', kind: 'ppf', term: { kind: 'perpetual' }, provider: 'Garware Platinum', plan: 'Lifetime warranty', coverage: 'Full body', since: days(-380), visitId: 'v1' }),
+  state({ id: '2', kind: 'ceramic', term: { kind: 'dated', expiresOn: days(640) }, provider: 'Kovalent', plan: '3 Year', visitId: 'v2' }),
+  state({ id: '3', kind: 'glass', term: { kind: 'dated', expiresOn: days(24) }, provider: 'AutoModz', plan: '6 Month', visitId: 'v3' }),
+  state({ id: '4', kind: 'interior', term: { kind: 'dated', expiresOn: days(-12) }, plan: '1 Year', visitId: 'v4' }),
+  // financial + legal - the owner's world, declared not captured
+  state({ id: '5', kind: 'insurance', term: { kind: 'dated', expiresOn: days(47) }, provider: 'ICICI Lombard', plan: 'Comprehensive', termsSource: 'declared', document: { url: '#', label: 'Policy' } }),
+  state({ id: '6', kind: 'puc', term: { kind: 'dated', expiresOn: days(5) }, termsSource: 'declared', document: { url: '#', label: 'Certificate' } }),
+  state({ id: '7', kind: 'rc', term: { kind: 'perpetual' }, termsSource: 'declared', document: { url: '#', label: 'RC book' } }),
+  state({ id: '8', kind: 'fastag', term: { kind: 'balance', value: 180, low: 200 }, provider: 'HDFC', termsSource: 'declared' }),
+  state({ id: '9', kind: 'warranty', term: { kind: 'dated', expiresOn: days(900) }, provider: 'BMW India', plan: 'Extended', termsSource: 'declared' }),
+  // relational
+  state({ id: '10', kind: 'membership', term: { kind: 'dated', expiresOn: days(-2), grace: true }, plan: 'Gold' }),
+].map(p => liveProtection(p)));
 
 export default function StyleguidePage() {
   const [sheet, setSheet] = useState(false);
@@ -48,6 +76,24 @@ export default function StyleguidePage() {
         </div>
       </Layer>
 
+      {/* THE STATE CARD - one card, ten kinds, three term shapes. The gate for
+          "never show documents, show living states": every row below is a
+          different KIND of promise rendering through the same component. */}
+      <Layer title="Living states">
+        <StateChips protections={DEMO_STATES} />
+        <div style={{ display: 'grid', gap: 'var(--st-line)', marginTop: 'var(--st-gap)' }}>
+          {DEMO_STATES.map(p => (
+            <StateCard
+              key={p.id}
+              protection={p}
+              onRenew={p.health === 'healthy' ? undefined : () => {}}
+              onOpenChapter={p.visitId ? () => {} : undefined}
+              onViewOriginal={p.document ? () => {} : undefined}
+            />
+          ))}
+        </div>
+      </Layer>
+
       <Layer title="Action & Field">
         <Action variant="primary" onClick={() => setSheet(true)}>Confirm Thursday 10:00</Action>
         <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
@@ -70,7 +116,7 @@ export default function StyleguidePage() {
 
       <Layer title="The story">
         <div style={{ display: 'grid', gap: 48 }}>
-          <MomentEntry caption="Full detail · 14 June 2026" whisper="12 photos · Deepak" onTap={() => setSheet(true)} />
+          <MomentEntry caption="Full detail · 14 June 2026" whisper="12 photos" onTap={() => setSheet(true)} />
           <MomentEntry milestone caption="One year with AutoModz." date="12 March 2027" />
         </div>
       </Layer>
@@ -116,18 +162,19 @@ export default function StyleguidePage() {
         </div>
       </Layer>
 
-      <Layer title="The stay">
-        <div style={{ borderRadius: 24, overflow: 'hidden' }}>
-          <MomentStage
-            act="in_care"
-            acts={ACT_ORDER.map((a, i) => ({
-              act: a, title: ACT_TITLE[a], at: null,
-              state: i < 2 ? 'done' : i === 2 ? 'current' : 'coming',
-            }))}
-            narration="Deepak is hand-finishing the hood."
-            timing="Planned finish around 4:30 pm."
-          />
-        </div>
+      {/* the rail every surface reads the work with - live Visit, sealed
+          Chapter, the Journey. Copy is in the studio's voice: AutoModz is the
+          actor and no individual is ever named (Constitution Art. 8). */}
+      <Layer title="Stage rail">
+        <StageRail
+          tone="ink"
+          steps={ACT_ORDER.map((a, i) => ({
+            key: a, title: ACT_TITLE[a],
+            state: i < 2 ? 'done' : i === 2 ? 'current' : 'coming',
+          }))}
+        />
+        <Body tone="ink-2" style={{ marginTop: 16 }}>Paint correction has begun.</Body>
+        <Whisper style={{ marginTop: 4 }}>Planned finish around 4:30 pm.</Whisper>
       </Layer>
 
       <StudioSheet open={sheet} onOpenChange={setSheet} label="Example sheet">

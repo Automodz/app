@@ -125,7 +125,7 @@ export default function AdminQuotesPage() {
     if (!user || startingJob) return;
     setStartingJob(q.id);
     try {
-      const jobId = await createWalkInJob({
+      const { id: jobId } = await createWalkInJob({
         customerId: q.customerId,
         customerName: q.customerName, customerPhone: q.customerPhone,
         vehicleName: q.vehicleName, vehicleRegNo: '',
@@ -134,6 +134,9 @@ export default function AdminQuotesPage() {
           category: q.serviceCategory, price: it.amount,
         })),
         byEmployee: { id: user.uid, name: user.name || 'Admin' },
+        /* The quote IS the agreed price, so one key per quote: pressing Start
+           twice reopens the same job instead of billing the customer twice. */
+        idempotencyKey: `quote-${q.id}`,
       });
       await updateQuote(q.id, { jobId });
       toast.success('Job started from quote');

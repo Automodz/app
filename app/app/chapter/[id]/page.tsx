@@ -16,7 +16,7 @@ import { getInvoice } from '@/lib/services/invoices';
 import { isDevUser, DEV_JOBS } from '@/lib/cx/devseed';
 import { deriveChapter } from '@/lib/os/chapter';
 import { visitPhase } from '@/lib/os/visit';
-import { deriveProtection } from '@/lib/cx/protection';
+import { projectProtections, CATEGORY_TO_KIND, type LiveProtection } from '@/lib/os/protection';
 import Chapter from '@/components/os/Chapter';
 import Action from '@/components/os/Action';
 import { useStudioRouter } from '@/lib/os/navigate';
@@ -63,15 +63,22 @@ export default function OwnerChapterPage() {
     [booking, job, invoice],
   );
 
-  /* what this car's completed work protects it with - the one protection
-     engine, not a second derivation */
-  const protections = useMemo(() => {
+  /* what THIS visit's work promised - read through the same protection
+     engine Home and the Garage read, so one car never shows two answers.
+     Narrowed to the kind this visit created; a chapter is a record of its
+     own work, not of everything that shields the car. */
+  const protections = useMemo<LiveProtection[]>(() => {
     if (!booking) return [];
-    const history = bookings
-      .filter(b => b.vehicleId === booking.vehicleId)
-      .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate));
-    return deriveProtection(history, services)
-      .filter(p => p.kind === booking.serviceCategory);
+    const kind = CATEGORY_TO_KIND[booking.serviceCategory];
+    if (!kind) return [];
+    const completed = bookings
+      .filter(b => b.vehicleId === booking.vehicleId && b.status === 'completed')
+      .map(b => ({
+        id: b.id, serviceName: b.serviceName,
+        serviceCategory: b.serviceCategory, scheduledDate: b.scheduledDate,
+      }));
+    return projectProtections({ vehicleId: booking.vehicleId, completed, catalogue: services })
+      .filter(p => p.kind === kind);
   }, [bookings, booking, services]);
 
   const shareUrl = useMemo(() => {

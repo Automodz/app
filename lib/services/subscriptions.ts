@@ -2,7 +2,7 @@ import {
   collection, doc, addDoc, updateDoc, getDocs,
   query, where, orderBy, limit, serverTimestamp,
 } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import type { Subscription } from '../types';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
@@ -37,30 +37,11 @@ export const createSubscription = async (
   return ref.id;
 };
 
-/**
- * Deduct one membership wash - SERVER-SIDE via /api/membership/deduct-wash.
- * Customers can't write washesUsed under the hardened rules; the route verifies
- * the caller's own token and decrements in a transaction.
- */
-export const deductMembershipWash = async (
-  _uid: string,
-  opts?: { forUserId?: string },
-): Promise<{ success: boolean; subscriptionId?: string }> => {
-  try {
-    const idToken = await auth.currentUser?.getIdToken();
-    if (!idToken) return { success: false };
-    const res = await fetch('/api/membership/deduct-wash', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-      ...(opts?.forUserId ? { body: JSON.stringify({ forUserId: opts.forUserId }) } : {}),
-    });
-    if (!res.ok) return { success: false };
-    const data = await res.json() as { subscriptionId?: string };
-    return { success: true, subscriptionId: data.subscriptionId };
-  } catch {
-    return { success: false };
-  }
-};
+/* `deductMembershipWash` lived here, calling /api/membership/deduct-wash after
+   the job had already been written - so a wash could be spent on a visit that
+   failed, or a visit could be given away free without spending one. Both routes
+   are deleted: the deduction now rides the same commit as the record that
+   consumes it (lib/server/bookingService.ts). */
 
 export const getAllSubscriptions = async (): Promise<Subscription[]> => {
   const snap = await getDocs(query(collection(db, 'subscriptions'), orderBy('createdAt', 'desc')));

@@ -8,7 +8,8 @@ import { Emphasis, Body, Data, Whisper } from './text';
 interface MomentEntryProps {
   photo?: string;
   caption: string;        // "Full detail · 14 June 2026" or the customer's line
-  whisper?: string;       // "12 photos · Deepak" / "by you · Ladakh, May 2026"
+  whisper?: string;       // "12 photos" / "by you · Ladakh, May 2026" - never a
+                          // person's name on a customer surface (Art. 8)
   milestone?: boolean;    // text-only milestone entry
   date?: string;          // Data date for milestones
   onTap?: () => void;

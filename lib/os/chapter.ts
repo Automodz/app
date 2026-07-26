@@ -34,8 +34,6 @@ export interface ChapterModel {
   /** the work, in the studio's own words where it left them */
   work: string[];
   evidence: EvidenceShot[];
-  lead: string | null;
-  helpers: string[];
   /** minutes between arrival and completion, when both were recorded */
   minutesInCare: number | null;
   amount: number;
@@ -85,9 +83,11 @@ export function deriveChapter(args: {
     });
   const work = [...services, ...notes];
 
-  const assignments = (job?.assignments ?? []).filter(a => !a.removedAt);
-  const lead = assignments.find(a => a.role === 'lead')?.employeeName ?? null;
-  const helpers = assignments.filter(a => a.role !== 'lead').map(a => a.employeeName);
+  /* Assignments are deliberately NOT read here. The chapter is the permanent
+     record of a visit and the studio needs to know who worked it - but the
+     actor law (Constitution Art. 8) forbids naming an individual on any
+     customer surface. `job.assignments` stays in the model; it never crosses
+     into a ChapterModel. */
 
   const history = job?.statusHistory ?? [];
   const arrived = history.find(h => h.status === 'checked_in')?.at?.toDate() ?? null;
@@ -120,8 +120,6 @@ export function deriveChapter(args: {
     hero,
     work,
     evidence,
-    lead,
-    helpers,
     minutesInCare,
     amount: invoice?.total ?? booking.totalAmount ?? 0,
     paid,

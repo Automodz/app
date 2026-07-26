@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { formatInvoiceNumber, randomToken, formatCurrency } from '../utils';
 import { INVOICE_PREFIX, GST_ENABLED, GST_RATE, GSTIN } from '../config/storeConfig';
 import { COMPANY as BUSINESS } from '../company';
+import { applyDiscount } from './pricing';
 import type { Invoice, InvoiceLineItem, Job, Booking } from '../types';
 
 /**
@@ -24,7 +25,13 @@ const createInvoice = async (data: {
   byEmployee?: { id: string; name: string };
 }): Promise<Invoice> => {
   const subtotal = data.lineItems.reduce((s, i) => s + i.amount, 0);
-  const afterDiscount = Math.max(0, subtotal - (data.discount?.amount ?? 0));
+  /* Through the one engine, not a second `Math.max(0, x - y)`. The invoice
+     RESTATES a price the Booking Service already decided (the discount arrives
+     on the job/booking); GST is the only arithmetic that is genuinely the
+     invoice's own. */
+  const afterDiscount = applyDiscount(subtotal, data.discount
+    ? { source: 'promo', label: data.discount.label, amount: data.discount.amount }
+    : undefined);
   const gst = GST_ENABLED
     ? { rate: GST_RATE, amount: Math.round(afterDiscount * GST_RATE / 100), ...(GSTIN ? { gstin: GSTIN } : {}) }
     : undefined;

@@ -6,7 +6,7 @@ import {
 import { format } from 'date-fns';
 import { db } from '../firebase';
 import { uploadImage } from './storage';
-import type { Job, JobStatus, JobServiceItem, JobPhoto, JobAssignment, PaymentRecord, User, BookingDiscount, Booking } from '../types';
+import type { Job, JobStatus, JobServiceItem, JobPhoto, JobAssignment, PaymentRecord, User, Booking } from '../types';
 
 const todayStr = () => format(new Date(), 'yyyy-MM-dd');
 
@@ -20,57 +20,59 @@ export const findCustomerByPhone = async (phone: string): Promise<User | null> =
   return { uid: d.id, ...d.data() } as User;
 };
 
+/**
+ * Open a walk-in at the counter.
+ *
+ * A WRAPPER around the one Booking Service. It used to compute `subtotal` and
+ * `totalAmount` here, take the discount the kiosk had already worked out, and
+ * write the job itself - then, separately, deduct the membership wash and count
+ * the promo. Three writes, three failure points, and the discount arithmetic
+ * duplicated from the customer app.
+ *
+ * Line prices still come from the counter, because a kiosk exists to sell at a
+ * negotiated price. Everything a benefit is worth is now decided server-side
+ * (`/api/booking/create` → lib/server/bookingService.ts) in the same commit as
+ * the job.
+ */
 export const createWalkInJob = async (data: {
   customerId?: string; customerName: string; customerPhone: string;
   vehicleName: string; vehicleRegNo: string;
   serviceItems: JobServiceItem[];
-  discount?: BookingDiscount;
+  /** REQUEST to spend a membership wash - the server decides if it can. */
+  useMembershipWash?: boolean;
   byEmployee: { id: string; name: string };
   /** Who works this job - defaults to the intake employee as lead. */
   assignees?: { id: string; name: string }[];
-}): Promise<string> => {
-  const subtotal = data.serviceItems.reduce((s, i) => s + i.price, 0);
-  const totalAmount = Math.max(0, subtotal - (data.discount?.amount ?? 0));
-  const workers = data.assignees?.length ? data.assignees : [data.byEmployee];
-  const assignments: JobAssignment[] = workers.map((w, i) => ({
-    employeeId: w.id, employeeName: w.name,
-    role: i === 0 ? 'lead' : 'helper',
-    assignedAt: Timestamp.now(),
-    assignedById: data.byEmployee.id, assignedByName: data.byEmployee.name,
-  }));
-  const job: Record<string, unknown> = {
-    source: 'walk_in',
-    customerName: data.customerName,
-    customerPhone: data.customerPhone.replace(/\D/g, '').slice(-10),
-    vehicleName: data.vehicleName,
-    vehicleRegNo: data.vehicleRegNo.toUpperCase(),
-    serviceItems: data.serviceItems,
-    status: 'checked_in' as JobStatus,
-    subtotal, totalAmount,
-    paymentStatus: 'pending',
-    createdByEmployeeId: data.byEmployee.id,
-    createdByEmployeeName: data.byEmployee.name,
-    assignments,
-    assignedIds: workers.map(w => w.id),
-    statusHistory: [{
-      status: 'checked_in', at: Timestamp.now(),
-      byEmployeeId: data.byEmployee.id, byEmployeeName: data.byEmployee.name,
-    }],
-    date: todayStr(),
-    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-  };
-  if (data.customerId) job.customerId = data.customerId;
-  if (data.discount) job.discount = data.discount;
-  const r = await addDoc(collection(db, 'jobs'), job);
-  // Walk-in CRM record for accountless customers - fire-and-forget
-  if (!data.customerId) {
-    import('./walkinCustomers').then(({ recordWalkinVisit }) =>
-      recordWalkinVisit({
-        name: data.customerName, phone: data.customerPhone,
-        vehicleName: data.vehicleName, date: todayStr(),
-      })).catch(() => {});
-  }
-  return r.id;
+  idempotencyKey: string;
+  /* Returns the id ONLY. The route also sends the stored job, but its
+     Timestamps are admin-SDK ones that serialise to `{_seconds,...}` - no
+     `.seconds`, no `.toDate()` - and nested ones inside `statusHistory` and
+     `assignments` too. Handing that back typed as `Job` would be a trap for the
+     next caller. The live job-board listener supplies the real document. */
+}): Promise<{ id: string }> => {
+  const { auth } = await import('../firebase');
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('not-signed-in');
+  const res = await fetch('/api/booking/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      kind: 'walkin',
+      customerId: data.customerId,
+      customerName: data.customerName,
+      customerPhone: data.customerPhone,
+      vehicleName: data.vehicleName,
+      vehicleRegNo: data.vehicleRegNo,
+      items: data.serviceItems,
+      useMembershipWash: data.useMembershipWash,
+      byEmployee: data.byEmployee,
+      assignees: data.assignees,
+      idempotencyKey: data.idempotencyKey,
+    }),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(out?.error ?? 'job-failed');
+  return { id: out.id as string };
 };
 
 /**

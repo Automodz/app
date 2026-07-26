@@ -78,8 +78,6 @@ export default function PublicChapterPage() {
     hero: evidence.find(e => e.act === 'finished')?.url ?? evidence[0]?.url,
     work: data.work,
     evidence,
-    lead: null,
-    helpers: [],
     minutesInCare: null,
     amount: 0,
     paid: false,

@@ -25,11 +25,17 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   width: 'device-width', initialScale: 1,
-  maximumScale: 1, userScalable: false,
+  /* Zoom is NOT ours to take away (WCAG 2.1 SC 1.4.4). `maximum-scale=1` +
+     `user-scalable=no` were here to stop iOS auto-zooming a focused input,
+     but that is solved by sizing inputs at >=16px - which `Field` already
+     does at 19px - not by disabling zoom for everyone. It also made the
+     immersive photo viewer unzoomable, which is absurd for a photo viewer. */
   viewportFit: 'cover',
   // keyboard resizes the layout viewport → inputs never hide behind it
   interactiveWidget: 'resizes-content',
-  themeColor: '#F7F7F6',
+  /* the customer product is always-dark; a paper theme-colour made Android
+     paint light chrome around a black app and flashed white on launch */
+  themeColor: '#0A0B0D',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

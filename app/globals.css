@@ -1088,9 +1088,36 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-r-card:   16px;
   --st-r-chip:   12px;
   --st-r-pill:   999px;
+  --st-r-stage:  32px;   /* full-bleed takeovers - the Stay, the Chapter masthead */
 
   /* height the floating dock reserves at the bottom of every customer surface */
   --st-dock-clear: 78px;
+
+  /* ── THE STACKING CONTRACT (Design Language §4) ──────────────────────
+     The audit measured four fixed layers overlapping at 375x812, with the
+     only CTA on screen covered on first run, because three components each
+     invented their own `bottom` offset. One contract, two rules:
+       · every FIXED element positions off --st-stack-bottom
+       · every SCROLLABLE surface pads to --st-content-floor
+     No component computes its own offset again. */
+  --st-nav-h:         68px;
+  --st-nav-gap:       10px;
+  --st-stack-bottom:  calc(env(safe-area-inset-bottom) + var(--st-nav-h) + var(--st-nav-gap));
+  --st-content-floor: calc(var(--st-stack-bottom) + var(--st-gap));
+
+  /* ── THE DEPTH BANDS (Design Language §4) ───────────────────────────
+     Elevation and z-order are ONE scale. A component does not choose its
+     own shadow - the band determines it. Pairing is fixed:
+       base   → --st-hold    raised → --st-raise
+       float  → --st-lift    nav/sheet/alert → --st-lift
+       takeover has no shadow; it IS the surface. */
+  --st-z-base:     0;
+  --st-z-raised:  10;
+  --st-z-float:   40;
+  --st-z-nav:     60;
+  --st-z-sheet:   70;
+  --st-z-takeover: 80;
+  --st-z-alert:   90;
 
   /* spacing scale (the seven numbers - §2) */
   --st-hair:      4px;
@@ -1098,6 +1125,11 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-line:     12px;
   --st-gap:      16px;
   --st-inset:    24px;
+  /* the reading column. The hero is full-bleed; everything that is READ is
+     capped, so a 1280px desktop does not stretch a sentence to 1280px.
+     (Design Language §10 - the gutter is the only horizontal law, this is
+     the only exception to it.) */
+  --st-measure:  min(100%, 720px);
   --st-rest:     48px;
   --st-movement: 96px;
 
@@ -1106,11 +1138,15 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   --st-glass-on-photo: rgba(12,13,14,0.64);
   --st-glass-blur:     blur(24px) saturate(140%);
 
-  /* motion (CSS-side mirror of lib/os/motion.ts - one curve, three durations) */
+  /* motion (CSS-side mirror of lib/os/motion.ts - one curve, three durations)
+     The rule that decides which (Design Language §5): if the FINGER drives it,
+     use the spring (lib/os/motion.ts `drag`); if the SYSTEM drives it, use the
+     ease. A spring has no CSS equivalent, so it lives only in the TS mirror. */
   --st-ease:  cubic-bezier(0.22, 1, 0.36, 1);
   --st-tick:  120ms;
   --st-move:  280ms;
   --st-scene: 480ms;
+  --st-morph: 620ms;   /* the hero morphing between surfaces (view transition) */
 
   /* scrims - one hierarchy for sheet backdrop and photographic overlays */
   --st-scrim:        rgba(12,13,14,0.40);   /* sheet backdrop */
@@ -1411,4 +1447,56 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   .st-card { transition: none; }
   .st-card:hover { transform: none; }
   .st-img { opacity: 1; transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   THE HERO'S AMBIENT MOTION (Design Language §5).
+
+   The blanket ban on loops, pulses, glows and parallax still holds for
+   chrome. It does NOT hold for the car itself, which is the product and
+   must feel alive rather than pasted on. Two effects live here because
+   they are CSS animations - MotionConfig does not reach them, so each
+   carries its own reduced-motion guard.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* one soft pass of light across the paintwork, every ~25s */
+.st-hero-sweep {
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(255,255,255,0.10) 47%,
+    rgba(255,255,255,0.16) 50%,
+    rgba(255,255,255,0.10) 53%,
+    transparent 62%
+  );
+  background-size: 300% 100%;
+  background-position: 120% center;
+  animation: st-hero-sweep 25s var(--st-ease) infinite;
+}
+@keyframes st-hero-sweep {
+  0%, 72%  { background-position: 120% center; }
+  92%, 100% { background-position: -40% center; }
+}
+
+/* a hotspot is invisible until its state asks for something */
+.studio .st-hotspot { opacity: 0.55; transition: opacity var(--st-move) var(--st-ease); }
+.studio .st-hotspot:hover,
+.studio .st-hotspot:focus-visible { opacity: 1; }
+.studio .st-hotspot-live { opacity: 1; }
+.studio .st-hotspot-live::after {
+  content: '';
+  position: absolute; inset: 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--st-warn);
+  animation: st-hotspot-ping 2.4s var(--st-ease) infinite;
+}
+@keyframes st-hotspot-ping {
+  0%   { transform: scale(0.6); opacity: 0.9; }
+  70%  { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-hero-sweep { animation: none; opacity: 0; }
+  .studio .st-hotspot-live::after { animation: none; opacity: 1; transform: scale(1); }
 }
