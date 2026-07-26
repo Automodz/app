@@ -4,7 +4,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COMPANY as BUSINESS } from '../company';
-import type { Quote, QuoteStatus, QuoteLineItem } from '../types';
+import type { Quote, QuoteStatus } from '../types';
 
 /** Customer "get me a price" request - lands in the admin pipeline. */
 export const requestQuote = async (data: {

@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp, type DocumentReference, type Transaction } from 'firebase-admin/firestore';
 import { adminDb } from './firebaseAdmin';
 import { loadOccupancy, occupancyRange, type Reader } from './occupancy';
-import { decidePrice } from '@/lib/services/pricing';
+import { decidePrice, applyDiscount } from '@/lib/services/pricing';
 import { computeAvailability, candidateSlots } from '@/lib/availability';
 import { PICKUP_FEE } from '@/lib/utils';
 import type {
@@ -219,16 +219,29 @@ const createAppointment = async (
 
   const bookingRef = db.collection('bookings').doc();
 
+  /* Firestore retries a contended transaction 5 times by default. Eight
+     simultaneous identical requests all collide on the same idempotency
+     marker, and some exhausted the budget and surfaced as a 500 - the booking
+     was still made exactly once, but a caller was told it had failed. More
+     attempts, same semantics. */
   return db.runTransaction(async t => {
     /* ---- every read first; Firestore forbids a read after a write ---- */
     const existing = await t.get(intentRef);
     if (existing.exists) {
       const id = existing.data()!.bookingId as string;
       const snap = await t.get(db.collection('bookings').doc(id));
-      return {
-        id, replayed: true,
-        booking: { id, ...(snap.data() as object) } as Booking,
-      };
+      const prior = snap.data() as { status?: string } | undefined;
+      /* A marker is only a replay while the visit it points at is still
+         standing. Because the key is derived from the intent, a customer who
+         cancels and then books the same slot again arrives with the same key -
+         and handing back the cancelled booking would silently swallow the
+         second request. A cancelled or deleted record frees the intent. */
+      if (prior && prior.status !== 'cancelled') {
+        return {
+          id, replayed: true,
+          booking: { id, ...(snap.data() as object) } as Booking,
+        };
+      }
     }
 
     const ownerRef = db.collection('users').doc(ownerId);
@@ -344,7 +357,7 @@ const createAppointment = async (
       id: bookingRef.id, replayed: false,
       booking: { ...booking, id: bookingRef.id, createdAt: now, updatedAt: now } as Booking,
     };
-  });
+  }, { maxAttempts: 12 });
 };
 
 const createWalkIn = async (
@@ -421,7 +434,8 @@ const createWalkIn = async (
     const subtotal = finalItems.reduce((s, i) => s + i.price, 0);
     const discount = priced.washCovered ? undefined : priced.discount;
     const usedPromo = priced.washCovered ? undefined : priced.promo;
-    const totalAmount = Math.max(0, subtotal - (discount?.amount ?? 0));
+    // through the one engine - the last hand-rolled discount line in the repo
+    const totalAmount = applyDiscount(subtotal, discount);
 
     const workers = intent.assignees?.length ? intent.assignees : [intent.byEmployee];
     const at = Timestamp.now();
@@ -499,7 +513,7 @@ const createWalkIn = async (
       id: jobRef.id, replayed: false,
       job: { ...job, id: jobRef.id, createdAt: now, updatedAt: now } as unknown as Job,
     };
-  });
+  }, { maxAttempts: 12 });
 };
 
 /**

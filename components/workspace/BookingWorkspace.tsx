@@ -398,6 +398,10 @@ export default function BookingWorkspace({ id, onBack, backLabel }: {
 function NotesSection({ booking, onSaved }: { booking: Booking; onSaved: (n: string) => void }) {
   const [draft, setDraft] = useState(booking.adminNotes ?? '');
   const [saving, setSaving] = useState(false);
+  /* Reset the draft when a DIFFERENT booking loads - deliberately not when
+     the notes themselves change, or a save round-trip would wipe whatever the
+     user typed next. */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => setDraft(booking.adminNotes ?? ''), [booking.id]);
   const save = async () => {
     setSaving(true);

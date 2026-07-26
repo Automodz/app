@@ -1,9 +1,21 @@
 'use client';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import Wordmark from '@/components/ui/Wordmark';
 
 /** Branded crash screen - recoverable, never a stack trace in the user's face. */
-export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // reported to the studio; the visitor only ever sees the calm screen below
+  useEffect(() => {
+    fetch('/api/report', {
+      method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        where: 'root', message: error.message, digest: error.digest, stack: error.stack,
+      }),
+    }).catch(() => {});
+  }, [error]);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center safe-page"
       style={{ background: '#08090b', paddingBottom: 'max(var(--sab), 24px)' }}>

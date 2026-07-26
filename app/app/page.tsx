@@ -36,7 +36,6 @@ import { ownershipState } from '@/lib/os/ownership';
 import { conciergeLog } from '@/lib/os/log';
 import { deriveProtection, PROTECTION_WORD, type Protection } from '@/lib/cx/protection';
 import { isDevUser, DEV_JOBS, DEV_MEMBERSHIP } from '@/lib/cx/devseed';
-import Portrait from '@/components/os/Portrait';
 import IdentityPlate from '@/components/os/IdentityPlate';
 import JoinClub from '@/components/os/JoinClub';
 import CarForm from '@/components/os/CarForm';
@@ -46,11 +45,10 @@ import ProtectionRecord from '@/components/os/ProtectionRecord';
 import Desk, { type ShelfRow, type ThreadVisit, type SearchItem } from '@/components/os/Desk';
 import StudioSheet from '@/components/os/StudioSheet';
 import Action from '@/components/os/Action';
-import Chip, { type Tone } from '@/components/os/Chip';
 import Home, { type HomeState, type HomeJourneyEntry, type HomeTransformation } from '@/components/home/Home';
 import { projectProtections, type LiveProtection } from '@/lib/os/protection';
 
-import { Title, Emphasis, Body, Data, Whisper } from '@/components/os/text';
+import { Title, Body, Data, Whisper } from '@/components/os/text';
 import { COMPANY, telLink } from '@/lib/company';
 
 const fmtLong = (iso: string) =>
@@ -321,6 +319,9 @@ function Glance() {
       ] : []),
     ];
     return { visits: visitsFeed, search };
+    // `nav` is a stable router facade (lib/os/navigate); listing it would
+    // rebuild the whole Desk feed on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model, vehicle, club, router]);
 
   /* ── the Home view props. Presentation only - every value comes from an
@@ -446,7 +447,6 @@ function Glance() {
     }));
   }, [model, nav]);
 
-  const unreadCount = 0;
 
   if (!user) return null;
 
@@ -580,8 +580,6 @@ function Glance() {
   );
 }
 
-const fmtDay = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' });
 
 
 /* ── the add-a-car page (B1 last page / first-run) ── */
@@ -924,20 +922,28 @@ function ArrangeSheet({
     ? generateTimeSlots(service.duration).filter(t => !(full.fullSlots[date] ?? []).includes(t))
     : [];
 
-  /* One key per selection. A retry of the same car+service+slot returns the
-     booking that already exists instead of making a second one; changing the
-     selection is a new intent and gets a new key. */
-  const idemRef = useRef<{ sig: string; key: string } | null>(null);
+  /* THE FINGERPRINT.
+     One key per intent - this car, this service, this slot - so a retry
+     returns the booking that already exists instead of making a second one.
+
+     It used to live in a `useRef`, which a page reload wiped: send the
+     request, lose the answer, refresh, book again, and the customer had two
+     visits and two charges. It is now DERIVED from the intent itself, so the
+     same selection reaches the same key across a reload, a restored tab, or a
+     browser that killed the page mid-flight - with nothing to persist and
+     nothing to expire. (A stored nonce would reach the same place with a
+     cache to keep in step; a pure function has no such seam.) Changing the
+     selection is a different intent and gets a different key. */
   const idempotencyKey = () => {
-    const sig = `${vehicle.id}|${service?.id}|${date}|${time}`;
-    if (idemRef.current?.sig !== sig) {
-      idemRef.current = {
-        sig,
-        key: (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
-          .replace(/[^A-Za-z0-9_-]/g, ''),
-      };
+    const sig = `${user?.uid}|${vehicle.id}|${service?.id}|${date}|${time}|${washCovered ? 'w' : ''}`;
+    // FNV-1a: stable across reloads and processes, unlike a random uuid
+    let h = 0x811c9dc5;
+    for (let i = 0; i < sig.length; i++) {
+      h ^= sig.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
     }
-    return idemRef.current.key;
+    return `bk-${h.toString(36)}-${sig.length.toString(36)}-${vehicle.id.slice(0, 8)}`
+      .replace(/[^A-Za-z0-9_-]/g, '');
   };
 
   const confirm = async () => {

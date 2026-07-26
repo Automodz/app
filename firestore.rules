@@ -66,8 +66,6 @@ service cloud.firestore {
       }
     }
 
-    // ── Bookings - users create/see their own, admins manage all.
-    //    Owners may also cancel or reschedule while still pending/confirmed. ──
     // ── Bookings ─────────────────────────────────────────────────────────
     //    CREATE IS SERVER-ONLY (/api/booking/create → the Booking Service).
     //    The old rule allowed any customer to create a booking whose `userId`
@@ -160,11 +158,18 @@ service cloud.firestore {
       allow write: if request.auth != null && isAdmin();
     }
 
-    // ── Notifications - recipient reads/marks-read, admin writes ────────
+    // ── Notifications - recipient reads and marks read; admin writes ────
+    //    `update` was unscoped, so a recipient could rewrite the title, body
+    //    or type of a notification the studio sent them. Marking something
+    //    read is the only edit a reader is owed.
     match /notifications/{notifId} {
-      allow read, update: if request.auth != null &&
-        resource.data.userId == request.auth.uid;
-      allow write: if request.auth != null && isAdmin();
+      allow read: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if request.auth != null &&
+        (isAdmin() ||
+         (resource.data.userId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])));
+      allow create, delete: if request.auth != null && isAdmin();
     }
 
     // ── Referrals - created ONLY server-side via /api/referral/claim ────

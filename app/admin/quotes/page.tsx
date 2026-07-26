@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { MessageCircle, Plus, Trash2, X, FileSpreadsheet, Wrench } from 'lucide-react';
 import {
   listQuotes, createQuote, updateQuote, setQuoteStatus,
-  buildQuoteWhatsAppLink, addTask, todayDateStr, createWalkInJob,
+  buildQuoteWhatsAppLink, addTask, createWalkInJob,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';

@@ -44,7 +44,7 @@ import StateCard from '@/components/os/StateCard';
 import MediaViewer from '@/components/os/MediaViewer';
 import { MediaMonth } from '@/components/os/MediaGrid';
 import Action from '@/components/os/Action';
-import { Emphasis, Body, Data, Whisper } from '@/components/os/text';
+import { Body, Data, Whisper } from '@/components/os/text';
 
 export default function GaragePage() {
   const router = useRouter();
@@ -66,6 +66,9 @@ export default function GaragePage() {
     if (!user) return;
     if (isDevUser(user.uid)) { setJobs(Object.values(DEV_JOBS)); return; }
     getJobsForCustomer(user.uid).then(setJobs).catch(() => setJobs([]));
+    // keyed on the uid alone: `user` is a new object on every profile edit,
+    // and refetching the job history because a name changed is pure waste
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   // remember the car, so Home and the Garage never disagree about which one

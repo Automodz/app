@@ -1,13 +1,56 @@
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
+import { Unbounded, Outfit, DM_Sans, DM_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { SITE_URL } from '@/lib/company';
 import './globals.css';
 
+/**
+ * Self-hosted type.
+ *
+ * These four families arrived over a render-blocking `<link>` to Google Fonts:
+ * an extra DNS lookup, TLS handshake and stylesheet round trip before a single
+ * word could paint, then a flash of fallback type when they landed. `next/font`
+ * downloads them at build time, serves them from our own origin, and emits the
+ * `@font-face` with `size-adjust` so the swap does not move the page.
+ *
+ * The CSS variables are the same ones `globals.css` already reads, so nothing
+ * downstream changes - `--font-hero`, `--font-display`, `--font-body`,
+ * `--font-mono` keep their meanings.
+ */
+const unbounded = Unbounded({
+  subsets: ['latin'], weight: ['500', '700', '800'],
+  variable: '--font-hero-src', display: 'swap',
+});
+const outfit = Outfit({
+  subsets: ['latin'], weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-display-src', display: 'swap',
+});
+const dmSans = DM_Sans({
+  subsets: ['latin'], weight: ['400', '500', '600', '700'],
+  variable: '--font-body-src', display: 'swap',
+});
+const dmMono = DM_Mono({
+  subsets: ['latin'], weight: ['400', '500'],
+  variable: '--font-mono-src', display: 'swap',
+});
+
+const fontVars = `${unbounded.variable} ${outfit.variable} ${dmSans.variable} ${dmMono.variable}`;
+
 export const metadata: Metadata = {
-  title: 'AutoModz - Premium Car Detailing Studio',
+  /* `metadataBase` is what makes every relative canonical and OG image in the
+     app resolve to an absolute URL - without it Next warns and share cards
+     resolve against localhost. One origin, from lib/company. */
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'AutoModz - Premium Car Detailing Studio',
+    template: '%s · AutoModz',
+  },
   description: 'Book professional car detailing services in Maninagar, Ahmedabad. PPF, Ceramic Coating, Washing & more.',
+  applicationName: 'AutoModz',
   manifest: '/manifest.json',
+  alternates: { canonical: '/' },
   icons: {
     icon: '/icons/icon-192.png',
     apple: '/icons/apple-touch-icon.png',
@@ -19,8 +62,15 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'AutoModz', description: 'Premium Car Detailing Studio',
-    type: 'website', siteName: 'AutoModz',
+    type: 'website', siteName: 'AutoModz', locale: 'en_IN',
+    url: '/', images: [{ url: '/icons/icon-512.png', width: 512, height: 512, alt: 'AutoModz' }],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AutoModz', description: 'Premium Car Detailing Studio',
+    images: ['/icons/icon-512.png'],
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -40,14 +90,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="light" data-theme="light" suppressHydrationWarning>
+    <html lang="en" className={`light ${fontVars}`} data-theme="light" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Outfit:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap"
-        />
         <script dangerouslySetInnerHTML={{
           /* theme before first paint - reads the SessionManager payload, and
              still understands the pre-SessionManager store so an existing

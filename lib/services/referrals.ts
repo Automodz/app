@@ -39,7 +39,7 @@ export const referralShareLink = (code: string) => {
   return `${origin}/auth/login?ref=${code}`;
 };
 
-export const referralWhatsAppLink = (code: string, name: string) => {
+export const referralWhatsAppLink = (code: string, _name: string) => {
   const msg =
 `Hey! I use AutoModz for car detailing in Maninagar - PPF, ceramic, washing, the works. 🚗✨
 

@@ -71,10 +71,16 @@ The invoice share links, push sending, and referral rewards run on the server an
 ## Step 7 - Cloudinary for photos (5 min, no card)
 
 1. **cloudinary.com** → Sign up free (use the same Google account).
-2. The Dashboard shows your **Cloud name** → `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`.
-3. ⚙️ Settings → **Upload** → **Upload presets** → **Add upload preset** →
-   Signing mode: **Unsigned** → Save. Copy the preset name → `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`.
-4. Done - car photos, gallery, job before/afters, and sell-request photos all now upload there automatically.
+2. The Dashboard shows three things you need:
+   - **Cloud name** → `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+   - **API Key** → `CLOUDINARY_API_KEY`
+   - **API Secret** (click *Reveal*) → `CLOUDINARY_API_SECRET` — **server-side only**, never `NEXT_PUBLIC_`
+3. **Do NOT create an unsigned upload preset.** Uploads are signed by the server
+   (`/api/media/sign`), which is what stops strangers filling your account and
+   what makes "delete this photo" actually delete. If you made an unsigned
+   preset earlier, ⚙️ Settings → Upload → delete it.
+4. Done - car photos, gallery, job before/afters and sell-request photos all
+   upload through the signed route.
 
 ## Step 8 - Deploy to Vercel (10 min)
 

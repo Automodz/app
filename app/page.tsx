@@ -203,8 +203,17 @@ export default function HomePage() {
             {/* bloom behind the car */}
             <div aria-hidden className="absolute -inset-8 pointer-events-none" style={{ background: 'radial-gradient(60% 55% at 60% 45%, rgba(255,140,60,0.10), transparent 70%)', filter: 'blur(30px)' }} />
             <div className="relative rounded-[28px] overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 12px 28px rgba(0,0,0,0.4), 0 48px 130px rgba(0,0,0,0.6), 0 0 110px rgba(255,120,40,0.1)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={MEDIA.hero.homepage} alt="Close-up of freshly detailed paintwork" className="w-full object-cover max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }} />
+              {/* The LCP element. `priority` preloads it, `sizes` stops a
+                  1800px file landing on a 390px phone, and the fixed ratio
+                  reserves the box so nothing shifts when it arrives. */}
+              <div className="relative w-full max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }}>
+                <Image
+                  src={MEDIA.hero.homepage}
+                  alt="Close-up of freshly detailed paintwork"
+                  fill priority sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
               <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(8,9,11,0.35) 0%, transparent 30%), linear-gradient(200deg, transparent 40%, rgba(8,9,11,0.6) 100%)' }} />
               {/* glass rim highlight along the top edge */}
               <div aria-hidden className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />

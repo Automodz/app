@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
+import { reportError } from '@/lib/server/report';
 import {
   createBookingAuthoritative, BookingError,
   type BookingIntent,
@@ -88,7 +89,15 @@ export async function POST(req: NextRequest) {
     if (e instanceof BookingError) {
       return NextResponse.json({ error: e.code }, { status: e.status });
     }
-    console.error('[booking] create failed', e);
+    /* An unexpected throw here means the studio has stopped taking money.
+       Reported with the ids that make it findable - never the body. */
+    await reportError(e, {
+      op: 'booking.create',
+      userId: uid,
+      vehicleId: intent.kind === 'appointment' ? intent.vehicleId : undefined,
+      serviceId: intent.kind === 'appointment' ? intent.serviceId : undefined,
+      extra: { kind: intent.kind },
+    });
     return NextResponse.json({ error: 'booking-failed' }, { status: 500 });
   }
 }

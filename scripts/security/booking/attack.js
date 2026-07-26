@@ -444,7 +444,77 @@ const appt = (over = {}) => ({
       (await booking(b.id)).totalAmount === b.totalAmount);
   }
 
-  console.log('\n17 · LEDGER CONSISTENCY (whole-database invariants)');
+  console.log('\n17 · CANCEL, THEN BOOK THE SAME SLOT AGAIN');
+  {
+    /* The idempotency key is DERIVED from the intent now, so it survives a
+       reload - and a customer who cancels and changes their mind arrives with
+       the very same key. A marker whose booking is cancelled must not swallow
+       the second request. */
+    const body = appt({ serviceId: 'svc-detail', idempotencyKey: key('cancel') });
+    const first = await post(tok.custA, body);
+    ok('the first booking is made', first.status === 200 && first.json.replayed === false,
+      JSON.stringify(first.json));
+
+    const same = await post(tok.custA, body);
+    ok('  …replaying while it stands returns the same one',
+      same.json.id === first.json.id && same.json.replayed === true, JSON.stringify(same.json));
+
+    await db.collection('bookings').doc(first.json.id).update({ status: 'cancelled' });
+    const again = await post(tok.custA, body);
+    ok('after cancelling, the same intent books afresh',
+      again.status === 200 && again.json.replayed === false && again.json.id !== first.json.id,
+      JSON.stringify(again.json));
+    ok('  …and the cancelled one is left alone',
+      (await booking(first.json.id)).status === 'cancelled');
+  }
+
+  console.log('\n18 · MEDIA — signed upload, real delete');
+  {
+    const MEDIA_SIGN = API.replace('/booking/create', '/media/sign');
+    const MEDIA_DEL = API.replace('/booking/create', '/media/delete');
+    const call = async (url, token, payload) => {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(payload),
+      });
+      return { status: r.status, json: await r.json().catch(() => ({})) };
+    };
+
+    let r = await call(MEDIA_SIGN, null, { path: 'vehicles/custA-1' });
+    ok('signing without a token → 401', r.status === 401, JSON.stringify(r));
+
+    r = await call(MEDIA_SIGN, tok.custA, { path: 'gallery/anything' });
+    ok('a customer cannot sign an upload into the studio gallery',
+      r.status === 403, JSON.stringify(r));
+    r = await call(MEDIA_SIGN, tok.custA, { path: 'vehicles/custB-sneaky' });
+    ok("a customer cannot sign into another customer's namespace",
+      r.status === 403, JSON.stringify(r));
+    r = await call(MEDIA_SIGN, tok.custA, { path: '../../etc/passwd' });
+    ok('path traversal is refused', r.status === 403, JSON.stringify(r));
+
+    r = await call(MEDIA_SIGN, tok.custA, { path: 'vehicles/custA-123-abc' });
+    ok('a customer CAN sign into their own vehicle folder', r.status === 200, JSON.stringify(r));
+    ok('  …and the signature is bound to that exact public_id',
+      r.json.publicId === 'vehicles/custA-123-abc' && typeof r.json.signature === 'string'
+      && r.json.signature.length === 40, JSON.stringify(r.json).slice(0, 160));
+    ok('  …and no secret is handed to the browser',
+      !JSON.stringify(r.json).toLowerCase().includes('secret'), JSON.stringify(r.json).slice(0, 120));
+
+    r = await call(MEDIA_SIGN, tok.staff1, { path: 'gallery/showcase-1' });
+    ok('staff CAN sign into the studio gallery', r.status === 200, JSON.stringify(r));
+
+    r = await call(MEDIA_DEL, tok.custA, { path: 'cloudinary:gallery/showcase-1' });
+    ok('a customer cannot delete a studio image', r.status === 403, JSON.stringify(r));
+    r = await call(MEDIA_DEL, tok.custA, { path: 'cloudinary:vehicles/custB-1' });
+    ok("a customer cannot delete another customer's image", r.status === 403, JSON.stringify(r));
+    r = await call(MEDIA_DEL, null, { path: 'cloudinary:vehicles/custA-1' });
+    ok('deleting without a token → 401', r.status === 401, JSON.stringify(r));
+    r = await call(MEDIA_DEL, tok.custA, {});
+    ok('deleting with no path → 400', r.status === 400, JSON.stringify(r));
+  }
+
+  console.log('\n19 · LEDGER CONSISTENCY (whole-database invariants)');
   {
     const bs = await db.collection('bookings').get();
     const badTotals = [];

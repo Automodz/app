@@ -9,7 +9,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Action from '@/components/os/Action';
-import { Display, Body, Whisper } from '@/components/os/text';
+import { Display, Body } from '@/components/os/text';
 import Wordmark from '@/components/ui/Wordmark';
 
 export default function AppError({
@@ -20,8 +20,20 @@ export default function AppError({
 }) {
   const router = useRouter();
 
-  // surfaced for logs/diagnostics, never shown to the customer
-  useEffect(() => { console.error('[app] boundary caught:', error); }, [error]);
+  /* Told to the studio, never to the customer. A crash screen nobody reports
+     is a crash nobody fixes - and `removeConsole` means the browser log is
+     gone in production anyway. `keepalive` so it survives the navigation the
+     customer is about to make. */
+  useEffect(() => {
+    console.error('[app] boundary caught:', error);
+    fetch('/api/report', {
+      method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        where: 'app', message: error.message, digest: error.digest, stack: error.stack,
+      }),
+    }).catch(() => { /* reporting must never re-throw inside a boundary */ });
+  }, [error]);
 
   return (
     <div

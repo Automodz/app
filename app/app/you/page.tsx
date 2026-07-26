@@ -35,7 +35,7 @@ import Monogram from '@/components/os/Monogram';
 import TogglePill from '@/components/os/TogglePill';
 import Field from '@/components/os/Field';
 import Action from '@/components/os/Action';
-import { Emphasis, Body, Data, Whisper } from '@/components/os/text';
+import { Body, Data, Whisper } from '@/components/os/text';
 
 type PushState = 'on' | 'off' | 'unsupported';
 

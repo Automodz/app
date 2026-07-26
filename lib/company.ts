@@ -25,6 +25,20 @@ export const COMPANY = {
   hours: { open: hm(DAY_OPEN_MIN), close: hm(DAY_CLOSE_MIN) },
 } as const;
 
+/**
+ * The studio's canonical origin - one place, so metadata, sitemap, robots and
+ * share cards can never disagree about where the site lives. Override with
+ * `NEXT_PUBLIC_SITE_URL` the day a custom domain lands; Vercel preview builds
+ * fall back to their own deployment URL so previews link to themselves.
+ */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL
+  ?? (process.env.VERCEL_ENV === 'production'
+    ? 'https://automodz.vercel.app'
+    : process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`)
+  ?? 'https://automodz.vercel.app'
+).replace(/\/$/, '');
+
 /** WhatsApp deep link to the studio, with an optional prefilled message. */
 export const waLink = (message?: string) =>
   `https://wa.me/${COMPANY.phoneIntl}${message ? `?text=${encodeURIComponent(message)}` : ''}`;

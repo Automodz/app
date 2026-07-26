@@ -25,8 +25,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
+  /* FAIL CLOSED. This was `if (secret && ...)`, so an unset CRON_SECRET left a
+     public GET that fans out push notifications and in-app messages to every
+     customer on the books - a spam cannon anyone could fire, repeatedly. An
+     unconfigured cron must not run at all rather than run for the world. */
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

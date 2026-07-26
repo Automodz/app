@@ -1,10 +1,10 @@
 import {
-  collection, doc, addDoc, updateDoc, getDoc, getDocs,
+  collection, doc, addDoc, updateDoc, getDocs,
   query, where, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { isPromoEligible, type PromoEligibilityContext } from './pricing';
-import type { Promo, PromoRedemption } from '../types';
+import type { Promo } from '../types';
 
 export const createPromo = async (data: Omit<Promo, 'id' | 'usedCount' | 'createdAt' | 'updatedAt'>) => {
   const r = await addDoc(collection(db, 'promos'), {
@@ -88,12 +88,3 @@ export const validatePromoCode = async (
    `settleBenefits` in lib/server/bookingService.ts. There is nothing left to
    retry, reconcile or order. */
 
-export const getPromo = async (id: string): Promise<Promo | null> => {
-  const snap = await getDoc(doc(db, 'promos', id));
-  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Promo) : null;
-};
-
-export const getRedemptionsForPromo = async (promoId: string): Promise<PromoRedemption[]> => {
-  const snap = await getDocs(query(collection(db, 'promoRedemptions'), where('promoId', '==', promoId)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as PromoRedemption));
-};

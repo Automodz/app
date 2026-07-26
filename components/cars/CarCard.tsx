@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-/* eslint-disable @next/next/no-img-element */
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Heart, Fuel, Gauge, Settings2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
@@ -22,7 +22,11 @@ export default function CarCard({ car, saved, onToggleSave, hrefBase = '/cars' }
       <Link href={`${hrefBase}/${car.id}`}>
         <div className="relative aspect-[4/3]" style={{ background: 'var(--dark)' }}>
           {cover ? (
-            <img src={cover} alt={car.title} className="w-full h-full object-cover" loading="lazy" />
+            <Image
+              src={cover} alt={car.title} fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Gauge size={28} style={{ color: 'var(--steel)' }} />

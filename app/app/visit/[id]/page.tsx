@@ -34,7 +34,7 @@ import { motion, useReducedMotion, type PanInfo } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { useVisitJob } from '@/components/os/useVisitJob';
 import { deriveStay } from '@/lib/os/stay';
-import { ACT_ORDER, ACT_TITLE } from '@/lib/os/visit';
+import { ACT_TITLE } from '@/lib/os/visit';
 import { useStudioRouter } from '@/lib/os/navigate';
 import { getHeroImage } from '@/lib/os/hero';
 import { SHOT_CAPTION } from '@/lib/os/moment';

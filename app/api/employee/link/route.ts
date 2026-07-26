@@ -32,7 +32,16 @@ export async function POST(req: NextRequest) {
   try {
     const decoded = await adminAuth!.verifyIdToken(authHeader.slice(7));
     uid = decoded.uid;
-    email = decoded.email?.toLowerCase();
+    /* AN UNVERIFIED EMAIL IS A CLAIM, NOT AN IDENTITY.
+       This route grants the `employee` role - the job board, every customer's
+       name and phone, the kiosk, attendance - purely on the email in the
+       token matching an active employee record. The app signs in with Google,
+       which always verifies, but the Firebase project's public API key will
+       mint a token for ANY provider enabled in the console: turn on
+       email/password and a stranger can register a staff member's address,
+       unverified, and be promoted. Requiring the verification flag makes this
+       route safe regardless of what is switched on later. */
+    email = decoded.email_verified ? decoded.email?.toLowerCase() : undefined;
   } catch {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }

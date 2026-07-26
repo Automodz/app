@@ -52,6 +52,11 @@ export FIREBASE_ADMIN_PRIVATE_KEY="$(sed 's/$/\\n/' "$WORK/fake.pem" | tr -d '\n
 export FIRESTORE_EMULATOR_HOST=127.0.0.1:$PORT_FS
 export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:$PORT_AUTH
 export API="http://127.0.0.1:$PORT_APP/api/booking/create"
+# Cloudinary signing is pure local crypto - these let /api/media/* answer without
+# ever reaching Cloudinary. Every delete assertion is refused before it would.
+export CLOUDINARY_CLOUD_NAME=demo-cloud
+export CLOUDINARY_API_KEY=000000000000000
+export CLOUDINARY_API_SECRET=not-a-real-secret
 
 cleanup() { kill $EMU_PID $APP_PID 2>/dev/null || true; }
 trap cleanup EXIT

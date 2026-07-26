@@ -22,7 +22,6 @@
  */
 import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import type { ReactNode } from 'react';
 import { studioEase, move, tick } from '@/lib/os/motion';
 import type { LiveProtection } from '@/lib/os/protection';
 import HeroVehicle, { type HeroHotspot } from '@/components/os/HeroVehicle';
@@ -30,7 +29,7 @@ import StateCard, { StateChips } from '@/components/os/StateCard';
 import Panel from '@/components/os/Panel';
 import Section from '@/components/os/Section';
 import Action from '@/components/os/Action';
-import Chip, { type Tone } from '@/components/os/Chip';
+import { type Tone } from '@/components/os/Chip';
 import { Emphasis, Body, Data, Whisper } from '@/components/os/text';
 
 /* ── what the controller hands in ───────────────────────────────────────── */

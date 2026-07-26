@@ -16,18 +16,14 @@ import {
  * disagree - the customer would be shown a slot the writer then rejects, or
  * worse, accept one the reader called full.
  *
- * `reader` is a Firestore `Transaction` when the caller needs the occupancy to
- * be part of a transaction's read set, and `plainReader` otherwise.
+ * `reader` is whatever can `.get()` a ref or a query - a Firestore
+ * `Transaction` when the caller needs occupancy inside a transaction's read
+ * set, the collection handles themselves otherwise.
  */
 export interface Reader {
   get(ref: DocumentReference): Promise<{ exists: boolean; data(): unknown }>;
   get(q: Query): Promise<{ docs: { data(): unknown }[] }>;
 }
-
-export const plainReader: Reader = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get: (x: any) => x.get(),
-} as Reader;
 
 /** The date window that can overlap `dates` once multi-day work is considered. */
 export const occupancyRange = (dates: string[], durationMinutes: number) => {

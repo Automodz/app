@@ -68,7 +68,10 @@ export default function WalkInFlow({ onDone }: {
      from the same line items when it creates the job - this never travels. */
   const [discount, setDiscount] = useState<BookingDiscount | undefined>(undefined);
   const [memberSub, setMemberSub] = useState<Subscription | null>(null);
-  const [useMemberWash, setUseMemberWash] = useState(false);
+  /* A member's included wash applies at the counter exactly as it does in
+     the app - the server is the one that decides whether it can (see
+     `decidePrice`). This was a useState nothing ever set, so a member
+     walking in silently paid for a wash they had already bought. */
 
   useEffect(() => { getServices().then(setServices); }, []);
 
@@ -121,7 +124,7 @@ export default function WalkInFlow({ onDone }: {
   const washesLeft = memberSub ? memberSub.washesTotal - memberSub.washesUsed : 0;
   const rawItems = Array.from(selected.values());
   const washItem = rawItems.find(i => i.category === 'Washing');
-  const memberWashActive = useMemberWash && !!memberSub && washesLeft > 0 && !!washItem;
+  const memberWashActive = !!memberSub && washesLeft > 0 && !!washItem;
   // Member wash zero-prices the wash line (never stacks with the % discount on it)
   const items = memberWashActive
     ? rawItems.map(i => i === washItem ? { ...i, price: 0 } : i)
@@ -156,7 +159,7 @@ export default function WalkInFlow({ onDone }: {
         customerName: name.trim(), customerPhone: phone,
         vehicleName: vehicleName.trim(), vehicleRegNo: regNo,
         serviceItems: rawItems,
-        useMembershipWash: useMemberWash,
+        useMembershipWash: memberWashActive,
         byEmployee: operator,
         assignees: [...assignees].map(([id, name]) => ({ id, name })),
         idempotencyKey: idemRef.current,

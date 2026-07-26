@@ -1,29 +1,53 @@
-// Image upload - Cloudinary unsigned upload (free, no credit card).
-// Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME + NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.
+// Image upload - Cloudinary, SIGNED.
+//
+// This used to use an unsigned upload preset, which meant the cloud name and
+// the permission to write to it both shipped in the public bundle: anyone could
+// fill the studio's account. It also made deletion impossible, so removing a
+// photo removed nothing. Both doors now go through the server, which holds the
+// API secret and checks that the caller owns the path
+// (/api/media/sign, /api/media/delete → lib/server/cloudinary.ts).
+//
 // Firebase Storage was removed on purpose: new Firebase projects require a
 // billing card for Storage, and Cloudinary's CDN serves images faster anyway.
 
-const CLOUDINARY_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const CLOUDINARY_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const idToken = async (): Promise<string> => {
+  const { auth } = await import('../firebase');
+  const t = await auth.currentUser?.getIdToken();
+  if (!t) throw new Error('not-signed-in');
+  return t;
+};
 
 /** Client-side resize/compress to ≤maxWidth, then upload. Returns download URL + path. */
 export const uploadImage = async (
   path: string, file: File, opts: { maxWidth?: number; quality?: number } = {},
 ): Promise<{ url: string; path: string }> => {
-  if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) {
-    throw new Error(
-      'Image uploads not configured - set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in .env.local',
-    );
-  }
   const { maxWidth = 1600, quality = 0.82 } = opts;
   const blob = await resizeImage(file, maxWidth, quality);
 
+  // one signature, bound to this exact public_id, valid for this upload only
+  const signRes = await fetch('/api/media/sign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await idToken()}` },
+    body: JSON.stringify({ path }),
+  });
+  if (!signRes.ok) {
+    const { error } = await signRes.json().catch(() => ({ error: 'sign-failed' }));
+    throw new Error(error ?? 'sign-failed');
+  }
+  const s = await signRes.json() as {
+    cloudName: string; apiKey: string; publicId: string;
+    timestamp: number; overwrite: string; signature: string;
+  };
+
   const form = new FormData();
   form.append('file', blob);
-  form.append('upload_preset', CLOUDINARY_PRESET);
-  // folder mirrors the logical path, e.g. carListings/abc123
-  form.append('folder', path.split('/').slice(0, -1).join('/'));
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+  form.append('api_key', s.apiKey);
+  form.append('timestamp', String(s.timestamp));
+  form.append('public_id', s.publicId);
+  form.append('overwrite', s.overwrite);
+  form.append('signature', s.signature);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${s.cloudName}/image/upload`, {
     method: 'POST', body: form,
   });
   if (!res.ok) throw new Error('Cloudinary upload failed');
@@ -31,9 +55,18 @@ export const uploadImage = async (
   return { url: data.secure_url, path: `cloudinary:${data.public_id}` };
 };
 
-export const deleteImage = async (_path: string) => {
-  // Cloudinary unsigned uploads can't be deleted from the client (needs a signed
-  // request) - orphaned images just age out of the media library. No-op is safe.
+/** Actually deletes. Throws if the studio refuses - callers should surface that. */
+export const deleteImage = async (path: string): Promise<void> => {
+  if (!path) return;
+  const res = await fetch('/api/media/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await idToken()}` },
+    body: JSON.stringify({ path }),
+  });
+  if (!res.ok) {
+    const { error } = await res.json().catch(() => ({ error: 'delete-failed' }));
+    throw new Error(error ?? 'delete-failed');
+  }
 };
 
 const resizeImage = (file: File, maxWidth: number, quality: number): Promise<Blob> =>
