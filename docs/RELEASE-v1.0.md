@@ -110,6 +110,7 @@ deleting it only forfeits replay protection.
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | client | yes | images do not render |
 | `CLOUDINARY_API_KEY` | server | **yes (new)** | uploads 503 |
 | `CLOUDINARY_API_SECRET` | server | **yes (new)** | uploads and deletes 503 |
+| `CLOUDINARY_CLOUD_NAME` | server | no | falls back to `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`; set only to keep the cloud name off the client |
 | `NEXT_PUBLIC_SITE_URL` | client | no | falls back to `automodz.vercel.app` |
 | `SENTRY_DSN` | server | no | reporting is a no-op; logs still written |
 | `CRON_SECRET` | server | **yes** | the daily cron refuses every request — retention, low-stock, receivables and win-back all stop silently |
