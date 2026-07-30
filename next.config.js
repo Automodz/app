@@ -62,6 +62,12 @@ const nextConfig = {
         'https://securetoken.googleapis.com', 'https://fcmregistrations.googleapis.com',
         'https://api.cloudinary.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com',
         'wss://*.firebaseio.com',
+        /* The local Firebase suite, in development only. Without these the
+           emulator is unreachable from the app, which is why the customer read
+           path had never once been exercised against real rules - the CSP was
+           silently blocking the only way to test it. Never emitted in a
+           production build. */
+        ...(dev ? ['http://127.0.0.1:8080', 'http://127.0.0.1:9099', 'ws://127.0.0.1:8080'] : []),
       ].join(' '),
       "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com",
       "worker-src 'self' blob:",

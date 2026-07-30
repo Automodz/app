@@ -1,0 +1,392 @@
+'use client';
+/**
+ * VEHICLE
+ *
+ * Source: docs/AUTOMODZ-OS.md §3.1, §3.2, §3.4, §3.5, §3.6, §4.1, §4.3,
+ *         §5.2, §5.3, §5.5, §7.1, §7.4, §7.6, §8.6, §9.5, §11.1, §11.2,
+ *         §11.3, §11.4, §11.5, §14.2, §14.3, §14.4, §14.6, §18.1, §18.3,
+ *         §18.4, §21.1, §21.3, §21.5, §21.6, §21.7, §21.8, §22.2
+ *
+ * ── THIS SCREEN DOES NOT SCROLL ──────────────────────────────────────────
+ * That is the whole design, stated once. A vehicle screen that scrolls is a
+ * details page with a photograph on top, and the photograph stops being the
+ * interface the moment there is a document underneath it to get to.
+ *
+ * The car fills the viewport. Everything else is discovered by touching the
+ * car. §11.4 — "regions of the photograph correspond to what protects them.
+ * Touching a region reveals the state of that region." That sentence is not a
+ * garnish on a details page; it is the navigation model, and this screen
+ * implements it as the only one.
+ *
+ * ── THE INTERACTION ──────────────────────────────────────────────────────
+ *   AT REST      the car, whole. Hairline marks where it can be asked. Below
+ *                them: its identity, its state, how long it has been ours.
+ *
+ *   ASKED        touch a mark. Everything but that region recedes, and the
+ *                block below becomes the answer for that part of the car.
+ *
+ *   RELEASED     touch the same mark again, touch the car anywhere else, or
+ *                press Escape.
+ *
+ * It is MODELESS. No sheet, no dialog, no scrim over the subject, no dismiss
+ * button. §3.6 — glass never sits on glass, and a sheet would cover the exact
+ * thing being asked about. The car is never hidden, because the customer is
+ * standing in front of it.
+ *
+ * ── WHY THE ANSWER LANDS WHERE THE STATE WAS ─────────────────────────────
+ * §9.5 — one Display per screen. There is exactly one at every moment, and it
+ * always holds the most important phrase right now: the car's state when
+ * nothing has been asked, the answer when something has. A second Display for
+ * answers would be two subjects (§3.2); a smaller slot for answers would say
+ * the car's reply matters less than the car's label.
+ *
+ * ── WHAT IS NOT HERE, AND WHERE IT WENT ──────────────────────────────────
+ * §5.2 lists Vehicle as holding "hero, current state, protection, latest work,
+ * media, entry to its history". Four of those six are on this surface. The
+ * other two sit at depth one (§4.3), reached through the car rather than laid
+ * out beside it:
+ *
+ *   latest work   through History, which the ownership line opens
+ *   media         through each visit's own account (§16.3) — the only place a
+ *                 photograph can actually answer "what visit was this?"
+ *
+ * Laying either of them out here is what would make this the details page the
+ * screen exists not to be. It is a real deviation from §5.2, recorded rather
+ * than hidden.
+ *
+ * ── DATA, AND THE MEDIUM ─────────────────────────────────────────────────
+ * This component holds no data and fetches none. It also does not know what a
+ * photograph is: it is handed a `VehicleRendering` (§11.3) and asks it to draw.
+ * There is no image, no URL and no aspect ratio anywhere in this file.
+ */
+import { useCallback, useEffect, useState } from 'react';
+import type { MouseEvent } from 'react';
+import {
+  color, space, MEASURE, HAIRLINE, radius, scrim, column,
+  stack, TARGET_MIN, duration, easing,
+} from '@/design';
+import { Hero, Heading, Text, Button } from '@/components/system';
+import { REGION_NAME } from '@/components/vehicle';
+import type { RegionId, RenderedRegion, VehicleRendering } from '@/components/vehicle';
+
+/* ── What the Vehicle needs to be true ───────────────────────────────────
+   No photograph, no URL, no aspect ratio — all of that belongs to the
+   rendering (§11.3). This is the car as facts. */
+
+export interface VehicleProtection {
+  /** Which part of the car it protects. §11.4 */
+  region: RegionId;
+  /** In the customer's words. §14.2 */
+  label: string;
+  /**
+   * The term, spoken in the unit that suits it (§14.3) at the precision that
+   * is honest (§14.4): a date when it is far off, a countdown only when the
+   * number is small enough to act on, an amount when it is a balance.
+   */
+  term: string;
+  /** §14.6 — the file, behind one tap, never on the surface. */
+  documentHref?: string;
+}
+
+export interface VehicleModel {
+  /** The customer's own words for their car. */
+  name: string;
+  /** §5.5 — the registration is kept: "identity, not jargon". */
+  plate: string;
+  /**
+   * What is happening to it, in the present tense. §5.3 #2 — the one phrase,
+   * unmissable, and the Display when nothing has been asked.
+   */
+  state: string;
+  /**
+   * How long it has been ours to look after, in time rather than in counts.
+   * §2.1 — a tally is the transaction talking.
+   */
+  since: string;
+  /** §5.2 — the entry to its history. Opened by the ownership line. */
+  historyHref: string;
+  /** §11.1 — protection belongs to the car. Keyed to the part it protects. */
+  protections: readonly VehicleProtection[];
+  /**
+   * §18.4 — "no protection declared → invitation, one line, one action."
+   * Optional: §10.5 forbids a control with no destination, and this pointed at
+   * `/studio`, which has no declare flow.
+   */
+  declareHref?: string;
+}
+
+/**
+ * A REGION MARK.
+ *
+ * §11.4 — "this is discovered, never explained: no coach marks, no tutorial,
+ * no pulsing dots demanding a tap." A hairline ring is none of those three: it
+ * does not instruct, it does not animate, and it does not ask. It is part of
+ * the composition, the way a seam between panels is. Read the other way —
+ * nothing drawn at all — the mechanism §11.4 exists to create would be
+ * undiscoverable, which is the worse of the two failures.
+ *
+ * NO ENTRANCE ANIMATION, deliberately. §7.1 — motion never gates content, and
+ * a mark that fades in after the car settles is a mark that never appears at
+ * all if the animation does not run.
+ *
+ * §21.1 / WCAG 1.4.11 — one white stroke cannot hold 3:1 against an unknown
+ * photograph, so the ring is drawn twice: white over a ring of the same black
+ * the scrim floor is built from. Whatever is behind it, one of the two reads.
+ *
+ * §21.3 — the ring is 12pt, the target is 44. §21.5 — a real button, so it is
+ * tabbable and takes the GLOBAL focus ring; this component carried its own for
+ * as long as the global one failed 1.4.11, and no longer needs to. §21.8 — its
+ * name is the customer's word for that part of their car.
+ */
+function Mark({
+  region, asked, onAsk,
+}: {
+  region: RenderedRegion;
+  asked: boolean;
+  onAsk: (id: RegionId) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={asked}
+      aria-label={REGION_NAME[region.id]}
+      onClick={(e: MouseEvent) => {
+        /* The car behind releases on click; a mark must not be read as one. */
+        e.stopPropagation();
+        onAsk(region.id);
+      }}
+      style={{
+        width: TARGET_MIN,
+        height: TARGET_MIN,
+        display: 'grid',
+        placeItems: 'center',
+        background: 'transparent',
+        border: 0,
+        padding: 0,
+        cursor: 'pointer',
+        borderRadius: radius.pill,
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: space.line,
+          height: space.line,
+          borderRadius: radius.pill,
+          border: `${HAIRLINE}px solid ${color.over}`,
+          boxShadow: `0 0 0 ${HAIRLINE}px rgba(0,0,0,${scrim.photoFloor})`,
+          /* Asked: filled. The only difference between the two states, and it
+             is deliberately not a hue — over a photograph no state colour
+             survives the scrim (`urgent` measures 1.53:1 against a white
+             image). The marks carry no urgency; the words below carry it. */
+          background: asked ? color.over : 'transparent',
+          transition: `background ${duration.tick}ms ${easing.ease}`,
+        }}
+      />
+    </button>
+  );
+}
+
+/**
+ * WHAT THE CAR IS SAYING.
+ *
+ * One block, two contents, always in the same place: the car's identity and
+ * state when nothing has been asked, the answer for a region when something
+ * has. Extracted because both compositions below need it and §22.2 wants one
+ * implementation — not because it is reusable anywhere else.
+ */
+function Saying({
+  model, asked, answer,
+}: {
+  model: VehicleModel;
+  asked: RegionId | null;
+  answer: VehicleProtection | undefined;
+}) {
+  const { name, plate, state, since, historyHref, declareHref } = model;
+
+  if (asked) {
+    return (
+      <>
+        {/* §21.8 — the customer's word for the part of their car. */}
+        <Text role="data" tone="over" as="span">{REGION_NAME[asked]}</Text>
+        {answer ? (
+          <>
+            <Heading level="display" tone="over" style={{ marginTop: space.hair }}>
+              {answer.label}
+            </Heading>
+            <Text role="body" tone="over" style={{ marginTop: space.line }}>
+              {answer.term}
+            </Text>
+            {/* §14.6 — "every protection may carry its file. It sits behind one
+                tap, labelled plainly. It is never the primary surface." One
+                line of type, and only when there is a file. */}
+            {answer.documentHref ? (
+              <div style={{ marginTop: space.breath }}>
+                <Button tier="forward" href={answer.documentHref} style={{ color: color.over }}>
+                  The original
+                </Button>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          /* §18.4 — "no protection declared → invitation, one line, one
+             action." §18.3 — the tone is calm. Nothing has gone wrong; this
+             part of the car simply has nothing on it yet. */
+          <>
+            <Heading level="display" tone="over" style={{ marginTop: space.hair }}>
+              Nothing on it yet
+            </Heading>
+            <div style={{ marginTop: space.gap }}>
+              <Button tier="forward" href={declareHref} style={{ color: color.over }}>
+                Tell us what protects it
+              </Button>
+            </div>
+          </>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* Identity. Mono, because a plate is a plate. §5.5 */}
+      <Text role="data" tone="over" as="span">{name} · {plate}</Text>
+      {/* §5.3 #2, §9.5 — the one Display, when nothing is asked. */}
+      <Heading level="display" tone="over" style={{ marginTop: space.hair }}>
+        {state}
+      </Heading>
+      {/* Ownership, and the way into everything that has happened. §5.2 puts
+          "entry to its history" on this surface; hanging it on how long the car
+          has been ours keeps it a fact about the car rather than a menu item
+          beside one. */}
+      <div style={{ marginTop: space.breath }}>
+        <Button tier="forward" href={historyHref} style={{ color: color.over }}>
+          {since}
+        </Button>
+      </div>
+    </>
+  );
+}
+
+export function VehicleScreen({
+  model, rendering,
+}: {
+  model: VehicleModel;
+  rendering: VehicleRendering;
+}) {
+  const { protections } = model;
+  const [asked, setAsked] = useState<RegionId | null>(null);
+
+  /** Touching a mark asks; touching the one already asked releases it. */
+  const ask = useCallback((id: RegionId) => {
+    setAsked(current => (current === id ? null : id));
+  }, []);
+
+  /* §21.5 — a modeless reveal still needs a keyboard way out, and Escape is
+     the one every customer already knows. Bound at the document so it works
+     wherever focus is, including on the mark that opened the answer. */
+  useEffect(() => {
+    if (!asked) return;
+    const release = (e: KeyboardEvent) => { if (e.key === 'Escape') setAsked(null); };
+    document.addEventListener('keydown', release);
+    return () => document.removeEventListener('keydown', release);
+  }, [asked]);
+
+  const answer = asked ? protections.find(p => p.region === asked) : undefined;
+
+  /* §11.5 — THE CAR WITH NO RENDERING IS A DIFFERENT COMPOSITION, NOT THE
+     SAME ONE WITH THE PHOTOGRAPH MISSING.
+
+     "It is never a grey box, never a placeholder silhouette, NEVER A LARGE
+     EMPTY FIELD WITH A SMALL PLATE FLOATING IN IT." Rendered at full height
+     with the block anchored to the foot, that last clause is exactly what
+     appeared: 700px of near-black with a caption under it, which reads as a
+     photograph that failed to load rather than as a car awaiting its first
+     visit. The difference between broken and awaiting is composition, so the
+     block is centred in the field instead — the same treatment §12.4 gives an
+     empty garage, and for the same reason.
+
+     Nothing can be asked here: no photograph means no located regions, so no
+     marks are drawn and nothing explains their absence (§18.1). */
+  if (!rendering.present) {
+    return (
+      <main
+        style={{
+          position: 'relative',
+          height: '100svh',
+          overflow: 'hidden',
+          background: color.paper,
+        }}
+      >
+        <rendering.Surface focus={null} priority />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            ...column,
+            paddingBottom: stack.bottom,
+          }}
+        >
+          <Saying model={model} asked={null} answer={undefined} />
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    /* §22.2 — one implementation of anything. The scrim, the entrance settle
+       and the overlay's gutter all belong to `Hero`, so this screen composes it
+       rather than growing a second copy of a contrast guarantee. The height is
+       overridden to the viewport because here the subject IS the screen; `svh`
+       rather than `vh` so a collapsing mobile chrome cannot push the answer
+       under a fold there is no scroll to recover it from. */
+    <Hero
+      state="media"
+      band="full"
+      style={{ height: '100svh' }}
+      overlay={
+        /* §21.7 — announced politely when it changes, so the answer reaches
+           someone who cannot see the car recede.
+
+           §8.5 — the block clears the navigation by arithmetic. `Hero` insets
+           it to the gutter; the stack is this screen's business, because this
+           is the screen with no scroll to pad. */
+        <div
+          aria-live="polite"
+          style={{ maxWidth: MEASURE, paddingBottom: stack.bottom }}
+        >
+          <Saying model={model} asked={asked} answer={answer} />
+        </div>
+      }
+    >
+      {/* ── THE CAR ─────────────────────────────────────────────────────
+          §11.3 — the screen asks for the hero for this vehicle and receives
+          one. It does not know, and must never learn, what medium answered.
+
+          The release-on-touch-elsewhere handler sits on this wrapper rather
+          than on a transparent overlay, so nothing is ever laid over the car.
+          It is a convenience and not the accessible path — pressing the mark
+          again and Escape both do the same job and are both reachable by
+          keyboard — which is why it takes no role and no tab stop.
+
+          §18.1 — when the rendering can locate no region, no mark is drawn and
+          nothing explains the absence. The car simply cannot be asked about
+          itself yet, and the screen is whole without the interaction. */}
+      <div
+        style={{ position: 'absolute', inset: 0 }}
+        onClick={() => setAsked(null)}
+      >
+        <rendering.Surface
+          focus={asked}
+          priority
+          mark={region => (
+            <Mark region={region} asked={asked === region.id} onAsk={ask} />
+          )}
+        />
+      </div>
+    </Hero>
+  );
+}

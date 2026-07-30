@@ -231,7 +231,41 @@ body {
     linear-gradient(178deg, #FBFBFA 0%, var(--bg) 34%, #F1F1EF 100%);
   background-attachment: fixed;
 }
-:focus-visible { outline: 1.5px solid var(--accent-glow); outline-offset: 3px; border-radius: 4px; }
+/* ─── FOCUS · one ring, every interactive element, every ground ──────────
+   docs/AUTOMODZ-OS.md §21.5 — "every interactive element has a visible focus
+   state. The whole product is operable by keyboard."
+
+   The predecessor was `1.5px solid var(--accent-glow)`, and measured against
+   WCAG 2.1 SC 1.4.11's 3:1 floor for a focus indicator it failed on every
+   ground this product has:
+
+       paper  #0A0B0D      2.02:1
+       surface #15181B     2.12:1
+       a mid-grey photo    1.41:1
+       a bright photo      1.01:1   — invisible
+
+   A single stroke cannot be guaranteed against a photograph, because the
+   photograph can be any colour. So the ring is drawn TWICE, white outside
+   black, and whichever of the two contrasts with what is behind it, one always
+   reads. Worst case measured 5.32:1 over mid-grey; 19.68:1 on paper.
+
+   `box-shadow` rather than `outline`, because two rings need two radii and an
+   outline only draws one. `outline: none` alongside it stops the browser
+   default from doubling up. */
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px #FFFFFF,
+    0 0 0 4px rgba(0, 0, 0, 0.55);
+  border-radius: 4px;
+}
+
+/* A control that already carries a shadow keeps it and adds the ring, so the
+   ring never replaces elevation. */
+:focus-visible:where(button, a, [role='button']) {
+  position: relative;
+  z-index: 1;
+}
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 2px; height: 2px; }
@@ -1502,4 +1536,17 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 @media (prefers-reduced-motion: reduce) {
   .st-hero-sweep { animation: none; opacity: 0; }
   .studio .st-hotspot-live::after { animation: none; opacity: 1; transform: scale(1); }
+}
+
+/* ── CUSTOMER NAVIGATION · the active room's word ──────────────────────────
+   docs/AUTOMODZ-OS.md §3.5, §6.2. See navigation/BottomNavigation.tsx.
+
+   The bar's widest state is 358px. A 360px viewport offers 344 and a 375px one
+   offers 359; the active room's word is 48px of that, so below 390 the bar was
+   clipped at both ends on real devices. Withholding the word is the only change
+   that recovers enough space without re-spacing the whole control, and it costs
+   nothing: the glyph and the light still show the room, and the accessible name
+   is unaffected at every width. */
+@media (max-width: 389px) {
+  [data-nav-word] { display: none; }
 }

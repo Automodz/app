@@ -15,6 +15,7 @@ import { useAppStore } from '@/lib/store';
 import { KIOSK_LOCK_TIMEOUT_MS } from '@/lib/config/storeConfig';
 import { isStudioPath } from '@/lib/permissions';
 import Wordmark from '@/components/ui/Wordmark';
+import { ClientSession } from '@/components/ClientSession';
 import CommandPalette, { type Command } from '@/components/ui/CommandPalette';
 
 // ONE staff shell, TWO operating modes:
@@ -98,7 +99,7 @@ const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items.map(i => ({ ...i, group: g.gro
 
 // Role access rules live in ONE place - lib/permissions.ts.
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminShell({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
   const { user, authLoading, setUser, kioskEmployee, setKioskEmployee } = useAppStore();
@@ -427,5 +428,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
     </div>
+  );
+}
+
+/**
+ * The operations application keeps the browser-session providers that used to
+ * live in the root layout. Behaviour is identical — `AuthProvider`,
+ * `ThemeProvider` and `Toaster` are simply mounted here instead of globally, so
+ * the customer rooms stop paying for them. See components/ClientSession.tsx.
+ */
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClientSession>
+      <AdminShell>{children}</AdminShell>
+    </ClientSession>
   );
 }

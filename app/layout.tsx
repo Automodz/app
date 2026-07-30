@@ -1,10 +1,25 @@
 import type { Metadata, Viewport } from 'next';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from '@/context/AuthContext';
 import { Unbounded, Outfit, DM_Sans, DM_Mono } from 'next/font/google';
-import { ThemeProvider } from '@/components/ThemeProvider';
+import { CustomerChrome } from '@/navigation';
 import { SITE_URL } from '@/lib/company';
 import './globals.css';
+
+/**
+ * WHAT THIS LAYOUT DELIBERATELY NO LONGER MOUNTS.
+ *
+ * `AuthProvider`, `ThemeProvider` and `Toaster` were here, so every route —
+ * including every customer room — carried the Firebase client SDK, the Zustand
+ * store and react-hot-toast in its first load. The customer rooms are now read
+ * on the server and import none of them.
+ *
+ * They live in `components/ClientSession.tsx` and are mounted by the trees that
+ * actually run a browser session: `app/admin`, `app/store`, `app/auth`. Those
+ * surfaces are unchanged; the providers simply sit one level lower.
+ *
+ * What is left here is what every address genuinely shares: the fonts, the
+ * pre-paint theme script, and the customer chrome (which mounts nothing at an
+ * address that is not a room).
+ */
 
 /**
  * Self-hosted type.
@@ -100,31 +115,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         }} />
       </head>
       <body>
-        <AuthProvider>
-          <ThemeProvider>
-            {children}
-            <Toaster
-              position="top-center"
-              containerStyle={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: 'var(--glass-2)',
-                  color: 'var(--fg)',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: '14px',
-                  fontSize: '14px',
-                  fontFamily: 'var(--font-body)',
-                  backdropFilter: 'blur(20px)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                  padding: '12px 16px',
-                },
-                success: { iconTheme: { primary: '#5FBF8F', secondary: '#111214' } },
-                error:   { iconTheme: { primary: '#E06C75', secondary: '#111214' } },
-              }}
-            />
-          </ThemeProvider>
-        </AuthProvider>
+        {/* This layout is shared with the operations application, so the
+            customer shell is gated rather than mounted. `CustomerChrome`
+            mounts nothing at all at an address that is not a room — see
+            that file for why "nothing" is stronger than "hidden". */}
+        <CustomerChrome>{children}</CustomerChrome>
       </body>
     </html>
   );

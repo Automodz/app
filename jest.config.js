@@ -3,10 +3,16 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   moduleNameMapper: {
+    /* `server-only` exists to make a build fail if server code reaches a client
+       bundle. Under jest there are no bundles, so it is stubbed rather than
+       removed from the source — the guard stays real where it matters. */
+    '^server-only$': '<rootDir>/__mocks__/server-only.js',
     '^@/(.*)$': '<rootDir>/$1',
   },
-  setupFilesAfterEnv: [],
+  setupFiles: ['<rootDir>/jest.setup.js'],
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+    /* `jsx: react-jsx` here rather than in tsconfig.json: Next compiles JSX
+       itself and needs `preserve`, but ts-jest has to emit real calls. */
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: { jsx: 'react-jsx' } }],
   },
 };

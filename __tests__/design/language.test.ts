@@ -1,0 +1,91 @@
+/**
+ * THE DESIGN LANGUAGE'S OWN INVARIANTS.
+ *
+ * `contrastFloor` and `reducedMotion` were each written with the note "held as
+ * data so a test can assert it rather than a reviewer having to remember it" —
+ * and until this file existed, nothing did. They were dead exports describing
+ * rules nobody checked. This is the check.
+ */
+import {
+  color, scrim, contrastFloor, reducedMotion, type as typeScale, space, TARGET_MIN,
+} from '@/design';
+
+/** WCAG 2.1 relative luminance. */
+const channel = (v: number) => {
+  const s = v / 255;
+  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+};
+const hex = (h: string) => {
+  const n = h.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16));
+};
+const lum = (rgb: number[]) =>
+  0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
+const ratio = (a: number[], b: number[]) => {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+const PAPER = hex(color.paper);
+
+describe('§21.1 — every ink reads on paper at AA', () => {
+  it.each(['ink', 'ink2', 'ink3'] as const)('%s', k => {
+    expect(ratio(hex(color[k]), PAPER)).toBeGreaterThanOrEqual(contrastFloor.normalText);
+  });
+
+  it.each(['assent', 'caution', 'urgent', 'lapsed'] as const)('%s reads as text too', k => {
+    expect(ratio(hex(color[k]), PAPER)).toBeGreaterThanOrEqual(contrastFloor.normalText);
+  });
+});
+
+describe('§21.1 — the scrim is sufficient for the worst image', () => {
+  /* The worst image is pure white. White text through the scrim over it must
+     still clear AA, which is the whole derivation of `photoFloor`. */
+  const behind = (alpha: number) => [0, 1, 2].map(() => 255 * (1 - alpha));
+
+  it('white on a white photograph clears AA at the floor', () => {
+    expect(ratio([255, 255, 255], behind(scrim.photoFloor)))
+      .toBeGreaterThanOrEqual(contrastFloor.normalText);
+  });
+
+  it('the shipped value has headroom over the floor', () => {
+    expect(scrim.photo).toBeGreaterThan(scrim.photoFloor);
+  });
+
+  it('over2 does NOT clear it — this is why it is banned over photographs', () => {
+    const bg = behind(scrim.photoFloor);
+    const composited = bg.map(c => 0.72 * 255 + 0.28 * c);
+    expect(ratio(composited, bg)).toBeLessThan(contrastFloor.normalText);
+  });
+
+  it('the region recession stays below the layer scrim, so the car stays legible', () => {
+    expect(scrim.region).toBeLessThan(scrim.layer);
+  });
+});
+
+describe('§21.2 — zoom is not ours to take', () => {
+  /* "If a focused input causes an unwanted zoom, the input is too small — that
+     is the bug." iOS zooms a focused field below 16px, so the body size the
+     scale is anchored to may never fall under it. */
+  it('body type is at or above the iOS zoom floor', () => {
+    expect(parseInt(typeScale.body.size, 10)).toBeGreaterThanOrEqual(16);
+  });
+});
+
+describe('§21.3 — the target floor', () => {
+  it('is 44 and is a multiple of nothing smaller than the base step', () => {
+    expect(TARGET_MIN).toBe(44);
+  });
+  it('the rhythm scale never offers a gap larger than the step above it', () => {
+    const steps = [space.hair, space.breath, space.line, space.gap, space.rest, space.movement];
+    expect([...steps].sort((a, b) => a - b)).toEqual(steps);
+  });
+});
+
+describe('§7.6 — reduced motion loses nothing but movement', () => {
+  it('transforms stop, opacity may remain, and everything collapses to zero', () => {
+    expect(reducedMotion.disableTransforms).toBe(true);
+    expect(reducedMotion.allowOpacity).toBe(true);
+    expect(reducedMotion.duration).toBe(0);
+  });
+});

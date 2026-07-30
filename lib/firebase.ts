@@ -1,7 +1,8 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence, connectAuthEmulator } from 'firebase/auth';
 import {
   getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  connectFirestoreEmulator,
 } from 'firebase/firestore';
 
 // Images live on Cloudinary (see lib/services/storage.ts) - Firebase Storage
@@ -58,6 +59,33 @@ export const db = (() => {
     return getFirestore(app);
   }
 })();
+/* ── LOCAL EMULATORS ─────────────────────────────────────────────────────
+   Opt-in, and only ever in development. `NEXT_PUBLIC_FIREBASE_EMULATOR=1`
+   points auth and Firestore at the local suite so the customer read path can
+   be exercised end to end against real rules and real documents.
+
+   This exists because the dev-auth shim fakes a store user without a Firebase
+   session, so every rule-guarded read is refused — which meant the whole
+   customer data layer had only ever been type-checked, never run. Guarded on
+   NODE_ENV as well as the flag, so a production build cannot be pointed at a
+   local emulator by an environment variable alone. */
+if (
+  process.env.NODE_ENV !== 'production'
+  && process.env.NEXT_PUBLIC_FIREBASE_EMULATOR === '1'
+) {
+  /* Guarded on a global rather than on `window`, so the same wiring serves the
+     browser AND an integration test in Node. That matters: the customer read
+     path can only be proven by RUNNING it against real rules, and a
+     browser-only gate meant the proof had to go through the SDK's own
+     localStorage persistence instead of just calling the code. */
+  const g = globalThis as unknown as { __amEmulated?: boolean };
+  if (!g.__amEmulated && auth && db) {
+    g.__amEmulated = true;
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  }
+}
+
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 export { app };

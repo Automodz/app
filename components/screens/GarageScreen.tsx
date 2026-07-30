@@ -1,0 +1,246 @@
+'use client';
+/**
+ * GARAGE
+ *
+ * Source: docs/AUTOMODZ-OS.md §3.1, §3.2, §3.5, §4.3, §5.2, §7.5, §8.4,
+ *         §9.5, §11.2, §11.5, §12.1, §12.2, §12.3, §12.4, §18.1, §18.2,
+ *         §18.3, §18.4, §21.1
+ *
+ * ── WHAT THIS SCREEN IS ──────────────────────────────────────────────────
+ * §12.1 — "The collection. Every car the customer owns, each present as a
+ * photograph with its current state."
+ *
+ * Not a list of vehicles. The difference is not decorative: a list is a
+ * rendering of records, and the feeling it produces is the feeling of
+ * browsing stock. What is built here is a continuous vertical strip of
+ * full-bleed photographs with no gaps, no containers, and no chrome — closer
+ * to turning the pages of a book of one's own things than to reading a table
+ * of them. There is nothing on this screen that is not a photograph or a
+ * line of type over one.
+ *
+ * ── DOMINANCE BELONGS TO THE POSITION, NOT TO THE CAR ────────────────────
+ * §3.2 — "Each surface has exactly one thing it is about, and that thing is
+ * unmistakably dominant." §9.5 — one Display per screen. The first frame is
+ * therefore the screen's subject and carries the Display; every frame after
+ * it carries a Title.
+ *
+ * §12.3 — "Cars are equals. No car is 'primary' — that is the studio's
+ * convenience, not the owner's feeling about their vehicles."
+ *
+ * Both hold at once, because the emphasis is attached to the FIRST POSITION
+ * IN THE STRIP rather than to whatever car is standing in it. The order is
+ * the studio's attention — the car currently with us, or most recently — so
+ * a car moves into and out of the lead as its situation changes. Nothing
+ * here, and nothing in `GarageModel`, stores a primary flag. There is
+ * deliberately no way for this screen to express one.
+ *
+ * ── WHY EVERY WORD OVER A PHOTOGRAPH IS WHITE ────────────────────────────
+ * `scrim.photoFloor` is solved for white on a pure-white image and clears AA
+ * by a hair. Neither `over2` nor any of the four state colours survives it —
+ * `urgent` measures 1.53:1 against a scrimmed white photograph. So urgency
+ * in the collection is carried by WORDS ("Pollution certificate, 6 days"),
+ * never by hue, and the strip is monochrome throughout. §21.6 is satisfied
+ * the strict way: colour was never a carrier here at all.
+ *
+ * ── DATA ─────────────────────────────────────────────────────────────────
+ * This component holds none and fetches none.
+ */
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  color, space, MEASURE, column, photoSize, stack, imageSizes,
+} from '@/design';
+import { Hero, Heading, Text, Button } from '@/components/system';
+
+/* ── What the collection needs to be true ────────────────────────────────
+   §12.3 names what a car shows here — "its photograph, its name, its plate,
+   and one line of state" — and requirement 12 adds the two facts that make a
+   car feel owned rather than filed. Nothing else is asked for, because
+   nothing else is rendered. */
+
+export interface GarageVehicle {
+  id: string;
+  /** The customer's own words for their car. */
+  name: string;
+  /** §5.5 — the registration is kept: "identity, not jargon". */
+  plate: string;
+  /** §11.5 — absent until the studio has photographed it. */
+  photo?: string;
+  /** What is happening to it, in the present tense. §12.3, §5.3 #2 */
+  state: string;
+  /**
+   * What protects it, in one line: the thing that needs attention soonest,
+   * or the fact that nothing does. §14.4 — a countdown only when the number
+   * is small enough to act on. Never a colour; see the note above.
+   */
+  protection: string;
+  /**
+   * The relationship with the studio, expressed in time rather than in
+   * counts. "With AutoModz since 2023", not "14 visits" — §2.1, the car is
+   * the subject, and a tally is the transaction talking.
+   */
+  relationship: string;
+  href: string;
+}
+
+export interface GarageModel {
+  /**
+   * In the studio's order of attention. See the note above: the first
+   * position is emphasised, the car in it is not.
+   */
+  vehicles: GarageVehicle[];
+  /** §12.4 — where the invitation leads when there is no car yet. */
+  beginHref: string;
+}
+
+/**
+ * ONE CAR IN THE COLLECTION.
+ *
+ * The whole photograph is the link. §4.3 — depth of one; and requirement 13,
+ * that selecting a car should feel like opening an album rather than
+ * following a control. A chevron, a "View" button or a tap target smaller
+ * than the image would all put an interface between the owner and their car.
+ *
+ * §7.5 — "When a photograph appears on two consecutive surfaces, it moves
+ * between them." The `viewTransitionName` is what lets the browser carry
+ * this exact photograph into the vehicle's own hero instead of crossfading
+ * it. It is declared per car so two frames can never claim the same name.
+ */
+function Vehicle({ vehicle, lead }: { vehicle: GarageVehicle; lead: boolean }) {
+  const { name, plate, photo, state, protection, relationship, href } = vehicle;
+
+  return (
+    <Link href={href} style={{ display: 'block', textDecoration: 'none' }}>
+      <Hero
+        state={photo ? 'media' : 'awaiting'}
+        /* The band follows the type, because the type is what the scrim has
+           to hold. The lead speaks at Display and its block measures ~207px
+           when the phrase wraps; every other frame speaks at Title and
+           measures ~110px. Giving the lead `brief` put the top of its Display
+           above the hold band, in the part of the gradient that is already
+           fading — measured, not guessed. */
+        band={lead ? 'full' : 'brief'}
+        /* THE COLLECTION SIZES ONLY ITS PHOTOGRAPHS. A car with no photograph
+           keeps `Hero`'s own awaiting height, which §11.5 makes shorter on
+           purpose — "never a large empty field with a small plate floating in
+           it". Forcing the collection height onto it produced exactly that:
+           473px of near-black with a caption at the foot. The frame is
+           shorter than its neighbours and that is the point; it reads as
+           awaiting rather than as a photograph that failed to load. */
+        style={photo ? { height: lead ? photoSize.lead : photoSize.next } : undefined}
+        overlay={
+          <div style={{ maxWidth: MEASURE }}>
+            <Text role="data" tone="over" as="span">
+              {name} · {plate}
+            </Text>
+
+            {/* §9.5 — the one Display belongs to the first position. Every
+                other car speaks at Title: still the subject of its own
+                frame, never the subject of the screen. */}
+            <Heading
+              level={lead ? 'display' : 'title'}
+              tone="over"
+              as={lead ? 'h1' : 'h2'}
+              style={{ marginTop: space.hair }}
+            >
+              {state}
+            </Heading>
+
+            {/* The two facts that make a car feel owned: what is holding, and
+                how long it has been ours to look after. One line, quietest
+                role, and no numbers to parse. */}
+            <Text role="whisper" tone="over" style={{ marginTop: space.breath }}>
+              {protection} · {relationship}
+            </Text>
+          </div>
+        }
+      >
+        {photo ? (
+          <Image
+            src={photo}
+            alt={`${name}, photographed at AutoModz`}
+            fill
+            /* Only the first photograph is worth blocking the first paint
+               for; the rest are below the fold by construction. */
+            priority={lead}
+            sizes={imageSizes.fullBleed}
+            style={{
+              objectFit: 'cover',
+              viewTransitionName: `vehicle-${vehicle.id}`,
+            }}
+          />
+        ) : (
+          /* §11.5 — composed, never a grey box or a silhouette. A car with no
+             photograph yet still belongs in the collection at full size; it
+             is awaiting its first visit, not missing. */
+          null
+        )}
+      </Hero>
+    </Link>
+  );
+}
+
+/**
+ * §12.4 — "An empty garage is the most important screen a new customer will
+ * ever see, and it is an invitation, not an error. One sentence, one action.
+ * It never apologises, never explains what a garage is, and never shows an
+ * empty container."
+ *
+ * So: no dashed rectangle, no illustration, no plus (§18.2). The screen holds
+ * one line and one way to begin, and the line is about the car rather than
+ * about the software's emptiness — §18.3, "emptiness is not failure."
+ */
+function Invitation({ href }: { href: string }) {
+  return (
+    <div
+      style={{
+        minHeight: `calc(100svh - ${stack.navHeight}px)`,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        ...column,
+      }}
+    >
+      <Heading level="display">Your car&rsquo;s place is ready.</Heading>
+      <div style={{ marginTop: space.gap }}>
+        <Button tier="forward" href={href}>Arrange its first visit</Button>
+      </div>
+    </div>
+  );
+}
+
+export function GarageScreen({ model }: { model: GarageModel }) {
+  const { vehicles, beginHref } = model;
+
+  return (
+    <main
+      style={{
+        background: color.paper,
+        minHeight: '100svh',
+        /* §8.5 — the stacking contract. Content clears the navigation by
+           arithmetic, never by measuring it. */
+        paddingBottom: stack.contentFloor,
+      }}
+    >
+      {vehicles.length === 0 ? (
+        <Invitation href={beginHref} />
+      ) : (
+        /* No gaps, no dividers, no padding between frames. The strip is
+           continuous on purpose: each photograph's own scrim darkens toward
+           its foot and the next begins bright, so the seam is made of light
+           rather than of a rule. §3.4 — light is the only ornament.
+
+           §12.2 — "With a single vehicle, the Garage does not exist as a
+           meaningful place." A collection of one therefore renders as that
+           one car and nothing else: no count, no header, no framing that
+           would announce a collection that isn't there. Going straight to
+           the car instead of showing this at all is a routing decision, and
+           it belongs to whoever owns the shell — this screen has no business
+           redirecting anyone. */
+        vehicles.map((vehicle, i) => (
+          <Vehicle key={vehicle.id} vehicle={vehicle} lead={i === 0} />
+        ))
+      )}
+    </main>
+  );
+}

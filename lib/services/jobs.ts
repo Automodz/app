@@ -199,6 +199,30 @@ export const updateJobStatus = async (
 
   // Side-effects on completion - fire-and-forget, never block the kiosk
   if (status === 'completed') {
+    /* THE SEAL. Server-side, atomic and idempotent (lib/server/sealVisit.ts):
+       one transaction writes the sealed Visit and the Protections it creates,
+       snapshotting the services, the pricing and the warranty terms as the
+       catalogue reads them right now. §14.5 — a later price-list edit must never
+       change what this customer was promised.
+
+       Awaited before the other side-effects so a failure is logged against the
+       completion that caused it, and never blocking: a seal that fails is
+       recovered by the idempotent backfill, whereas a kiosk that hangs on a
+       network call strands a car at the counter. */
+    try {
+      const { auth } = await import('../firebase');
+      const idToken = await auth?.currentUser?.getIdToken();
+      if (idToken) {
+        await fetch('/api/visit/seal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+          body: JSON.stringify({ jobId }),
+        });
+      }
+    } catch (e) {
+      console.error('seal failed; the backfill will catch it', e);
+    }
+
     try {
       const job = await getJob(jobId);
       if (job) {

@@ -97,10 +97,17 @@ service cloud.firestore {
     function visitIsSealed() {
       return resource.data.sealedAt != null;
     }
+    //  READ IS BY VEHICLE OWNERSHIP, NOT BY AN OWNER FIELD ON THE VISIT.
+    //  The predecessor read `resource.data.customerId` / `.userId`, and a Visit
+    //  carries NEITHER - the type has no such field and nothing writes one. So
+    //  the condition could never be true for a customer, and because Firestore
+    //  denies a whole QUERY when any matched document fails its rule, the first
+    //  visit ever written would have broken every customer's every room at
+    //  once. A visit is keyed by `vehicleId` and vehicles live under their
+    //  owner, so ownership is the same lookup `protections` already uses.
     match /visits/{id} {
       allow read: if request.auth != null &&
-        (isStaff() || resource.data.customerId == request.auth.uid ||
-         resource.data.userId == request.auth.uid);
+        (isStaff() || ownsVehicle(resource.data.vehicleId));
       allow create: if request.auth != null && isStaff();
       // staff may advance an OPEN visit; a sealed one is closed to everyone
       allow update: if request.auth != null && isStaff() && !visitIsSealed() &&
