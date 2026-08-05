@@ -22,6 +22,7 @@ export const uploadImage = async (
   path: string, file: File, opts: { maxWidth?: number; quality?: number } = {},
 ): Promise<{ url: string; path: string }> => {
   const { maxWidth = 1600, quality = 0.82 } = opts;
+  if (tooLargeToUpload(file.size)) throw new Error('file-too-large');
   const blob = await resizeImage(file, maxWidth, quality);
 
   // one signature, bound to this exact public_id, valid for this upload only
@@ -68,6 +69,19 @@ export const deleteImage = async (path: string): Promise<void> => {
     throw new Error(error ?? 'delete-failed');
   }
 };
+
+/**
+ * The largest file worth decoding.
+ *
+ * Everything is re-encoded to JPEG at `maxWidth`, so what is uploaded is
+ * bounded whatever arrives — but the DECODE is not. A 100MB burst frame or a
+ * RAW export is pulled into an `<img>` and a canvas first, and on a phone that
+ * is how a tab dies. A modern photograph is comfortably under this.
+ */
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
+/** Refused before anything is read. Non-images fail the decode below anyway. */
+export const tooLargeToUpload = (bytes: number): boolean => bytes > MAX_UPLOAD_BYTES;
 
 const resizeImage = (file: File, maxWidth: number, quality: number): Promise<Blob> =>
   new Promise((resolve, reject) => {

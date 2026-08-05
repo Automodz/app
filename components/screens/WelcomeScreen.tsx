@@ -60,8 +60,12 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
       });
       if (!res.ok) throw new Error('mark-failed');
 
-      router.refresh();
-      router.replace(href);
+      /* A document load. `router.refresh()` clears the cache for the CURRENT
+         route — `/welcome` — while the destination is what needs re-rendering
+         against the flag that was just written. Home reads that flag to decide
+         whether to send the customer back here, so a stale payload would loop
+         them into the arrival they have just finished. */
+      window.location.replace(href);
     } catch {
       setBusy(false);
       setNote('That didn’t save. Try once more — we don’t want to greet you twice.');

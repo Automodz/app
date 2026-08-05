@@ -21,6 +21,24 @@ import { loadListings } from '@/lib/server/marketplace';
  */
 export const revalidate = 3600;
 
+/**
+ * A date, or today.
+ *
+ * `lastModified` is passed to `toISOString()` by Next's serialiser, so an
+ * Invalid Date throws `RangeError` and takes the whole production build with
+ * it — which is exactly what happened. A sitemap entry with a slightly wrong
+ * date is a nothing; a build that will not ship is not.
+ */
+const dateOr = (value: unknown, fallback: Date): Date => {
+  /* Only a real date-ish value is even attempted. `new Date(null)` and
+     `new Date('')` are not Invalid — they are 1 January 1970, which would be
+     published as the day every listing was last touched. */
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? fallback : value;
+  if (typeof value !== 'string' || value.trim() === '') return fallback;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? fallback : d;
+};
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
@@ -35,7 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...staticRoutes,
       ...listings.map(c => ({
         url: `${SITE_URL}/cars/${c.id}`,
-        lastModified: c.updatedAt ? new Date(c.updatedAt as unknown as string) : now,
+        lastModified: dateOr(c.updatedAt, now),
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       })),

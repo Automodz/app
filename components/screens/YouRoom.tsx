@@ -53,11 +53,15 @@ export function YouRoom({ model }: { model: YouModel }) {
       await fetch('/api/session', { method: 'DELETE' });
     } finally {
       const { useAppStore } = await import('@/lib/store');
+      /* A DOCUMENT LOAD, not a soft navigation. The client Router Cache
+         still holds RSC payloads rendered while the session cookie
+         existed, and `router.refresh()` only clears the CURRENT route —
+         so a cached signed-in room could still be served afterwards. On a
+         shared phone that is somebody else's garage on screen. */
       useAppStore.getState().clearSession();
-      router.replace('/auth/login');
-      router.refresh();
+      window.location.replace('/auth/login');
     }
-  }, [leaving, router]);
+  }, [leaving]);
 
   return (
     <>

@@ -50,11 +50,15 @@ describe('every service call the old door made, the new one makes', () => {
   });
 
   it('hands the server a session cookie before redirecting', () => {
-    expect(src).toMatch(/await fetch\('\/api\/session'/);
+    /* The navigation is a DOCUMENT load now, not `router.replace`. A soft
+       navigation was served from the client Router Cache — which still held
+       the signed-out landing — so the server never saw the cookie that had
+       just been minted. See __tests__/auth/entry.test.ts. */
+    expect(src).toMatch(/fetch\('\/api\/session'/);
     const session = src.indexOf("'/api/session'");
-    const redirect = src.indexOf('router.replace(homeFor(profile.role))');
+    const enter = src.indexOf('enter(homeFor(profile.role))');
     expect(session).toBeGreaterThan(-1);
-    expect(redirect).toBeGreaterThan(session);
+    expect(enter).toBeGreaterThan(session);
   });
 });
 
@@ -129,6 +133,6 @@ describe('the door is a state, never an absence', () => {
   });
 
   it('never shows the door twice to someone already signed in', () => {
-    expect(src).toMatch(/if \(authLoading \|\| !user\) return;[\s\S]{0,80}router\.replace/);
+    expect(src).toMatch(/if \(authLoading \|\| !user\) return;[\s\S]{0,80}enter\(/);
   });
 });

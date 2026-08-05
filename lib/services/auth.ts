@@ -1,6 +1,5 @@
 import {
-  signInWithPopup, signOut, signInWithEmailAndPassword,
-  sendPasswordResetEmail, type User as FirebaseAuthUser,
+  signInWithPopup, type User as FirebaseAuthUser,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth, googleProvider } from '../firebase';
@@ -11,9 +10,6 @@ const getAdminEmail = () =>
 
 const getRoleForEmail = (email?: string | null) =>
   email?.toLowerCase() === getAdminEmail() ? 'admin' : 'customer';
-
-export const adminLogin = (email: string, password: string) =>
-  signInWithEmailAndPassword(auth, email, password);
 
 export const ensureUserProfile = async (firebaseUser: FirebaseAuthUser): Promise<User> => {
   const userRef = doc(db, 'users', firebaseUser.uid);
@@ -96,8 +92,6 @@ export const linkEmployeeRole = async (profile: User): Promise<User> => {
   }
 };
 
-export const logoutUser = () => signOut(auth);
-
 export const getUserProfile = async (uid: string): Promise<User | null> => {
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? (snap.data() as User) : null;
@@ -113,5 +107,3 @@ export const updateUserProfile = async (uid: string, data: Partial<User>) => {
   }
 };
 
-export const resetPassword = (email: string) =>
-  sendPasswordResetEmail(auth, email);

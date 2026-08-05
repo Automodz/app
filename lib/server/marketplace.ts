@@ -18,13 +18,7 @@ import { cache } from 'react';
 import { adminDb } from './firebaseAdmin';
 import type { CarListing, SellRequest } from '@/lib/types';
 import { isPublic } from '@/lib/os/market';
-
-/**
- * Firestore hands back `Timestamp`s and `undefined`s that cannot cross into a
- * client component. Everything a renderer touches is made plain here.
- */
-const plain = <T,>(id: string, data: FirebaseFirestore.DocumentData): T =>
-  JSON.parse(JSON.stringify({ id, ...data })) as T;
+import { plainDoc } from './plain';
 
 /**
  * Every listing a customer may see.
@@ -36,7 +30,7 @@ const plain = <T,>(id: string, data: FirebaseFirestore.DocumentData): T =>
 export const loadListings = cache(async (): Promise<CarListing[]> => {
   if (!adminDb) return [];
   const snap = await adminDb.collection('carListings').where('active', '==', true).get();
-  return snap.docs.map(d => plain<CarListing>(d.id, d.data()));
+  return snap.docs.map(d => plainDoc<CarListing>(d.id, d.data()));
 });
 
 /**
@@ -50,7 +44,7 @@ export const loadListing = cache(async (id: string): Promise<CarListing | null> 
   if (!adminDb || !id) return null;
   const snap = await adminDb.collection('carListings').doc(id).get();
   if (!snap.exists) return null;
-  const listing = plain<CarListing>(snap.id, snap.data()!);
+  const listing = plainDoc<CarListing>(snap.id, snap.data()!);
   return isPublic(listing) ? listing : null;
 });
 
@@ -72,6 +66,6 @@ export const loadMySellRequests = cache(async (uid: string): Promise<SellRequest
   if (!adminDb || !uid) return [];
   const snap = await adminDb.collection('sellRequests').where('userId', '==', uid).get();
   return snap.docs
-    .map(d => plain<SellRequest>(d.id, d.data()))
+    .map(d => plainDoc<SellRequest>(d.id, d.data()))
     .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')));
 });

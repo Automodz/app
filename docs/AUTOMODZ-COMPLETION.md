@@ -7,7 +7,7 @@ repository today, not from intent.
 **Legend** — `✅` complete and verified · `🟡` exists, incomplete or unmigrated ·
 `🔴` missing entirely · `⚪` deliberately deferred
 
-**Last audited:** this session, integration audit + offline states · `tsc` clean · lint 0 · 821 tests / 29 suites · production build clean
+**Last audited:** this session, FINAL PRODUCTION AUDIT · `tsc` clean · lint 0 · 885 tests / 32 suites · production build clean
 
 ---
 
@@ -305,3 +305,132 @@ Ordered by what unblocks the most.
 
 **Tier 5 — deferred**
 17. iOS
+
+
+---
+
+# FINAL PRODUCTION STATUS
+
+**Verdict: NOT production ready.** One deployment blocker, listed first. Everything
+else below is complete and verified.
+
+`tsc` clean · lint 0 · **885 tests / 32 suites** · production build compiles.
+
+## Blocker
+
+**B1 · Firebase Admin credentials are not present.** `.env.local` holds only the
+five `NEXT_PUBLIC_FIREBASE_*` client keys. `FIREBASE_ADMIN_PROJECT_ID`,
+`FIREBASE_ADMIN_CLIENT_EMAIL` and `FIREBASE_ADMIN_PRIVATE_KEY` are absent, and
+no service-account file exists in the repo.
+
+Without them `adminAuth` is `null`, so `POST /api/session` returns 503, no
+session cookie is ever minted, and every server-rendered room falls through to
+the signed-out landing page. **This is the login failure**, and it is
+configuration, not code. It also means no signed-in journey has been exercised
+in a browser at any point in this build.
+
+Also unset locally: `NEXT_PUBLIC_CLOUDINARY_*` (uploads), `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
+(push), `WHATSAPP_TOKEN` / `WHATSAPP_PHONE_NUMBER_ID` (studio alerts),
+`NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_UPI_ID`.
+
+## Features Complete
+
+Every customer surface: Landing · Login · Welcome · Home · Garage · Vehicle ·
+Studio/Booking · Visit (live and sealed) · History · Membership · Marketplace
+(`/cars`, `/cars/[id]`, `/dashboard/sell-car`) · You · Search palette ·
+Notifications · Offline · Privacy · Terms · Invoice and Chapter share links.
+
+## Architecture Complete
+
+Engines decide, projections shape, renderers draw — enforced by test, not by
+convention. One route table (`navigation/resolve`), zero route literals in any
+projection. One booking path, one money helper, one media uploader, one
+WhatsApp sender, one offline note, one first-run flag. No orphan engines, no
+orphan components, no TODOs, no `ts-ignore`, no `any` in customer code.
+
+## Security Status
+
+Complete. CSP, frame-ancestors, nosniff, Referrer-Policy, Permissions-Policy
+all set; `unsafe-eval` and emulator origins are development-only. Client writes
+to `carLeads`, `sellRequests`, `savedCars` and `welcomedAt` are refused — those
+go through Admin-SDK routes. No route trusts a body-supplied uid. Upload paths
+are bound to the uploader. No privilege escalation path; the only public read
+is the landing-page gallery.
+
+**Not implemented, by decision: rate limiting.** `POST /api/cars/lead` is
+deliberately open to signed-out callers and writes a document plus a WhatsApp
+message per request. It is validated and shape-bound, but nothing throttles it.
+See L1.
+
+## Performance Status
+
+`loadCustomerPicture` and all marketplace loaders are request-cached; per-car
+reads are parallel and bounded; every `where`+`orderBy` has a matching
+composite index (nine verified individually). Five screens converted from
+client to server components. No N+1, no duplicate loaders.
+
+## SEO Status
+
+Complete for what exists. Canonicals are per-page (the root layout's
+`canonical: '/'` was being inherited by every page). Listings carry OpenGraph
+cards. Sitemap reads the same loader the showroom does. `robots` disallows
+every signed-in surface plus `/store`. Branded 404.
+
+**Not implemented: JSON-LD structured data** (`LocalBusiness`, `Product`) — see L2.
+
+## Accessibility Status
+
+Keyboard paths verified for the palette (arrow keys, Enter,
+`aria-activedescendant`, grouped listbox). Dialogs are Radix-backed, so focus
+trap, Escape and scroll lock have one implementation. Reduced motion honoured
+on every animating customer surface. Pinch-zoom never disabled. Live regions
+are `polite`. Every filter control exposes its pressed state.
+
+## Known Limitations
+
+- **L1 · No rate limiting** on the public enquiry endpoint. Mitigation when
+  wanted: a per-IP or per-phone counter in Firestore before the notify.
+- **L2 · No structured data.** A detailing studio benefits from
+  `LocalBusiness` + `Product`; absent today.
+- **L3 · Sign-in cannot complete in an in-app webview** (Instagram, Facebook,
+  Snapchat, TikTok, LinkedIn). `signInWithPopup` cannot work there. The failure
+  now says "Open this page in Safari or Chrome" instead of the impossible
+  "Allow pop-ups". A `signInWithRedirect` fallback would make it work; that is
+  a feature, deliberately not built here.
+- **L4 · Seven `/dashboard/*` redirects were 301s to a deleted `/app`.** Now
+  repointed, but a 301 already served is cached by the browser — anyone who hit
+  one will keep going to the old target until their cache clears.
+- **L5 · No signed-in browser verification** anywhere in this build (see B1).
+- **L6 · Unused admin-domain exports remain** and were deliberately not
+  deleted, being outside customer scope and possibly mid-wiring:
+  `listCustomerActivity`, `getAdminStats`, `SHIFT_START`/`SHIFT_END`/`LATE_GRACE_MIN`,
+  `getServiceRecipe`, `getRecipePrefill`, `consumeActuals`, `markInvoicePaid`,
+  `subscribeJobForBooking`, `markJobPayment`.
+- **L7 · Analytics** — intentionally out of V1 scope.
+- **L8 · Sign in with Apple** is absent; Apple Guideline 4.8 requires it
+  alongside Google for App Store submission. Web is unaffected.
+
+## Deployment Checklist
+
+1. Set `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`,
+   `FIREBASE_ADMIN_PRIVATE_KEY` on Vercel. The private key must keep its
+   literal `\n` escapes — the loader does `.replace(/\\n/g, '\n')`, so a key
+   pasted with real newlines will not parse.
+2. Confirm `NEXT_PUBLIC_FIREBASE_PROJECT_ID` names the **same** project as the
+   admin credentials, or `verifyIdToken` returns 401 and login fails the same way.
+3. Set `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` + preset, `NEXT_PUBLIC_FIREBASE_VAPID_KEY`,
+   `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_UPI_ID`.
+4. Deploy `firestore.rules` and `firestore.indexes.json`.
+5. Rotate the previously-leaked admin key in the Firebase console if not done.
+
+## Production Checklist
+
+- [ ] Sign in on Chrome desktop → lands on Home, not the landing page
+- [ ] `/api/session` returns **200** (503 = admin credentials; 401 = project mismatch)
+- [ ] First-ever sign-in reaches `/welcome`, not "We could not reach your garage"
+- [ ] Finish the arrival → Home; sign out → cached rooms are gone
+- [ ] Book a visit → appears in `/admin` and fires WhatsApp
+- [ ] Enquire on a car → lead reaches the studio on both channels
+- [ ] Upload a photo on sell-car → Cloudinary write under `sellRequests/{uid}/`
+- [ ] `/sitemap.xml` and `/robots.txt` return 200
+- [ ] Open a listing link in WhatsApp → preview card renders

@@ -9,7 +9,7 @@
  * refuse it outright.
  */
 import {
-  collection, doc, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp,
+  collection, doc, addDoc, updateDoc, getDocs, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadImage, deleteImage } from './storage';
@@ -49,13 +49,6 @@ export const getAllCarListings = async (): Promise<CarListing[]> => {
     .map(d => ({ id: d.id, ...d.data() } as CarListing))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 };
-
-export const deleteCarListing = async (listing: CarListing) => {
-  for (const p of listing.photos) await deleteImage(p.path);
-  await deleteDoc(doc(db, 'carListings', listing.id));
-};
-
-// ── Leads (inquiries + viewing requests) ─────────────────────────────────────
 
 export const getCarLeads = async (): Promise<CarLead[]> => {
   const snap = await getDocs(collection(db, 'carLeads'));

@@ -90,12 +90,16 @@ export async function ServerRoom(
     );
   }
 
+  /* ONLY THE READ IS GUARDED, and the scope is load-bearing.
+     `children(picture)` used to be inside this `try`. `redirect()` and
+     `notFound()` work by THROWING, so a room that redirected — Home sending a
+     new customer to their first arrival, `/welcome` sending a returning one
+     home — had its redirect caught here and was shown "We could not reach your
+     garage." instead. A brand-new customer's very first sign-in landed on that
+     screen. The catch was only ever meant to cover the Firestore read. */
+  let picture: CustomerPicture;
   try {
-    const picture = await loadCustomerPicture(session);
-    /* Every room feeds the palette, because every room already has the
-       picture — the read is `cache`d, so this costs no extra queries. This is
-       what makes ⌘K global without any page having to remember to wire it. */
-    return <><PaletteFeed model={toPalette(picture)} />{children(picture)}</>;
+    picture = await loadCustomerPicture(session);
   } catch (err) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('[customer] server read failed', err);
@@ -114,4 +118,10 @@ export async function ServerRoom(
       </Centred>
     );
   }
+
+  /* Every room feeds the palette, because every room already has the
+     picture — the read is `cache`d, so this costs no extra queries. This
+     is what makes ⌘K global without any page having to remember to wire
+     it. Outside the `try`, so a redirect from a room still redirects. */
+  return <><PaletteFeed model={toPalette(picture)} />{children(picture)}</>;
 }

@@ -21,7 +21,6 @@
  * browser session, so only these carry one.
  */
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { updateUserProfile } from '@/lib/services/auth';
 import { enablePush, disablePush, pushEnabled, pushSupported } from '@/lib/services/push';
@@ -49,7 +48,6 @@ export function AccountSettings({
   panel: SettingsPanel | null;
   onClose: () => void;
 }) {
-  const router = useRouter();
   const online = useOnline();
   const { user, setUser } = useAppStore();
 
@@ -203,9 +201,11 @@ export function AccountSettings({
       const { signOut } = await import('firebase/auth');
       await signOut(auth).catch(() => {});
       await fetch('/api/session', { method: 'DELETE' }).catch(() => {});
+      /* A document load, for the same reason as signing out — and more so:
+         every cached payload here belongs to an account that no longer
+         exists. */
       useAppStore.getState().clearSession();
-      router.replace('/');
-      router.refresh();
+      window.location.replace('/');
     } catch {
       setError('That didn’t complete. Nothing was removed — try again.');
     } finally {

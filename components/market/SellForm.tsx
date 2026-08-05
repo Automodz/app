@@ -61,8 +61,12 @@ export function SellForm({ garage }: { garage: { id: string; name: string }[] })
         ));
       }
       setPhotos(p => [...p, ...next]);
-    } catch {
-      setError('Those photographs didn’t upload. You can send the car without them.');
+    } catch (e) {
+      /* A file too large to decode is a different fact from a failed upload,
+         and only one of them the customer can do anything about. */
+      setError(e instanceof Error && e.message === 'file-too-large'
+        ? 'One of those is too large. Pick a smaller photograph.'
+        : 'Those photographs didn’t upload. You can send the car without them.');
     } finally {
       setUploading(false);
     }

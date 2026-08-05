@@ -409,7 +409,7 @@ describe('the customer cannot be trapped in it', () => {
        leaving without writing it walks straight back in — a best-effort mark
        would have turned a failed write into an inescapable loop. */
     expect(screen).toMatch(/if \(!res\.ok\) throw new Error\('mark-failed'\)/);
-    expect(screen).toMatch(/router\.replace\(href\)/);
+    expect(screen).toMatch(/window\.location\.replace\(href\)/);
   });
 
   it('a failure says so and can be retried', () => {
@@ -418,6 +418,10 @@ describe('the customer cannot be trapped in it', () => {
   });
 
   it('the cached server render is discarded, or Home answers from the old flag', () => {
-    expect(screen).toMatch(/router\.refresh\(\)/);
+    /* `router.refresh()` was not enough: it clears the client cache for the
+       CURRENT route — `/welcome` — while the destination is what has to be
+       re-rendered against the flag just written. A document load does it. */
+    expect(screen).toMatch(/window\.location\.replace\(href\)/);
+    expect(screen).not.toMatch(/router\.refresh\(\)/);
   });
 });

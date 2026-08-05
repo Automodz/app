@@ -20,7 +20,7 @@
  */
 import { Suspense, useState, useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -32,6 +32,7 @@ import { useAppStore } from '@/lib/store';
 import Wordmark from '@/components/ui/Wordmark';
 import { Button, Text, Loading, OfflineNote, useOnline } from '@/components/system';
 import { color, space, INSET, type as typeScale, TARGET_MIN } from '@/design';
+import { isInAppBrowser, currentUserAgent } from '@/lib/browser';
 
 /**
  * Only ever return to an internal customer path — never an attacker's URL, and
@@ -73,7 +74,6 @@ export default function LoginPage() {
 }
 
 function Login() {
-  const router = useRouter();
   const params = useSearchParams();
   const { user, authLoading, setUser } = useAppStore();
 
@@ -89,10 +89,29 @@ function Login() {
   const homeFor = (role?: string) =>
     role === 'admin' || role === 'employee' ? '/admin' : (dest ?? '/');
 
+  /**
+   * LEAVE THE DOOR WITH A FULL PAGE LOAD.
+   *
+   * `router.replace` is a SOFT navigation: Next serves the destination from
+   * the client Router Cache, which already holds the signed-out `/` payload
+   * fetched before the customer clicked in. So the server was never asked
+   * again, never saw the session cookie that had just been minted, and the
+   * customer landed back on the public landing page looking signed out.
+   *
+   * `router.refresh()` is not the fix either — it clears the cache for the
+   * CURRENT route, and the current route here is `/auth/login`, not the
+   * destination. Signing in is a once-per-session event and a document load is
+   * what actually guarantees the server re-renders with the new cookie.
+   *
+   * `dest` is already sanitised by `safeDest`, so this cannot be pointed
+   * off-site.
+   */
+  const enter = (href: string) => { window.location.replace(href); };
+
   // already signed in? never show the door twice
   useEffect(() => {
     if (authLoading || !user) return;
-    router.replace(homeFor(user.role));
+    enter(homeFor(user.role));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
@@ -129,27 +148,49 @@ function Login() {
          server, would show "behind a sign-in" to someone who had just signed
          in. This exchanges the fresh ID token for an httpOnly session cookie.
          Awaited, not fired-and-forgotten: the redirect below must not race it. */
-      try {
-        const idToken = await firebaseUser.getIdToken();
-        await fetch('/api/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken }),
-        });
-      } catch {
-        /* The client session still works; the server rooms will ask again. */
+      /* NOT best-effort, and it used to be. Every room renders on the SERVER
+         and reads this cookie; without it a customer who has just signed in is
+         served the signed-out landing. Swallowing the failure meant the only
+         symptom was being bounced back to the front page with no explanation,
+         which is indistinguishable from "the sign-in didn't work". */
+      const idToken = await firebaseUser.getIdToken();
+      const session = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      }).catch(() => null);
+
+      if (!session?.ok) {
+        /* 503 means the server has no Firebase Admin credentials — the studio
+           is misconfigured, not the customer. 401 means the token was refused.
+           Both leave the customer signed out; only the wording differs, and it
+           differs so that whoever is on call can tell them apart from a
+           screenshot. */
+        await signOut(auth);
+        setUser(null);
+        setError(session?.status === 503
+          ? 'The studio is not reachable right now. Please try again shortly.'
+          : 'We signed you in, but could not open your studio. Please try again.');
+        return;
       }
+
       // redeem a referral the customer arrived with - best-effort, never blocks entry
       if (profile.role !== 'admin' && profile.role !== 'employee') {
         void claimReferral().catch(() => {});
       }
-      router.replace(homeFor(profile.role));
+
+      enter(homeFor(profile.role));
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         // they simply changed their mind - not an error
       } else if (code === 'auth/popup-blocked') {
-        setError('Allow pop-ups for AutoModz, then try again.');
+        /* Inside Instagram's or Facebook's webview there is no pop-up setting
+           to change, so the old advice was an instruction the customer could
+           not follow. Say the thing that actually works. */
+        setError(isInAppBrowser(currentUserAgent())
+          ? 'Open this page in Safari or Chrome to sign in — this app’s built-in browser can’t.'
+          : 'Allow pop-ups for AutoModz, then try again.');
       } else if (code === 'auth/network-request-failed') {
         setError('That didn’t reach Google — check your connection and try again.');
       } else {

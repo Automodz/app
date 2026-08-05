@@ -95,15 +95,25 @@ const nextConfig = {
   // Front Desk mode was folded into the Studio shell - keep old links working.
   async redirects() {
     return [
-      // IA §1.2 - deleted V2 customer routes 301 to their successors.
-      { source: '/dashboard', destination: '/app', permanent: true },
-      { source: '/dashboard/profile', destination: '/app/you', permanent: true },
-      { source: '/dashboard/notifications', destination: '/app', permanent: true },
-      { source: '/dashboard/offers', destination: '/app', permanent: true },
-      { source: '/dashboard/refer', destination: '/app', permanent: true },
+      /* IA §1.2 - deleted V2 customer routes 301 to their successors.
+
+         THESE ALL POINTED AT `/app*`, WHICH NO LONGER EXISTS. The customer
+         rooms moved to the root and `/app` went with them, so every one of
+         these sent a bookmark or an old link to a 404 - permanently, because a
+         301 is cached by the browser and not asked again. Repointed at the
+         addresses that actually answer.
+
+         `/dashboard/sell-car` is a REAL route and is deliberately absent from
+         this list; `source: '/dashboard'` matches that path exactly and does
+         not shadow anything beneath it. */
+      { source: '/dashboard', destination: '/', permanent: true },
+      { source: '/dashboard/profile', destination: '/you?panel=profile', permanent: true },
+      { source: '/dashboard/notifications', destination: '/you?panel=notifications', permanent: true },
+      { source: '/dashboard/offers', destination: '/membership', permanent: true },
+      { source: '/dashboard/refer', destination: '/you?panel=referral', permanent: true },
       { source: '/dashboard/cars', destination: '/cars', permanent: true },
-      { source: '/dashboard/garage', destination: '/app/garage', permanent: true },
-      { source: '/dashboard/booking', destination: '/app?sheet=arrange', permanent: true },
+      { source: '/dashboard/garage', destination: '/garage', permanent: true },
+      { source: '/dashboard/booking', destination: '/studio', permanent: true },
       { source: '/store/board', destination: '/admin', permanent: false },
       { source: '/store/new', destination: '/admin/walkin', permanent: false },
       { source: '/store/attendance', destination: '/admin/attendance', permanent: false },
