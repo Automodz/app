@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { SellCarScreen } from '@/components/screens/SellCarScreen';
 import { ServerRoom } from '@/components/screens/ServerRoom';
 import { loadMySellRequests } from '@/lib/server/marketplace';
@@ -23,11 +22,9 @@ export default function SellCarPage() {
   return (
     <ServerRoom>
       {picture => (
-        <Suspense fallback={null}>
-          <SellCarPanel uid={picture.user.uid} garage={picture.cars.map(c => ({
-            id: c.vehicle.id, name: c.vehicle.name,
-          }))} />
-        </Suspense>
+        <SellCarPanel uid={picture.user.uid} garage={picture.cars.map(c => ({
+          id: c.vehicle.id, name: c.vehicle.name,
+        }))} />
       )}
     </ServerRoom>
   );

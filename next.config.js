@@ -18,6 +18,12 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 const nextConfig = {
   reactStrictMode: true,
   images: {
+    /* AVIF first, WebP as the fallback. Next's default is WebP alone; AVIF
+       compresses roughly 20% smaller and this is a product whose payload is
+       almost entirely photographs of cars. The cost is ~50% longer to encode
+       on the FIRST request for a given size and a second cached copy per
+       format — both one-time, both at the edge. */
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'i.ibb.co' },

@@ -7,7 +7,7 @@ repository today, not from intent.
 **Legend** — `✅` complete and verified · `🟡` exists, incomplete or unmigrated ·
 `🔴` missing entirely · `⚪` deliberately deferred
 
-**Last audited:** this session, FINAL PRODUCTION AUDIT · `tsc` clean · lint 0 · 885 tests / 32 suites · production build clean
+**Last audited:** this session, FINAL PRODUCTION AUDIT · `tsc` clean · lint 0 · 905 tests / 34 suites · production build clean
 
 ---
 
@@ -314,7 +314,7 @@ Ordered by what unblocks the most.
 **Verdict: NOT production ready.** One deployment blocker, listed first. Everything
 else below is complete and verified.
 
-`tsc` clean · lint 0 · **885 tests / 32 suites** · production build compiles.
+`tsc` clean · lint 0 · **905 tests / 34 suites** · production build compiles.
 
 ## Blocker
 

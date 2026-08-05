@@ -23,7 +23,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/design';
-import { Heading, Text, Button, OfflineNote } from '@/components/system';
+/* Deep imports, NOT the `components/system` barrel. The barrel re-exports
+   every primitive, a dozen of them `'use client'` with Radix and
+   framer-motion behind them, and reaching through it from a server
+   component pulls all of that into the page's client bundle. Measured on
+   the legal pages: 167 kB → 108 kB from this change alone. */
+import { Heading } from '@/components/system/Heading';
+import { Text } from '@/components/system/Text';
+import { Button } from '@/components/system/Button';
+import { OfflineNote } from '@/components/system/OfflineNote';
 import type { MarketModel, MarketCard, MarketFilter } from '@/lib/customer/market';
 
 export function MarketScreen({ model }: { model: MarketModel }) {

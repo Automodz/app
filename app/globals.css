@@ -303,18 +303,6 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
 }
-.text-chrome-grad {
-  background: linear-gradient(135deg, #FFFFFF 0%, rgba(255,255,255,0.62) 50%, #FFFFFF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.gradient-text, .text-plasma {
-  background: linear-gradient(135deg, #FFFFFF, #C8CCD0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    GLASSMORPHISM
@@ -341,7 +329,6 @@ body {
 [data-theme="light"] .glass-nav {
   background: rgba(243,243,242,0.88);
 }
-.glass-dark { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    CARD SYSTEM
@@ -387,13 +374,6 @@ body {
   box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.95);
 }
 
-.card-chrome {
-  background: linear-gradient(160deg, var(--dim) 0%, var(--surface) 100%);
-  border: 1px solid var(--border-2);
-  border-radius: 20px;
-  box-shadow: var(--shadow-sm);
-}
-
 /* Legacy aliases */
 /* :where() keeps specificity at 0 so padding utilities can override the
    default padding - .card-dark is consumed as a padded card everywhere. */
@@ -403,33 +383,6 @@ body {
   border-color: rgba(20,21,23,0.08);
   box-shadow: var(--shadow-xs), inset 0 1px 0 rgba(255,255,255,0.9);
 }
-.card-orange, .card-plasma {
-  background: linear-gradient(160deg, var(--accent-mist), transparent), linear-gradient(160deg, var(--cavern), var(--dark));
-  border: 1px solid var(--border-strong); border-radius: 20px;
-}
-.card-glow    { background: linear-gradient(160deg, var(--cavern), var(--dark)); border: 1px solid var(--border-strong); border-radius: 20px; box-shadow: var(--ember-glow-sm); }
-.glass-orange { background: var(--accent-mist); border: 1px solid var(--border-strong); }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   SELECTED / ACTIVE STATES
-   ═══════════════════════════════════════════════════════════════════════ */
-.ember-ring, .orange-border-glow, .plasma-ring {
-  border: 1.5px solid rgba(255,255,255,0.85) !important;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.10), var(--ember-glow-sm);
-}
-.ember-border, .plasma-border {
-  border: 1px solid rgba(255,255,255,0.45) !important;
-  box-shadow: inset 0 0 24px rgba(255,255,255,0.05), var(--ember-glow-sm);
-}
-[data-theme="light"] .ember-ring, [data-theme="light"] .orange-border-glow, [data-theme="light"] .plasma-ring {
-  border: 1.5px solid rgba(23,24,26,0.85) !important;
-  box-shadow: 0 0 0 3px rgba(23,24,26,0.10);
-}
-[data-theme="light"] .ember-border, [data-theme="light"] .plasma-border {
-  border: 1px solid rgba(23,24,26,0.45) !important;
-  box-shadow: none;
-}
-.ring-orange { box-shadow: 0 0 0 2px var(--accent-glow); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    BUTTONS
@@ -506,19 +459,6 @@ body {
 }
 .input::placeholder, .input-dark::placeholder { color: var(--steel); }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   BACKGROUND ARCHITECTURE
-   ═══════════════════════════════════════════════════════════════════════ */
-.bg-main   { background-color: var(--void); }
-.bg-main-2 { background-color: var(--abyss); }
-
-.bg-nebula {
-  background:
-    radial-gradient(ellipse 90% 60% at 15% 0%,   rgba(255,255,255,0.06) 0%, transparent 65%),
-    radial-gradient(ellipse 70% 50% at 85% 100%,  rgba(255,255,255,0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 50% 50%,   rgba(255,255,255,0.02) 0%, transparent 70%),
-    var(--void);
-}
 /* Animated silver mesh - CSS-only, background-position drift (identity bg) */
 .bg-mesh {
   background:
@@ -541,63 +481,14 @@ body {
   background-size: 160% 160%, 160% 160%, auto;
 }
 
-.bg-hex {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zM28 100L0 84V66l28 16 28-16v18L28 100z' fill='none' stroke='rgba(255,255,255,0.025)' stroke-width='1'/%3E%3C/svg%3E");
-}
-
-.bg-lines {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(255,255,255,0.012) 0px,
-    rgba(255,255,255,0.012) 1px,
-    transparent 1px,
-    transparent 28px
-  );
-}
-
 .bg-dots {
   background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-.bg-grid {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-.plasma-orb {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(60px);
-}
-
 /* ═══════════════════════════════════════════════════════════════════════
    SCAN LINE FX
    ═══════════════════════════════════════════════════════════════════════ */
-@keyframes scan-travel {
-  0%   { top: -2px; opacity: 0; }
-  5%   { opacity: 1; }
-  95%  { opacity: 0.5; }
-  100% { top: 100vh; opacity: 0; }
-}
-.scan-line {
-  position: fixed;
-  left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255,255,255,0.35) 20%,
-    rgba(255,255,255,0.8) 50%,
-    rgba(255,255,255,0.35) 80%,
-    transparent 100%);
-  animation: scan-travel 12s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: screen;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    STATUS BADGES
@@ -618,52 +509,13 @@ body {
 /* ═══════════════════════════════════════════════════════════════════════
    KEYFRAME ANIMATIONS
    ═══════════════════════════════════════════════════════════════════════ */
-@keyframes ember-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(255,255,255,0.14), 0 0 40px rgba(255,255,255,0.07); }
-  50%       { box-shadow: 0 0 30px rgba(255,255,255,0.26), 0 0 60px rgba(255,255,255,0.13); }
-}
-@keyframes float-y {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-@keyframes float-y-sm {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-4px); }
-}
-@keyframes orbit {
-  from { transform: rotate(0deg) translateX(var(--orbit-r, 60px)) rotate(0deg); }
-  to   { transform: rotate(360deg) translateX(var(--orbit-r, 60px)) rotate(-360deg); }
-}
+
 @keyframes shimmer-bg {
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
 }
-@keyframes breathe {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50%       { opacity: 1;   transform: scale(1.04); }
-}
-@keyframes spin-cw  { to { transform: rotate(360deg); } }
-@keyframes spin-ccw { to { transform: rotate(-360deg); } }
-@keyframes data-load {
-  0%   { width: 0%; }
-  100% { width: 100%; }
-}
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  92%       { opacity: 1; }
-  93%       { opacity: 0.7; }
-  94%       { opacity: 1; }
-  96%       { opacity: 0.8; }
-  98%       { opacity: 1; }
-}
 
-.animate-ember-pulse { animation: ember-pulse 2.5s ease-in-out infinite; }
-.animate-float       { animation: float-y 3s ease-in-out infinite; }
-.animate-float-sm    { animation: float-y-sm 2.5s ease-in-out infinite; }
-.animate-breathe     { animation: breathe 3s ease-in-out infinite; }
-.animate-spin-cw     { animation: spin-cw 12s linear infinite; }
-.animate-spin-ccw    { animation: spin-ccw 8s linear infinite; }
-.animate-flicker     { animation: flicker 6s linear infinite; }
+@keyframes spin-cw  { to { transform: rotate(360deg); } }
 
 .shimmer {
   background: linear-gradient(90deg,
@@ -682,51 +534,7 @@ body {
   animation: spin-cw 0.65s linear infinite;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   PROGRESS BAR
-   ═══════════════════════════════════════════════════════════════════════ */
-.progress-track {
-  height: 2px;
-  background: var(--border);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-2), var(--accent), #FFFFFF);
-  border-radius: 99px;
-  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-[data-theme="light"] .progress-fill {
-  background: linear-gradient(90deg, var(--accent-2), var(--accent));
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   TOGGLE SWITCH
-   ═══════════════════════════════════════════════════════════════════════ */
-.toggle-track {
-  width: 44px; height: 24px;
-  border-radius: 99px;
-  position: relative;
-  transition: background 0.25s ease;
-  border: 1px solid var(--border-2);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.toggle-track.on  { background: var(--accent); border-color: var(--accent); box-shadow: var(--ember-glow-sm); }
-.toggle-track.off { background: var(--dim); }
 [data-theme="light"] .toggle-track.off { background: var(--bg-4); }
-.toggle-knob {
-  position: absolute;
-  top: 3px; left: 3px;
-  width: 16px; height: 16px;
-  background: #FFFFFF;
-  border-radius: 50%;
-  box-shadow: var(--shadow-xs);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: none;
-}
-.toggle-track.on .toggle-knob { background: var(--on-accent); transform: translateX(20px); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    SCROLL EFFECTS - reveal-on-scroll + parallax layers
@@ -739,96 +547,6 @@ body {
   will-change: opacity, transform;
 }
 .reveal.in-view { opacity: 1; transform: translateY(0); }
-.reveal-delay-1 { transition-delay: 0.08s; }
-.reveal-delay-2 { transition-delay: 0.16s; }
-.reveal-delay-3 { transition-delay: 0.24s; }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   LIQUID ORB - CSS/SVG 3D metallic sphere + liquid morphism (no WebGL)
-   ═══════════════════════════════════════════════════════════════════════ */
-.liquid-orb {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  isolation: isolate;
-}
-.liquid-orb .lo-sphere,
-.liquid-orb .lo-blob,
-.liquid-orb .lo-shadow { position: absolute; }
-
-/* the sphere: metallic radial shading reads as a lit 3D ball */
-.liquid-orb .lo-sphere {
-  width: min(62%, 62vmin);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 28%,
-      #ffffff 0%, #eef0f2 12%, #cfd4d9 34%,
-      #9aa0a7 60%, #6a6f77 80%, #45494f 100%);
-  box-shadow:
-    inset 0 0 40px rgba(255,255,255,0.35),
-    inset -18px -22px 50px rgba(20,22,25,0.45),
-    0 30px 90px rgba(20,22,25,0.28);
-  overflow: hidden;
-  animation: lo-float 9s ease-in-out infinite;
-}
-/* rotating chrome sheen band - the "liquid" reflection travelling the surface */
-.liquid-orb .lo-sheen {
-  position: absolute; inset: -25%;
-  background: conic-gradient(from 0deg,
-    transparent 0deg, rgba(255,255,255,0.0) 40deg,
-    rgba(255,255,255,0.55) 90deg, rgba(255,255,255,0.0) 150deg,
-    transparent 210deg, rgba(150,157,166,0.4) 280deg, transparent 330deg);
-  mix-blend-mode: screen;
-  filter: blur(6px);
-  animation: lo-spin 14s linear infinite;
-}
-/* drifting specular hotspot */
-.liquid-orb .lo-spec {
-  position: absolute;
-  width: 26%; aspect-ratio: 1; left: 24%; top: 18%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
-  filter: blur(2px);
-  animation: lo-spec 9s ease-in-out infinite;
-}
-/* morphing liquid satellites */
-.liquid-orb .lo-blob {
-  width: 44%; aspect-ratio: 1;
-  filter: blur(14px);
-  mix-blend-mode: multiply;
-  opacity: 0.5;
-  border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
-}
-.liquid-orb .lo-blob-a {
-  left: 6%; top: 14%;
-  background: radial-gradient(circle at 40% 40%, rgba(120,126,134,0.55), transparent 68%);
-  animation: lo-morph 12s ease-in-out infinite, lo-float 11s ease-in-out infinite;
-}
-.liquid-orb .lo-blob-b {
-  right: 4%; bottom: 10%;
-  background: radial-gradient(circle at 60% 60%, rgba(58,62,68,0.5), transparent 68%);
-  animation: lo-morph 15s ease-in-out infinite reverse, lo-float 13s ease-in-out infinite reverse;
-}
-.liquid-orb .lo-shadow {
-  bottom: 8%;
-  width: 48%; height: 8%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(20,22,25,0.28), transparent 70%);
-  filter: blur(10px);
-  animation: lo-shadow 9s ease-in-out infinite;
-}
-@keyframes lo-float  { 0%,100% { transform: translateY(-3%); } 50% { transform: translateY(3%); } }
-@keyframes lo-spin   { to { transform: rotate(360deg); } }
-@keyframes lo-spec   { 0%,100% { transform: translate(0,0); opacity: 0.9; } 50% { transform: translate(18%,10%); opacity: 0.6; } }
-@keyframes lo-shadow { 0%,100% { transform: scale(0.94); opacity: 0.6; } 50% { transform: scale(1.06); opacity: 0.85; } }
-@keyframes lo-morph {
-  0%,100% { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; }
-  33%     { border-radius: 63% 37% 41% 59% / 58% 63% 37% 42%; }
-  66%     { border-radius: 37% 63% 58% 42% / 63% 41% 59% 37%; }
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    LUXURY BACKGROUND - one continuous premium field, theme-aware (light+dark)
@@ -852,64 +570,9 @@ body {
   --lux-grain: 0.05;
 }
 
-.lux-bg {
-  position: fixed; inset: 0; z-index: -10; overflow: hidden;
-  background:
-    radial-gradient(80% 60% at 14% 8%,  var(--lux-bloom-1) 0%, transparent 50%),
-    radial-gradient(70% 60% at 88% 18%, var(--lux-bloom-2) 0%, transparent 52%),
-    radial-gradient(95% 75% at 50% 116%, var(--lux-bloom-1) 0%, transparent 55%),
-    linear-gradient(180deg, var(--lux-a) 0%, var(--lux-b) 100%);
-  background-size: 165% 165%, 150% 150%, 175% 175%, 100% 100%;
-  animation: lux-drift 30s ease-in-out infinite alternate;
-}
-@keyframes lux-drift {
-  from { background-position: 0% 0%,  100% 0%,  50% 100%, 0 0; }
-  to   { background-position: 24% 14%, 72% 20%, 40% 84%,  0 0; }
-}
-/* slow chrome sheen sweeping the field */
-.lux-bg::before {
-  content: ''; position: absolute; inset: -25%;
-  background: conic-gradient(from 200deg at 62% 38%,
-    transparent 0deg, var(--lux-sheen) 55deg, transparent 130deg, transparent 360deg);
-  filter: blur(70px); opacity: 0.55;
-  animation: lux-spin 46s linear infinite;
-}
-/* vignette to frame the premium feel */
-.lux-bg::after {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(125% 100% at 50% 45%, transparent 52%, var(--lux-vignette) 100%);
-}
-@keyframes lux-spin { to { transform: rotate(360deg); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .lux-bg, .lux-bg::before { animation: none !important; }
-}
-
-/* ceramic chapter - falling rain streaks */
-@keyframes ceramic-rain { from { background-position: 0 0; } to { background-position: 0 9px; } }
-
-/* maintain chapter - drifting touchless foam */
-.foam-flow {
-  background:
-    radial-gradient(60% 40% at 20% 30%, rgba(255,255,255,0.5) 0%, transparent 60%),
-    radial-gradient(50% 45% at 70% 55%, rgba(255,255,255,0.42) 0%, transparent 62%),
-    radial-gradient(45% 40% at 45% 80%, rgba(255,255,255,0.35) 0%, transparent 60%);
-  background-size: 180% 180%, 160% 160%, 200% 200%;
-  filter: blur(6px);
-  animation: foam-drift 9s ease-in-out infinite alternate;
-}
-@keyframes foam-drift {
-  from { background-position: 0% 0%, 100% 20%, 30% 100%; }
-  to   { background-position: 25% 30%, 70% 50%, 50% 70%; }
-}
-
 /* horizontal swipe galleries - native momentum without a visible scrollbar */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
-
-@media (prefers-reduced-motion: reduce) {
-  .foam-flow { animation: none !important; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -939,23 +602,14 @@ body {
   --bottom-nav-h: calc(64px + var(--sab));
 }
 
-.pb-safe      { padding-bottom: max(var(--sab), 16px); }
-.pt-safe      { padding-top: var(--sat); }
-.px-safe      { padding-left: var(--sal); padding-right: var(--sar); }
-
 /* SafeAreaPage - page container: notch + side insets, no bottom (scroll runs under bars) */
 .safe-page    { padding-top: var(--sat); padding-left: var(--sal); padding-right: var(--sar); }
 
 /* SafeAreaHeader - sticky top chrome that owns the status-bar zone */
 .safe-header  { position: sticky; top: 0; padding-top: var(--sat); }
-.safe-header-fixed { position: fixed; top: 0; left: 0; right: 0; padding-top: var(--sat); }
-
-/* SafeAreaBottomBar - fixed bottom chrome (tab bars, sticky CTAs) */
-.safe-bottom-bar { padding-bottom: max(var(--sab), 12px); padding-left: var(--sal); padding-right: var(--sar); }
 
 /* SafeAreaScroll - scrollable content that must clear fixed bottom chrome */
 .safe-scroll     { padding-bottom: calc(var(--sab) + 24px); }
-.safe-scroll-nav { padding-bottom: calc(var(--bottom-nav-h) + 32px); }
 
 /* SafeAreaSheet - bottom sheets: home-indicator padding + never under the notch */
 .safe-sheet   { padding-bottom: max(var(--sab), 16px); max-height: calc(100dvh - var(--sat) - 12px); }
@@ -965,11 +619,7 @@ body {
 
 /* Anchored sections land below fixed headers, not underneath them */
 section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
-.border-theme { border-color: var(--border); }
-.bg-2         { background-color: var(--bg-2); }
-.bg-3         { background-color: var(--bg-3); }
 .glow         { box-shadow: var(--ember-glow-md); }
-.glow-orange  { box-shadow: var(--ember-glow-md); }
 
 /* Noise overlay */
 .noise-overlay::after {
@@ -981,25 +631,6 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   mix-blend-mode: overlay;
 }
 
-/* Holographic shimmer */
-.holo-surface {
-  position: relative;
-  overflow: hidden;
-}
-.holo-surface::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(255,255,255,0.04) 50%,
-    transparent 60%
-  );
-  background-size: 200% 100%;
-  animation: shimmer-bg 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
 /* Data display */
 .data-label {
   font-family: var(--font-mono);
@@ -1007,43 +638,6 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--faint);
-}
-.data-value {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--accent);
-}
-
-/* Separator */
-.sep { height: 1px; background: linear-gradient(90deg, transparent, var(--border-2), transparent); }
-
-/* ═══ Landing cinematics ═══ */
-/* Ghost chapter numerals - outlined type, barely-there */
-.numeral-ghost {
-  font-size: clamp(72px, 18vw, 120px);
-  font-weight: 800;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px var(--smoke);
-}
-[data-theme="light"] .numeral-ghost { -webkit-text-stroke: 1px rgba(20,21,23,0.12); }
-
-/* Specular sweep across the hero headline */
-.hero-sheen { animation: shimmer-bg 6s ease-in-out infinite; }
-
-/* Gallery marquee - seamless duplicated-track drift */
-.marquee { overflow: hidden; }
-.marquee-track {
-  width: max-content;
-  padding-left: 24px;
-  animation: marquee-drift 36s linear infinite;
-}
-@keyframes marquee-drift {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track, .hero-sheen { animation: none !important; }
 }
 
 /* Live-mode indicator dot (Front Desk pill) */
@@ -1258,44 +852,6 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   isolation: isolate;
 }
 
-/* THE ENVIRONMENT LAYER (components/os/Ambient) - one fixed, cinematic backdrop
-   behind every room, so navigation feels like moving through a lit space. */
-.st-ambient {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  contain: strict;
-}
-.st-ambient > div { position: absolute; inset: -20%; }
-/* a cool key light from high-left, a warmer graphite fill pooling low-right -
-   near-neutral and barely there, so glass reads as glass and text stays legible */
-.st-ambient-key {
-  background: radial-gradient(46% 40% at 24% 12%, rgba(126,152,188,0.12), transparent 72%);
-  will-change: transform;
-}
-.st-ambient-fill {
-  background: radial-gradient(52% 46% at 82% 92%, rgba(150,138,120,0.08), transparent 74%);
-  will-change: transform;
-}
-.st-ambient-vignette {
-  inset: 0;
-  background: radial-gradient(132% 108% at 50% 26%, transparent 54%, rgba(0,0,0,0.55) 100%);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .st-ambient-key  { animation: st-ambient-drift-a 34s var(--st-ease) infinite alternate; }
-  .st-ambient-fill { animation: st-ambient-drift-b 42s var(--st-ease) infinite alternate; }
-}
-@keyframes st-ambient-drift-a {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(4%, 3%, 0) scale(1.08); }
-}
-@keyframes st-ambient-drift-b {
-  from { transform: translate3d(0, 0, 0) scale(1.04); }
-  to   { transform: translate3d(-3%, -4%, 0) scale(1); }
-}
-
 .studio ::selection { background: var(--st-linen); }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1450,11 +1006,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   .studio .st-tile-in { animation: none; }
 }
 
-/* the one permitted spinner - inside a pressed Action only (§13) */
-.st-spin { animation: spin-cw 0.7s linear infinite; }
 /* a calm image-loading placeholder - a breathe, never a shimmer (§13) */
-@keyframes st-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-.st-skeleton { background: var(--st-gallery); animation: st-breathe 2.4s ease-in-out infinite; }
 
 /* on-brand focus ring - replaces the legacy accent-glow under .studio */
 .studio :focus-visible {
@@ -1464,56 +1016,6 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* shared tactile press - the CSS twin of motion.press, for plain buttons */
-.st-tap { transition: transform var(--st-tick) var(--st-ease); }
-.st-tap:active { transform: scale(0.98); }
-
-/* shared card - a subtle lift on pointer devices; touch stays calm */
-.st-card { transition: box-shadow var(--st-move) var(--st-ease), transform var(--st-move) var(--st-ease); }
-@media (hover: hover) {
-  .st-card:hover { transform: translateY(-1px); box-shadow: var(--st-hold); }
-}
-
-/* shared graceful image load - fade up from the surface, never a pop */
-.st-img { opacity: 0; transition: opacity var(--st-move) var(--st-ease); }
-.st-img.is-loaded { opacity: 1; }
-
-@media (prefers-reduced-motion: reduce) {
-  .st-spin, .st-skeleton { animation: none; }
-  .st-tap { transition: none; }
-  .st-tap:active { transform: none; }
-  .st-card { transition: none; }
-  .st-card:hover { transform: none; }
-  .st-img { opacity: 1; transition: none; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   THE HERO'S AMBIENT MOTION (Design Language §5).
-
-   The blanket ban on loops, pulses, glows and parallax still holds for
-   chrome. It does NOT hold for the car itself, which is the product and
-   must feel alive rather than pasted on. Two effects live here because
-   they are CSS animations - MotionConfig does not reach them, so each
-   carries its own reduced-motion guard.
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* one soft pass of light across the paintwork, every ~25s */
-.st-hero-sweep {
-  background: linear-gradient(
-    100deg,
-    transparent 38%,
-    rgba(255,255,255,0.10) 47%,
-    rgba(255,255,255,0.16) 50%,
-    rgba(255,255,255,0.10) 53%,
-    transparent 62%
-  );
-  background-size: 300% 100%;
-  background-position: 120% center;
-  animation: st-hero-sweep 25s var(--st-ease) infinite;
-}
-@keyframes st-hero-sweep {
-  0%, 72%  { background-position: 120% center; }
-  92%, 100% { background-position: -40% center; }
-}
 
 /* a hotspot is invisible until its state asks for something */
 .studio .st-hotspot { opacity: 0.55; transition: opacity var(--st-move) var(--st-ease); }
@@ -1534,7 +1036,6 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .st-hero-sweep { animation: none; opacity: 0; }
   .studio .st-hotspot-live::after { animation: none; opacity: 1; transform: scale(1); }
 }
 

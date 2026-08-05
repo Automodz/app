@@ -55,11 +55,23 @@ const label = (size: number, tone: string = color.ink3) => ({
   color: tone,
 });
 
+/**
+ * One reveal, used everywhere on this page.
+ *
+ * It ran at `duration.morph` — 620ms — which is the token §7.5 reserves for a
+ * PHOTOGRAPH CARRYING BETWEEN TWO SURFACES, not for a paragraph arriving on
+ * scroll. `move` is what §7.3 defines for "an element changing place or
+ * state", and at 280ms the same motion reads as immediate rather than as
+ * something the page is doing to you.
+ *
+ * The travel came down with it: 26px over 620ms is a glide, 14px over 280ms is
+ * an arrival.
+ */
 const reveal = {
-  initial: { opacity: 0, y: 26 },
+  initial: { opacity: 0, y: 14 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-70px' },
-  transition: { duration: duration.morph / 1000, ease: curve.ease },
+  transition: { duration: duration.move / 1000, ease: curve.ease },
 };
 
 /** One material (§10.2) — the system's surface over whatever is behind it. */
@@ -163,7 +175,7 @@ export function LandingScreen({ prices }: LandingProps) {
                 }}
                 initial={{ left: '-30%' }}
                 animate={{ left: '110%' }}
-                transition={{ duration: 0.55, ease: 'easeInOut', delay: 0.15 }}
+                transition={{ duration: duration.move / 1000, ease: curve.ease }}
               />
             </motion.div>
           </motion.div>
@@ -284,7 +296,7 @@ export function LandingScreen({ prices }: LandingProps) {
             <motion.h1
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.75, ease: curve.ease, delay: 0.05 }}
+              transition={{ duration: duration.move / 1000, ease: curve.ease }}
               style={{
                 fontFamily: typeScale.display.family,
                 fontSize: poster.hero,
@@ -300,7 +312,7 @@ export function LandingScreen({ prices }: LandingProps) {
             <motion.p
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.75, ease: curve.ease, delay: 0.12 }}
+              transition={{ duration: duration.move / 1000, ease: curve.ease }}
               className="max-w-md mx-auto lg:mx-0"
               style={{
                 fontFamily: typeScale.body.family,
@@ -317,7 +329,7 @@ export function LandingScreen({ prices }: LandingProps) {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.75, ease: curve.ease, delay: 0.18 }}
+              transition={{ duration: duration.move / 1000, ease: curve.ease }}
               className="max-w-sm mx-auto lg:mx-0"
               style={{ marginTop: space.rest / 2 }}
             >
@@ -336,7 +348,7 @@ export function LandingScreen({ prices }: LandingProps) {
           <motion.div
             initial={{ opacity: 0, scale: 0.96, x: 24 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 1, ease: curve.ease, delay: 0.1 }}
+            transition={{ duration: duration.scene / 1000, ease: curve.ease }}
             style={{ y: heroParallax }}
             className="relative order-1 lg:order-2"
           >
@@ -442,7 +454,7 @@ export function LandingScreen({ prices }: LandingProps) {
       <Chapter id="services">
         <SectionHead index={1} kicker="THE CRAFT" title="Four disciplines. One standard." />
         <div className="grid sm:grid-cols-2 mx-auto" style={{ gap: space.gap, maxWidth: breakpoint.wide - INSET * 8 }}>
-          {SERVICE_ORDER.map((cat, i) => {
+          {SERVICE_ORDER.map(cat => {
             const s = SERVICES[cat];
             const from = prices[s.cat] ?? s.from;
             const featured = s.cat === 'PPF';
@@ -450,7 +462,7 @@ export function LandingScreen({ prices }: LandingProps) {
               <motion.article
                 key={cat}
                 {...reveal}
-                transition={{ ...reveal.transition, delay: (i % 2) * 0.07 }}
+                {...reveal}
                 onClick={book}
                 whileHover={{ y: -4 }}
                 className={`group relative overflow-hidden cursor-pointer ${featured ? 'sm:col-span-2' : ''}`}
@@ -537,8 +549,8 @@ export function LandingScreen({ prices }: LandingProps) {
           {[
             { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: MEDIA.fallbacks.car },
             { title: 'Sell your car', line: 'List it in minutes — we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: MEDIA.fallbacks.vehicle },
-          ].map((t, i) => (
-            <motion.div key={t.href} {...reveal} transition={{ ...reveal.transition, delay: i * 0.07 }}>
+          ].map(t => (
+            <motion.div key={t.href} {...reveal}>
               <Link
                 href={t.href}
                 className="group relative flex flex-col justify-end overflow-hidden"
@@ -592,7 +604,7 @@ export function LandingScreen({ prices }: LandingProps) {
             <motion.button
               key={p.id}
               {...reveal}
-              transition={{ ...reveal.transition, delay: i * 0.07 }}
+              {...reveal}
               onClick={book}
               whileHover={{ y: -4 }}
               whileTap={{ scale: 0.98, y: 0 }}
@@ -838,7 +850,7 @@ function SectionHead({ index, kicker, title, sub }: { index: number; kicker: str
       </span>
       <motion.p
         {...reveal}
-        transition={{ ...reveal.transition, delay: 0.04 }}
+        {...reveal}
         className="relative"
         style={{ ...label(10.5, color.ink3), letterSpacing: '0.24em', marginBottom: space.line }}
       >
@@ -846,7 +858,7 @@ function SectionHead({ index, kicker, title, sub }: { index: number; kicker: str
       </motion.p>
       <motion.h2
         {...reveal}
-        transition={{ ...reveal.transition, delay: 0.08 }}
+        {...reveal}
         className="relative"
         style={{
           fontFamily: typeScale.display.family,
@@ -862,7 +874,7 @@ function SectionHead({ index, kicker, title, sub }: { index: number; kicker: str
       {sub && (
         <motion.p
           {...reveal}
-          transition={{ ...reveal.transition, delay: 0.12 }}
+          {...reveal}
           className="relative"
           style={{ fontFamily: typeScale.body.family, fontSize: typeScale.body.size, lineHeight: 1.6, color: color.ink3, marginTop: space.gap }}
         >

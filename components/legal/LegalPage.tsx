@@ -11,7 +11,14 @@
  */
 import Link from 'next/link';
 import type { LegalSection } from '@/lib/legal';
-import { Heading, Text } from '@/components/system';
+/* Imported from their own modules, NOT the `components/system` barrel. The
+   barrel re-exports every primitive, and a dozen of them are `'use client'`
+   with Radix and framer-motion behind them. Reaching through it from a server
+   component pulled all of that into this page's client bundle — 167 kB of
+   JavaScript for two pages that are pure text and have no interactivity at
+   all. */
+import { Heading } from '@/components/system/Heading';
+import { Text } from '@/components/system/Text';
 import { color, space, INSET, MEASURE, TARGET_MIN, type as typeScale } from '@/design';
 
 export function LegalPage({

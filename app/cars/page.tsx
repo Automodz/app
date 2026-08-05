@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { MarketScreen } from '@/components/screens/MarketScreen';
 import { loadListings, loadSavedIds } from '@/lib/server/marketplace';
 import { toMarket } from '@/lib/customer/market';
@@ -39,13 +38,9 @@ export default async function CarsPage(
     savedIds,
   );
 
-  /* `MarketScreen` is a client component that reads no search params of its
-     own — everything it needs is in the model — but the Suspense boundary is
-     kept so a future client-side read cannot bail the whole route out of
-     static optimisation silently. */
-  return (
-    <Suspense fallback={null}>
-      <MarketScreen model={model} />
-    </Suspense>
-  );
+  /* No Suspense boundary: `MarketScreen` is a server component with no state,
+     no effects and no `useSearchParams`, so it cannot suspend. A boundary with
+     a null fallback around something that never suspends is one more tree for
+     React to walk and nothing for the customer. */
+  return <MarketScreen model={model} />;
 }
