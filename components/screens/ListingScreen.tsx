@@ -1,0 +1,238 @@
+'use client';
+/**
+ * ONE CAR FOR SALE.
+ *
+ * Source: docs/AUTOMODZ-OS.md §5.2, §15.7, §18.1, §21.6 · ARCHITECTURE §5
+ *
+ * The photograph leads, because that is what a buyer looks at first. The facts
+ * follow as a list of label-and-value pairs rather than a table, so they read
+ * on a phone without scrolling sideways.
+ *
+ * §6.4 — the enquiry and the viewing request are ADDRESSABLE (`?ask=inquiry`,
+ * `?ask=viewing`) rather than component state. That makes them linkable, lets
+ * the back button close them, and means a customer who reloads mid-form lands
+ * back where they were rather than at the top of the page.
+ *
+ * A CAR THAT CANNOT BE BOUGHT IS NOT A DEAD END. Sold and reserved listings
+ * keep their address — the link somebody pasted last week still opens — but the
+ * form is replaced by a sentence and the rest of the stock.
+ */
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/design';
+import { Heading, Text, Button, OfflineNote } from '@/components/system';
+import type { ListingModel } from '@/lib/customer/market';
+import { SaveCar } from '@/components/market/SaveCar';
+import { AskAboutCar } from '@/components/market/AskAboutCar';
+
+export function ListingScreen(
+  { model, signedIn }: { model: ListingModel; signedIn: boolean },
+) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const ask = params.get('ask');
+  const open = ask === 'inquiry' || ask === 'viewing' ? ask : null;
+
+  const setAsk = (value: 'inquiry' | 'viewing' | null) => {
+    const next = new URLSearchParams(params.toString());
+    if (value) next.set('ask', value);
+    else next.delete('ask');
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  return (
+    <main style={{
+      paddingBottom: space.rest,
+      maxWidth: MEASURE + INSET * 2,
+      marginInline: 'auto',
+    }}>
+      {/* The car can still be read offline; asking about it cannot be sent. */}
+      <OfflineNote caption="You’re offline. You can look, but nothing will send." />
+
+      <div style={{ paddingInline: INSET, paddingTop: space.gap }}>
+        <Button tier="quiet" href={model.backHref} style={{ paddingInline: 0 }}>
+          All cars
+        </Button>
+      </div>
+
+      {/* THE PHOTOGRAPHS. A horizontal strip that snaps, rather than a carousel
+          with chrome: the swipe is the control every phone already has. */}
+      {model.photos.length > 0 ? (
+        <div
+          style={{
+            display: 'flex',
+            gap: space.breath,
+            overflowX: 'auto',
+            scrollSnapType: 'x mandatory',
+            paddingInline: INSET,
+            marginTop: space.gap,
+          }}
+        >
+          {model.photos.map(p => (
+            <div
+              key={p.url}
+              style={{
+                position: 'relative',
+                flex: '0 0 88%',
+                aspectRatio: '4 / 3',
+                scrollSnapAlign: 'center',
+                borderRadius: radius.card,
+                overflow: 'hidden',
+                background: color.surface,
+              }}
+            >
+              <Image
+                src={p.url}
+                alt={p.alt}
+                fill
+                sizes={imageSizes.inMeasure}
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div style={{ paddingInline: INSET, marginTop: space.rest }}>
+        {model.badge ? (
+          <Text role="whisper" tone="ink3" style={{ letterSpacing: '0.08em' }}>
+            {model.badge.toUpperCase()}
+          </Text>
+        ) : null}
+
+        <Heading level="display">{model.title}</Heading>
+        {/* The price carries a Title's weight but is not a heading — it is the
+            car's single most important fact, so it takes the type without
+            taking a place in the document outline. */}
+        <Heading level="title" as="p" style={{ marginTop: space.breath }}>
+          {model.price}
+        </Heading>
+
+        <SaveCar listingId={model.id} saved={model.saved} signedIn={signedIn} />
+
+        {/* THE FACTS. Rows, not a table — a table cannot wrap on a phone. */}
+        <dl style={{ marginTop: space.rest }}>
+          {model.facts.map(f => (
+            <div
+              key={f.label}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: space.gap,
+                paddingBlock: space.line,
+                borderTop: `${HAIRLINE}px solid ${color.edge}`,
+              }}
+            >
+              <dt><Text role="body" tone="ink3" as="span">{f.label}</Text></dt>
+              <dd style={{ margin: 0 }}>
+                <Text role="body" tone="ink" as="span">{f.value}</Text>
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        {/* §15.7 — no description means no heading, not an empty one. */}
+        {model.description ? (
+          <div style={{ marginTop: space.rest }}>
+            <Text role="body" tone="ink2" style={{ whiteSpace: 'pre-wrap' }}>
+              {model.description}
+            </Text>
+          </div>
+        ) : null}
+
+        <div style={{ marginTop: space.rest }}>
+          {model.buyable ? (
+            <>
+              <Heading level="title">Interested?</Heading>
+              <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+                Ask us anything about it, or come and see it at the studio.
+              </Text>
+              <div style={{
+                display: 'flex', gap: space.line, marginTop: space.gap, flexWrap: 'wrap',
+              }}>
+                <Button tier="forward" onClick={() => setAsk('inquiry')}>
+                  Ask about this car
+                </Button>
+                <Button tier="quiet" onClick={() => setAsk('viewing')}>
+                  Book a viewing
+                </Button>
+              </div>
+            </>
+          ) : (
+            /* §18.1 — say plainly what happened, then offer the way on. */
+            <Text role="body" tone="ink2">{model.closedLine}</Text>
+          )}
+        </div>
+
+        <div style={{
+          marginTop: space.rest,
+          paddingTop: space.gap,
+          borderTop: `${HAIRLINE}px solid ${color.edge}`,
+        }}>
+          <Text role="body" tone="ink2">
+            Come and look at it at {model.studio.address}.
+          </Text>
+          <div style={{
+            display: 'flex', gap: space.line, marginTop: space.gap, flexWrap: 'wrap',
+          }}>
+            <Button tier="quiet" href={model.studio.call}>Call the studio</Button>
+            <Button tier="quiet" href={model.studio.message}>Message us</Button>
+          </div>
+        </div>
+
+        {model.alsoHere.length > 0 ? (
+          <div style={{ marginTop: space.movement }}>
+            <Heading level="title">Also here</Heading>
+            <div style={{ marginTop: space.gap, display: 'grid', gap: space.gap }}>
+              {model.alsoHere.map(c => (
+                <Link
+                  key={c.id}
+                  href={c.href}
+                  style={{
+                    display: 'flex',
+                    gap: space.gap,
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                    paddingBlock: space.line,
+                    borderTop: `${HAIRLINE}px solid ${color.edge}`,
+                  }}
+                >
+                  <div style={{
+                    position: 'relative',
+                    width: 88,
+                    aspectRatio: '4 / 3',
+                    flexShrink: 0,
+                    borderRadius: radius.chip,
+                    overflow: 'hidden',
+                    background: color.surface,
+                  }}>
+                    {c.photo ? (
+                      <Image src={c.photo} alt="" fill sizes="88px"
+                        style={{ objectFit: 'cover' }} />
+                    ) : null}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <Text role="body" tone="ink">{c.title}</Text>
+                    <Text role="data" tone="ink3" style={{ marginTop: space.hair }}>
+                      {c.price} · {c.line}
+                    </Text>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <AskAboutCar
+        listingId={model.id}
+        title={model.title}
+        kind={open}
+        onClose={() => setAsk(null)}
+      />
+    </main>
+  );
+}

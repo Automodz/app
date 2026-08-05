@@ -37,15 +37,25 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == userId &&
         (request.resource.data.role == 'customer' ||
          (request.resource.data.role == 'admin' && isOwnerEmail()));
+      // A customer may edit their own profile but may NOT set their own
+      // `welcomedAt` — that is written only by POST /api/welcome/complete,
+      // which is also the only place the studio's reset lives. A client that
+      // could write it could skip its own first arrival, or force somebody
+      // else's back by clearing it.
       allow update: if request.auth != null &&
         ((request.auth.uid == userId &&
-          request.resource.data.role == resource.data.role) ||
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.get('welcomedAt', null) ==
+            resource.data.get('welcomedAt', null)) ||
          isAdmin());
       allow delete: if request.auth != null && isAdmin();
 
       // Saved cars (favourites on car listings)
+      // Read by the owner; written ONLY by POST /api/cars/save, because the
+      // saved list is read server-side when the marketplace renders.
       match /savedCars/{listingId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
       }
 
       // Web-push device tokens - owner writes, admin reads (server uses admin SDK anyway)
@@ -323,21 +333,20 @@ service cloud.firestore {
     }
 
     // ── Car leads - public inquiry form with field-shape validation ─────
+    // Created ONLY by POST /api/cars/lead, which uses the Admin SDK and is not
+    // subject to these rules. This used to allow unauthenticated create so the
+    // public form could work — an open write endpoint wired straight to the
+    // studio's WhatsApp. The form now posts to the route instead.
     match /carLeads/{id} {
-      allow create: if request.resource.data.keys().hasOnly([
-          'listingId', 'listingTitle', 'type', 'userId', 'name', 'phone',
-          'message', 'preferredDate', 'preferredTime', 'status', 'createdAt', 'updatedAt'
-        ])
-        && request.resource.data.name is string && request.resource.data.name.size() <= 100
-        && request.resource.data.phone is string && request.resource.data.phone.size() <= 15
-        && request.resource.data.status == 'new';
+      allow create: if false;
       allow read, update, delete: if request.auth != null && isAdmin();
     }
 
     // ── Sell requests - customer creates/reads own; admin manages ───────
+    // Created ONLY by POST /api/cars/sell. A client create could name its own
+    // status and skip the notification the studio depends on.
     match /sellRequests/{id} {
-      allow create: if request.auth != null &&
-        request.resource.data.userId == request.auth.uid;
+      allow create: if false;
       allow read: if request.auth != null &&
         (isAdmin() || resource.data.userId == request.auth.uid);
       allow update, delete: if request.auth != null && isAdmin();

@@ -1,6 +1,7 @@
 import { ownershipState, DORMANT_DAYS, type OwnershipInput } from '@/lib/os/ownership';
+import { liveProtection, type LiveProtection } from '@/lib/os/protection';
 import type { ClubModel } from '@/lib/os/club';
-import type { Protection } from '@/lib/cx/protection';
+
 import type { Booking } from '@/lib/types';
 
 const NOW = new Date('2026-07-20T10:00:00');
@@ -20,11 +21,20 @@ const club = (over: Partial<ClubModel> = {}): ClubModel => ({
   ...over,
 });
 
-const protection = (over: Partial<Protection> = {}): Protection => ({
-  kind: 'Ceramic', applied: iso(-300), until: new Date(iso(400)), active: true,
-  term: 'active', service: 'Kovalent Graphene', warranty: '3 Year',
-  ...over,
-});
+/* Built through `liveProtection` so `health` comes from the real term engine.
+   The old fixture set `term: 'active' | 'waning' | 'expiring'` directly — a
+   health WORD on a field that now holds a Term OBJECT. Tests take a days-left
+   number instead and let the engine decide the health. */
+const protection = (daysLeft = 400): LiveProtection =>
+  liveProtection({
+    id: `p-${daysLeft}`, vehicleId: 'v1', kind: 'ceramic',
+    term: { kind: 'dated', expiresOn: iso(daysLeft) },
+    termsSource: 'captured',
+    createdAt: null as never, updatedAt: null as never,
+  }, NOW);
+
+/** Days that land each health band, per lib/os/term (WANING_DAYS = 30). */
+const HEALTHY = 400, ATTENTION = 20, URGENT = 3, LAPSED = -5;
 
 const base: OwnershipInput = {
   vehicleCount: 1, live: null, agreed: null, declined: null,
@@ -44,7 +54,7 @@ describe('ownership state engine', () => {
       live: booking('in_progress'),
       agreed: booking('confirmed', iso(3)),
       club: club({ state: 'lapsed' }),
-      protections: [protection({ term: 'expiring' })],
+      protections: [protection(URGENT)],
     })).toBe('in_studio');
   });
 
@@ -65,14 +75,14 @@ describe('ownership state engine', () => {
   it('a lapsed club outranks an expiring warranty', () => {
     expect(stateOf({
       club: club({ state: 'lapsed' }),
-      protections: [protection({ term: 'expiring' })],
+      protections: [protection(URGENT)],
       completed: [booking('completed', iso(-10))],
     })).toBe('membership_attention');
   });
 
   it('an expiring warranty outranks a steady car', () => {
     expect(stateOf({
-      protections: [protection({ term: 'waning' })],
+      protections: [protection(ATTENTION)],
       completed: [booking('completed', iso(-10))],
     })).toBe('warranty_expiring');
   });
@@ -85,7 +95,7 @@ describe('ownership state engine', () => {
   it('separates a protected car from a bare one', () => {
     expect(stateOf({
       completed: [booking('completed', iso(-10))],
-      protections: [protection()],
+      protections: [protection(HEALTHY)],
     })).toBe('protected');
     expect(stateOf({ completed: [booking('completed', iso(-10))] })).toBe('settled');
   });
@@ -103,9 +113,9 @@ describe('module order', () => {
       { live: booking('ready_for_delivery') },
       { agreed: booking('confirmed', iso(2)) },
       { club: club({ state: 'lapsed' }), completed: [booking('completed', iso(-5))] },
-      { protections: [protection({ term: 'expiring' })], completed: [booking('completed', iso(-5))] },
+      { protections: [protection(URGENT)], completed: [booking('completed', iso(-5))] },
       { completed: [booking('completed', iso(-DORMANT_DAYS - 1))] },
-      { completed: [booking('completed', iso(-5))], protections: [protection()] },
+      { completed: [booking('completed', iso(-5))], protections: [protection(HEALTHY)] },
     ];
     for (const c of cases) {
       const { order } = ownershipState({ ...base, ...c });
@@ -120,7 +130,7 @@ describe('module order', () => {
     expect(lead({ live: booking('in_progress') })).toBe('status');
     expect(lead({ club: club({ state: 'lapsed' }), completed: [booking('completed', iso(-5))] }))
       .toBe('ownership');
-    expect(lead({ protections: [protection({ term: 'expiring' })], completed: [booking('completed', iso(-5))] }))
+    expect(lead({ protections: [protection(URGENT)], completed: [booking('completed', iso(-5))] }))
       .toBe('protection');
   });
 });

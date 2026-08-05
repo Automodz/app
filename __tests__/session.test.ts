@@ -26,7 +26,7 @@ describe('session migration', () => {
     const src = {
       ...emptySession(),
       uid: 'u1', selectedVehicleId: 'car-1', lastRoute: '/app/visit/v1',
-      navStack: ['/app', '/app/visit/v1'], onboardingCompleted: true,
+      navStack: ['/app', '/app/visit/v1'],
       drafts: { carForm: { name: 'M340i' } },
       ui: { theme: 'dark' as const, scrollPositions: { '/app': 320 } },
       lastSyncedAt: 1700000000000,
@@ -35,7 +35,6 @@ describe('session migration', () => {
     expect(s.uid).toBe('u1');
     expect(s.selectedVehicleId).toBe('car-1');
     expect(s.navStack).toEqual(['/app', '/app/visit/v1']);
-    expect(s.onboardingCompleted).toBe(true);
     expect(s.drafts).toEqual({ carForm: { name: 'M340i' } });
     expect(s.ui.theme).toBe('dark');
     expect(s.ui.scrollPositions['/app']).toBe(320);
@@ -52,7 +51,7 @@ describe('session migration', () => {
   it('never persists a business object shape by accident', () => {
     const s = migrate({ version: SESSION_VERSION });
     expect(Object.keys(s).sort()).toEqual([
-      'drafts', 'lastRoute', 'lastSyncedAt', 'navStack', 'onboardingCompleted',
+      'drafts', 'lastRoute', 'lastSyncedAt', 'navStack',
       'selectedVehicleId', 'ui', 'uid', 'version',
     ].sort());
   });

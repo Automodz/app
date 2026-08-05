@@ -7,6 +7,10 @@ module.exports = {
        bundle. Under jest there are no bundles, so it is stubbed rather than
        removed from the source — the guard stays real where it matters. */
     '^server-only$': '<rootDir>/__mocks__/server-only.js',
+    /* See __mocks__/next-navigation.js — the App Router context does not exist
+       under `renderToStaticMarkup`, and the screens need the router to keep
+       their expansions addressable. */
+    '^next/navigation$': '<rootDir>/__mocks__/next-navigation.js',
     '^@/(.*)$': '<rootDir>/$1',
   },
   setupFiles: ['<rootDir>/jest.setup.js'],

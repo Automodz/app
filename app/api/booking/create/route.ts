@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
 import { reportError } from '@/lib/server/report';
+import { announceBooking } from '@/lib/server/bookingNotify';
 import {
   createBookingAuthoritative, BookingError,
   type BookingIntent,
@@ -84,6 +85,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await createBookingAuthoritative(uid, intent);
+
+    /* A BOOKING MUST BE IMPOSSIBLE TO MISS (lib/server/bookingNotify).
+       Fired here rather than from the client: a customer who books and closes
+       the tab would otherwise leave a booking nobody is told about. Only on a
+       genuine creation — a replayed request already announced itself, which is
+       the first of the two guards against a duplicate notification.
+       Awaited so a serverless function cannot be frozen mid-fan-out, and
+       internally non-throwing so it can never fail the booking itself. */
+    if (!result.replayed && result.booking) {
+      await announceBooking(result.booking);
+    }
+
     return NextResponse.json(result);
   } catch (e) {
     if (e instanceof BookingError) {

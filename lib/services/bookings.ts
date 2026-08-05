@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import type { Booking, Notification } from '../types';
+import { notificationHref } from '@/navigation/resolve';
 
 /**
  * A Timestamp that crossed JSON.
@@ -114,6 +115,32 @@ export const getPendingApprovals = async (): Promise<Booking[]> => {
     .sort((a, b) => (a.scheduledDate + a.scheduledTime).localeCompare(b.scheduledDate + b.scheduledTime));
 };
 
+/**
+ * BOOKINGS AWAITING AN ANSWER, live.
+ *
+ * The customer's only booking path is in-app now, so a `pending` booking is a
+ * customer waiting. A listener rather than a fetch: the studio must not have to
+ * reload the board to discover one. Newest first — the newest is the one nobody
+ * has seen yet.
+ *
+ * Needs the composite index on (status, createdAt desc); it is in
+ * firestore.indexes.json alongside the rest.
+ */
+export const subscribePendingBookings = (
+  onChange: (bookings: Booking[]) => void,
+): (() => void) =>
+  onSnapshot(
+    query(
+      collection(db, 'bookings'),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc'),
+    ),
+    snap => onChange(snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking))),
+    /* A listener that throws takes the board down with it. The band simply
+       stays empty, and `/admin/bookings` still lists everything. */
+    () => onChange([]),
+  );
+
 export const getAllBookings = async (): Promise<Booking[]> => {
   const snap = await getDocs(query(collection(db, 'bookings'), orderBy('createdAt', 'desc')));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking));
@@ -132,12 +159,33 @@ export const getBookingsForDates = async (dates: string[]): Promise<Booking[]> =
     .sort((a, b) => (a.scheduledDate + a.scheduledTime).localeCompare(b.scheduledDate + b.scheduledTime));
 };
 
-export const cancelBooking = async (bookingId: string) =>
-  updateDoc(doc(db, 'bookings', bookingId), {
-    status: 'cancelled',
-    cancelledAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+/**
+ * CANCEL — through the server, always.
+ *
+ * This used to be a direct `updateDoc` setting `status: 'cancelled'`, and that
+ * was a silent bug: a booking that had consumed a membership wash or a promo
+ * gave neither back, because `firestore.rules` lets a client touch neither the
+ * subscription nor the promo. The customer lost a wash they had paid for.
+ *
+ * The restore has to be server-authoritative, so this is the one way to cancel
+ * and every caller — customer, admin refusal, no-show — goes through it.
+ */
+export const cancelBooking = async (
+  bookingId: string,
+  opts: { reason?: string; noShow?: boolean } = {},
+): Promise<void> => {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('not-signed-in');
+  const res = await fetch('/api/booking/cancel', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookingId, ...opts }),
   });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string })?.error ?? 'cancel-failed');
+  }
+};
 
 /**
  * Admin rejects a pending booking (approval workflow). Slot frees automatically
@@ -148,17 +196,13 @@ export const rejectBooking = async (
   booking: Pick<Booking, 'id' | 'userId' | 'serviceName' | 'vehicleName'>,
   reason: string,
 ) => {
-  await updateDoc(doc(db, 'bookings', booking.id), {
-    status: 'cancelled',
-    cancelledAt: serverTimestamp(),
-    rejectionReason: reason,
-    updatedAt: serverTimestamp(),
-  });
+  /* Through the same server path, so a refused booking returns the wash. */
+  await cancelBooking(booking.id, { reason });
   const body = `We couldn't accept your ${booking.serviceName} booking for ${booking.vehicleName}.${reason ? ` Reason: ${reason}` : ''} Please pick another slot - we'd love to have you in.`;
   await writeNotification(booking.userId, 'Booking not accepted', body, 'booking_update', booking.id);
   try {
     const { sendPushToUser } = await import('./push');
-    sendPushToUser({ userId: booking.userId, title: 'Booking not accepted', body, url: '/app' });
+    sendPushToUser({ userId: booking.userId, title: 'Booking not accepted', body, url: notificationHref({ type: 'booking_update', bookingId: booking.id }) });
   } catch { /* best-effort */ }
 };
 
@@ -166,17 +210,14 @@ export const rejectBooking = async (
 export const markNoShow = async (
   booking: Pick<Booking, 'id' | 'userId' | 'serviceName' | 'vehicleName' | 'scheduledDate' | 'scheduledTime'>,
 ) => {
-  await updateDoc(doc(db, 'bookings', booking.id), {
-    status: 'cancelled',
-    cancelledAt: serverTimestamp(),
-    noShow: true,
-    updatedAt: serverTimestamp(),
-  });
+  /* `noShow` forfeits the wash — the bay was held. The rule lives in
+     lib/server/bookingService.ts; this only names the case. */
+  await cancelBooking(booking.id, { noShow: true });
   const body = `You missed your ${booking.serviceName} appointment for ${booking.vehicleName} on ${booking.scheduledDate} at ${booking.scheduledTime}. Rebook anytime from the app.`;
   await writeNotification(booking.userId, 'Missed appointment', body, 'booking_update', booking.id);
   try {
     const { sendPushToUser } = await import('./push');
-    sendPushToUser({ userId: booking.userId, title: 'Missed appointment', body, url: '/app?sheet=arrange' });
+    sendPushToUser({ userId: booking.userId, title: 'Missed appointment', body, url: notificationHref({ type: 'booking_update', bookingId: booking.id }) });
   } catch { /* best-effort */ }
 };
 
@@ -223,6 +264,11 @@ export const getAvailability = async (
   return res.json();
 };
 
+/**
+ * §17.3 — a notification is a doorway, so it is written WITH its destination.
+ * Every one of these used to land on `/app`, an address that stopped existing
+ * when the rooms moved to the root.
+ */
 export const writeNotification = async (
   userId: string, title: string, body: string,
   type: Notification['type'], bookingId?: string,
@@ -230,6 +276,7 @@ export const writeNotification = async (
   await addDoc(collection(db, 'notifications'), {
     userId, title, body, type, read: false,
     ...(bookingId ? { bookingId } : {}),
+    url: notificationHref({ type, bookingId }),
     createdAt: serverTimestamp(),
   });
 };
@@ -271,7 +318,7 @@ export const updateBookingStatusWithNotification = async (
     // Web push to the customer's devices - fire-and-forget, never blocks the update
     try {
       const { sendPushToUser } = await import('./push');
-      sendPushToUser({ userId: booking.userId, title: msg.title, body: msg.body, url: '/app' });
+      sendPushToUser({ userId: booking.userId, title: msg.title, body: msg.body, url: notificationHref({ type: 'booking_update', bookingId: booking.id }) });
     } catch { /* push is best-effort */ }
   }
 

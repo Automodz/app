@@ -37,3 +37,4 @@ export {
   HOME, GARAGE, VEHICLE, HISTORY, STUDIO, MEMBERSHIP, PROFILE,
 } from './routes';
 export type { Room, Concept, Chrome } from './routes';
+export { PaletteProvider, PaletteFeed, useOpenPalette } from './Palette';

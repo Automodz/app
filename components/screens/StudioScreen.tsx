@@ -52,7 +52,13 @@ import Image from 'next/image';
 import {
   color, space, MEASURE, stack, imageSizes, placeSize, column,
 } from '@/design';
-import { Hero, Heading, Text, Button } from '@/components/system';
+import { useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import type { Service, Subscription, Vehicle } from '@/lib/types';
+import { BookingFlow } from '@/components/studio/BookingFlow';
+import { ManageVisit } from '@/components/studio/ManageVisit';
+import type { ManageVisitModel } from '@/components/studio/ManageVisit';
+import { Hero, Heading, Text, Button, OfflineNote } from '@/components/system';
 
 /* ── What the Studio needs to be true ────────────────────────────────────
    One field per thing §5.2 says this room holds, and nothing else. */
@@ -108,13 +114,54 @@ export interface StudioModel {
    * `'/studio'` was.
    */
   arrangeHref?: string;
+  /** The menu, the cars and the standing — everything arranging a visit needs. */
+  booking: {
+    services: Service[];
+    vehicles: Vehicle[];
+    membership: Subscription | null;
+  };
+  /** Visits the customer may still move or cancel. */
+  manageable: ManageVisitModel[];
 }
 
 export function StudioScreen({ model }: { model: StudioModel }) {
   const {
     place, presence, visitHref, voice, work, does,
-    credentials = [], hours, address, directionsHref, photo, arrangeHref,
+    credentials = [], hours, address, directionsHref, photo, booking, manageable,
   } = model;
+
+  /* ARRANGING IS ADDRESSABLE (§6.4). `?arrange=1`, and `?cat=` carries the
+     category a proposal named — the same prefill the old `?sheet=arrange&cat=`
+     gave, so a "Renew it" from Home lands on the right service. */
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const arranging = params.get('arrange') === '1';
+  const managingId = params.get('manage');
+  const managing = manageable.find(v => v.id === managingId) ?? null;
+
+  const closeManage = () => {
+    const next = new URLSearchParams(params.toString());
+    next.delete('manage');
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+  const prefillCategory = params.get('cat');
+
+  const setArranging = (on: boolean) => {
+    const next = new URLSearchParams(params.toString());
+    if (on) next.set('arrange', '1');
+    else { next.delete('arrange'); next.delete('cat'); }
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  /* A proposal that named a category means the customer arrived to arrange
+     that thing — opening straight into it saves a step they did not ask for. */
+  useEffect(() => {
+    if (prefillCategory && !arranging) setArranging(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillCategory]);
 
   return (
     <main
@@ -125,6 +172,9 @@ export function StudioScreen({ model }: { model: StudioModel }) {
         paddingBottom: stack.contentFloor,
       }}
     >
+      {/* §20.3 — the room was rendered on the server and is still true; only
+          what happens NEXT needs a connection. One implementation (§22.2). */}
+      <OfflineNote />
       {/* ── 1 · THE PLACE ───────────────────────────────────────────────
           §3.1's argument — that the emotional case is visual and cannot be
           made in type — applies to a workshop as much as to a car. */}
@@ -268,13 +318,27 @@ export function StudioScreen({ model }: { model: StudioModel }) {
           of arranging. A slab at the top would make this a booking page with a
           photograph on it, which is the one thing a place must not be. The
           studio speaks first; the door is at the end of the room. */}
-      {arrangeHref ? (
-        <section style={{ ...column, paddingTop: space.rest }}>
-          <Button tier="primary" href={arrangeHref} full>
-            Arrange a visit
-          </Button>
-        </section>
-      ) : null}
+      <section style={{ ...column, paddingTop: space.rest }}>
+        <Button tier="primary" onClick={() => setArranging(true)} full>
+          Arrange a visit
+        </Button>
+      </section>
+
+      {/* THE VISIT ITSELF. Was an outbound WhatsApp link, because there was no
+          in-app booking surface — the single most important control in the
+          product handed the customer to another application. There is one now. */}
+      <BookingFlow
+        open={arranging}
+        onClose={() => setArranging(false)}
+        services={booking.services}
+        vehicles={booking.vehicles}
+        membership={booking.membership}
+        prefillCategory={prefillCategory}
+      />
+
+      {/* MOVING OR CANCELLING ONE. Home's "Manage the visit" lands here with
+          `?manage=<id>` — the address the resolver already emits. */}
+      <ManageVisit open={managing !== null} onClose={closeManage} visit={managing} />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import { VisitScreen } from '@/components/screens/VisitScreen';
+import { LiveVisitScreen } from '@/components/screens/LiveVisitScreen';
 import { ServerRoom, NoCar } from '@/components/screens/ServerRoom';
-import { visitsOf, toVisit } from '@/lib/customer/project';
+import { visitsOf, toVisit, toLiveVisit } from '@/lib/customer/project';
 
 /**
  * A customer's own room is never static. `cookies()` already forces this, but
@@ -22,9 +23,18 @@ export default async function VisitPage(
   return (
     <ServerRoom>
       {picture => {
+        /* A VISIT IN FLIGHT IS A DIFFERENT SURFACE. The record is what a visit
+           becomes; while the car is actually here the customer needs where it
+           is and when it will be done, not an account of what happened
+           (§13.2). Checked first, because a live visit has no record yet. */
         for (const car of picture.cars) {
-          const visit = visitsOf(car, picture.catalogue).find(v => v.id === id);
-          if (visit) return <VisitScreen visit={toVisit(visit, car)} />;
+          const live = toLiveVisit(picture, car, id);
+          if (live) return <LiveVisitScreen model={live} />;
+        }
+
+        for (const car of picture.cars) {
+          const visit = visitsOf(car).find(v => v.id === id);
+          if (visit) return <VisitScreen visit={toVisit(visit, car, picture.invoices)} />;
         }
         return <NoCar />;
       }}

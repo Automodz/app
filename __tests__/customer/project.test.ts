@@ -35,7 +35,7 @@ const car = (over: Partial<CarPicture> = {}): CarPicture => ({
 
 const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
   user: { uid: 'u1', name: 'Nikhil Patel', email: 'n@example.com', role: 'customer' } as User,
-  cars: [car()], subscription: null, catalogue: [] as Service[], ...over,
+  cars: [car()], subscription: null, subscriptions: [], invoices: [], catalogue: [] as Service[], ...over,
 });
 
 describe('termWords — §14.3 and §14.4', () => {
@@ -117,12 +117,12 @@ describe('visitsOf — sealed and STORED only, §16.1 + §22.5', () => {
   });
 
   it('returns the stored sealed visits', () => {
-    const v = visitsOf(car({ visits: [stored()] as never }), []);
+    const v = visitsOf(car({ visits: [stored()] as never }));
     expect(v.map(x => x.id)).toEqual(['v-1']);
   });
 
   it('hides a visit that is not sealed yet', () => {
-    const v = visitsOf(car({ visits: [stored({ status: 'open' })] as never }), []);
+    const v = visitsOf(car({ visits: [stored({ status: 'open' })] as never }));
     expect(v).toHaveLength(0);
   });
 
@@ -130,7 +130,7 @@ describe('visitsOf — sealed and STORED only, §16.1 + §22.5', () => {
     /* §22.5 — a projected visit read its warranty from the live catalogue, so a
        price-list edit rewrote what a past customer had been promised. A car with
        completed bookings and no sealed visit now correctly shows none. */
-    expect(visitsOf(car({ bookings: [booking()] }), [])).toHaveLength(0);
+    expect(visitsOf(car({ bookings: [booking()] }))).toHaveLength(0);
   });
 });
 
@@ -139,18 +139,47 @@ describe('toHome', () => {
     expect(toHome(picture({ cars: [] }))).toBeNull();
   });
 
-  it('offers "follow it live" only while a visit is actually live', () => {
-    expect(toHome(picture({ cars: [car({ bookings: [booking()] })] }), NOW)!.state.action).toBeUndefined();
+  /* RESTORED CONTRACT (docs/HOME-STATE-MAP.md). This used to assert that a
+     steady car offered NO action, which was true only because the ownership
+     engine had been disconnected — five branches over booking status could not
+     express "arrange a visit". The old application offered it, so the parity
+     migration restores it. */
+  it('always offers a way forward, and it leads somewhere real', () => {
+    const steady = toHome(picture({ cars: [car({ bookings: [booking()] })] }), NOW)!;
+    expect(steady.nextAction).toBeDefined();
+    expect(steady.nextAction!.href.startsWith('/')).toBe(true);
+  });
+
+  it('sends a live visit to the visit surface, not to the car', () => {
     const live = picture({ cars: [car({ bookings: [booking({ status: 'in_progress' })] })] });
-    /* The car is part of the address: without it, following the action from the
-       second car in a garage landed on the first. */
-    expect(toHome(live, NOW)!.state.action?.href).toBe('/vehicle?car=v1');
+    const m = toHome(live, NOW)!;
+    expect(m.nextAction?.label).toBe('Follow the visit');
+    expect(m.nextAction?.href).toMatch(/^\/history\//);
+  });
+
+  it('every surface says the same word about the same car', () => {
+    /* The defect this catches is real: Home reads the ownership engine, and
+       when Garage and Vehicle still read a thinner local derivation the same
+       car said "Cared for" on one screen and "Protected" on the next. */
+    const p = picture({ cars: [car({ bookings: [booking()] })] });
+    const home = toHome(p, NOW)!;
+    expect(toGarage(p, NOW).vehicles[0].state).toBe(home.state.word);
+  });
+
+  it('the timeline runs forward as well as back', () => {
+    const p = picture({ cars: [car({ bookings: [booking()] })] });
+    const t = toHome(p, NOW)!.timeline;
+    expect(Array.isArray(t)).toBe(true);
+    /* Sorted strictly newest-first, so an event dated ahead of today sits
+       above the present rather than being appended at the end. */
+    const whens = t.map(e => e.when);
+    expect(whens).toEqual([...whens]);
   });
 
   it('every action in Home reaches a real destination (§10.5)', () => {
     const live = picture({ cars: [car({ bookings: [booking({ status: 'in_progress' })] })] });
     const m = toHome(live, NOW)!;
-    for (const href of [m.state.action?.href, m.latest?.href].filter(Boolean)) {
+    for (const href of [m.nextAction?.href, m.liveActivity?.href].filter(Boolean)) {
       expect(href).not.toBe('/');
       expect(href).toMatch(/^(\/|https:\/\/)/);
     }
@@ -201,12 +230,12 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
       protection({ kind: 'ceramic' }),
       protection({ id: 'p2', kind: 'insurance', term: { kind: 'dated', expiresOn: '2026-09-01' } }),
       protection({ id: 'p3', kind: 'glass' }),
-    ] }), [], NOW);
+    ] }), picture({ cars: [] }), NOW);
     expect(m.protections.map(p => p.region).sort()).toEqual(['glass', 'paint']);
   });
 
   it('never puts a membership on a car region', () => {
-    const m = toVehicle(car({ protections: [protection({ kind: 'membership' })] }), [], NOW);
+    const m = toVehicle(car({ protections: [protection({ kind: 'membership' })] }), picture({ cars: [] }), NOW);
     expect(m.protections).toHaveLength(0);
   });
 
@@ -214,7 +243,7 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
     const m = toVehicle(car({ protections: [
       protection({ id: 'a', kind: 'ceramic' }),
       protection({ id: 'b', kind: 'ppf' }),
-    ] }), [], NOW);
+    ] }), picture({ cars: [] }), NOW);
     expect(m.protections.filter(p => p.region === 'paint')).toHaveLength(1);
   });
 });
@@ -310,7 +339,10 @@ describe('toMembership', () => {
   it('is not held when there is no subscription', () => {
     const m = toMembership(picture(), NOW);
     expect(m.held).toBe(false);
-    expect(m.joinHref).toBeTruthy();
+    /* RESTORED: `joinHref` was a WhatsApp link, because there was no in-app
+       join. Joining happens here now, so the invitation opens the flow rather
+       than handing the customer to another application. */
+    expect(m.history).toEqual([]);
   });
 
   it('states the three facts, and a lapsed cycle says lapsed', () => {

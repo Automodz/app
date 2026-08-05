@@ -22,6 +22,7 @@ import {
 import { MEMBERSHIP_PLANS } from '@/lib/types';
 import { formatCurrency, formatDate, getStatusLabel, getStatusColor } from '@/lib/utils';
 import type { User, Vehicle, Booking, Subscription, Job, Invoice, Promo } from '@/lib/types';
+import { cycleEnd } from '@/lib/os/club';
 
 type TimelineItem = {
   id: string;
@@ -120,8 +121,9 @@ export default function CustomerDetailPage() {
     setCreatingPlan(planId);
     try {
       const start = new Date().toISOString().split('T')[0];
-      const endDt = new Date(); endDt.setDate(endDt.getDate() + 30);
-      const end = endDt.toISOString().split('T')[0];
+      /* The cycle's length belongs to the club engine, so admin and customer
+         cannot disagree about when a membership ends (§22.2). */
+      const end = cycleEnd(start);
       await createSubscription({
         userId: id, userName: customer.name,
         userEmail: customer.email, userPhone: customer.phone || '',

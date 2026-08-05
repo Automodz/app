@@ -21,7 +21,7 @@ import 'server-only';
 import { cache } from 'react';
 import { adminDb } from './firebaseAdmin';
 import type {
-  Booking, Job, Protection, Service, Subscription, User, Vehicle, Visit,
+  Booking, Invoice, Job, Protection, Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
 
@@ -58,12 +58,21 @@ async function _loadCustomerPicture(session: {
   const db = adminDb;
   const { uid } = session;
 
-  const [profileSnap, vehicleSnap, subSnap, serviceSnap] = await Promise.all([
+  const [profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.collection(`users/${uid}/vehicles`).get(),
     db.collection('subscriptions').where('userId', '==', uid).get(),
     db.collection('services').get(),
+    /* A CHAPTER'S PAPERS. Without this, `toVisit` hardcoded `documents: []`
+       and no past visit could ever show its invoice or receipt. Read here so
+       History stays one server read, and scoped to this customer — the rules
+       would refuse anything wider anyway. */
+    db.collection('invoices').where('customerId', '==', uid).get(),
   ]);
+
+  const subscriptions = rows<Subscription>(subSnap).sort(
+    (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
+  );
 
   const profile = profileSnap.data() as Partial<User> | undefined;
   const user: User = {
@@ -104,9 +113,12 @@ async function _loadCustomerPicture(session: {
   return {
     user,
     cars,
-    subscription: rows<Subscription>(subSnap).sort(
-      (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
-    )[0] ?? null,
+    /* The newest is the one in force; the rest are the record. Both come from
+       the SAME read — the query already returned every subscription and the
+       older ones were being thrown away, so the history costs nothing. */
+    subscription: subscriptions[0] ?? null,
+    subscriptions,
     catalogue: rows<Service>(serviceSnap),
+    invoices: rows<Invoice>(invoiceSnap),
   };
 }

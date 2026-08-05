@@ -1,4 +1,9 @@
-'use client';
+/**
+ * A SERVER COMPONENT. It holds no state, no handlers and no motion — it is
+ * handed a model and draws it — so marking it `'use client'` shipped its
+ * markup to the browser twice and hydrated it for nothing. The interactive
+ * pieces it renders carry their own directive.
+ */
 /**
  * ONE VISIT — the account.
  *
@@ -27,11 +32,11 @@
  */
 import Image from 'next/image';
 import { color, space, INSET, MEASURE, column, stack, imageSizes } from '@/design';
-import { Hero, Heading, Text, Button } from '@/components/system';
+import { Hero, Heading, Text, Button, OfflineNote } from '@/components/system';
 import type { HistoryVisit } from './HistoryScreen';
 
 export function VisitScreen({ visit }: { visit: HistoryVisit }) {
-  const { when, title, photo, did, photos = [], promised = [], settled, documents = [] } = visit;
+  const { when, title, photo, did, photos = [], promised = [], settled, documents = [], shareHref } = visit;
 
   return (
     <main
@@ -41,6 +46,9 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
         paddingBottom: stack.contentFloor,
       }}
     >
+      {/* §20.3 — the room was rendered on the server and is still true; only
+          what happens NEXT needs a connection. One implementation (§22.2). */}
+      <OfflineNote />
       {/* §16.3 — the car as it was finished. */}
       <Hero
         state={photo ? 'media' : 'awaiting'}
@@ -132,8 +140,21 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
         </section>
       ) : null}
 
-      {/* Nothing follows. §16.2 — the account is sealed, so there is nothing
-          here to do to it. */}
+      {/* SHARE THIS CHAPTER. The one act a sealed record permits — it does not
+          change the visit, it lets someone else read it. `quiet`, because the
+          record is the point and passing it on is a secondary path (§10.4).
+          The address carries the invoice's own share token, and the endpoint
+          behind it strips amounts and contact details before anything leaves
+          the server, so a forwarded link cannot leak what a stranger must not
+          see. */}
+      {shareHref ? (
+        <section style={{ ...column, paddingTop: space.rest }}>
+          <Button tier="quiet" href={shareHref}>Share this chapter</Button>
+        </section>
+      ) : null}
+
+      {/* Nothing else follows. §16.2 — the account is sealed, so there is
+          nothing here to do to it. */}
       <div style={{ height: INSET }} />
     </main>
   );

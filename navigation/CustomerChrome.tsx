@@ -28,19 +28,34 @@ import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { NavigationProvider } from './NavigationProvider';
 import { BottomNavigation } from './BottomNavigation';
-import { roomFor } from './routes';
+import { PaletteProvider } from './Palette';
+import { StudioBoot } from '@/components/system';
+import { roomFor, HOME } from './routes';
 
-export function CustomerChrome({ children }: { children: ReactNode }) {
+export function CustomerChrome(
+  { children, signedIn = true }: { children: ReactNode; signedIn?: boolean },
+) {
   const pathname = usePathname() ?? '/';
 
   /* Not a room — not the customer application. Hand the page straight through
      with no provider, no bar and no customer state of any kind. */
   if (!roomFor(pathname)) return <>{children}</>;
 
+  /* `/` without a session is the public landing, not a room. It is the one
+     address the product serves to people who have no car here yet, and a bar
+     whose four slots all lead to a sign-in wall is four dead ends. Same
+     reasoning as above: nothing is mounted, not hidden. */
+  if (!signedIn && pathname === HOME) return <>{children}</>;
+
   return (
     <NavigationProvider>
-      {children}
-      <BottomNavigation />
+      <StudioBoot />
+      {/* The palette is chrome, not a screen. Mounted once here, it answers
+          ⌘K at every address in the customer application — see Palette.tsx. */}
+      <PaletteProvider>
+        {children}
+        <BottomNavigation />
+      </PaletteProvider>
     </NavigationProvider>
   );
 }

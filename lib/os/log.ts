@@ -10,8 +10,11 @@
  * The voice is the studio's: the car by name, reasons given, no urgency.
  */
 import type { Booking, Job, Subscription } from '@/lib/types';
-import type { Protection } from '@/lib/cx/protection';
-import { PROTECTION_WORD } from '@/lib/cx/protection';
+/* Repointed off the retired `lib/cx/protection` (§22.2 — one implementation).
+   That module carried its own three-kind vocabulary and its own `Protection`
+   shape; the stored model has ten kinds and one term engine. */
+import type { LiveProtection as Protection } from './protection';
+import { PROTECTION_TITLE as PROTECTION_WORD } from '@/lib/types';
 import { actFromJobStatus, visitPhase } from './visit';
 
 export interface LogEntry {
@@ -106,12 +109,12 @@ export function conciergeLog(args: {
     }
   });
 
-  protections.forEach(p => {
+  protections.filter(p => p.since).forEach(p => {
     out.push({
       id: `protection-${p.kind}`,
-      at: new Date(`${p.applied}T12:00:00`),
-      line: p.until
-        ? `${PROTECTION_WORD[p.kind]} applied - protected until ${p.until.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
+      at: new Date(`${p.since ?? ''}T12:00:00`),
+      line: p.term.kind === 'dated'
+        ? `${PROTECTION_WORD[p.kind]} applied - protected until ${new Date(`${p.term.expiresOn}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
         : `${PROTECTION_WORD[p.kind]} applied to the ${vehicleName}.`,
     });
   });

@@ -4,6 +4,7 @@
 // Booking Service (lib/server/bookingService.ts) is allowed to act on it. The
 // UI may call the same functions to QUOTE a price - it just never writes one.
 import type { Promo, MembershipPlan, BookingDiscount, Subscription } from '../types';
+import { washesLeftOf } from '../os/club';
 
 /** Membership "% off other services" perk (Silver 10 / Gold 15 / Platinum 20) */
 export const membershipDiscountPct = (plan: MembershipPlan): number =>
@@ -121,8 +122,9 @@ export const decidePrice = (i: PricingInput): PricingDecision => {
     i.membership && i.membership.status === 'active' && i.membership.endDate >= i.date
       ? i.membership : null;
 
-  const washesLeft = activeMember
-    ? Math.max(0, (activeMember.washesTotal ?? 0) - (activeMember.washesUsed ?? 0)) : 0;
+  /* One subtraction, one place (§22.2) — the same helper the club engine,
+     the projection, the retention job and the kiosk all use. */
+  const washesLeft = activeMember ? washesLeftOf(activeMember) : 0;
   const washCovered = !!activeMember && i.wantsWash
     && i.category === 'Washing' && washesLeft > 0;
 

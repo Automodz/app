@@ -14,17 +14,22 @@
  * §3.6 — the sheet is the material. Anything composed inside it that would
  * normally be a Surface renders flat, because `Surface` refuses to nest.
  *
- * §21.5 — focus is trapped while open and returned on close, via the one
- * implementation in `useDismissable`.
+ * §21.5 — focus trap, dismiss layer, scroll lock, `aria-modal` and Escape come
+ * from Radix Dialog. This file used to reimplement all five in
+ * `useDismissable`; once `Expansion` arrived on Radix the product had TWO focus
+ * traps, and §22.2 allows one implementation of anything. The hand-rolled one
+ * is deleted. Every visual value below is still ours — no Radix stylesheet is
+ * imported, and the drag-to-dismiss gesture stays because Radix has no opinion
+ * about it and §7.2 says a finger-driven surface moves on a spring.
  *
  * §6.4 — "every screen and every sheet has a URL." This component does not
  * manage that; whoever opens it owns the address, so a sheet is never a piece
  * of state that a link cannot reach.
  */
+import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { CSSProperties, ReactNode } from 'react';
 import { color, elevation, radius, space, scrim, spring, duration, stack } from '@/design';
-import { useDismissable } from './useDismissable';
 
 export interface BottomSheetProps {
   open: boolean;
@@ -40,15 +45,14 @@ export function BottomSheet({
   open, onClose, label, children, className, style,
 }: BottomSheetProps) {
   const still = useReducedMotion();
-  const ref = useDismissable(open, onClose);
 
   return (
+    <Dialog.Root open={open} onOpenChange={o => { if (!o) onClose(); }}>
     <AnimatePresence>
       {open ? (
-        <>
+        <Dialog.Portal forceMount>
+          <Dialog.Overlay asChild>
           <motion.div
-            aria-hidden
-            onClick={onClose}
             initial={still ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={still ? undefined : { opacity: 0 }}
@@ -60,13 +64,10 @@ export function BottomSheet({
               background: `rgba(0,0,0,${scrim.layer})`,
             }}
           />
+          </Dialog.Overlay>
+          <Dialog.Content asChild aria-label={label}>
           <motion.div
-            ref={ref}
             className={className}
-            role="dialog"
-            aria-modal="true"
-            aria-label={label}
-            tabIndex={-1}
             initial={still ? false : { y: '100%' }}
             animate={{ y: 0 }}
             exit={still ? undefined : { y: '100%' }}
@@ -90,9 +91,18 @@ export function BottomSheet({
               borderTopRightRadius: radius.sheet,
               boxShadow: elevation.sheet.shadow,
               paddingBottom: `calc(${space.rest}px + ${stack.top})`,
+              overscrollBehavior: 'contain',
               ...style,
             }}
           >
+            {/* Radix asks for a title to name the layer; the label is it, and
+                it is not drawn because the sheet's own content says what this
+                is (§18.1 — nothing decorative). */}
+            <Dialog.Title style={{
+              position: 'absolute', width: 1, height: 1, overflow: 'hidden',
+              clipPath: 'inset(50%)', whiteSpace: 'nowrap',
+            }}>{label}</Dialog.Title>
+
             {/* the grab handle — the affordance for the drag above */}
             <div
               aria-hidden
@@ -106,8 +116,10 @@ export function BottomSheet({
             />
             {children}
           </motion.div>
-        </>
+          </Dialog.Content>
+        </Dialog.Portal>
       ) : null}
     </AnimatePresence>
+    </Dialog.Root>
   );
 }

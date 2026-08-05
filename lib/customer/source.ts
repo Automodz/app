@@ -25,7 +25,7 @@ import { getVisitsForVehicle } from '@/lib/services/visits';
 import { getUserSubscription } from '@/lib/services/subscriptions';
 import { getServices } from '@/lib/services/services';
 import type {
-  Booking, Job, Protection, Service, Subscription, User, Vehicle, Visit,
+  Booking, Invoice, Job, Protection, Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 
 /** Everything known about one car. */
@@ -43,6 +43,10 @@ export interface CustomerPicture {
   user: User;
   cars: CarPicture[];
   subscription: Subscription | null;
+  /** Every subscription this owner has held, newest first. The record. */
+  subscriptions: Subscription[];
+  /** This owner's invoices — the papers a chapter hands over. */
+  invoices: Invoice[];
   /** Consulted only to capture terms that were never recorded. */
   catalogue: Service[];
 }
@@ -78,7 +82,7 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
     return { vehicle, protections, visits, bookings, jobs };
   }));
 
-  return { user, cars, subscription, catalogue };
+  return { user, cars, subscription, subscriptions: subscription ? [subscription] : [], invoices: [], catalogue };
 }
 
 export function useCustomerPicture(): CustomerState {

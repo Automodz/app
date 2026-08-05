@@ -84,7 +84,7 @@ const car: CarPicture = {
 
 const picture: CustomerPicture = {
   user: { uid: 'u1', name: 'Meera Shah', email: 'meera@example.test', phone: '+91 90000 00000', role: 'customer' } as User,
-  cars: [car], subscription, catalogue: [] as Service[],
+  cars: [car], subscription, subscriptions: [subscription], invoices: [], catalogue: [] as Service[],
 };
 
 /** Ops vocabulary that must never reach a customer surface (§5.5, §21.8, §2.2). */
@@ -134,7 +134,7 @@ it('Garage with no cars renders the invitation, not an empty strip', () => {
 it('Vehicle renders through the renderer boundary', () => {
   const rendering = photograph(toVehiclePhotograph(car));
   const html = renderToStaticMarkup(
-    <VehicleScreen model={toVehicle(car, picture.catalogue)} rendering={rendering} />,
+    <VehicleScreen model={toVehicle(car, picture)} rendering={rendering} />,
   );
   assertClean(html, 'vehicle');
   expect(html).toContain('GJ 01 KP 4471');
@@ -144,14 +144,14 @@ it('Vehicle renders through the renderer boundary', () => {
 });
 
 it('History renders the album', () => {
-  const html = renderToStaticMarkup(<HistoryScreen model={toHistory(car, picture.catalogue)} />);
+  const html = renderToStaticMarkup(<HistoryScreen model={toHistory(car, picture.invoices)} />);
   assertClean(html, 'history');
   expect(html).toContain('18 July 2026');
   expect(html).toContain('Ceramic coating');
 });
 
 it('one visit renders its account with the money as one line', () => {
-  const visit = visitsOf(car, picture.catalogue)[0];
+  const visit = visitsOf(car)[0];
   const html = renderToStaticMarkup(<VisitScreen visit={toVisit(visit, car)} />);
   assertClean(html, 'visit');
   expect(html).toContain('64,000');
@@ -165,7 +165,13 @@ it('Studio renders the place with no price and no named person', () => {
   expect(html).not.toMatch(/₹/);
   /* §10.5 — the primary action must not point at the Studio's own address. */
   expect(html).not.toContain('href="/studio"');
-  expect(html).toContain('wa.me');
+  /* RESTORED: this used to assert `wa.me`, which pinned a WORKAROUND — the
+     studio had no in-app booking surface, so the most important control in the
+     product handed the customer to another application. Arranging a visit now
+     happens here, so the control is a real button and not a link out. */
+  expect(html).not.toContain('wa.me');
+  expect(html).toContain('Arrange a visit');
+  expect(html).toContain('<button type="button"');
 });
 
 it('You renders identity with no avatar and no form', () => {
@@ -197,7 +203,7 @@ it('Membership renders the three facts, and the invitation when unheld', () => {
 it('a brand-new customer with one unphotographed car renders every room', () => {
   const bare: CustomerPicture = {
     ...picture,
-    subscription: null,
+    subscription: null, subscriptions: [], invoices: [],
     cars: [{
       vehicle: { id: 'v9', name: 'Tata Nexon', registrationNumber: 'GJ 01 ZZ 9999', createdAt: ts('2026-07-29T10:00:00Z') },
       protections: [], visits: [], bookings: [], jobs: [],
@@ -207,7 +213,7 @@ it('a brand-new customer with one unphotographed car renders every room', () => 
   for (const html of [
     renderToStaticMarkup(<HomeScreen model={toHome(bare)!} />),
     renderToStaticMarkup(<GarageScreen model={toGarage(bare)} />),
-    renderToStaticMarkup(<VehicleScreen model={toVehicle(one, [])} rendering={photograph(toVehiclePhotograph(one))} />),
+    renderToStaticMarkup(<VehicleScreen model={toVehicle(one, bare)} rendering={photograph(toVehiclePhotograph(one))} />),
     renderToStaticMarkup(<HistoryScreen model={toHistory(one, [])} />),
     renderToStaticMarkup(<StudioScreen model={toStudio(bare)} />),
     renderToStaticMarkup(<YouScreen model={toYou(bare)} onSignOut={() => {}} />),

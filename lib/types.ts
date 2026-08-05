@@ -22,6 +22,17 @@ export interface User {
   /** Admin-written notes shown on the Customer 360 page */
   notes?: string;
   tags?: string[];
+  /**
+   * When this customer finished their first arrival. Absent means they have
+   * not.
+   *
+   * ON THE USER DOCUMENT, not in localStorage, and that is the whole point:
+   * the flag used to be `localStorage['automodz-welcomed']`, so signing in on
+   * a second device welcomed the same person again, clearing browser data
+   * re-triggered it forever, and there was no way for the studio to reset it
+   * for someone. The server owns this.
+   */
+  welcomedAt?: Timestamp;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -118,6 +129,12 @@ export interface Notification {
   type: 'booking_update' | 'promotion' | 'reminder' | 'membership';
   read: boolean;
   bookingId?: string;
+  /**
+   * §17.3 — the surface this notification is about. Resolved once, at the
+   * moment it is written, by `navigation/resolve.notificationHref`, so the
+   * stored record and the push payload can never point at different places.
+   */
+  url?: string;
   createdAt: Timestamp;
 }
 
@@ -166,6 +183,25 @@ export interface Subscription {
   adminNotes?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  /**
+   * WHEN THE STUDIO TOOK THE MONEY — the source of truth for membership
+   * revenue. Written exactly once, when an admin activates the subscription,
+   * and never moved after.
+   *
+   * `createdAt` is when the customer ASKED, which is before payment.
+   * `updatedAt` moves on every later edit, including cancellation, so a
+   * cancelled membership would have drifted out of the month it was paid in.
+   * Neither could carry revenue.
+   */
+  paidAt?: Timestamp;
+  /**
+   * What was actually collected, in rupees, captured at activation.
+   *
+   * Reports read this rather than looking the plan's price up today: changing
+   * Silver from ₹1,499 to ₹1,799 must not silently rewrite last year's
+   * revenue. The plan's price is what it costs NOW; this is what was paid THEN.
+   */
+  amountPaid?: number;
 }
 
 // ─── DISCOUNTS / PROMOS ──────────────────────────────────────────────────────

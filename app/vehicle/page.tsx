@@ -26,7 +26,7 @@ export default async function VehiclePage(
         if (!car) return <NoCar />;
         return (
           <VehicleRoom
-            model={toVehicle(car, picture.catalogue)}
+            model={toVehicle(car, picture)}
             source={toVehiclePhotograph(car)}
           />
         );

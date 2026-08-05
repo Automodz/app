@@ -5,7 +5,7 @@ import { decidePrice, applyDiscount } from '@/lib/services/pricing';
 import { computeAvailability, candidateSlots } from '@/lib/availability';
 import { PICKUP_FEE } from '@/lib/utils';
 import type {
-  Booking, BookingDiscount, Job, JobServiceItem, JobStatus, Promo, Subscription,
+  Booking, BookingDiscount, BookingStatus, Job, JobServiceItem, JobStatus, Promo, Subscription,
 } from '@/lib/types';
 
 /**
@@ -559,4 +559,133 @@ const settleBenefits = (
       updatedAt: FieldValue.serverTimestamp(),
     });
   }
+};
+
+/* ────────────────────────────────────────────────────────────────────────────
+   GIVING BACK WHAT A CANCELLED VISIT CONSUMED.
+
+   `settleBenefits` above SPENDS a membership wash and a promo redemption when a
+   booking is created. Nothing gave them back. A customer who cancelled — or
+   whose booking the STUDIO refused — permanently lost a wash they had paid for
+   and a promo they had not used. `cancelBooking` in lib/services/bookings.ts
+   only ever wrote `status: 'cancelled'`.
+
+   It could not have been fixed there. `firestore.rules` lets a customer touch a
+   subscription's `status` and nothing else, so a client cannot decrement
+   `washesUsed`; the restore has to be server-authoritative. It lives here,
+   beside the code that spends it, so the two can never drift apart.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface CancelResult {
+  id: string;
+  /** true when the booking was ALREADY cancelled — nothing was given back. */
+  alreadyCancelled: boolean;
+  washRestored: boolean;
+  promoRestored: boolean;
+}
+
+/** Statuses a booking may still be cancelled from. Mirrors firestore.rules. */
+const CANCELLABLE: BookingStatus[] = ['pending', 'confirmed'];
+
+/**
+ * Cancel a booking and return everything it consumed, in ONE commit.
+ *
+ * IDEMPOTENT BY READ, not by marker: the booking's own status is the guard. A
+ * second cancel finds it already `cancelled` and restores nothing, so a retry
+ * or a double tap cannot credit two washes.
+ *
+ * `byStaff` allows the studio to refuse a booking that a customer could no
+ * longer cancel themselves — the refusal must still return the wash.
+ */
+export const cancelBookingAuthoritative = async (
+  callerUid: string,
+  bookingId: string,
+  opts: { byStaff?: boolean; reason?: string; noShow?: boolean } = {},
+): Promise<CancelResult> => {
+  if (!adminDb) throw new BookingError('not-configured', 503);
+  if (!bookingId || typeof bookingId !== 'string') throw new BookingError('bad-booking', 400);
+  const db = adminDb;
+
+  return db.runTransaction(async t => {
+    const bookingRef = db.collection('bookings').doc(bookingId);
+    const snap = await t.get(bookingRef);
+    if (!snap.exists) throw new BookingError('not-found', 404);
+    const booking = { id: snap.id, ...(snap.data() as object) } as Booking;
+
+    if (!opts.byStaff && booking.userId !== callerUid) {
+      throw new BookingError('not-yours', 403);
+    }
+
+    /* Already cancelled: succeed, restore nothing. The caller asked for a state
+       the booking is already in, which is not an error — but crediting a second
+       wash for it would be. */
+    if (booking.status === 'cancelled') {
+      return { id: bookingId, alreadyCancelled: true, washRestored: false, promoRestored: false };
+    }
+
+    /* A customer may not cancel work already under way; the studio may. */
+    if (!opts.byStaff && !CANCELLABLE.includes(booking.status)) {
+      throw new BookingError('too-late', 409);
+    }
+
+    let washRestored = false;
+    let promoRestored = false;
+
+    /* ── the wash ──
+       A NO-SHOW FORFEITS IT. The studio held the bay and the slot went unused,
+       so the entitlement is spent even though no work happened. A cancellation
+       in time, and a refusal by the studio, both return it. This is a business
+       rule and it is the one place it is written. */
+    if (booking.usedMembershipWash && booking.membershipId && !opts.noShow) {
+      const subRef = db.collection('subscriptions').doc(booking.membershipId);
+      const subSnap = await t.get(subRef);
+      if (subSnap.exists) {
+        const sub = subSnap.data() as Subscription;
+        /* Floored at zero. A membership that was edited between the booking and
+           the cancel must not be driven negative by giving one back. */
+        t.update(subRef, {
+          washesUsed: Math.max(0, (sub.washesUsed ?? 0) - 1),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        washRestored = true;
+      }
+    }
+
+    /* ── the promo ──
+       Returned even on a no-show: a promo is a right to a price, not a
+       consumable the studio spent holding a bay. */
+    if (booking.discount?.source === 'promo' && booking.discount.promoId) {
+      const promoRef = db.collection('promos').doc(booking.discount.promoId);
+      const promoSnap = await t.get(promoRef);
+      const redemptionRef = db
+        .collection('promoRedemptions')
+        .doc(`${booking.discount.promoId}_${bookingId}`);
+      const redemptionSnap = await t.get(redemptionRef);
+
+      /* The redemption document is the evidence that it was actually spent.
+         Decrementing without it would let a booking that never redeemed the
+         promo hand a use back to the pool. */
+      if (redemptionSnap.exists) {
+        if (promoSnap.exists) {
+          const promo = promoSnap.data() as Promo;
+          t.update(promoRef, {
+            usedCount: Math.max(0, (promo.usedCount ?? 0) - 1),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+        t.delete(redemptionRef);
+        promoRestored = true;
+      }
+    }
+
+    t.update(bookingRef, {
+      status: 'cancelled',
+      cancelledAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      ...(opts.reason ? { rejectionReason: opts.reason } : {}),
+      ...(opts.noShow ? { noShow: true } : {}),
+    });
+
+    return { id: bookingId, alreadyCancelled: false, washRestored, promoRestored };
+  }, { maxAttempts: 8 });
 };

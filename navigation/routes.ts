@@ -67,6 +67,16 @@ export const STUDIO = '/studio';
 export const VEHICLE = '/vehicle';
 export const MEMBERSHIP = '/membership';
 
+/**
+ * THE MARKETPLACE. Public, unlike every other address above it — `/cars` is
+ * readable signed out, because a listing nobody can open is a listing nobody
+ * buys. Not rooms: they carry no navigation bar and hold no customer state,
+ * so they are absent from `rooms` deliberately.
+ */
+export const WELCOME = '/welcome';
+export const CARS = '/cars';
+export const SELL = '/dashboard/sell-car';
+
 export const rooms: Record<string, Room> = {
   [HOME]: {
     path: HOME,

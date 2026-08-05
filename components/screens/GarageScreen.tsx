@@ -47,10 +47,12 @@
  */
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { CarForm } from '@/components/garage/CarForm';
 import {
-  color, space, MEASURE, column, photoSize, stack, imageSizes,
+  color, space, INSET, MEASURE, column, photoSize, stack, imageSizes,
 } from '@/design';
-import { Hero, Heading, Text, Button } from '@/components/system';
+import { Hero, Heading, Text, Button, OfflineNote } from '@/components/system';
 
 /* ── What the collection needs to be true ────────────────────────────────
    §12.3 names what a car shows here — "its photograph, its name, its plate,
@@ -83,6 +85,13 @@ export interface GarageVehicle {
   href: string;
 }
 
+/** The vehicle as the form needs it — enough to correct, nothing more. */
+export interface GarageEditable {
+  id: string;
+  name: string;
+  registrationNumber: string;
+}
+
 export interface GarageModel {
   /**
    * In the studio's order of attention. See the note above: the first
@@ -91,6 +100,8 @@ export interface GarageModel {
   vehicles: GarageVehicle[];
   /** §12.4 — where the invitation leads when there is no car yet. */
   beginHref: string;
+  /** The same cars, in the shape the form writes back. */
+  editable: GarageEditable[];
 }
 
 /**
@@ -106,10 +117,18 @@ export interface GarageModel {
  * this exact photograph into the vehicle's own hero instead of crossfading
  * it. It is declared per car so two frames can never claim the same name.
  */
-function Vehicle({ vehicle, lead }: { vehicle: GarageVehicle; lead: boolean }) {
+function Vehicle(
+  { vehicle, lead, onEdit }:
+  { vehicle: GarageVehicle; lead: boolean; onEdit: () => void },
+) {
   const { name, plate, photo, state, protection, relationship, href } = vehicle;
 
+  /* The frame is the link and the edit control sits ON it, so the control is a
+     sibling of the link rather than a child — a button inside an anchor is
+     invalid markup and, worse, gives a keyboard user one target that does two
+     things. */
   return (
+    <div style={{ position: 'relative' }}>
     <Link href={href} style={{ display: 'block', textDecoration: 'none' }}>
       <Hero
         state={photo ? 'media' : 'awaiting'}
@@ -177,6 +196,21 @@ function Vehicle({ vehicle, lead }: { vehicle: GarageVehicle; lead: boolean }) {
         )}
       </Hero>
     </Link>
+
+      {/* CORRECT THIS CAR. §21.3 — a real 44pt target, and §21.6 names which
+          car it corrects so a screen reader hears "Correct the Defender 110"
+          rather than six identical "Edit"s. */}
+      <div style={{ position: 'absolute', top: space.gap, right: INSET }}>
+        <Button
+          tier="quiet"
+          onClick={onEdit}
+          aria-label={`Correct ${name}`}
+          style={{ color: color.over }}
+        >
+          Edit
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -210,7 +244,39 @@ function Invitation({ href }: { href: string }) {
 }
 
 export function GarageScreen({ model }: { model: GarageModel }) {
-  const { vehicles, beginHref } = model;
+  const { vehicles, beginHref, editable } = model;
+
+  /* THE FORM IS ADDRESSABLE (§6.4). `?add=1` opens a new car, `?edit=<id>`
+     corrects one — so both are linkable, restorable on reload, and closed by
+     the back button. The old Garage used `?sheet=car-form&car-id=`; the same
+     idea, in this application's vocabulary. */
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+
+  const adding = params.get('add') === '1';
+  const editingId = params.get('edit');
+  const editing = editable.find(v => v.id === editingId) ?? null;
+
+  const close = () => {
+    const next = new URLSearchParams(params.toString());
+    next.delete('add');
+    next.delete('edit');
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const openEdit = (id: string) => {
+    const next = new URLSearchParams(params.toString());
+    next.set('edit', id);
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  };
+
+  const openAdd = () => {
+    const next = new URLSearchParams(params.toString());
+    next.set('add', '1');
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  };
 
   return (
     <main
@@ -222,6 +288,9 @@ export function GarageScreen({ model }: { model: GarageModel }) {
         paddingBottom: stack.contentFloor,
       }}
     >
+      {/* §20.3 — the room was rendered on the server and is still true; only
+          what happens NEXT needs a connection. One implementation (§22.2). */}
+      <OfflineNote />
       {vehicles.length === 0 ? (
         <Invitation href={beginHref} />
       ) : (
@@ -238,9 +307,32 @@ export function GarageScreen({ model }: { model: GarageModel }) {
            it belongs to whoever owns the shell — this screen has no business
            redirecting anyone. */
         vehicles.map((vehicle, i) => (
-          <Vehicle key={vehicle.id} vehicle={vehicle} lead={i === 0} />
+          <Vehicle
+            key={vehicle.id}
+            vehicle={vehicle}
+            lead={i === 0}
+            onEdit={() => openEdit(vehicle.id)}
+          />
         ))
       )}
+
+      {/* ADD A CAR. Present whenever there is already a collection — the empty
+          state has its own invitation and does not need a second control. */}
+      {vehicles.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Button tier="primary" onClick={openAdd}>Add a car</Button>
+        </section>
+      ) : null}
+
+      <CarForm
+        open={adding || editing !== null}
+        onClose={close}
+        editing={editing ? ({
+          id: editing.id,
+          name: editing.name,
+          registrationNumber: editing.registrationNumber,
+        } as never) : null}
+      />
     </main>
   );
 }

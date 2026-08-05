@@ -23,7 +23,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { CSSProperties, ReactNode } from 'react';
 import { color, elevation, scrim, duration, curve,
 } from '@/design';
-import { useDismissable } from './useDismissable';
+import * as Dialog from '@radix-ui/react-dialog';
 
 export interface ModalProps {
   open: boolean;
@@ -37,18 +37,17 @@ export interface ModalProps {
 
 export function Modal({ open, onClose, label, children, className, style }: ModalProps) {
   const still = useReducedMotion();
-  const ref = useDismissable(open, onClose);
 
+  /* Focus trap, Escape, scroll lock and aria-modal come from Radix — one
+     implementation for every layer in the product (§22.2). */
   return (
+    <Dialog.Root open={open} onOpenChange={o => { if (!o) onClose(); }}>
     <AnimatePresence>
       {open ? (
+        <Dialog.Portal forceMount>
+        <Dialog.Content asChild aria-label={label}>
         <motion.div
-          ref={ref}
           className={className}
-          role="dialog"
-          aria-modal="true"
-          aria-label={label}
-          tabIndex={-1}
           initial={still ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={still ? undefined : { opacity: 0 }}
@@ -66,14 +65,24 @@ export function Modal({ open, onClose, label, children, className, style }: Moda
             ...style,
           }}
         >
-          <div
+          <Dialog.Title style={{
+            position: 'absolute', width: 1, height: 1, overflow: 'hidden',
+            clipPath: 'inset(50%)', whiteSpace: 'nowrap',
+          }}>{label}</Dialog.Title>
+          <Dialog.Close
             aria-hidden
-            onClick={onClose}
-            style={{ position: 'absolute', inset: 0, background: `rgba(0,0,0,${scrim.layer})` }}
+            tabIndex={-1}
+            style={{
+              position: 'absolute', inset: 0, border: 0, padding: 0,
+              background: `rgba(0,0,0,${scrim.layer})`, cursor: 'default',
+            }}
           />
           <div style={{ position: 'relative' }}>{children}</div>
         </motion.div>
+        </Dialog.Content>
+        </Dialog.Portal>
       ) : null}
     </AnimatePresence>
+    </Dialog.Root>
   );
 }

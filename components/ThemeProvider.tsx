@@ -12,8 +12,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // every room shares the same material (see .st-os + components/os/Ambient).
   const forceDark = pathname === '/'
     || pathname.startsWith('/admin')
-    || pathname.startsWith('/store')
-    || pathname.startsWith('/app');
+    || pathname.startsWith('/store');
+
   const effective = forceDark ? 'dark' : theme;
   useEffect(() => {
     const root = document.documentElement;

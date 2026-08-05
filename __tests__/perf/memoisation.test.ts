@@ -25,7 +25,7 @@ const car = (id: string, bookings: Booking[]): CarPicture => ({
 
 const picture = (cars: CarPicture[]): CustomerPicture => ({
   user: { uid: 'u1', name: 'A', email: 'a@b.c', role: 'customer' } as User,
-  cars, subscription: null, catalogue: [] as Service[],
+  cars, subscription: null, subscriptions: [], invoices: [], catalogue: [] as Service[],
 });
 
 it('stateOf is computed once per car, however often it is asked', () => {
@@ -42,7 +42,7 @@ it('a car appearing in two projections is computed once', () => {
   const p = picture([c]);
   const home = toHome(p)!;
   const garage = toGarage(p);
-  const vehicle = toVehicle(c, p.catalogue);
+  const vehicle = toVehicle(c, p);
   // all three agree, because all three read one memoised computation
   expect(garage.vehicles[0].state).toBe(home.state.word);
   expect(vehicle.state).toBe(home.state.word);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
 import { runRetentionForUser } from '@/lib/server/retention';
 import { notifyAdmins as notifyAdminsShared } from '@/lib/server/notify';
+import { isLapsed } from '@/lib/os/club';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -85,6 +86,23 @@ export async function GET(req: NextRequest) {
       'Verify the payment and activate them in Admin → Memberships.');
   }
   summary.pendingMemberships = pendingSubs.size;
+
+  /* 4b. EXPIRE MEMBERSHIPS THAT HAVE RUN OUT.
+     `expireLapsedSubscriptions` existed but ran ONLY when an admin happened to
+     open Admin → Memberships. Until someone did, a lapsed membership stayed
+     `active` in the database — the customer saw the truth (both the club engine
+     and the read path compute expiry), but every QUERY that filters on status
+     counted them as members. Nightly is where this belongs.
+
+     The rule is `os/club.isLapsed`, shared with the client service, so the two
+     cannot disagree about what "run out" means. */
+  const activeSubs = await adminDb!.collection('subscriptions')
+    .where('status', '==', 'active').get();
+  const lapsed = activeSubs.docs.filter(d => isLapsed(d.data() as { status?: string; endDate?: string }));
+  await Promise.all(lapsed.map(d =>
+    d.ref.update({ status: 'expired', updatedAt: new Date() }),
+  ));
+  summary.expiredMemberships = lapsed.length;
 
   // 5. Daily aggregate for fast reports (yesterday's numbers are final)
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);

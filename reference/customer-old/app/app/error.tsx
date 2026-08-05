@@ -1,0 +1,61 @@
+'use client';
+/**
+ * The customer error boundary. Contains any runtime fault inside the /app
+ * experience so a single failure never drops the owner onto a dark, off-brand
+ * crash screen or ejects them to the marketing site. It speaks the studio's
+ * language - paper, ink, one calm sentence - stays recoverable, and returns to
+ * the car, never to the homepage.
+ */
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Action from '@/components/os/Action';
+import { Display, Body } from '@/components/os/text';
+import Wordmark from '@/components/ui/Wordmark';
+
+export default function AppError({
+  error, reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  const router = useRouter();
+
+  /* Told to the studio, never to the customer. A crash screen nobody reports
+     is a crash nobody fixes - and `removeConsole` means the browser log is
+     gone in production anyway. `keepalive` so it survives the navigation the
+     customer is about to make. */
+  useEffect(() => {
+    console.error('[app] boundary caught:', error);
+    fetch('/api/report', {
+      method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        where: 'app', message: error.message, digest: error.digest, stack: error.stack,
+      }),
+    }).catch(() => { /* reporting must never re-throw inside a boundary */ });
+  }, [error]);
+
+  return (
+    <div
+      className="studio"
+      style={{
+        minHeight: '100vh', background: 'var(--st-paper)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center',
+        padding: 'calc(env(safe-area-inset-top) + var(--st-rest)) var(--st-inset) calc(env(safe-area-inset-bottom) + var(--st-rest))',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 420 }}>
+        <Wordmark height={14} />
+        <Display style={{ marginTop: 'var(--st-gap)' }}>A quiet hiccup.</Display>
+        <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }}>
+          Something didn’t load as it should. Your car and its history are safe.
+        </Body>
+        <div style={{ marginTop: 'var(--st-rest)', display: 'grid', gap: 'var(--st-line)', justifyItems: 'center' }}>
+          <Action variant="primary" onClick={reset}>Try again</Action>
+          <Action variant="quiet" onClick={() => { reset(); router.replace('/app'); }}>Back to the car</Action>
+        </div>
+      </div>
+    </div>
+  );
+}

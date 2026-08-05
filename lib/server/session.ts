@@ -26,6 +26,24 @@ export interface ServerSession {
 }
 
 /**
+ * Is there a session cookie at all?
+ *
+ * This does NOT verify it — an expired or revoked cookie still answers true.
+ * It exists for the one decision that must be made ABOVE the page, in the root
+ * layout: whether `/` is the public landing or the customer's Home, and so
+ * whether the navigation bar exists at all. Verification still happens inside
+ * the page, where a bad cookie lands on the sign-in wall exactly as before.
+ *
+ * The alternative was calling `currentSession()` twice per request — a second
+ * `verifySessionCookie` round trip to answer a question a cookie read already
+ * answers well enough to choose a shell.
+ */
+export async function hasSessionCookie(): Promise<boolean> {
+  const jar = await cookies();
+  return Boolean(jar.get(SESSION_COOKIE)?.value);
+}
+
+/**
  * Who is asking, or null.
  *
  * `checkRevoked` is deliberately ON: a signed-out or disabled account must stop

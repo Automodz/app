@@ -1,6 +1,7 @@
 import { getApps } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { adminDb } from './firebaseAdmin';
+import { COMPANY } from '@/lib/company';
 
 /** Web-push to one user's registered devices (best-effort, prunes dead tokens). */
 export const pushToUser = async (userId: string, title: string, body: string, url?: string) => {
@@ -12,10 +13,10 @@ export const pushToUser = async (userId: string, title: string, body: string, ur
     const res = await messaging.sendEachForMulticast({
       tokens,
       notification: { title, body },
-      data: { url: url ?? '/app' },
+      data: { url: url ?? '/admin' },
       webpush: {
         notification: { icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' },
-        fcmOptions: { link: url ?? '/app' },
+        fcmOptions: { link: url ?? '/admin' },
       },
     });
     await Promise.all(res.responses.map((r, i) => {
@@ -58,3 +59,33 @@ export const notifyAdmins = async (
   }
   return created;
 };
+
+/**
+ * WhatsApp to the studio's own number.
+ *
+ * Off unless `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID` are set — the
+ * route it mirrors says the same. Lives here rather than beside the booking
+ * notifier because the marketplace tells the studio through the same channel,
+ * and a second copy would be a second number to keep in step. It calls Meta directly rather than looping
+ * back through `/api/whatsapp/send`, because a server calling its own HTTP
+ * endpoint depends on knowing its own public origin, which is exactly the sort
+ * of thing that works in development and fails on the first deploy.
+ */
+export async function whatsAppToStudio(message: string): Promise<boolean> {
+  const token = process.env.WHATSAPP_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!token || !phoneNumberId) return false;
+
+  const to = `91${COMPANY.phone.replace(/\D/g, '').slice(-10)}`;
+  const res = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'text',
+      text: { body: message },
+    }),
+  });
+  return res.ok;
+}

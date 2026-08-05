@@ -70,6 +70,19 @@ export type { GalleryProps } from './Gallery';
 export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';
 
+export { StudioBoot } from './StudioBoot';
+
+export { Desk } from './Desk';
+export type { DeskProps, DeskItem } from './Desk';
+
+export { useOnline } from './useOnline';
+
+export { OfflineNote } from './OfflineNote';
+export type { OfflineNoteProps } from './OfflineNote';
+
+export { Expansion } from './Expansion';
+export type { ExpansionProps } from './Expansion';
+
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 

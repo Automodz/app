@@ -62,10 +62,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MouseEvent } from 'react';
 import {
-  color, space, MEASURE, HAIRLINE, radius, scrim, column,
-  stack, TARGET_MIN, duration, easing,
+  HAIRLINE, INSET, MEASURE, TARGET_MIN, color, column, duration, easing, imageSizes, radius, scrim, space, stack,
 } from '@/design';
-import { Hero, Heading, Text, Button } from '@/components/system';
+import Image from 'next/image';
+import { Hero, Heading, Text, Button, Modal, OfflineNote } from '@/components/system';
 import { REGION_NAME } from '@/components/vehicle';
 import type { RegionId, RenderedRegion, VehicleRendering } from '@/components/vehicle';
 
@@ -88,6 +88,21 @@ export interface VehicleProtection {
   documentHref?: string;
 }
 
+/** One photograph of this car, from a visit that produced it. */
+export interface VehicleFrame {
+  id: string;
+  url: string;
+  caption?: string;
+  /** The visit that produced it, when it came from one. */
+  visitHref?: string;
+}
+
+/** The car's media, grouped the way a life is remembered: by month. */
+export interface VehicleMediaMonth {
+  month: string;
+  frames: VehicleFrame[];
+}
+
 export interface VehicleModel {
   /** The customer's own words for their car. */
   name: string;
@@ -107,6 +122,10 @@ export interface VehicleModel {
   historyHref: string;
   /** §11.1 — protection belongs to the car. Keyed to the part it protects. */
   protections: readonly VehicleProtection[];
+  /** Every photograph of this car, newest month first. May be empty. */
+  media: readonly VehicleMediaMonth[];
+  /** Where the car is corrected. */
+  editHref: string;
   /**
    * §18.4 — "no protection declared → invitation, one line, one action."
    * Optional: §10.5 forbids a control with no destination, and this pointed at
@@ -277,6 +296,12 @@ export function VehicleScreen({
   const { protections } = model;
   const [asked, setAsked] = useState<RegionId | null>(null);
 
+  /* Which photograph is open. An id, so the model stays the source of truth. */
+  const [viewing, setViewing] = useState<string | null>(null);
+  const viewed = model.media
+    .flatMap(g => g.frames)
+    .find(f => f.id === viewing);
+
   /** Touching a mark asks; touching the one already asked releases it. */
   const ask = useCallback((id: RegionId) => {
     setAsked(current => (current === id ? null : id));
@@ -330,6 +355,9 @@ export function VehicleScreen({
             paddingBottom: stack.bottom,
           }}
         >
+          {/* Inline here: the photograph's surface is `inset: 0` and would
+              cover a rule across the top. §22.2 — the same component. */}
+          <OfflineNote inline />
           <Saying model={model} asked={null} answer={undefined} />
         </div>
       </main>
@@ -337,12 +365,21 @@ export function VehicleScreen({
   }
 
   return (
-    /* §22.2 — one implementation of anything. The scrim, the entrance settle
+    <main style={{ background: color.paper, paddingBottom: stack.contentFloor }}>
+      {/* §20.3 — the car and its record were rendered on the server and are
+          still true; only what happens NEXT needs a connection. */}
+      <OfflineNote />
+    {/* §22.2 — one implementation of anything. The scrim, the entrance settle
        and the overlay's gutter all belong to `Hero`, so this screen composes it
        rather than growing a second copy of a contrast guarantee. The height is
        overridden to the viewport because here the subject IS the screen; `svh`
        rather than `vh` so a collapsing mobile chrome cannot push the answer
-       under a fold there is no scroll to recover it from. */
+       under a fold there is no scroll to recover it from.
+
+       THE SCREEN SCROLLS NOW. The car still owns the first viewport whole —
+       that has not changed — but its media and its acts live beneath it, as
+       they did on the old Garage. The car is still the subject; it is simply
+       no longer the only thing in the room. */}
     <Hero
       state="media"
       band="full"
@@ -352,8 +389,7 @@ export function VehicleScreen({
            someone who cannot see the car recede.
 
            §8.5 — the block clears the navigation by arithmetic. `Hero` insets
-           it to the gutter; the stack is this screen's business, because this
-           is the screen with no scroll to pad. */
+           it to the gutter; the stack is this screen's business. */
         <div
           aria-live="polite"
           style={{ maxWidth: MEASURE, paddingBottom: stack.bottom }}
@@ -388,5 +424,103 @@ export function VehicleScreen({
         />
       </div>
     </Hero>
+
+      {/* ── THE CAR'S OWN ACTS ──────────────────────────────────────────
+          Correcting it and reading its life. Both were on the old Garage's
+          "The car" section; they belong to the car's own room. */}
+      <section style={{ ...column, paddingTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+        <Button tier="forward" href={model.historyHref}>Its history</Button>
+        <Button tier="quiet" href={model.editHref}>Correct the car</Button>
+      </section>
+
+      {/* ── MEDIA ───────────────────────────────────────────────────────
+          `os/moment` groups by month, never by job — a life is remembered in
+          months. §18.1: a car with no photographs shows nothing here, because
+          there is nothing to say yet. */}
+      {model.media.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Text role="data" tone="ink3">Media</Text>
+          {model.media.map(group => (
+            <div key={group.month} style={{ marginTop: space.gap }}>
+              <Text role="whisper" tone="ink3">{group.month}</Text>
+              <div
+                style={{
+                  marginTop: space.breath,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
+                  gap: space.breath,
+                }}
+              >
+                {group.frames.map(f => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setViewing(f.id)}
+                    aria-label={f.caption ?? 'Open the photograph'}
+                    style={{
+                      appearance: 'none',
+                      border: 0,
+                      padding: 0,
+                      background: color.surface,
+                      borderRadius: radius.card,
+                      overflow: 'hidden',
+                      aspectRatio: '1',
+                      position: 'relative',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Image
+                      src={f.url}
+                      alt={f.caption ?? `${model.name}, photographed at AutoModz`}
+                      fill
+                      sizes="(max-width: 768px) 33vw, 160px"
+                      style={{ objectFit: 'cover' }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {/* THE VIEWER — a photograph deserves the whole surface (§13.2). */}
+      <Modal
+        open={viewed !== undefined}
+        onClose={() => setViewing(null)}
+        label={viewed?.caption ?? 'Photograph'}
+      >
+        {viewed ? (
+          <div style={{
+            minHeight: '100svh',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            paddingInline: INSET,
+          }}>
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3' }}>
+              <Image
+                src={viewed.url}
+                alt={viewed.caption ?? `${model.name}, photographed at AutoModz`}
+                fill
+                sizes={imageSizes.fullBleed}
+                style={{ objectFit: 'contain' }}
+              />
+            </div>
+            {viewed.caption ? (
+              <Text role="body" tone="ink2" style={{ marginTop: space.gap }}>
+                {viewed.caption}
+              </Text>
+            ) : null}
+            <div style={{ marginTop: space.gap, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+              {viewed.visitHref ? (
+                <Button tier="forward" href={viewed.visitHref}>The visit it came from</Button>
+              ) : null}
+              <Button tier="quiet" onClick={() => setViewing(null)}>Close</Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+    </main>
   );
 }

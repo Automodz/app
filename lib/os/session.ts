@@ -34,8 +34,6 @@ export interface SessionState {
   lastRoute: string | null;
   /** how they arrived there, so Back stays truthful */
   navStack: string[];
-  /** the welcome has been met (previously a separate flag) */
-  onboardingCompleted: boolean;
   /** half-finished input, keyed by form - never lost to a reload */
   drafts: Record<string, unknown>;
   /** interface state that should survive a launch */
@@ -54,7 +52,6 @@ export const emptySession = (): SessionState => ({
   selectedVehicleId: null,
   lastRoute: null,
   navStack: [],
-  onboardingCompleted: false,
   drafts: {},
   ui: { theme: 'dark', scrollPositions: {} },
   lastSyncedAt: null,

@@ -21,7 +21,7 @@ export default async function HistoryPage(
         const car = (wanted && picture.cars.find(c => c.vehicle.id === wanted))
           || leadCar(picture);
         return car
-          ? <HistoryScreen model={toHistory(car, picture.catalogue)} />
+          ? <HistoryScreen model={toHistory(car, picture.invoices)} />
           : <NoCar />;
       }}
     </ServerRoom>

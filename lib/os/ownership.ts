@@ -11,7 +11,12 @@
  * module order follows from it, so no two customers are shown the same Home.
  */
 import type { Booking } from '@/lib/types';
-import type { Protection } from '@/lib/cx/protection';
+/* REPOINTED at the stored protection model, away from the retired
+   `lib/cx/protection`. Both carried a field called `term`, meaning a health
+   word in the old and a Term OBJECT in the new — so this engine silently could
+   not read a real customer's protections. `health` is the term engine's own
+   derivation (§22.2: one implementation of the lifecycle). */
+import type { LiveProtection } from './protection';
 import type { ClubModel } from './club';
 import { careAct, visitPhase } from './visit';
 import { daysLeft } from './term';
@@ -89,7 +94,7 @@ export interface OwnershipInput {
   declined: Booking | null;
   /** completed visits, newest first */
   completed: Booking[];
-  protections: Protection[];
+  protections: LiveProtection[];
   club: ClubModel;
   now?: Date;
 }
@@ -111,7 +116,7 @@ export function ownershipState(input: OwnershipInput): Ownership {
 
     if (club.state === 'grace' || club.state === 'lapsed') return 'membership_attention';
 
-    if (protections.some(p => p.active && (p.term === 'waning' || p.term === 'expiring'))) {
+    if (protections.some(p => p.health === 'attention' || p.health === 'urgent')) {
       return 'warranty_expiring';
     }
 
@@ -120,7 +125,7 @@ export function ownershipState(input: OwnershipInput): Ownership {
     const since = -daysLeft(completed[0].scheduledDate, now); // days since that visit
     if (since >= DORMANT_DAYS) return 'dormant';
 
-    return protections.some(p => p.active) ? 'protected' : 'settled';
+    return protections.some(p => p.health !== 'lapsed') ? 'protected' : 'settled';
   })();
 
   return { state, order: orderFor(state) };

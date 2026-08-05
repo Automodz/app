@@ -1,4 +1,5 @@
 import { adminDb } from './firebaseAdmin';
+import { washesLeftOf } from '@/lib/os/club';
 
 /**
  * Per-user retention pass (admin SDK). Called by the authenticated
@@ -76,7 +77,7 @@ export async function runRetentionForUser(uid: string): Promise<{ created: strin
         'membership');
     }
     if (typeof sub.washesTotal === 'number' && typeof sub.washesUsed === 'number') {
-      const remaining = Math.max(0, sub.washesTotal - sub.washesUsed);
+      const remaining = washesLeftOf(sub);
       if (remaining > 0 && daysLeft > 3) {
         await createNotif('washes_left', 'Washes remaining this month',
           `You still have ${remaining} wash${remaining === 1 ? '' : 'es'} left on your ${sub.plan} plan.`,

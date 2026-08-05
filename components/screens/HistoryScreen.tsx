@@ -1,4 +1,9 @@
-'use client';
+/**
+ * A SERVER COMPONENT. It holds no state, no handlers and no motion — it is
+ * handed a model and draws it — so marking it `'use client'` shipped its
+ * markup to the browser twice and hydrated it for nothing. The interactive
+ * pieces it renders carry their own directive.
+ */
 /**
  * HISTORY — the album.
  *
@@ -24,7 +29,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { color, space, MEASURE, photoSize, stack, imageSizes } from '@/design';
-import { Hero, Heading, Text } from '@/components/system';
+import { Hero, Heading, Text, OfflineNote } from '@/components/system';
 
 export interface HistoryPhoto {
   url: string;
@@ -57,6 +62,12 @@ export interface HistoryVisit {
   settled?: string;
   /** §14.6 — the file, behind one tap, never on the surface. */
   documents?: readonly HistoryDocument[];
+  /**
+   * The public address of this chapter, when it has one. Present only where an
+   * invoice exists, because the share token is the invoice's — there is no
+   * second token and no second privacy rule.
+   */
+  shareHref?: string;
 }
 
 export interface HistoryModel {
@@ -127,6 +138,9 @@ export function HistoryScreen({ model }: { model: HistoryModel }) {
         paddingBottom: stack.contentFloor,
       }}
     >
+      {/* §20.3 — the room was rendered on the server and is still true; only
+          what happens NEXT needs a connection. One implementation (§22.2). */}
+      <OfflineNote />
       {/* §18.1 — a car with no completed visits has no History section. Not an
           empty one. None. There is nothing here to invite, because a first
           visit is arranged in the Studio, not in a record of the past. */}

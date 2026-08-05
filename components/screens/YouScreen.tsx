@@ -32,7 +32,7 @@
  * defended by a maze).
  */
 import { color, space, column, stack } from '@/design';
-import { Heading, Text, Button } from '@/components/system';
+import { Heading, Text, Button, OfflineNote } from '@/components/system';
 
 /** A sentence, and the one way onward from it. */
 export interface YouEntry {
@@ -65,13 +65,19 @@ export interface YouModel {
   /**
    * §10.5 — "If there is no destination yet, there is no control yet."
    *
-   * These three had nowhere to go and pointed at `/you`, the address they were
-   * already on. They are optional so the room can omit them entirely until the
-   * surfaces exist, rather than offering a control that does nothing.
+   * These three used to point at `/you`, the address they were already on, and
+   * were omitted rather than left inert. Each now opens a real surface: the
+   * preference sheet, the referral sheet, and the published privacy policy.
    */
   notifications?: YouEntry;
   ownership?: YouEntry;
   privacy?: YouEntry;
+  /** Editing name and phone. */
+  details?: YouEntry;
+  /** Terms of service — published, and required for an App Store listing. */
+  terms?: YouEntry;
+  /** §5.1.1(v) — deleting the account, in-app, with nothing to request. */
+  deletion?: YouEntry;
   /** §20.1 — a way to reach a human. */
   support: YouEntry;
 }
@@ -109,7 +115,7 @@ export function YouScreen({
 }) {
   const {
     name, reachedAt, garage, membership,
-    notifications, ownership, privacy, support,
+    details, notifications, ownership, privacy, terms, deletion, support,
   } = model;
 
   return (
@@ -120,6 +126,9 @@ export function YouScreen({
         paddingBottom: stack.contentFloor,
       }}
     >
+      {/* §20.3 — the room was rendered on the server and is still true; only
+          what happens NEXT needs a connection. One implementation (§22.2). */}
+      <OfflineNote />
       {/* ── IDENTITY ────────────────────────────────────────────────────
           The name, at the size a name deserves. §21.6 — the one top-level
           heading. The top safe area is respected here rather than by a hero,
@@ -163,7 +172,8 @@ export function YouScreen({
         </section>
       ) : null}
 
-      {notifications ? <Entry entry={notifications} gap="movement" /> : null}
+      {details ? <Entry entry={details} gap="movement" /> : null}
+      {notifications ? <Entry entry={notifications} gap="rest" /> : null}
 
       {/* ── THE ADMINISTRATIVE END ──────────────────────────────────────
           Closer together, on purpose. These are things a customer needs to be
@@ -172,6 +182,7 @@ export function YouScreen({
           warns about. */}
       {ownership ? <Entry entry={ownership} gap="movement" /> : null}
       {privacy ? <Entry entry={privacy} gap="rest" /> : null}
+      {terms ? <Entry entry={terms} gap="rest" /> : null}
       <Entry entry={support} gap={ownership || privacy ? 'rest' : 'movement'} />
 
       {/* ── LEAVING ─────────────────────────────────────────────────────
@@ -182,6 +193,16 @@ export function YouScreen({
       <section style={{ ...column, paddingTop: space.movement }}>
         <Button tier="quiet" onClick={onSignOut}>Sign out</Button>
       </section>
+
+      {/* DELETING THE ACCOUNT sits below signing out and last of all. It is
+          not hidden — Apple 5.1.1(v) and plain decency both require it to be
+          findable — but it is the furthest thing from the top, because it is
+          the one act here that cannot be undone. */}
+      {deletion ? (
+        <section style={{ ...column, paddingTop: space.rest }}>
+          <Button tier="quiet" href={deletion.action.href}>{deletion.action.label}</Button>
+        </section>
+      ) : null}
     </main>
   );
 }

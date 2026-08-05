@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Unbounded, Outfit, DM_Sans, DM_Mono } from 'next/font/google';
 import { CustomerChrome } from '@/navigation';
 import { SITE_URL } from '@/lib/company';
+import { hasSessionCookie } from '@/lib/server/session';
 import './globals.css';
 
 /**
@@ -103,7 +104,14 @@ export const viewport: Viewport = {
   themeColor: '#0A0B0D',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  /* `/` is two addresses in one: the public landing for a visitor, the
+     customer's Home for an owner. Only the second wears the navigation bar, and
+     that decision has to be made here — above the page — because the bar is a
+     sibling of the page, not a child of it. Presence of the cookie is enough to
+     choose a shell; the page still verifies it. */
+  const signedIn = await hasSessionCookie();
+
   return (
     <html lang="en" className={`light ${fontVars}`} data-theme="light" suppressHydrationWarning>
       <head>
@@ -119,7 +127,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             customer shell is gated rather than mounted. `CustomerChrome`
             mounts nothing at all at an address that is not a room — see
             that file for why "nothing" is stronger than "hidden". */}
-        <CustomerChrome>{children}</CustomerChrome>
+        <CustomerChrome signedIn={signedIn}>{children}</CustomerChrome>
       </body>
     </html>
   );

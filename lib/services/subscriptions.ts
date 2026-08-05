@@ -1,19 +1,18 @@
 import {
-  collection, doc, addDoc, updateDoc, getDocs,
+  collection, doc, addDoc, updateDoc, getDoc, getDocs,
   query, where, orderBy, limit, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Subscription } from '../types';
+import { MEMBERSHIP_PLANS } from '../types';
+import { isLapsed } from '../os/club';
 
-const todayStr = () => new Date().toISOString().split('T')[0];
 
 /** Expiry is COMPUTED here, never written - customers aren't allowed to write
  *  status changes (rules), and a lapsed member must still see their card.
  *  Persistence happens admin-side via expireLapsedSubscriptions(). */
 const withComputedExpiry = (sub: Subscription): Subscription =>
-  sub.status === 'active' && sub.endDate < todayStr()
-    ? { ...sub, status: 'expired' }
-    : sub;
+  isLapsed(sub) ? { ...sub, status: 'expired' } : sub;
 
 export const getUserSubscription = async (uid: string): Promise<Subscription | null> => {
   const q = query(
@@ -51,9 +50,25 @@ export const getAllSubscriptions = async (): Promise<Subscription[]> => {
 export const updateSubscriptionStatus = async (
   id: string, status: Subscription['status'], notes?: string,
 ) => {
+  const ref = doc(db, 'subscriptions', id);
   const data: Record<string, unknown> = { status, updatedAt: serverTimestamp() };
   if (notes) data.adminNotes = notes;
-  await updateDoc(doc(db, 'subscriptions', id), data);
+
+  /* ACTIVATION IS THE MOMENT MONEY CHANGED HANDS, and it is stamped once.
+     `paidAt` is what membership revenue is reported on, so re-activating a
+     subscription must not move it into a later month — and the amount is
+     captured with it so a future price change cannot rewrite past revenue. */
+  if (status === 'active') {
+    const snap = await getDoc(ref);
+    const existing = snap.data() as Subscription | undefined;
+    if (existing && !existing.paidAt) {
+      data.paidAt = serverTimestamp();
+      const plan = MEMBERSHIP_PLANS.find(p => p.id === existing.plan);
+      if (plan) data.amountPaid = plan.price;
+    }
+  }
+
+  await updateDoc(ref, data);
 };
 
 /**
@@ -62,8 +77,7 @@ export const updateSubscriptionStatus = async (
  */
 export const expireLapsedSubscriptions = async (): Promise<number> => {
   const snap = await getDocs(query(collection(db, 'subscriptions'), where('status', '==', 'active')));
-  const today = todayStr();
-  const lapsed = snap.docs.filter(d => (d.data() as Subscription).endDate < today);
+  const lapsed = snap.docs.filter(d => isLapsed(d.data() as Subscription));
   await Promise.all(lapsed.map(d =>
     updateDoc(doc(db, 'subscriptions', d.id), { status: 'expired', updatedAt: serverTimestamp() }),
   ));

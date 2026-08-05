@@ -26,6 +26,7 @@ import toast from 'react-hot-toast';
 import { format, addDays } from 'date-fns';
 import {
   subscribeTodaysJobs, getBookingsForDates, getTodayAttendance, shiftMath,
+  subscribePendingBookings,
   updateJobStatus, getJobsForDate,
 } from '@/lib/firebaseService';
 import OpsTimeline from '@/components/studio/OpsTimeline';
@@ -107,6 +108,17 @@ export default function StudioBoard() {
     getTodayAttendance().then(setAttendance).catch(() => {});
   }, [today]);
   const [timelineBookings, setTimelineBookings] = useState<Booking[]>([]);
+
+  /* ── BOOKINGS AWAITING AN ANSWER ────────────────────────────────────────
+     The customer's only booking path is now in-app, so a request that nobody
+     confirms is a customer left waiting with no way to chase it. This board
+     showed jobs and dated bookings and never mentioned pending ones at all —
+     a new booking was invisible on the one screen the studio watches.
+
+     A LISTENER, not a fetch: the whole point is that it appears without anyone
+     reloading. Newest first, because the newest is the one nobody has seen. */
+  const [pending, setPending] = useState<Booking[]>([]);
+  useEffect(() => subscribePendingBookings(setPending), []);
 
   const floor = useFloor(jobs, bookings);
   const { bays, waiting, qc, ready, deliveredToday, freeInMin, bookedMin } = floor;
@@ -351,6 +363,45 @@ export default function StudioBoard() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl">
+      {/* ── AWAITING AN ANSWER ────────────────────────────────────────
+          Above the header on purpose. Everything else on this board is work
+          already in hand; this is the only thing on it that a customer is
+          currently waiting on, and it is the one thing that used to be
+          invisible here. §18.1 — nothing at all when there is nothing. */}
+      {pending.length > 0 ? (
+        <div
+          className="mb-4 rounded-xl p-4"
+          role="status"
+          aria-live="polite"
+          style={{ background: 'var(--fog)', border: '1px solid var(--warning)' }}
+        >
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="font-display font-700" style={{ color: 'var(--chrome)' }}>
+              {pending.length} booking{pending.length === 1 ? '' : 's'} awaiting confirmation
+            </p>
+            <Link
+              href="/admin/bookings?status=pending"
+              className="font-mono tap-target inline-flex items-center"
+              style={{ fontSize: 11, letterSpacing: '0.1em', color: 'var(--info)', minHeight: 44 }}
+            >
+              OPEN
+            </Link>
+          </div>
+          <div className="mt-2 grid gap-1">
+            {pending.slice(0, 4).map(b => (
+              <Link
+                key={b.id}
+                href={`/admin/bookings/${b.id}`}
+                className="text-sm font-body tap-target flex items-center"
+                style={{ color: 'var(--steel)', minHeight: 44 }}
+              >
+                {b.serviceName} · {b.vehicleName || b.vehicleRegNo} · {format(new Date(`${b.scheduledDate}T12:00:00`), "dd MMM")} {formatTime(b.scheduledTime)}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {/* ── Header: the studio at a glance ── */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>

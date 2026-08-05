@@ -63,13 +63,16 @@
 import { useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useOpenPalette } from '@/navigation/Palette';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import {
   color, space, MEASURE, HAIRLINE, radius,
   heroMotion, stack, imageSizes, column,
 } from '@/design';
 import type { StateTone } from '@/design';
-import { Hero, Heading, Text, Button, toneColor } from '@/components/system';
+import { Hero, Heading, Text, Button, Expansion, toneColor } from '@/components/system';
+import { OfflineNote } from '@/components/system';
 import type { Tone } from '@/components/system';
 
 /* ── What Home needs to be true ──────────────────────────────────────────
@@ -98,8 +101,19 @@ export interface HomeState {
   word: string;
   /** One sentence, in the studio's voice. §13.3 */
   line?: string;
-  /** §4.1 — the way to the answer, when there is one. */
-  action?: { label: string; href: string };
+  /**
+   * A second, quieter fact: the service name, or why a visit was refused.
+   * Ported from the old Home, where six of the nine states carried one.
+   */
+  note?: string;
+  /** One honest line about time while the car is here, from `os/stay`. */
+  timing?: string;
+  /**
+   * §3.3 — colour only where it carries meaning grey cannot. `lapsed` is the
+   * neutral tone here: it renders as ink, spending no colour on "nothing is
+   * wrong".
+   */
+  tone: StateTone;
 }
 
 export interface HomeProtection {
@@ -121,7 +135,7 @@ export interface HomeProtection {
   tone: StateTone;
 }
 
-export interface HomeLatest {
+export interface HomeLiveActivity {
   title: string;
   when: string;
   /** One quiet sentence. What it felt like, not what was billed. */
@@ -130,11 +144,46 @@ export interface HomeLatest {
   href: string;
 }
 
+/** One line of the ownership record. docs/HOME-STATE-MAP.md § Timeline events */
+export interface HomeTimelineEvent {
+  id: string;
+  title: string;
+  line?: string;
+  /** Already spoken — "12 March 2026", never a raw ISO string. */
+  when: string;
+  href?: string;
+  /** Dated ahead of today: a booked visit, a warranty about to end. */
+  ahead: boolean;
+}
+
+/** §5.2 — the studio is a place, reached from the thing it cares for. */
+export interface HomeStudio {
+  name: string;
+  address: string;
+  directions: string;
+  call: string;
+  message: string;
+}
+
 export interface HomeModel {
   vehicle: HomeVehicle;
   state: HomeState;
   protections: HomeProtection[];
-  latest?: HomeLatest;
+  /**
+   * What is happening to the car now, or most recently. Was "Current Story" —
+   * renamed because "story" invited narrative padding and this is a fact with a
+   * time on it (ARCHITECTURE §4).
+   */
+  liveActivity?: HomeLiveActivity;
+  /**
+   * The one next thing to do, ALREADY RESOLVED. The engine emitted an intent
+   * and `navigation/resolve.ts` turned it into an address, so this renderer
+   * contains no destination logic (ARCHITECTURE §1, §4).
+   */
+  nextAction: { label: string; href: string };
+  /** Newest first, future events above the present. May be empty. */
+  timeline: HomeTimelineEvent[];
+  studio: HomeStudio;
 }
 
 /**
@@ -233,9 +282,36 @@ function Protection({ label, term, remaining, tone }: HomeProtection) {
 }
 
 export function HomeScreen({ model }: { model: HomeModel }) {
-  const { vehicle, state, protections, latest } = model;
+  const { vehicle, state, protections, liveActivity, nextAction, timeline, studio } = model;
   const still = useReducedMotion();
   const frame = useRef<HTMLDivElement>(null);
+
+  /* Which protection is open. An id, not an object: the model is the source of
+     truth and this only names a row in it. */
+  /* EVERY EXPANSION IS ADDRESSABLE (§6.4, ARCHITECTURE §5). The old Home put
+     each sheet in the URL (`?sheet=…`) so it could be linked, shared and
+     restored on reload; an expansion that lived only in component state would
+     lose all three. `?open=protection:p2` is that address, and the back button
+     closes the layer because it is a real history entry. */
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const open = params.get('open');
+  const openPalette = useOpenPalette();
+
+  const setOpen = (value: string | null) => {
+    const next = new URLSearchParams(params.toString());
+    if (value) next.set('open', value);
+    else next.delete('open');
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const openProtection = open?.startsWith('protection:') ? open.slice(11) : null;
+  const opened = protections.find(p => p.id === openProtection);
+
+  const openEvent = open?.startsWith('event:') ? open.slice(6) : null;
+  const openedEvent = timeline.find(e => e.id === openEvent);
 
   /* §7.4 — parallax is one of the four motions the photograph is allowed.
      The lag is the token: at 0.82 the image travels at 82% of scroll speed,
@@ -275,6 +351,13 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         paddingBottom: stack.contentFloor,
       }}
     >
+      {/* ── OFFLINE ────────────────────────────────────────────────────
+          §20.3 — ours or theirs. Everything on this page was rendered on the
+          server and is still true; only what happens NEXT is affected, so this
+          says exactly that and nothing more alarming. §21.7 — announced
+          politely, because the customer did not act to cause it. */}
+      <OfflineNote />
+
       {/* ── THE FIRST SCREEN ────────────────────────────────────────────
           §3.1, §3.2, §11.2, §5.3 (1 and 2). The photograph at the size of
           the screen, and over it, everything that is true right now. */}
@@ -297,9 +380,23 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                   scale, which is where §9.5 puts it. Two of these lines were
                   `over2` when this screen was first built, and both failed AA
                   against the worst-case image. */}
-              <Text role="data" tone="over" as="span">
-                {vehicle.name} · {vehicle.plate}
-              </Text>
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', gap: space.gap,
+              }}>
+                <Text role="data" tone="over" as="span">
+                  {vehicle.name} · {vehicle.plate}
+                </Text>
+                {/* The Desk's own control. It names the act, not the mechanism —
+                    §21.8, the customer's word. */}
+                <Button
+                  tier="quiet"
+                  onClick={openPalette}
+                  style={{ color: color.over, paddingInline: 0 }}
+                >
+                  Find
+                </Button>
+              </div>
 
               {/* §5.3 #2 and §9.5 — the one Display on this screen. */}
               <Heading
@@ -325,19 +422,35 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                 </Text>
               ) : null}
 
-              {/* §4.1 — the one way in. A line of type, not a slab: over a
-                  photograph a filled control is furniture, and §10.4's
-                  `forward` tier is exactly "go deeper". */}
-              {state.action ? (
-                <div style={{ marginTop: space.breath }}>
-                  <Button
-                    tier="forward"
-                    href={state.action.href}
-                    style={{ color: color.over }}
-                  >
-                    {state.action.label}
-                  </Button>
-                </div>
+              {/* The second, quieter fact: the service name, or why a visit
+                  was refused. Six of the nine ownership states carry one, and
+                  none of them could be shown before the engine was reconnected.
+
+                  THE ACTION IS NOT HERE. It follows the protection status, so
+                  the owner learns the position of the car before being offered
+                  a way to change it. During a live visit the protection region
+                  is suppressed (one subject at a time), so the action lands
+                  immediately under the state anyway — the order resolves
+                  itself rather than needing a special case. */}
+              {state.timing ? (
+                <Text
+                  role="data"
+                  tone="over"
+                  aria-live="polite"
+                  style={{ marginTop: space.line }}
+                >
+                  {state.timing}
+                </Text>
+              ) : null}
+
+              {state.note ? (
+                <Text
+                  role="whisper"
+                  tone="over"
+                  style={{ marginTop: space.breath, maxWidth: MEASURE, opacity: 0.85 }}
+                >
+                  {state.note}
+                </Text>
               ) : null}
             </>
           }
@@ -371,6 +484,59 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         </Hero>
       </div>
 
+      {/* ── LIVE ACTIVITY ─────────────────────────────────────────────
+          §5.3 #4. A memory, not a section: one photograph, full width, and
+          three lines beneath it. The whole block is the link, so there is no
+          control to label — a caption under a photograph of your own car does
+          not need a button reading "what we did".
+
+          §8.4 — the photograph is full-bleed while the words stay in the
+          gutter. That alternation is what stops the page reading as a column
+          of cards. */}
+      {liveActivity ? (
+        <section style={{ paddingTop: space.movement }}>
+          <Link
+            href={liveActivity.href}
+            style={{ display: 'block', textDecoration: 'none' }}
+          >
+            {liveActivity.photo ? (
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  /* Photographic, and deliberately not the 16:10 it was: a
+                     wide crop reads as a banner across the page, and a banner
+                     is an advertisement rather than a memory. */
+                  aspectRatio: '4 / 3',
+                }}
+              >
+                <Image
+                  src={liveActivity.photo}
+                  alt={`${liveActivity.title}, finished at AutoModz`}
+                  fill
+                  sizes={imageSizes.fullBleed}
+                  style={{ objectFit: 'cover' }}
+                />
+              </div>
+            ) : null}
+
+            <div style={{ ...column, marginTop: space.gap }}>
+              {/* The date first. It is what makes the photograph a memory
+                  rather than a picture. */}
+              <Text role="data" tone="ink3">{liveActivity.when}</Text>
+              <Heading level="title" style={{ marginTop: space.breath }}>
+                {liveActivity.title}
+              </Heading>
+              {liveActivity.note ? (
+                <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+                  {liveActivity.note}
+                </Text>
+              ) : null}
+            </div>
+          </Link>
+        </section>
+      ) : null}
+
       {/* ── WHAT IS PROTECTING IT ───────────────────────────────────────
           §5.3 #3, §14. No heading: each line says what it is and how much of
           it is left, which is the whole of what a heading would have claimed.
@@ -390,62 +556,203 @@ export function HomeScreen({ model }: { model: HomeModel }) {
             gap: space.rest,
           }}
         >
-          {protections.map(p => <Protection key={p.id} {...p} />)}
+          {/* ARCHITECTURE §5 — a protection is an object already on this
+              screen, so it OPENS rather than routing. The row and the layer
+              share a `layoutId`, which is what makes the layer read as this
+              row growing rather than a panel arriving from nowhere. */}
+          {protections.map(p => (
+            <motion.button
+              key={p.id}
+              type="button"
+              layoutId={`protection-${p.id}`}
+              onClick={() => setOpen(`protection:${p.id}`)}
+              style={{
+                appearance: 'none',
+                background: 'transparent',
+                border: 0,
+                padding: 0,
+                textAlign: 'left',
+                width: '100%',
+                cursor: 'pointer',
+                display: 'block',
+              }}
+            >
+              <Protection {...p} />
+            </motion.button>
+          ))}
         </section>
       ) : null}
 
-      {/* ── THE LATEST WORK ─────────────────────────────────────────────
-          §5.3 #4. A memory, not a section: one photograph, full width, and
-          three lines beneath it. The whole block is the link, so there is no
-          control to label — a caption under a photograph of your own car does
-          not need a button reading "what we did".
+      {/* ── NEXT BEST ACTION ────────────────────────────────────────────
+          §4.1 — the one way in, and it sits HERE rather than in the hero so
+          the owner reads the position of the car first: what is happening,
+          what protects it, and only then what they might do about it.
 
-          §8.4 — the photograph is full-bleed while the words stay in the
-          gutter. That alternation is what stops the page reading as a column
-          of cards. */}
-      {latest ? (
-        <section style={{ paddingTop: space.movement }}>
-          <Link
-            href={latest.href}
-            style={{ display: 'block', textDecoration: 'none' }}
-          >
-            {latest.photo ? (
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  /* Photographic, and deliberately not the 16:10 it was: a
-                     wide crop reads as a banner across the page, and a banner
-                     is an advertisement rather than a memory. */
-                  aspectRatio: '4 / 3',
-                }}
-              >
-                <Image
-                  src={latest.photo}
-                  alt={`${latest.title}, finished at AutoModz`}
-                  fill
-                  sizes={imageSizes.fullBleed}
-                  style={{ objectFit: 'cover' }}
-                />
+          `primary` rather than `forward`: off the photograph there is no
+          competing subject, and §10.4 reserves the filled tier for "the thing
+          this screen exists to let you do". There is at most one. */}
+      <section style={{ ...column, paddingTop: space.movement }}>
+        <Button tier="primary" href={nextAction.href}>
+          {nextAction.label}
+        </Button>
+      </section>
+
+      {/* ── THE TIMELINE ────────────────────────────────────────────────
+          docs/HOME-STATE-MAP.md § Timeline events. One living record of
+          ownership, and it runs FORWARD as well as back: a booked visit and a
+          warranty about to end are both dated ahead of today and sort above
+          the present. §18.1 — with nothing to say, nothing appears. */}
+      {timeline.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Text role="data" tone="ink3">Timeline</Text>
+          <div style={{ marginTop: space.gap }}>
+            {timeline.slice(0, TIMELINE_ON_HOME).map((e, i) => (
+              <TimelineRow
+                key={e.id}
+                event={e}
+                first={i === 0}
+                onOpen={() => setOpen(`event:${e.id}`)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── THE STUDIO ──────────────────────────────────────────────────
+          §5.2 — the studio is a place, reached from the thing it cares for.
+          Three ways to reach it, all of them leaving the application, so all
+          three are plain anchors (`Button` handles that itself). */}
+      <section style={{ ...column, paddingTop: space.movement }}>
+        <Text role="data" tone="ink3">{studio.name}</Text>
+        <Text role="body" tone="ink2" style={{ marginTop: space.breath, maxWidth: MEASURE }}>
+          {studio.address}
+        </Text>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: space.gap,
+            marginTop: space.gap,
+          }}
+        >
+          <Button tier="forward" href={studio.directions}>Directions</Button>
+          <Button tier="forward" href={studio.call}>Call</Button>
+          <Button tier="forward" href={studio.message}>WhatsApp</Button>
+        </div>
+      </section>
+
+      {/* THE EXPANSION. Radix owns focus, dismissal and the scroll lock;
+          every visual value is ours (ARCHITECTURE §6). */}
+      <Expansion
+        open={openProtection !== null}
+        onOpenChange={o => { if (!o) setOpen(null); }}
+        title={opened?.label ?? 'Protection'}
+        layoutId={opened ? `protection-${opened.id}` : undefined}
+      >
+        {opened ? (
+          <>
+            <Text role="body" tone="ink2">{opened.term}</Text>
+            {opened.remaining !== undefined ? (
+              <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
+                {Math.round(opened.remaining * 100)}% of the term remains.
+              </Text>
+            ) : (
+              <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
+                This one does not run out.
+              </Text>
+            )}
+          </>
+        ) : null}
+      </Expansion>
+
+      {/* A timeline event opens as itself, then offers the room it belongs to
+          — the object first, the address second. */}
+      <Expansion
+        open={openEvent !== null}
+        onOpenChange={o => { if (!o) setOpen(null); }}
+        title={openedEvent?.title ?? 'Timeline'}
+        layoutId={openedEvent ? `event-${openedEvent.id}` : undefined}
+      >
+        {openedEvent ? (
+          <>
+            <Text role="data" tone="ink3">
+              {openedEvent.when}{openedEvent.ahead ? ' · still to come' : ''}
+            </Text>
+            {openedEvent.line ? (
+              <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+                {openedEvent.line}
+              </Text>
+            ) : null}
+            {openedEvent.href ? (
+              <div style={{ marginTop: space.gap }}>
+                <Button tier="forward" href={openedEvent.href}>Open it</Button>
               </div>
             ) : null}
+          </>
+        ) : null}
+      </Expansion>
 
-            <div style={{ ...column, marginTop: space.gap }}>
-              {/* The date first. It is what makes the photograph a memory
-                  rather than a picture. */}
-              <Text role="data" tone="ink3">{latest.when}</Text>
-              <Heading level="title" style={{ marginTop: space.breath }}>
-                {latest.title}
-              </Heading>
-              {latest.note ? (
-                <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
-                  {latest.note}
-                </Text>
-              ) : null}
-            </div>
-          </Link>
-        </section>
-      ) : null}
     </main>
+  );
+}
+
+/** How much of the record Home shows. The rest lives in History. */
+const TIMELINE_ON_HOME = 6;
+
+/**
+ * ONE TIMELINE EVENT.
+ *
+ * A rule above each row rather than a card around it: the timeline is one
+ * continuous record, and boxing each entry would make six separate objects out
+ * of one story. An event dated ahead of today is dimmer, not louder — it has
+ * not happened yet, and drawing it at full weight would let a warranty that
+ * expires in March outshout a visit that actually took place.
+ */
+function TimelineRow(
+  { event, first, onOpen }: { event: HomeTimelineEvent; first: boolean; onOpen: () => void },
+) {
+  const body = (
+    <>
+      <Text role="data" tone="ink3">
+        {event.when}{event.ahead ? ' · ahead' : ''}
+      </Text>
+      <Text role="body" tone={event.ahead ? 'ink3' : 'ink'} style={{ marginTop: space.hair }}>
+        {event.title}
+      </Text>
+      {event.line ? (
+        <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+          {event.line}
+        </Text>
+      ) : null}
+    </>
+  );
+
+  const style = {
+    paddingBlock: space.gap,
+    borderTop: first ? undefined : `${HAIRLINE}px solid ${color.edge}`,
+    display: 'block',
+    textDecoration: 'none',
+  } as const;
+
+  /* ARCHITECTURE §5 — it OPENS. The address still exists and the expansion
+     offers it, but tapping the row does not leave the page. */
+  return (
+    <motion.button
+      type="button"
+      layoutId={`event-${event.id}`}
+      onClick={onOpen}
+      style={{
+        ...style,
+        appearance: 'none',
+        background: 'transparent',
+        border: 0,
+        borderTop: style.borderTop,
+        width: '100%',
+        textAlign: 'left',
+        cursor: 'pointer',
+      }}
+    >
+      {body}
+    </motion.button>
   );
 }

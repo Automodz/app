@@ -6,10 +6,33 @@
  * care cadence, built on the existing term engine. Accepting one opens the
  * arrange sheet, which creates a real Visit (booking, status `pending`).
  */
-import { termState, daysLeft } from './term';
-import { PROTECTION_WORD, type Protection, type ProtectionKind } from '@/lib/cx/protection';
+import { daysLeft } from './term';
+import type { LiveProtection } from './protection';
+import { PROTECTION_TITLE, type ProtectionKind } from '@/lib/types';
 
-export type ProposalCategory = ProtectionKind | 'Washing';
+/**
+ * REPOINTED at the stored protection model (`lib/os/protection`), away from the
+ * retired `lib/cx/protection`. The two carried a field called `term` that meant
+ * different things — a health word in the old, a Term OBJECT in the new — so
+ * the engine silently could not read a real customer's protections. Health now
+ * comes from the one term engine (`healthOf`) rather than being re-derived here.
+ *
+ * Only the kinds the studio actually SELLS can be proposed. The stored model
+ * has ten kinds, seven of which are customer-declared (insurance, PUC, RC,
+ * FASTag…). Proposing "renew your registration" as a bookable service would be
+ * nonsense, so the reverse of `CATEGORY_TO_KIND` is the whole permitted set.
+ */
+const KIND_TO_CATEGORY = {
+  ppf: 'PPF',
+  ceramic: 'Ceramic',
+  glass: 'Coating',
+} as const satisfies Partial<Record<ProtectionKind, string>>;
+
+type ServiceableKind = keyof typeof KIND_TO_CATEGORY;
+
+const isServiceable = (k: ProtectionKind): k is ServiceableKind => k in KIND_TO_CATEGORY;
+
+export type ProposalCategory = (typeof KIND_TO_CATEGORY)[ServiceableKind] | 'Washing';
 
 export interface Proposal {
   vehicleId: string;
@@ -26,30 +49,31 @@ export const WASH_CADENCE_DAYS = 30;
 
 export function proposalFor(args: {
   vehicleId: string;
-  protections: Protection[];
+  protections: LiveProtection[];
   lastCaredOn?: string;
   now?: Date;
 }): Proposal | null {
   const { vehicleId, protections, lastCaredOn, now = new Date() } = args;
 
-  // 1 · a protection nearing its end - expiring beats waning; cites the coat
+  /* 1 · a protection nearing its end - urgent beats attention; cites the coat.
+     `health` and `daysLeft` are the term engine's own derivation, so the
+     lifecycle is decided in exactly one place (§22.2). A perpetual or balance
+     term has no daysLeft and cannot be "nearing" a date it does not have. */
   const nearing = protections
-    .filter(p => p.until)
-    .map(p => {
-      const iso = p.until!.toISOString().split('T')[0];
-      return { p, state: termState(iso, { now }), left: daysLeft(iso, now) };
-    })
-    .filter(x => x.state === 'waning' || x.state === 'expiring')
-    .sort((a, b) => a.left - b.left);
+    .filter(p => isServiceable(p.kind))
+    .filter(p => p.health === 'attention' || p.health === 'urgent')
+    .filter(p => p.daysLeft != null)
+    .sort((a, b) => a.daysLeft! - b.daysLeft!);
 
   if (nearing.length) {
-    const { p, left } = nearing[0];
-    const word = PROTECTION_WORD[p.kind];
+    const p = nearing[0];
+    const left = p.daysLeft!;
+    const word = PROTECTION_TITLE[p.kind];
     return {
       vehicleId,
       reason: `The ${word.toLowerCase()} has ${left} day${left === 1 ? '' : 's'} of protection left - time to renew it.`,
       headline: `${word} renewal due`,
-      serviceCategory: p.kind,
+      serviceCategory: KIND_TO_CATEGORY[p.kind as ServiceableKind],
     };
   }
 

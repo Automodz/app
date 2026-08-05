@@ -9,15 +9,23 @@
  * fallback — comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
-import type { Booking, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
-import { PROTECTION_TITLE } from '@/lib/types';
+import type { Booking, Invoice, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
+import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
 import { liveProtection, projectProtections, sortByUrgency } from '@/lib/os/protection';
 import { visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
+import { readOwnership, clubOf } from './ownership';
+import { cycleDaysLeft, washesLeftOf } from '@/lib/os/club';
+import { homeStateCopy } from './homeState';
+import { projectTimeline } from '@/lib/os/timeline';
+import { projectMoments, sortMoments, groupByMonth, SHOT_CAPTION } from '@/lib/os/moment';
+import type { LiveVisitModel } from '@/components/screens/LiveVisitScreen';
+import { telLink } from '@/lib/company';
 
-import type { HomeModel, HomeProtection } from '@/components/screens/HomeScreen';
+import type { HomeModel, HomeProtection, HomeTimelineEvent } from '@/components/screens/HomeScreen';
+import { resolveAction, hrefForRef, hrefForDestination } from '@/navigation/resolve';
 import type { GarageModel } from '@/components/screens/GarageScreen';
 import type { VehicleModel, VehicleProtection } from '@/components/screens/VehicleScreen';
 import type { PhotographSource } from '@/components/vehicle';
@@ -107,7 +115,7 @@ function remainingOf(p: Protection, now = new Date()): number | undefined {
 const protectionCache = new WeakMap<CarPicture, ReturnType<typeof computeProtections>>();
 const stateCache = new WeakMap<CarPicture, { word: string; line?: string }>();
 
-function protectionsOf(car: CarPicture, catalogue: Service[], now = new Date()) {
+export function protectionsOf(car: CarPicture, catalogue: Service[], now = new Date()) {
   const hit = protectionCache.get(car);
   if (hit) return hit;
   const out = computeProtections(car, catalogue, now);
@@ -143,6 +151,27 @@ function liveBooking(car: CarPicture): Booking | undefined {
 }
 
 /** What is happening to the car, in the present tense (§5.3 #2). Memoised. */
+/**
+ * THE ONE STATE WORD, for every surface that shows one.
+ *
+ * Home reads the full ownership engine (11 states, docs/HOME-STATE-MAP.md).
+ * Garage and Vehicle show only the word — but it must be the SAME word, or the
+ * same car reads "Cared for" on one screen and "Protected" on the next. That
+ * divergence is what `lib/os/*` was written to prevent, and a test caught it
+ * the moment Home was reconnected.
+ *
+ * Their own surfaces are rebuilt in their own milestones; this only makes the
+ * vocabulary agree in the meantime.
+ */
+export function stateWordFor(
+  picture: CustomerPicture,
+  car: CarPicture,
+  now = new Date(),
+): string {
+  const protections = protectionsOf(car, picture.catalogue, now);
+  return homeStateCopy(readOwnership(picture, car, protections, now), car.vehicle.name).word;
+}
+
 export function stateOf(car: CarPicture): { word: string; line?: string } {
   const hit = stateCache.get(car);
   if (hit) return hit;
@@ -200,7 +229,17 @@ export function sinceWords(car: CarPicture, prefix = 'with AutoModz since'): str
  * after shipping this. Until it has run, a car whose jobs predate the seal shows
  * no history — correctly, since nothing has been sealed for it yet, but visibly.
  */
-export function visitsOf(car: CarPicture, _catalogue: Service[]): Visit[] {
+/**
+ * A car's HISTORY — sealed visits only.
+ *
+ * §16 — history never recalculates. A sealed visit carries its own services,
+ * its own amounts and its own captured terms, so nothing here consults the
+ * catalogue, the price list or the current warranties. It took a `catalogue`
+ * argument that was never read (`_catalogue`), threaded through four call
+ * sites; a parameter that exists but does nothing is an invitation to start
+ * using it, which is exactly how a past visit starts changing.
+ */
+export function visitsOf(car: CarPicture): Visit[] {
   return car.visits.filter(v => v.status === 'sealed');
 }
 
@@ -236,10 +275,9 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
   const car = leadCar(picture);
   if (!car) return null;
 
-  const state = stateOf(car);
-  const live = liveBooking(car);
   const protections = protectionsOf(car, picture.catalogue, now);
-  const visits = visitsOf(car, picture.catalogue);
+  const read = readOwnership(picture, car, protections, now);
+  const visits = visitsOf(car);
   const latest = visits[0];
   const latestFrames = latest ? framesOfVisit(latest, car) : [];
 
@@ -249,13 +287,12 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
       plate: car.vehicle.registrationNumber,
       photo: car.vehicle.photo ?? car.vehicle.photos?.[0],
     },
-    state: {
-      word: state.word,
-      line: state.line,
-      action: live && visitPhase(live.status) === 'live'
-        ? { label: 'Follow it live', href: `/vehicle?car=${car.vehicle.id}` }
-        : undefined,
-    },
+    /* THE STATE, FROM THE ENGINE — not from a hand-rolled condition here.
+       `lib/os/ownership` resolves 11 states in a documented precedence; this
+       used to be five branches over booking status alone, which meant a lapsed
+       membership, a refused visit, a dormant car and an expiring warranty were
+       all literally unsayable. See docs/HOME-STATE-MAP.md. */
+    state: homeStateCopy(read, car.vehicle.name),
     /* §15.2 — "a membership is a protection. It appears alongside everything
        else protecting the car." It lives in `subscriptions` rather than
        `protections`, so it is projected in here rather than being absent from
@@ -270,13 +307,36 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
       })),
       ...membershipAsProtection(picture.subscription, now),
     ],
-    latest: latest ? {
+    nextAction: resolveAction(read.nextAction),
+
+    liveActivity: latest ? {
       title: visitTitle(latest),
       when: longDate(isoOf(latest.createdAt)),
       note: visitLine(latest),
       photo: latestFrames[0]?.url,
-      href: `/history/${latest.id}`,
+      href: hrefForDestination({ to: 'visit', visitId: latest.id }),
     } : undefined,
+
+    /* THE TIMELINE — one living record, reusable on Vehicle and History.
+       Future events sort above the present, so a booked visit and an expiring
+       warranty both read as things coming toward the owner. */
+    timeline: projectTimeline({ car, protections, club: read.club, now })
+      .map<HomeTimelineEvent>(e => ({
+        id: e.id,
+        title: e.title,
+        line: e.line,
+        when: longDate(e.at.toISOString().slice(0, 10)),
+        href: hrefForRef(e.ref),
+        ahead: e.ahead,
+      })),
+
+    studio: {
+      name: COMPANY.name,
+      address: COMPANY.address,
+      directions: COMPANY.mapsUrl,
+      call: telLink(),
+      message: waLink(`Hi ${COMPANY.name}! A question about my ${car.vehicle.name}.`),
+    },
   };
 }
 
@@ -287,7 +347,7 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
 function membershipAsProtection(sub: Subscription | null, now: Date): HomeProtection[] {
   if (!sub || sub.status === 'cancelled') return [];
   const term: Term = { kind: 'dated', expiresOn: sub.endDate, grace: true };
-  const left = Math.max(0, sub.washesTotal - sub.washesUsed);
+  const left = washesLeftOf(sub);
   return [{
     id: `membership_${sub.id}`,
     label: PROTECTION_TITLE.membership,
@@ -327,17 +387,26 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
         name: car.vehicle.name,
         plate: car.vehicle.registrationNumber,
         photo: car.vehicle.photo ?? car.vehicle.photos?.[0],
-        state: stateOf(car).word,
+        state: stateWordFor(picture, car, now),
         protection: !worst
           ? 'Nothing declared yet'
           : worst.health === 'healthy'
             ? 'Fully protected'
             : `${PROTECTION_TITLE[worst.kind]}, ${termWords(worst.term, now).toLowerCase()}`,
         relationship: sinceWords(car),
-        href: `/vehicle?car=${car.vehicle.id}`,
+        href: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
       };
     }),
-    beginHref: '/studio',
+    beginHref: hrefForDestination({ to: 'studio' }),
+
+    /* The same cars in the shape the form writes back. Projected here rather
+       than derived in the screen: a renderer that reshaped domain objects
+       would be doing the projection's job (ARCHITECTURE §1). */
+    editable: ordered.map(car => ({
+      id: car.vehicle.id,
+      name: car.vehicle.name,
+      registrationNumber: car.vehicle.registrationNumber,
+    })),
   };
 }
 
@@ -369,7 +438,8 @@ const REGION_OF: Partial<Record<ProtectionKind, RegionId>> = {
   ppf: 'paint', ceramic: 'paint', glass: 'glass', interior: 'interior',
 };
 
-export function toVehicle(car: CarPicture, catalogue: Service[], now = new Date()): VehicleModel {
+export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new Date()): VehicleModel {
+  const catalogue = picture.catalogue;
   const protections = protectionsOf(car, catalogue, now);
 
   const byRegion: VehicleProtection[] = [];
@@ -387,12 +457,39 @@ export function toVehicle(car: CarPicture, catalogue: Service[], now = new Date(
   return {
     name: car.vehicle.name,
     plate: car.vehicle.registrationNumber,
-    state: stateOf(car).word,
+    state: stateWordFor(picture, car, now),
     since: sinceWords(car, 'With AutoModz since').replace(/^with/, 'With'),
     /* Carries the car. Without it, following History from the second car in a
        garage showed the FIRST car's life. */
-    historyHref: `/history?car=${car.vehicle.id}`,
+    historyHref: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),
     protections: byRegion,
+
+    /* THE CAR'S MEDIA, month by month — `os/moment`, connected. The old
+       Garage carried this for the selected car; the car has its own room now,
+       so it lives here. The engine derives the frames from the jobs; nothing
+       is re-derived. */
+    media: groupByMonth(sortMoments(projectMoments({
+      vehicleId: car.vehicle.id,
+      jobs: car.jobs,
+      visitByJob: new Map(
+        car.jobs.filter(j => j.bookingId).map(j => [j.id, j.bookingId as string]),
+      ),
+    }))).map(g => ({
+      month: g.label,
+      frames: g.moments.flatMap(m =>
+        m.media.map((f, i) => ({
+          id: `${m.id}-${i}`,
+          url: f.url,
+          caption: m.caption,
+          visitHref: m.visitId
+            ? hrefForDestination({ to: 'visit', visitId: m.visitId })
+            : undefined,
+        })),
+      ),
+    })).filter(g => g.frames.length > 0),
+
+    /* Correcting the car is the Garage's form, addressed. */
+    editHref: hrefForDestination({ to: 'garage.edit', vehicleId: car.vehicle.id }),
     /* §18.4's invitation. Was `'/studio'`, which has no declare flow. */
     declareHref: waLink(
       `Hello AutoModz — I would like to add what protects my ${car.vehicle.name}.`,
@@ -402,12 +499,26 @@ export function toVehicle(car: CarPicture, catalogue: Service[], now = new Date(
 
 /* ── HISTORY ─────────────────────────────────────────────────────────────── */
 
-export function toHistory(car: CarPicture, catalogue: Service[]): HistoryModel {
-  const visits = visitsOf(car, catalogue);
-  return { vehicle: car.vehicle.name, visits: visits.map(v => toVisit(v, car)) };
+/**
+ * A car's history. §16 — sealed visits only, and the papers they handed over.
+ * The catalogue argument is gone: nothing here may consult it (see `visitsOf`).
+ */
+export function toHistory(car: CarPicture, invoices: Invoice[] = []): HistoryModel {
+  const visits = visitsOf(car);
+  return { vehicle: car.vehicle.name, visits: visits.map(v => toVisit(v, car, invoices)) };
 }
 
-export function toVisit(visit: Visit, car: CarPicture): HistoryVisit {
+export function toVisit(
+  visit: Visit,
+  car: CarPicture,
+  invoices: Invoice[] = [],
+): HistoryVisit {
+  /* THE PAPERS THIS VISIT HANDED OVER. Matched on the visit's own ids, never
+     on date or amount — those can coincide. `documents` was hardcoded `[]`, so
+     no chapter has ever shown its invoice. */
+  const invoice = invoices.find(i =>
+    (visit.bookingId && i.bookingId === visit.bookingId)
+    || (visit.jobId && i.jobId === visit.jobId));
   const frames = framesOfVisit(visit, car);
   const [cover, ...rest] = frames;
 
@@ -429,14 +540,72 @@ export function toVisit(visit: Visit, car: CarPicture): HistoryVisit {
       label: PROTECTION_TITLE[t.kind],
       term: termWords(t.term).toLowerCase(),
     })),
+    /* §16 — the amount as SEALED, not as the price list reads today. */
     settled: visit.amounts.total > 0
       ? `₹${visit.amounts.total.toLocaleString('en-IN')}`
       : undefined,
-    documents: [],
+    /* SHARE. The chapter's public address is the invoice's share token, and
+       `/api/invoice/[id]?view=chapter` already strips amounts, the phone and
+       every internal reference before anything leaves the server. */
+    shareHref: invoice
+      ? hrefForDestination({ to: 'chapter', invoiceId: invoice.id, token: invoice.publicToken })
+      : undefined,
+    documents: invoice
+      ? [{
+          /* Its own share token, so the paper opens for whoever holds the
+             link — the same token the studio sends. */
+          label: invoice.paymentStatus === 'paid'
+            ? `Receipt · ${invoice.invoiceNumber}`
+            : `Invoice · ${invoice.invoiceNumber}`,
+          href: hrefForDestination({
+            to: 'invoice', invoiceId: invoice.id, token: invoice.publicToken,
+          }),
+        }]
+      : [],
   };
 }
 
 /* ── STUDIO ──────────────────────────────────────────────────────────────── */
+
+/**
+ * THE LIVE VISIT. Null unless the car is actually here — a countdown to a
+ * moment that has passed is worse than none. Every value is `os/stay`'s.
+ */
+export function toLiveVisit(
+  picture: CustomerPicture,
+  car: CarPicture,
+  bookingId: string,
+  now = new Date(),
+): LiveVisitModel | null {
+  const protections = protectionsOf(car, picture.catalogue, now);
+  const read = readOwnership(picture, car, protections, now);
+  if (!read.live || read.live.id !== bookingId || !read.stay) return null;
+
+  const stay = read.stay;
+  const job = car.jobs.find(j => j.bookingId === bookingId);
+  const frames = (job?.photos ?? []).map((p, i) => ({
+    id: `${bookingId}-${i}`,
+    url: p.url,
+    caption: SHOT_CAPTION[p.kind as 'before' | 'during' | 'after'],
+  }));
+
+  return {
+    id: bookingId,
+    vehicleName: car.vehicle.name,
+    word: ACT_TITLE[stay.act],
+    line: stay.narration,
+    timing: stay.timing ?? undefined,
+    service: read.live.serviceName,
+    acts: stay.acts.map(a => ({
+      label: a.title,
+      done: a.state === 'done',
+      current: a.state === 'current',
+    })),
+    frames,
+    hero: stay.latestPhoto ?? car.vehicle.photo,
+    backHref: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
+  };
+}
 
 export function toStudio(picture: CustomerPicture): StudioModel {
   const here = picture.cars.find(c => {
@@ -448,7 +617,7 @@ export function toStudio(picture: CustomerPicture): StudioModel {
     place: 'Maninagar · Ahmedabad',
     /* §4.5 — the absence of news is good news and should look like it. */
     presence: here ? 'Your car is here' : 'Your car is with you',
-    visitHref: here ? '/vehicle' : undefined,
+    visitHref: here ? hrefForDestination({ to: 'vehicle' }) : undefined,
     voice:
       'Every car is inspected in daylight before anything is put on it. '
       + 'Paint is corrected by hand, panel by panel, and nothing is coated until '
@@ -460,11 +629,32 @@ export function toStudio(picture: CustomerPicture): StudioModel {
     hours: `Open ${COMPANY.hours.open} to ${COMPANY.hours.close}, every day.`,
     address: COMPANY.address,
     directionsHref: COMPANY.mapsUrl,
-    /* §6.3's primary action. Was `'/studio'` — the address it is already on, so
-       the single most important control in the product did nothing. There is no
-       in-app booking surface, so it opens the channel the studio actually takes
-       bookings on rather than pretending to have one. */
-    arrangeHref: waLink('Hello AutoModz — I would like to arrange a visit.'),
+    /* §6.3's primary action opens the booking flow in place. It used to be an
+       outbound WhatsApp link, because there was no in-app booking surface —
+       the most important control in the product handed the customer to another
+       application. There is one now. */
+    booking: {
+      services: picture.catalogue,
+      vehicles: picture.cars.map(c => c.vehicle),
+      membership: picture.subscription ?? null,
+    },
+
+    /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE. `changeable` mirrors
+       firestore.rules — pending or confirmed only — so the sheet never offers
+       an act the server will refuse. The rule is enforced there, not here. */
+    manageable: picture.cars.flatMap(car =>
+      car.bookings
+        .filter(b => ['pending', 'confirmed'].includes(b.status))
+        .map(b => ({
+          id: b.id,
+          service: b.serviceName,
+          vehicleName: car.vehicle.name,
+          scheduledDate: b.scheduledDate,
+          scheduledTime: b.scheduledTime,
+          durationMinutes: b.serviceDurationMinutes ?? 60,
+          changeable: true,
+        })),
+    ),
   };
 }
 
@@ -482,16 +672,44 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
     reachedAt: [user.email, user.phone].filter(Boolean).join(' · '),
     garage: {
       line: `${count} live${n === 1 ? 's' : ''} here.`,
-      action: { label: 'Your garage', href: '/garage' },
+      action: { label: 'Your garage', href: hrefForDestination({ to: 'garage' }) },
     },
     membership: subscription ? {
       lines: membershipLines(subscription, now),
-      action: { label: 'What it includes', href: '/membership' },
+      action: { label: 'What it includes', href: hrefForDestination({ to: 'membership' }) },
     } : undefined,
-    /* §10.5 — notifications, ownership and privacy are OMITTED, not pointed at
-       `/you`. Each had no surface to open, so each was a control that navigated
-       to the address it was already on. They return the day those surfaces
-       exist; until then the room is honest. */
+    /* THE SURFACES NOW EXIST, so the controls return. Each opened `/you` —
+       the address it was already on — and was omitted rather than left inert.
+       The three sheet-backed ones are addressed (`?panel=`), so each is
+       linkable and closed by the back button. */
+    details: {
+      line: 'Your name and how we reach you.',
+      action: { label: 'Your details',
+        href: hrefForDestination({ to: 'profile.panel', panel: 'profile' }) },
+    },
+    notifications: {
+      line: 'What we tell you, and where.',
+      action: { label: 'Notifications',
+        href: hrefForDestination({ to: 'profile.panel', panel: 'notifications' }) },
+    },
+    ownership: {
+      line: 'Bring someone with you.',
+      action: { label: 'Invite a friend',
+        href: hrefForDestination({ to: 'profile.panel', panel: 'referral' }) },
+    },
+    privacy: {
+      line: 'What we hold, and why.',
+      action: { label: 'Privacy', href: hrefForDestination({ to: 'privacy' }) },
+    },
+    terms: {
+      line: 'How we work.',
+      action: { label: 'Terms', href: hrefForDestination({ to: 'terms' }) },
+    },
+    deletion: {
+      line: 'Leaving for good?',
+      action: { label: 'Delete your account',
+        href: hrefForDestination({ to: 'profile.panel', panel: 'delete' }) },
+    },
     support: {
       line: 'Something not right?',
       /* Was `COMPANY.mapsUrl` — "Talk to us" opened Google Maps. The studio's
@@ -508,7 +726,7 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
  * be the one figure §15.3 says decides renewal, invented.
  */
 function membershipLines(sub: Subscription, now: Date): string[] {
-  const remaining = Math.max(0, sub.washesTotal - sub.washesUsed);
+  const remaining = washesLeftOf(sub);
   const term: Term = { kind: 'dated', expiresOn: sub.endDate, grace: true };
   const health = healthOf(term, now);
   return [
@@ -523,33 +741,56 @@ function membershipLines(sub: Subscription, now: Date): string[] {
 /* ── MEMBERSHIP ──────────────────────────────────────────────────────────── */
 
 export function toMembership(picture: CustomerPicture, now = new Date()): MembershipModel {
+  /* THE ENGINE DECIDES. `os/club` already owns the state, the cycle's
+     arithmetic and the one true sentence under the card. This used to recompute
+     `remaining` and the health locally — a second implementation of the same
+     membership maths, which is exactly what §22.2 forbids. */
+  const club = clubOf(picture, now);
   const sub = picture.subscription;
-  if (!sub) {
-    return {
-      held: false,
-      joinHref: waLink('Hello AutoModz — I would like to know about the club.'),
-    };
+
+  const history = picture.subscriptions.map(s => ({
+    id: s.id,
+    plan: `${s.plan} member`,
+    period: `${longDate(s.startDate)} — ${longDate(s.endDate)}`,
+    status: s.status,
+  }));
+
+  if (club.state === 'none' || !sub) {
+    return { held: false, history };
   }
 
   const term: Term = { kind: 'dated', expiresOn: sub.endDate, grace: true };
-  const remaining = Math.max(0, sub.washesTotal - sub.washesUsed);
   const health = healthOf(term, now);
+  const plan = MEMBERSHIP_PLANS.find(p => p.id === sub.plan);
+  const days = cycleDaysLeft(club, now);
 
   return {
     held: true,
-    tier: `${sub.plan} member`,
-    /* §15.3 #2 and #3, in the engine's own words. */
-    remaining: remaining === 0
+    tier: `${club.plan} member`,
+    /* §15.3 #2 — the engine's own count, not a second subtraction. */
+    remaining: club.washesLeft === 0
       ? 'No washes left this cycle'
-      : `${remaining} of ${sub.washesTotal} washes left this cycle`,
+      : `${club.washesLeft} of ${club.washesTotal} washes left this cycle`,
+    share: club.washesTotal > 0 ? club.washesLeft / club.washesTotal : undefined,
     term: health === 'lapsed'
       ? `Lapsed ${longDate(sub.endDate)}`
       : `Renews ${longDate(sub.endDate)}`,
+    /* §14.4 — a countdown only when the number is small enough to act on. */
+    countdown: days !== null && days >= 0 && days <= 30
+      ? `${days} day${days === 1 ? '' : 's'} left in this cycle`
+      : undefined,
+    awaitingPayment: club.awaitingPayment,
     tone: TONE[health],
-    /* §15.6 — leaving must be reachable. Was `'/you'`, which cancelled nothing.
-       Rules DO allow an owner to set `status: 'cancelled'`, so an in-app cancel
-       is buildable; it needs a confirmation surface, which is a feature. Until
-       then this reaches the one channel that can actually end a membership. */
-    leaveHref: waLink('Hello AutoModz — I would like to leave the club.'),
+    benefits: plan?.perks,
+    /* The benefit is used, not admired — a wash that is already paid for is
+       booked like any other, with the category chosen. Only when there is one
+       left and the membership is actually in force. */
+    bookWashHref: club.state === 'active' && club.washesLeft > 0
+      ? hrefForDestination({ to: 'studio.category', category: 'Washing' })
+      : undefined,
+    subscriptionId: sub.id,
+    currentPlan: sub.plan,
+    history,
   };
 }
+

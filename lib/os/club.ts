@@ -34,6 +34,49 @@ const fmtLong = (iso: string) =>
 /** The invitation is earned, not pushed: it appears after the second visit. */
 export const INVITE_AFTER_VISITS = 2;
 
+/**
+ * Washes left on a raw subscription.
+ *
+ * `clubModel` gives the same number as part of the whole picture, but three
+ * callers only have a `Subscription` in hand and were each subtracting it
+ * themselves. One subtraction, one place — §22.2.
+ */
+export const washesLeftOf = (sub: { washesTotal?: number; washesUsed?: number } | null): number =>
+  Math.max(0, (sub?.washesTotal ?? 0) - (sub?.washesUsed ?? 0));
+
+/**
+ * Has this membership run out?
+ *
+ * The rule, not the query. The client service and the nightly job read
+ * subscriptions through different SDKs but must agree on what "lapsed" means,
+ * and before this they each wrote `endDate < today` themselves.
+ */
+export const isLapsed = (
+  sub: { status?: string; endDate?: string } | null,
+  now = new Date(),
+): boolean =>
+  !!sub
+  && sub.status === 'active'
+  && !!sub.endDate
+  && sub.endDate < now.toISOString().split('T')[0];
+
+/** A cycle is thirty days. The one place that arithmetic is written. */
+export const CYCLE_DAYS = 30;
+
+/**
+ * When a cycle beginning on `fromISO` ends.
+ *
+ * Lived inside the old `JoinClub` component, which meant the length of a
+ * membership cycle was a fact known only to a piece of UI. It belongs to the
+ * engine that owns the lifecycle, so joining, renewing and upgrading all get
+ * the same answer (§22.2).
+ */
+export const cycleEnd = (fromISO: string): string => {
+  const d = new Date(`${fromISO}T12:00:00`);
+  d.setDate(d.getDate() + CYCLE_DAYS);
+  return d.toISOString().split('T')[0];
+};
+
 export function clubModel(args: {
   membership: Subscription | null;
   /** this customer's completed visits */
@@ -53,7 +96,7 @@ export function clubModel(args: {
 
   const washesTotal = m.washesTotal ?? 0;
   const washesUsed = m.washesUsed ?? 0;
-  const washesLeft = Math.max(0, washesTotal - washesUsed);
+  const washesLeft = washesLeftOf({ washesTotal, washesUsed });
 
   // one lifecycle, from the one term engine (membership gets grace)
   const term = termState(m.endDate, { grace: true, now });

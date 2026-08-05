@@ -3,10 +3,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
-import { getDocs, collection, query, where } from 'firebase/firestore';
+import { getDocs, collection, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { listInventoryItems , getExpensesForMonth, studioThroughput, fmtMin } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
+import type { Subscription } from '@/lib/types';
 import type { Booking, Job, PayrollRecord, InventoryTxn } from '@/lib/types';
 
 interface MonthReport {
@@ -24,6 +25,20 @@ interface MonthReport {
   peakHour: number | null;
   busyMin: { wash: number; protection: number };
   workingDays: number;
+  /* ── MEMBERSHIP REVENUE ────────────────────────────────────────────────
+     ITS OWN SECTION, never folded into detailing. A membership is a standing
+     arrangement, not work done on a car; adding it to `bookingRevenue` would
+     make "revenue per visit" meaningless and hide whether the Club is paying
+     for itself.
+
+     REPORTED ON THE PAYMENT DATE. `paidAt` is stamped once, when an admin
+     activates the subscription — the moment money actually changed hands. No
+     amortisation and no deferred revenue: a cycle paid for in March is March's
+     revenue in full, even though the washes are used in April. */
+  membershipRevenue: number;
+  membershipCount: number;
+  membershipUpi: number;
+  membershipCash: number;
 }
 
 export default function AdminReportsPage() {
@@ -37,13 +52,20 @@ export default function AdminReportsPage() {
     setLoading(true);
     const from = `${month}-01`, to = `${month}-31`;
 
-    const [bookingsSnap, jobsSnap, payrollSnap, txnsSnap, items, monthExpenses] = await Promise.all([
+    const [bookingsSnap, jobsSnap, payrollSnap, txnsSnap, items, monthExpenses, subsSnap] = await Promise.all([
       getDocs(query(collection(db, 'bookings'), where('scheduledDate', '>=', from), where('scheduledDate', '<=', to))),
       getDocs(query(collection(db, 'jobs'), where('date', '>=', from), where('date', '<=', to))),
       getDocs(query(collection(db, 'payroll'), where('month', '==', month))),
       getDocs(collection(db, 'inventoryTxns')),
       listInventoryItems(true),
       getExpensesForMonth(month).catch(() => []),
+      /* Memberships PAID in this month. Keyed on `paidAt`, so a membership
+         bought in March and cancelled in April stays March's revenue. */
+      getDocs(query(
+        collection(db, 'subscriptions'),
+        where('paidAt', '>=', Timestamp.fromDate(new Date(`${from}T00:00:00`))),
+        where('paidAt', '<=', Timestamp.fromDate(new Date(`${to}T23:59:59`))),
+      )).catch(() => null),
     ]);
     const expensesTotal = monthExpenses.reduce((s, e) => s + e.amount, 0);
     setExpenses(expensesTotal);
@@ -58,6 +80,14 @@ export default function AdminReportsPage() {
         const dt = t.createdAt?.toDate?.();
         return dt && format(dt, 'yyyy-MM') === month;
       });
+
+    /* `amountPaid` is what was collected at the time. Falling back to the
+       plan's price today would let a price change rewrite past months, so a
+       subscription with no recorded amount contributes nothing rather than a
+       guess. */
+    const paidSubs = (subsSnap?.docs ?? [])
+      .map(d => d.data() as Subscription)
+      .filter(sub => typeof sub.amountPaid === 'number');
 
     const completedBookings = bookings.filter(b => b.status === 'completed');
     const completedJobs = jobs.filter(j => j.status === 'completed');
@@ -89,7 +119,13 @@ export default function AdminReportsPage() {
           avgTurnaroundMin: t.avgTurnaroundMin,
           peakHour: t.peakHour,
           busyMin: t.busyMin,
-          workingDays: new Set(jobs.map(j => j.date)).size || 1,
+          membershipRevenue: paidSubs.reduce((t, sub) => t + (sub.amountPaid ?? 0), 0),
+      membershipCount: paidSubs.length,
+      membershipUpi: paidSubs.filter(sub => sub.paymentMethod === 'upi')
+        .reduce((t, sub) => t + (sub.amountPaid ?? 0), 0),
+      membershipCash: paidSubs.filter(sub => sub.paymentMethod === 'cash')
+        .reduce((t, sub) => t + (sub.amountPaid ?? 0), 0),
+      workingDays: new Set(jobs.map(j => j.date)).size || 1,
         };
       })(),
     };
@@ -165,9 +201,38 @@ export default function AdminReportsPage() {
             </div>
           </motion.div>
 
+          {/* ── MEMBERSHIP REVENUE ──────────────────────────────────────
+              Its own section, on the payment date, kept apart from detailing.
+              A membership is a standing arrangement rather than work on a car:
+              folded together, neither number means anything. No amortisation —
+              a cycle paid for this month is this month's revenue in full. */}
+          <div className="mb-4">
+            <p className="font-display font-700 mb-2" style={{ color: 'var(--chrome)' }}>
+              Membership revenue
+            </p>
+            <p className="data-label mb-2" style={{ color: 'var(--steel)' }}>
+              Collected this month, on the date payment was taken. Separate from detailing.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { l: `Memberships (${report.membershipCount})`, v: formatCurrency(report.membershipRevenue), c: 'var(--ember)' },
+                { l: 'UPI', v: formatCurrency(report.membershipUpi), c: 'var(--info)' },
+                { l: 'Cash', v: formatCurrency(report.membershipCash), c: 'var(--success)' },
+                { l: 'Detailing + membership', v: formatCurrency(revenue + report.membershipRevenue), c: 'var(--chrome)' },
+              ].map(m => (
+                <div key={m.l} className="card-dark py-4 text-center">
+                  <p className="font-display font-800 text-lg" style={{ color: m.c }}>{m.v}</p>
+                  <p className="data-label" style={{ color: 'var(--steel)' }}>{m.l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
             {[
-              { l: 'Total revenue', v: formatCurrency(revenue), c: 'var(--ember)' },
+              /* DETAILING revenue only — membership has its own section below,
+                 and mixing them would make revenue-per-visit meaningless. */
+              { l: 'Detailing revenue', v: formatCurrency(revenue), c: 'var(--ember)' },
               { l: `Bookings (${report.bookingCount})`, v: formatCurrency(report.bookingRevenue), c: 'var(--chrome)' },
               { l: `Walk-ins (${report.jobCount})`, v: formatCurrency(report.jobRevenue), c: 'var(--chrome)' },
               { l: 'UPI collected', v: formatCurrency(report.upiCollected), c: 'var(--info)' },

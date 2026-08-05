@@ -1,46 +1,59 @@
 'use client';
+/**
+ * THE ERROR BOUNDARY.
+ *
+ * Source: reference/customer-old/app/app/error.tsx
+ *         docs/AUTOMODZ-OS.md §20.3, §20.4
+ *
+ * `/api/report` has existed since the rebuild with NO CALLER — every client
+ * error since then has gone unreported. This is that caller.
+ *
+ * §20.4 — the customer is told their car is safe, because it is: this is our
+ * connection failing, not their property. §20.3 — ours, not theirs.
+ */
 import { useEffect } from 'react';
-import Link from 'next/link';
-import Wordmark from '@/components/ui/Wordmark';
+import { color, space, INSET, MEASURE } from '@/design';
+import { Heading, Text, Button } from '@/components/system';
 
-/** Branded crash screen - recoverable, never a stack trace in the user's face. */
-export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  // reported to the studio; the visitor only ever sees the calm screen below
+export default function Error(
+  { error, reset }: { error: Error & { digest?: string }; reset: () => void },
+) {
   useEffect(() => {
-    fetch('/api/report', {
-      method: 'POST', keepalive: true,
+    /* Best-effort and deliberately unawaited: a failed report must never
+       become a second error on top of the first. */
+    void fetch('/api/report', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        where: 'root', message: error.message, digest: error.digest, stack: error.stack,
+        message: error.message,
+        stack: error.stack,
+        digest: error.digest,
+        where: 'customer',
       }),
     }).catch(() => {});
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center safe-page"
-      style={{ background: '#08090b', paddingBottom: 'max(var(--sab), 24px)' }}>
-      <Wordmark height={22} variant="white" />
-      <p className="font-mono mt-8" style={{ fontSize: 11, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)' }}>
-        SOMETHING WENT WRONG
-      </p>
-      <h1 className="font-hero mt-3" style={{ fontSize: 'clamp(28px, 7vw, 44px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff' }}>
-        A hiccup, not a crash.
-      </h1>
-      <p className="font-body mt-3 max-w-xs" style={{ fontSize: 14.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.55)' }}>
-        Give it another try - your data is safe.
-      </p>
-      <div className="mt-8 flex items-center gap-3">
-        <button onClick={reset}
-          className="inline-flex items-center justify-center px-7 rounded-2xl font-display tap-target"
-          style={{ minHeight: 48, fontSize: 14.5, fontWeight: 700, background: '#fff', color: '#0b0c0e' }}>
-          Try again
-        </button>
-        <Link href="/"
-          className="inline-flex items-center justify-center px-6 rounded-2xl font-display tap-target"
-          style={{ minHeight: 48, fontSize: 14.5, fontWeight: 700, color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)' }}>
-          Home
-        </Link>
+    <main
+      style={{
+        minHeight: '100svh',
+        background: color.paper,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        paddingInline: INSET,
+      }}
+    >
+      <div style={{ maxWidth: MEASURE + INSET * 2, marginInline: 'auto', width: '100%' }}>
+        <Heading level="display">Something went wrong at our end.</Heading>
+        <Text role="body" tone="ink2" style={{ marginTop: space.line, maxWidth: MEASURE }}>
+          Your car and its records are safe. This is our connection, not your car.
+        </Text>
+        <div style={{ marginTop: space.gap, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+          <Button tier="primary" onClick={reset}>Try again</Button>
+          <Button tier="quiet" href="/">Back to your car</Button>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
