@@ -33,6 +33,7 @@ import Wordmark from '@/components/ui/Wordmark';
 import { Button, Text, Loading, OfflineNote, useOnline } from '@/components/system';
 import { color, space, INSET, type as typeScale, TARGET_MIN } from '@/design';
 import { isInAppBrowser, currentUserAgent } from '@/lib/browser';
+import { trace, traceStart, traceRead, traceSubscribe, type TraceEntry } from '@/lib/authTrace';
 
 /**
  * Only ever return to an internal customer path — never an attacker's URL, and
@@ -83,6 +84,15 @@ function Login() {
      `navigator.onLine` on its own. */
   const online = useOnline();
 
+  /* THE STAGE TRAIL, on screen. Temporary. The failure reproduces on iPhone
+     Safari, where there is no console without tethering to a Mac — so the
+     instrument has to be readable on the device it is measuring. */
+  const [stages, setStages] = useState<TraceEntry[]>([]);
+  useEffect(() => {
+    setStages(traceRead());
+    return traceSubscribe(setStages);
+  }, []);
+
   const dest = safeDest(params.get('redirect'));
 
   // staff land in the studio OS; everyone else in the customer experience
@@ -128,9 +138,35 @@ function Login() {
     if (!online) return;
     setLoading(true);
     setError('');
+
+    traceStart();
+    trace(1, 'before signInWithPopup', currentUserAgent().slice(0, 60));
+
+    /* STAGE 2 has no Firebase callback — the SDK does not announce that it
+       opened a window. Wrapping `window.open` for the duration of the call is
+       the only honest way to observe it, and it distinguishes "the popup never
+       opened" (blocked) from "it opened and never came back". */
+    const nativeOpen = window.open;
+    let popupSeen = false;
+    window.open = function patched(...args: Parameters<typeof window.open>) {
+      if (!popupSeen) {
+        popupSeen = true;
+        trace(2, 'popup opened', String(args[0] ?? '(no url)').slice(0, 80));
+      }
+      return nativeOpen.apply(window, args);
+    } as typeof window.open;
+
     try {
       const result = await signInWithGoogle();
+      window.open = nativeOpen;
+      if (!popupSeen) trace(2, 'popup NEVER opened via window.open');
+      trace(3, 'popup resolved');
+
       const firebaseUser = result.user;
+      trace(4, auth.currentUser ? 'currentUser exists' : 'currentUser MISSING',
+        auth.currentUser
+          ? `${auth.currentUser.uid} · ${auth.currentUser.email ?? 'no email'}`
+          : undefined);
       let profile = await getUserProfile(firebaseUser.uid) ?? await ensureUserProfile(firebaseUser);
 
       if (!profile) {
@@ -154,11 +190,33 @@ function Login() {
          symptom was being bounced back to the front page with no explanation,
          which is indistinguishable from "the sign-in didn't work". */
       const idToken = await firebaseUser.getIdToken();
+      /* The claims are decoded, NOT verified — this is a diagnostic. `aud` is
+         the value the server compares against its own project id. */
+      try {
+        const claims = JSON.parse(atob(idToken.split('.')[1])) as
+          { iss?: string; aud?: string; sub?: string; exp?: number };
+        trace(5, 'getIdToken succeeded',
+          `aud=${claims.aud} iss=${claims.iss} sub=${claims.sub} exp=${claims.exp}`);
+      } catch {
+        trace(5, 'getIdToken succeeded, claims unreadable', `len=${idToken.length}`);
+      }
+
+      trace(6, 'POST /api/session started');
       const session = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
       }).catch(() => null);
+
+      trace(7, 'response status', session ? String(session.status) : 'fetch threw / no response');
+
+      /* STAGE 8 CANNOT BE OBSERVED DIRECTLY. The session cookie is httpOnly by
+         design, so `document.cookie` will never contain it — its absence here
+         proves the flag, not a missing cookie. What is recorded is whether the
+         response that should have set it succeeded. */
+      trace(8, 'cookie (httpOnly — not readable from JS)',
+        `response ok=${session?.ok ?? false}; document.cookie has session=${
+          document.cookie.includes('automodz') }`);
 
       if (!session?.ok) {
         /* 503 means the server has no Firebase Admin credentials — the studio
@@ -179,9 +237,13 @@ function Login() {
         void claimReferral().catch(() => {});
       }
 
+      trace(9, 'navigating', homeFor(profile.role));
       enter(homeFor(profile.role));
     } catch (err: unknown) {
+      window.open = nativeOpen;
       const code = (err as { code?: string }).code;
+      /* The single most useful line in the whole trace. */
+      trace(0, 'THREW', `${code ?? 'no-code'} · ${(err as Error)?.message ?? String(err)}`);
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         // they simply changed their mind - not an error
       } else if (code === 'auth/popup-blocked') {
@@ -280,6 +342,36 @@ function Login() {
             {/* §22.2 — the one offline note, said in line. This was a sixth
                 hand-written copy, reading `navigator.onLine` directly. */}
             <OfflineNote inline caption="You’re offline — reconnect to sign in." />
+
+            {/* TEMPORARY DIAGNOSTIC — remove with lib/authTrace.ts once the
+                failing stage is known. Rendered only after an attempt, so a
+                customer who signs in normally never sees it. */}
+            {stages.length > 0 ? (
+              <div style={{
+                marginTop: space.rest,
+                padding: space.line,
+                borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.14)',
+                background: 'rgba(0,0,0,0.35)',
+                textAlign: 'left',
+                fontFamily: typeScale.data.family,
+                fontSize: 11,
+                lineHeight: 1.5,
+                color: 'rgba(255,255,255,0.72)',
+                overflowWrap: 'anywhere',
+              }}>
+                {stages.map((e, i) => (
+                  <div key={`${e.stage}-${i}`} style={{ marginBottom: 4 }}>
+                    <strong style={{ color: e.stage === 0 ? '#ff8080' : '#fff' }}>
+                      {e.stage === 0 ? '✕' : e.stage}
+                    </strong>
+                    {' '}{e.label}
+                    {e.detail ? <span style={{ opacity: 0.7 }}> — {e.detail}</span> : null}
+                    <span style={{ opacity: 0.45 }}> +{e.at}ms</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {error ? (
               <Text role="body" tone="ink2" style={{ marginTop: space.line }} aria-live="polite">
                 {error}
