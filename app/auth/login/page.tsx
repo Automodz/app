@@ -14,24 +14,44 @@
  * The one addition is the httpOnly session cookie, which the server-rendered
  * rooms need and the old client-only rooms did not.
  *
- * Only the presentation is new: the old page's shape — mark, one sentence of
- * welcome, one control, the address, the way back — rendered in the design
- * system instead of Studio White's CSS variables.
+ * THE DOOR IS A ROOM, NOT A FORM.
+ *
+ * It used to be a mark, a button and an address on flat paper — which read as
+ * a utility screen in a product whose whole argument is that this is where
+ * something valuable is kept. It is now the first room of the application and
+ * behaves like one: the car is present, the glass is the same glass every
+ * other room is made of, and signing in is a passage with three states rather
+ * than a button that stops responding.
+ *
+ *   waiting      the studio, the invitation, and what is behind the door
+ *   opening      the press was received and something is happening
+ *   welcoming    it worked, they are named, and then they are carried inside
+ *
+ * The third state is not decoration. The cookie exists by then, so the beat is
+ * spent on a fact rather than on a guess, and it is the only moment in the
+ * product where a customer is told they arrived rather than left to infer it.
  */
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { MotionConfig } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { COMPANY } from '@/lib/company';
+import { MEDIA } from '@/lib/media';
 import { linkEmployeeRole } from '@/lib/services/auth';
 import { getUserProfile, stashReferralCode, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
 import { claimReferral } from '@/lib/services/referrals';
 import { useAppStore } from '@/lib/store';
 import Wordmark from '@/components/ui/Wordmark';
-import { Button, Text, Loading, OfflineNote, useOnline } from '@/components/system';
-import { color, space, INSET, type as typeScale, TARGET_MIN } from '@/design';
+import { GoogleMark } from '@/components/auth/GoogleMark';
+import { Passage } from '@/components/auth/Passage';
+import { Text, Loading, OfflineNote, useOnline } from '@/components/system';
+import {
+  color, scrim, space, radius, INSET, type as typeScale,
+  duration, curve, TARGET_MIN, HAIRLINE,
+} from '@/design';
 import { isInAppBrowser, currentUserAgent } from '@/lib/browser';
 
 /**
@@ -82,6 +102,15 @@ async function openServerSession(): Promise<SessionResult> {
   return res?.status === 503 ? 'unavailable' : 'refused';
 }
 
+/**
+ * The beat between "you are in" and being carried inside.
+ *
+ * Long enough to be read, short enough that nobody waits for it. It is spent
+ * AFTER the cookie exists, so it costs a customer nothing they were not
+ * already waiting for — the session is already open behind this screen.
+ */
+const WELCOME_BEAT = 1150;
+
 /** The door while the search params resolve — a state, not an absence (§19.1). */
 function Door() {
   return (
@@ -106,11 +135,36 @@ export default function LoginPage() {
   );
 }
 
+/**
+ * WHAT IS BEHIND THE DOOR.
+ *
+ * A customer who has never signed in has no idea what signing in gets them,
+ * and "Continue with Google" does not tell them. Three lines, each naming a
+ * thing they will actually find, is the difference between a gate and an
+ * invitation — and it is the honest version of the argument the landing page
+ * makes at length.
+ */
+const BEHIND_THE_DOOR = [
+  ['Your car’s record', 'Every visit, kept in one place.'],
+  ['What’s protected', 'Coating, film, and when cover ends.'],
+  ['One-tap booking', 'We already know your car.'],
+] as const;
+
 function Login() {
   const params = useSearchParams();
   const { user, authLoading, setUser } = useAppStore();
 
-  const [loading, setLoading] = useState(false);
+  /**
+   * THE PASSAGE, AS A STATE.
+   *
+   * `loading` was a boolean on a button, which is the smallest possible
+   * account of what is happening: a popup opens on another origin, a profile
+   * is read, a role is reconciled and a session is minted, and for all of that
+   * the screen said nothing. Naming the phase lets the room answer instead of
+   * the control.
+   */
+  const [phase, setPhase] = useState<'waiting' | 'opening' | 'welcoming'>('waiting');
+  const [greeting, setGreeting] = useState('');
   const [error, setError] = useState('');
   /* §22.2 — the one reader of the connection. This surface used to consult
      `navigator.onLine` on its own. */
@@ -146,11 +200,18 @@ function Login() {
    *
    * `dest` is already sanitised by `safeDest`, so this cannot be pointed
    * off-site.
+   *
+   * THE CLAIM IS TAKEN SYNCHRONOUSLY EVEN WHEN THE MOVE IS DELAYED. The
+   * welcome beat runs between deciding to go and going, and `handleGoogle`'s
+   * `finally` runs inside that window — so if the claim waited for the
+   * timeout, the guard effect would be re-armed mid-passage and would mint a
+   * second session behind the welcome.
    */
-  const enter = useCallback((href: string) => {
+  const enter = useCallback((href: string, after = 0) => {
     if (leaving.current) return;
     leaving.current = true;
-    window.location.replace(href);
+    if (after > 0) window.setTimeout(() => window.location.replace(href), after);
+    else window.location.replace(href);
   }, []);
 
   /**
@@ -212,7 +273,7 @@ function Login() {
     /* The note below already says it; refusing here stops a sign-in that
        cannot succeed from spending thirty seconds failing. */
     if (!online) return;
-    setLoading(true);
+    setPhase('opening');
     setError('');
     /* Claim the entry BEFORE the popup, because `onAuthStateChanged` fires
        inside it and the effect above would otherwise be racing this function
@@ -258,7 +319,10 @@ function Login() {
         void claimReferral().catch(() => {});
       }
 
-      enter(homeFor(profile.role));
+      /* The session is open — so the welcome is a statement, not a hope. */
+      setGreeting((profile.name ?? '').trim().split(/\s+/)[0] ?? '');
+      setPhase('welcoming');
+      enter(homeFor(profile.role), WELCOME_BEAT);
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
@@ -278,14 +342,18 @@ function Login() {
     } finally {
       /* Only released on a failure — on success the document is on its way out
          and re-arming the effect would give it a second navigation to make. */
-      if (!leaving.current) signingIn.current = false;
-      setLoading(false);
+      if (!leaving.current) {
+        signingIn.current = false;
+        setPhase('waiting');
+      }
     }
   };
 
+  const passing = phase !== 'waiting';
+
   return (
     <MotionConfig reducedMotion="user">
-      <div
+      <main
         style={{
           position: 'relative',
           overflow: 'hidden',
@@ -295,107 +363,243 @@ function Login() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: `calc(env(safe-area-inset-top, 0px) + ${space.rest}px)`,
-          paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${INSET}px)`,
+          paddingTop: `calc(env(safe-area-inset-top, 0px) + ${space.gap}px)`,
+          paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${space.gap}px)`,
           paddingInline: INSET,
         }}
       >
-        {/* the ambient light the door develops out of */}
-        <div
+        {/* ── THE CAR ──────────────────────────────────────────────────────
+            The subject of the whole product, present at the first address a
+            customer sees. §11.5 — never a grey box: this screen used to be
+            exactly that. It leans in slightly while the session opens, which
+            is the room acknowledging the press at a scale a spinner cannot. */}
+        <motion.div
           aria-hidden
-          style={{
-            position: 'absolute',
-            top: '14%',
-            left: '50%',
-            width: 'min(120vw, 620px)',
-            height: '46%',
-            transform: 'translateX(-50%)',
-            pointerEvents: 'none',
-            background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 62%)',
+          initial={{ scale: 1.06, opacity: 0 }}
+          animate={{ scale: passing ? 1.04 : 1, opacity: 1 }}
+          transition={{
+            opacity: { duration: duration.scene / 1000, ease: curve.ease },
+            scale: { duration: duration.morph / 1000, ease: curve.ease },
           }}
-        />
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        >
+          <Image
+            src={MEDIA.surfaces.studio}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: 'cover', objectPosition: 'center 42%' }}
+          />
+          {/* §11.2 — the scrim floor is not a suggestion. Type sits on this,
+              so the photograph is held down to where ink is unambiguous. */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                `linear-gradient(to bottom,`
+                + ` rgba(10,11,13,${scrim.photo + 0.12}) 0%,`
+                + ` rgba(10,11,13,${scrim.photoFloor - 0.19}) 26%,`
+                + ` rgba(10,11,13,${scrim.photoFloor - 0.13}) 54%,`
+                + ` rgba(10,11,13,${scrim.photo + 0.32}) 100%)`,
+            }}
+          />
+        </motion.div>
 
-        <span style={{ position: 'relative' }}>
+        <span style={{ position: 'relative', paddingBlock: space.breath }}>
           <Wordmark height={13} variant="white" />
         </span>
 
-        <main
+        {/* ── THE PANEL ────────────────────────────────────────────────────
+            The same glass every other room is made of, so the door is visibly
+            part of the application rather than a page in front of it. */}
+        <section
           style={{
             position: 'relative',
             width: '100%',
-            maxWidth: 460,
-            paddingBlock: space.rest,
+            maxWidth: 420,
+            borderRadius: radius.sheet,
+            border: `${HAIRLINE}px solid rgba(255,255,255,0.14)`,
+            background: 'rgba(14,15,18,0.52)',
+            backdropFilter: 'blur(20px) saturate(150%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+            padding: INSET,
             textAlign: 'center',
           }}
         >
-          <span
+          <AnimatePresence mode="wait" initial={false}>
+            {phase === 'waiting' ? (
+              <motion.div
+                key="waiting"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: duration.move / 1000, ease: curve.ease }}
+              >
+                <h1
+                  style={{
+                    fontFamily: typeScale.display.family,
+                    fontWeight: 700,
+                    fontSize: 'clamp(34px, 10vw, 52px)',
+                    lineHeight: 1.0,
+                    letterSpacing: '-0.03em',
+                    color: color.ink,
+                    margin: 0,
+                  }}
+                >
+                  Your studio
+                </h1>
+                <Text
+                  role="body"
+                  tone="ink2"
+                  style={{ marginTop: space.line, marginInline: 'auto', maxWidth: 320 }}
+                >
+                  Where your car lives — its care, its protection, its story.
+                </Text>
+
+                {/* ── THE CONTROL ──────────────────────────────────────────
+                    Google's mark, on Google's terms, in our material. A bare
+                    word on a dark slab asked the customer to take on trust
+                    that this was really Google; the mark is what makes it
+                    obvious in the half-second before they commit. */}
+                <button
+                  type="button"
+                  onClick={handleGoogle}
+                  disabled={!online}
+                  style={{
+                    marginTop: space.rest / 2,
+                    width: '100%',
+                    minHeight: TARGET_MIN + 6,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: space.line,
+                    borderRadius: radius.pill,
+                    border: 'none',
+                    background: online ? color.ink : 'rgba(244,245,246,0.38)',
+                    color: color.paper,
+                    fontFamily: typeScale.body.family,
+                    fontSize: 16,
+                    fontWeight: 620,
+                    letterSpacing: '-0.01em',
+                    cursor: online ? 'pointer' : 'not-allowed',
+                    transition: `transform ${duration.tick}ms ${'cubic-bezier(0.22,1,0.36,1)'}`,
+                  }}
+                >
+                  <GoogleMark />
+                  Continue with Google
+                </button>
+                {/* §22.2 — the one offline note, said in line. This was a sixth
+                    hand-written copy, reading `navigator.onLine` directly. */}
+                <OfflineNote inline caption="You’re offline — reconnect to sign in." />
+
+                {error ? (
+                  <Text
+                    role="body"
+                    tone="ink2"
+                    style={{ marginTop: space.line }}
+                    aria-live="polite"
+                  >
+                    {error}
+                  </Text>
+                ) : (
+                  <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
+                    One tap — no password to remember.
+                  </Text>
+                )}
+
+                {/* ── WHAT IS BEHIND IT ────────────────────────────────── */}
+                <div
+                  style={{
+                    marginTop: space.rest / 2,
+                    paddingTop: space.gap,
+                    borderTop: `${HAIRLINE}px solid rgba(255,255,255,0.10)`,
+                    display: 'grid',
+                    gap: space.line,
+                    textAlign: 'left',
+                  }}
+                >
+                  {BEHIND_THE_DOOR.map(([title, said]) => (
+                    <div key={title} style={{ display: 'flex', gap: space.line, alignItems: 'baseline' }}>
+                      <span
+                        aria-hidden
+                        style={{
+                          width: 5,
+                          height: 5,
+                          flexShrink: 0,
+                          borderRadius: radius.pill,
+                          background: color.ink3,
+                          transform: 'translateY(-2px)',
+                        }}
+                      />
+                      <span>
+                        <Text role="body" tone="ink" style={{ display: 'block', fontWeight: 600 }}>{title}</Text>
+                        <Text role="whisper" tone="ink3" style={{ display: 'block' }}>{said}</Text>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ) : (
+              /* ── THE PASSAGE ────────────────────────────────────────────
+                 One surface for both moving states, so the panel does not
+                 change size underneath the customer mid-sign-in. */
+              <motion.div
+                key="passing"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: duration.move / 1000, ease: curve.ease }}
+              >
+                <Passage phase={phase} greeting={greeting} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+
+        {/* ── THE STUDIO ───────────────────────────────────────────────────
+            The address was 9pt grey at the bottom of the screen — legally
+            present, practically invisible. It is the studio's own name and
+            street; it is what makes this a real place. And the way back is a
+            control now, not a link in body type. */}
+        <footer
+          style={{
+            position: 'relative',
+            textAlign: 'center',
+            display: 'grid',
+            gap: space.line,
+            justifyItems: 'center',
+            paddingBlock: space.breath,
+          }}
+        >
+          <Link
+            href="/"
             style={{
-              display: 'block',
-              fontFamily: typeScale.display.family,
-              fontWeight: 700,
-              fontSize: 'clamp(40px, 13vw, 72px)',
-              lineHeight: 0.98,
-              letterSpacing: '-0.03em',
-              color: color.ink,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: space.breath,
+              minHeight: TARGET_MIN,
+              paddingInline: space.gap,
+              borderRadius: radius.pill,
+              border: `${HAIRLINE}px solid rgba(255,255,255,0.16)`,
+              fontFamily: typeScale.body.family,
+              fontSize: 14,
+              fontWeight: 560,
+              color: color.ink2,
+              textDecoration: 'none',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
             }}
           >
-            Your studio
-          </span>
-          <Text
-            role="body"
-            tone="ink2"
-            style={{ marginTop: INSET, maxWidth: 380, marginInline: 'auto' }}
-          >
-            Where your car lives — its care, its protection, its story.
+            <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>←</span>
+            Back to AutoModz
+          </Link>
+          <Text role="whisper" tone="ink3" style={{ maxWidth: 300 }}>
+            {COMPANY.name} · {COMPANY.address}
           </Text>
-
-          <div style={{ marginTop: space.rest, maxWidth: 340, marginInline: 'auto' }}>
-            <Button
-              tier="primary"
-              onClick={handleGoogle}
-              loading={loading}
-              disabled={!online}
-              full
-            >
-              Continue with Google
-            </Button>
-            {/* §22.2 — the one offline note, said in line. This was a sixth
-                hand-written copy, reading `navigator.onLine` directly. */}
-            <OfflineNote inline caption="You’re offline — reconnect to sign in." />
-
-            {error ? (
-              <Text role="body" tone="ink2" style={{ marginTop: space.line }} aria-live="polite">
-                {error}
-              </Text>
-            ) : (
-              <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
-                One tap — no password to remember.
-              </Text>
-            )}
-          </div>
-        </main>
-
-        <footer style={{ position: 'relative', textAlign: 'center' }}>
-          <Text role="data" tone="ink3">{COMPANY.address}</Text>
-          <div style={{ marginTop: space.breath }}>
-            <Link
-              href="/"
-              style={{
-                fontFamily: typeScale.body.family,
-                fontSize: typeScale.body.size,
-                fontWeight: 520,
-                color: color.ink2,
-                textDecoration: 'none',
-                display: 'inline-block',
-                minHeight: TARGET_MIN,
-                lineHeight: `${TARGET_MIN}px`,
-              }}
-            >
-              Back to AutoModz
-            </Link>
-          </div>
         </footer>
-      </div>
+      </main>
     </MotionConfig>
   );
 }

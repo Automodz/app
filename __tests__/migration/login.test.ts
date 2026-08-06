@@ -56,7 +56,7 @@ describe('every service call the old door made, the new one makes', () => {
        just been minted. See __tests__/auth/entry.test.ts. */
     expect(src).toMatch(/fetch\('\/api\/session'/);
     const session = src.indexOf("'/api/session'");
-    const enter = src.indexOf('enter(homeFor(profile.role))');
+    const enter = src.indexOf('enter(homeFor(profile.role),');
     expect(session).toBeGreaterThan(-1);
     expect(enter).toBeGreaterThan(session);
   });

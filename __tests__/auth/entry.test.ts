@@ -66,7 +66,7 @@ describe('a redirect from a room actually redirects', () => {
 describe('sign-in lands on a server render that can see the cookie', () => {
   it('the session cookie is minted before anything navigates', () => {
     const mint = login.indexOf('await openServerSession()');
-    const go = login.indexOf('enter(homeFor(profile.role))');
+    const go = login.indexOf('enter(homeFor(profile.role),');
     expect(mint).toBeGreaterThan(-1);
     expect(go).toBeGreaterThan(mint);
   });
@@ -75,7 +75,7 @@ describe('sign-in lands on a server render that can see the cookie', () => {
     /* A soft navigation is served from the client Router Cache, which holds
        the signed-out landing fetched before the customer signed in. */
     expect(login).toMatch(
-      /const enter = useCallback\(\(href: string\) => \{[\s\S]{0,160}window\.location\.replace\(href\);/,
+      /const enter = useCallback\(\(href: string, after = 0\) => \{[\s\S]{0,320}window\.location\.replace\(href\)/,
     );
     expect(login).not.toMatch(/router\.replace/);
     expect(login).not.toMatch(/router\.push/);
@@ -122,6 +122,28 @@ describe('sign-in lands on a server render that can see the cookie', () => {
     const go = effect.indexOf('enter(href)');
     expect(mint).toBeGreaterThan(-1);
     expect(go).toBeGreaterThan(mint);
+  });
+
+  /**
+   * THE WELCOME BEAT MUST NOT RE-OPEN THE RACE.
+   *
+   * The success state holds the screen for a moment before the document is
+   * replaced, and `handleGoogle`'s `finally` runs INSIDE that window. If the
+   * exit were only claimed when the timeout fired, `finally` would re-arm the
+   * guard effect mid-passage and a second session would be minted behind the
+   * welcome. So the claim is synchronous and the move is what waits.
+   */
+  it('the exit is claimed synchronously, even when the move is delayed', () => {
+    const body = login.slice(login.indexOf('const enter = useCallback'),
+      login.indexOf('ALREADY SIGNED IN'));
+    const claim = body.indexOf('leaving.current = true');
+    const delayed = body.indexOf('setTimeout');
+    expect(claim).toBeGreaterThan(-1);
+    expect(delayed).toBeGreaterThan(claim);
+  });
+
+  it('the guard is only re-armed when the door was NOT left', () => {
+    expect(login).toMatch(/if \(!leaving\.current\) \{\s*signingIn\.current = false;/);
   });
 
   it('a failed cookie mint is SAID, not swallowed', () => {
