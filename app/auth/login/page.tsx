@@ -18,7 +18,7 @@
  * welcome, one control, the address, the way back — rendered in the design
  * system instead of Studio White's CSS variables.
  */
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { MotionConfig } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -33,7 +33,6 @@ import Wordmark from '@/components/ui/Wordmark';
 import { Button, Text, Loading, OfflineNote, useOnline } from '@/components/system';
 import { color, space, INSET, type as typeScale, TARGET_MIN } from '@/design';
 import { isInAppBrowser, currentUserAgent } from '@/lib/browser';
-import { trace, traceStart, traceRead, traceSubscribe, type TraceEntry } from '@/lib/authTrace';
 
 /**
  * Only ever return to an internal customer path — never an attacker's URL, and
@@ -49,6 +48,39 @@ const safeDest = (redirect: string | null): string | null =>
   && !redirect.startsWith('/admin')
     ? redirect
     : null;
+
+/**
+ * MINT THE COOKIE THE SERVER ROOMS READ.
+ *
+ * The client SDK keeps its tokens in browser storage, which a server component
+ * cannot see. Every customer room renders on the SERVER and reads this cookie;
+ * without it a customer who has just signed in is served the signed-out
+ * landing. So this is the one thing that has to be true before the door is
+ * allowed to close behind anybody.
+ *
+ * `'unavailable'` is a 503 — the server has no Firebase Admin credentials, so
+ * the studio is misconfigured rather than the customer being unwelcome.
+ * `'refused'` is anything else, including a token the server would not take.
+ */
+type SessionResult = 'ok' | 'unavailable' | 'refused';
+
+async function openServerSession(): Promise<SessionResult> {
+  const current = auth?.currentUser;
+  if (!current) return 'refused';
+  let idToken: string;
+  try {
+    idToken = await current.getIdToken();
+  } catch {
+    return 'refused';
+  }
+  const res = await fetch('/api/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  }).catch(() => null);
+  if (res?.ok) return 'ok';
+  return res?.status === 503 ? 'unavailable' : 'refused';
+}
 
 /** The door while the search params resolve — a state, not an absence (§19.1). */
 function Door() {
@@ -84,14 +116,13 @@ function Login() {
      `navigator.onLine` on its own. */
   const online = useOnline();
 
-  /* THE STAGE TRAIL, on screen. Temporary. The failure reproduces on iPhone
-     Safari, where there is no console without tethering to a Mac — so the
-     instrument has to be readable on the device it is measuring. */
-  const [stages, setStages] = useState<TraceEntry[]>([]);
-  useEffect(() => {
-    setStages(traceRead());
-    return traceSubscribe(setStages);
-  }, []);
+  /* THE DOOR IS LEFT EXACTLY ONCE. Two paths can decide it is time to go —
+     a sign-in that just succeeded, and an arrival that was already signed in —
+     and both are async now, so without this they can both fire. */
+  const leaving = useRef(false);
+  /* While a manual sign-in is in flight, the already-signed-in effect stands
+     down. See the comment on that effect for why this is the whole bug. */
+  const signingIn = useRef(false);
 
   const dest = safeDest(params.get('redirect'));
 
@@ -116,12 +147,57 @@ function Login() {
    * `dest` is already sanitised by `safeDest`, so this cannot be pointed
    * off-site.
    */
-  const enter = (href: string) => { window.location.replace(href); };
+  const enter = useCallback((href: string) => {
+    if (leaving.current) return;
+    leaving.current = true;
+    window.location.replace(href);
+  }, []);
 
-  // already signed in? never show the door twice
+  /**
+   * ALREADY SIGNED IN? NEVER SHOW THE DOOR TWICE — BUT NEVER LEAVE WITHOUT A
+   * SERVER SESSION EITHER.
+   *
+   * This effect used to navigate the moment `user` appeared in the store, and
+   * that is what broke signing in. `onAuthStateChanged` fires INSIDE
+   * `signInWithPopup`, so `AuthProvider` reaches `setUser` several round trips
+   * before `handleGoogle` reaches `POST /api/session`. This effect then
+   * replaced the document while the cookie was still being minted — the
+   * request died with the page, the server saw no cookie, and `/` answered
+   * with the public landing. Measured against the emulator: `setUser` at
+   * +2.3s, the session POST at +13.3s.
+   *
+   * Before the rooms moved to the server there was no cookie to lose, so the
+   * same early redirect was simply a fast path. It is not one any more.
+   *
+   * Two things fix it, and both are needed. `signingIn` keeps this effect out
+   * of the way of a sign-in that is already handling its own session, and for
+   * every other arrival — a returning customer whose Firebase session is still
+   * on disk but whose cookie has expired — the cookie is minted HERE before
+   * the navigation, which is what stops that customer bouncing between the
+   * landing and the door forever.
+   */
   useEffect(() => {
-    if (authLoading || !user) return;
-    enter(homeFor(user.role));
+    if (authLoading || !user || signingIn.current || leaving.current) return;
+    let cancelled = false;
+    void (async () => {
+      const href = homeFor(user.role);
+      /* No Firebase session behind the store user means the development auth
+         shim put it there (`AuthProvider`), and there is no token to exchange.
+         Staff land in `/admin`, which renders in the browser and reads no
+         cookie, so neither is kept waiting on one. */
+      const needsCookie = Boolean(auth?.currentUser) && href !== '/admin';
+      if (needsCookie && (await openServerSession()) !== 'ok') {
+        /* The session could not be opened, so entering would only land on the
+           signed-out landing. Say so and stay at the door. */
+        if (cancelled) return;
+        setError('We could not open your studio. Please sign in again.');
+        await signOut(auth).catch(() => {});
+        setUser(null);
+        return;
+      }
+      if (!cancelled) enter(href);
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
@@ -138,35 +214,14 @@ function Login() {
     if (!online) return;
     setLoading(true);
     setError('');
-
-    traceStart();
-    trace(1, 'before signInWithPopup', currentUserAgent().slice(0, 60));
-
-    /* STAGE 2 has no Firebase callback — the SDK does not announce that it
-       opened a window. Wrapping `window.open` for the duration of the call is
-       the only honest way to observe it, and it distinguishes "the popup never
-       opened" (blocked) from "it opened and never came back". */
-    const nativeOpen = window.open;
-    let popupSeen = false;
-    window.open = function patched(...args: Parameters<typeof window.open>) {
-      if (!popupSeen) {
-        popupSeen = true;
-        trace(2, 'popup opened', String(args[0] ?? '(no url)').slice(0, 80));
-      }
-      return nativeOpen.apply(window, args);
-    } as typeof window.open;
+    /* Claim the entry BEFORE the popup, because `onAuthStateChanged` fires
+       inside it and the effect above would otherwise be racing this function
+       from the moment the credential lands. */
+    signingIn.current = true;
 
     try {
       const result = await signInWithGoogle();
-      window.open = nativeOpen;
-      if (!popupSeen) trace(2, 'popup NEVER opened via window.open');
-      trace(3, 'popup resolved');
-
       const firebaseUser = result.user;
-      trace(4, auth.currentUser ? 'currentUser exists' : 'currentUser MISSING',
-        auth.currentUser
-          ? `${auth.currentUser.uid} · ${auth.currentUser.email ?? 'no email'}`
-          : undefined);
       let profile = await getUserProfile(firebaseUser.uid) ?? await ensureUserProfile(firebaseUser);
 
       if (!profile) {
@@ -176,74 +231,36 @@ function Login() {
       }
 
       profile = await linkEmployeeRole(profile);
-      setUser(profile);
 
-      /* HAND THE SERVER A SESSION IT CAN READ.
-         The client SDK keeps its tokens in browser storage, which a server
-         component cannot see — so the customer rooms, which now render on the
-         server, would show "behind a sign-in" to someone who had just signed
-         in. This exchanges the fresh ID token for an httpOnly session cookie.
-         Awaited, not fired-and-forgotten: the redirect below must not race it. */
-      /* NOT best-effort, and it used to be. Every room renders on the SERVER
-         and reads this cookie; without it a customer who has just signed in is
-         served the signed-out landing. Swallowing the failure meant the only
-         symptom was being bounced back to the front page with no explanation,
-         which is indistinguishable from "the sign-in didn't work". */
-      const idToken = await firebaseUser.getIdToken();
-      /* The claims are decoded, NOT verified — this is a diagnostic. `aud` is
-         the value the server compares against its own project id. */
-      try {
-        const claims = JSON.parse(atob(idToken.split('.')[1])) as
-          { iss?: string; aud?: string; sub?: string; exp?: number };
-        trace(5, 'getIdToken succeeded',
-          `aud=${claims.aud} iss=${claims.iss} sub=${claims.sub} exp=${claims.exp}`);
-      } catch {
-        trace(5, 'getIdToken succeeded, claims unreadable', `len=${idToken.length}`);
-      }
+      /* HAND THE SERVER A SESSION IT CAN READ, BEFORE ANYTHING ELSE.
+         Awaited, and awaited ahead of `setUser`, so nothing downstream can
+         navigate out of this page while the exchange is still in the air. */
+      const session = await openServerSession();
 
-      trace(6, 'POST /api/session started');
-      const session = await fetch('/api/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      }).catch(() => null);
-
-      trace(7, 'response status', session ? String(session.status) : 'fetch threw / no response');
-
-      /* STAGE 8 CANNOT BE OBSERVED DIRECTLY. The session cookie is httpOnly by
-         design, so `document.cookie` will never contain it — its absence here
-         proves the flag, not a missing cookie. What is recorded is whether the
-         response that should have set it succeeded. */
-      trace(8, 'cookie (httpOnly — not readable from JS)',
-        `response ok=${session?.ok ?? false}; document.cookie has session=${
-          document.cookie.includes('automodz') }`);
-
-      if (!session?.ok) {
+      if (session !== 'ok') {
         /* 503 means the server has no Firebase Admin credentials — the studio
-           is misconfigured, not the customer. 401 means the token was refused.
-           Both leave the customer signed out; only the wording differs, and it
-           differs so that whoever is on call can tell them apart from a
-           screenshot. */
+           is misconfigured, not the customer. Anything else means the token
+           was refused. Both leave the customer signed out; only the wording
+           differs, and it differs so that whoever is on call can tell them
+           apart from a screenshot. */
         await signOut(auth);
         setUser(null);
-        setError(session?.status === 503
+        setError(session === 'unavailable'
           ? 'The studio is not reachable right now. Please try again shortly.'
           : 'We signed you in, but could not open your studio. Please try again.');
         return;
       }
+
+      setUser(profile);
 
       // redeem a referral the customer arrived with - best-effort, never blocks entry
       if (profile.role !== 'admin' && profile.role !== 'employee') {
         void claimReferral().catch(() => {});
       }
 
-      trace(9, 'navigating', homeFor(profile.role));
       enter(homeFor(profile.role));
     } catch (err: unknown) {
-      window.open = nativeOpen;
       const code = (err as { code?: string }).code;
-      /* The single most useful line in the whole trace. */
-      trace(0, 'THREW', `${code ?? 'no-code'} · ${(err as Error)?.message ?? String(err)}`);
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         // they simply changed their mind - not an error
       } else if (code === 'auth/popup-blocked') {
@@ -259,6 +276,9 @@ function Login() {
         setError('That did not go through. Please try again.');
       }
     } finally {
+      /* Only released on a failure — on success the document is on its way out
+         and re-arming the effect would give it a second navigation to make. */
+      if (!leaving.current) signingIn.current = false;
       setLoading(false);
     }
   };
@@ -343,35 +363,6 @@ function Login() {
                 hand-written copy, reading `navigator.onLine` directly. */}
             <OfflineNote inline caption="You’re offline — reconnect to sign in." />
 
-            {/* TEMPORARY DIAGNOSTIC — remove with lib/authTrace.ts once the
-                failing stage is known. Rendered only after an attempt, so a
-                customer who signs in normally never sees it. */}
-            {stages.length > 0 ? (
-              <div style={{
-                marginTop: space.rest,
-                padding: space.line,
-                borderRadius: 8,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.35)',
-                textAlign: 'left',
-                fontFamily: typeScale.data.family,
-                fontSize: 11,
-                lineHeight: 1.5,
-                color: 'rgba(255,255,255,0.72)',
-                overflowWrap: 'anywhere',
-              }}>
-                {stages.map((e, i) => (
-                  <div key={`${e.stage}-${i}`} style={{ marginBottom: 4 }}>
-                    <strong style={{ color: e.stage === 0 ? '#ff8080' : '#fff' }}>
-                      {e.stage === 0 ? '✕' : e.stage}
-                    </strong>
-                    {' '}{e.label}
-                    {e.detail ? <span style={{ opacity: 0.7 }}> — {e.detail}</span> : null}
-                    <span style={{ opacity: 0.45 }}> +{e.at}ms</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
             {error ? (
               <Text role="body" tone="ink2" style={{ marginTop: space.line }} aria-live="polite">
                 {error}

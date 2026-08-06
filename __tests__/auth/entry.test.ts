@@ -65,7 +65,7 @@ describe('a redirect from a room actually redirects', () => {
 
 describe('sign-in lands on a server render that can see the cookie', () => {
   it('the session cookie is minted before anything navigates', () => {
-    const mint = login.indexOf("fetch('/api/session'");
+    const mint = login.indexOf('await openServerSession()');
     const go = login.indexOf('enter(homeFor(profile.role))');
     expect(mint).toBeGreaterThan(-1);
     expect(go).toBeGreaterThan(mint);
@@ -74,20 +74,61 @@ describe('sign-in lands on a server render that can see the cookie', () => {
   it('entering is a DOCUMENT load, not a soft navigation', () => {
     /* A soft navigation is served from the client Router Cache, which holds
        the signed-out landing fetched before the customer signed in. */
-    expect(login).toMatch(/const enter = \(href: string\) => \{ window\.location\.replace\(href\); \};/);
+    expect(login).toMatch(
+      /const enter = useCallback\(\(href: string\) => \{[\s\S]{0,160}window\.location\.replace\(href\);/,
+    );
     expect(login).not.toMatch(/router\.replace/);
     expect(login).not.toMatch(/router\.push/);
   });
 
-  it('a customer who is already signed in leaves the same way', () => {
-    expect(login).toMatch(/enter\(homeFor\(user\.role\)\)/);
+  it('the door is left exactly once', () => {
+    /* Two paths can decide it is time to go and both are async, so without a
+       latch they can both fire and the second navigation cancels the first. */
+    expect(login).toMatch(/if \(leaving\.current\) return;\s*leaving\.current = true;/);
+  });
+
+  /**
+   * THE RACE THAT BROKE SIGNING IN.
+   *
+   * `onAuthStateChanged` fires INSIDE `signInWithPopup`, so `AuthProvider`
+   * reached `setUser` several round trips before `handleGoogle` reached
+   * `POST /api/session`. The already-signed-in effect then replaced the
+   * document while the cookie was still in flight: the request died with the
+   * page, the server saw no cookie, and `/` answered with the public landing.
+   * Measured against the emulator — `setUser` at +2.3s, the session POST at
+   * +13.3s, so it was not marginal, it was the normal case.
+   */
+  it('a sign-in in flight is never overtaken by the already-signed-in guard', () => {
+    /* Claimed BEFORE the popup, because the credential — and so `setUser` —
+       lands while `signInWithGoogle` is still awaiting. */
+    const claim = login.indexOf('signingIn.current = true');
+    const popup = login.indexOf('await signInWithGoogle()');
+    expect(claim).toBeGreaterThan(-1);
+    expect(popup).toBeGreaterThan(claim);
+    expect(login).toMatch(/if \(authLoading \|\| !user \|\| signingIn\.current/);
+  });
+
+  it('a customer who is already signed in leaves WITH a session, not before one', () => {
+    /* The other half: a returning customer whose Firebase session is still on
+       disk but whose cookie has expired. Navigating on the strength of the
+       store alone bounces them to the landing, which sends them back to the
+       door, forever. The cookie is minted here first. */
+    const effect = login.slice(
+      login.indexOf('if (authLoading || !user || signingIn.current'),
+      login.indexOf("const ref = params.get('ref')"),
+    );
+    expect(effect).not.toBe('');
+    const mint = effect.indexOf('await openServerSession()');
+    const go = effect.indexOf('enter(href)');
+    expect(mint).toBeGreaterThan(-1);
+    expect(go).toBeGreaterThan(mint);
   });
 
   it('a failed cookie mint is SAID, not swallowed', () => {
     /* It was `catch {}` with a comment saying the rooms would ask again. They
        do not — they render the signed-out landing, and the customer sees
        themselves bounced to the front page for no stated reason. */
-    expect(login).toMatch(/if \(!session\?\.ok\)/);
+    expect(login).toMatch(/if \(session !== 'ok'\)/);
     expect(login).toMatch(/could not open your studio/);
   });
 
@@ -96,7 +137,7 @@ describe('sign-in lands on a server render that can see the cookie', () => {
        produced the bounce loop; it must not be a state anyone can sit in. */
     /* Bounded on real code after the branch — `claimReferral` alone matches
        its own import at the top of the file, which made this slice empty. */
-    const branch = login.slice(login.indexOf('if (!session?.ok)'),
+    const branch = login.slice(login.indexOf("if (session !== 'ok')"),
       login.indexOf('void claimReferral()'));
     expect(branch).not.toBe('');
     expect(branch).toMatch(/signOut\(auth\)/);
@@ -105,6 +146,31 @@ describe('sign-in lands on a server render that can see the cookie', () => {
 
   it('the destination can never be pointed off-site', () => {
     expect(login).toMatch(/safeDest\(params\.get\('redirect'\)\)/);
+  });
+});
+
+/**
+ * NOTHING DIAGNOSTIC SURVIVES ON A SURFACE A CUSTOMER CAN SEE.
+ *
+ * The stage trail that found the race rendered numbered stages, timings and a
+ * decoded token audience directly on the door. It was temporary and it is
+ * gone; this is what stops the next one being left behind.
+ */
+describe('the door carries no instrumentation', () => {
+  it('the stage trace is gone, module and all', () => {
+    expect(() => readFileSync('lib/authTrace.ts', 'utf8')).toThrow();
+  });
+
+  it('nothing imports it, and the door renders no trail', () => {
+    const all = [...walk('app'), ...walk('components'), ...walk('lib'), ...walk('navigation')];
+    for (const f of all) {
+      expect({ f, traced: /authTrace|traceStart\(|traceSubscribe\(/.test(codeOf(f)) })
+        .toEqual({ f, traced: false });
+    }
+  });
+
+  it('the door logs nothing to the console', () => {
+    expect(login).not.toMatch(/console\./);
   });
 });
 

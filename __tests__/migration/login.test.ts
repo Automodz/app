@@ -133,6 +133,13 @@ describe('the door is a state, never an absence', () => {
   });
 
   it('never shows the door twice to someone already signed in', () => {
-    expect(src).toMatch(/if \(authLoading \|\| !user\) return;[\s\S]{0,80}enter\(/);
+    /* The guard still stands down for a session that has not resolved yet —
+       but it no longer navigates on the spot. It opens the server session
+       first; see __tests__/auth/entry.test.ts for why that ordering is the
+       whole of the bug it used to cause. */
+    expect(src).toMatch(
+      /if \(authLoading \|\| !user \|\| signingIn\.current \|\| leaving\.current\) return;/,
+    );
+    expect(src).toMatch(/openServerSession\(\)[\s\S]*?enter\(href\)/);
   });
 });

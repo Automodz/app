@@ -75,7 +75,17 @@ const nextConfig = {
            production build. */
         ...(dev ? ['http://127.0.0.1:8080', 'http://127.0.0.1:9099', 'ws://127.0.0.1:8080'] : []),
       ].join(' '),
-      "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com",
+      /* The popup is a window, but the credential comes BACK through a hidden
+         iframe on the auth domain (Firebase's `sendAuthEventViaIframeRelay`).
+         Leave that origin out and the popup completes, the relay is blocked,
+         and the SDK reports "No matching frame" — the sign-in simply never
+         resolves. The local suite needs the same allowance in development,
+         which is why a popup sign-in had never once completed against the
+         emulator; only ever emitted in a development build. */
+      [
+        "frame-src 'self'", 'https://accounts.google.com', 'https://*.firebaseapp.com',
+        ...(dev ? ['http://127.0.0.1:9099'] : []),
+      ].join(' '),
       "worker-src 'self' blob:",
       "manifest-src 'self'",
       "base-uri 'self'",
