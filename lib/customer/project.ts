@@ -26,6 +26,7 @@ import { telLink } from '@/lib/company';
 
 import type { HomeModel, HomeProtection, HomeTimelineEvent } from '@/components/screens/HomeScreen';
 import { resolveAction, hrefForRef, hrefForDestination } from '@/navigation/resolve';
+import { plainValue } from '@/lib/server/plain';
 import type { GarageModel } from '@/components/screens/GarageScreen';
 import type { VehicleModel, VehicleProtection } from '@/components/screens/VehicleScreen';
 import type { PhotographSource } from '@/components/vehicle';
@@ -633,10 +634,22 @@ export function toStudio(picture: CustomerPicture): StudioModel {
        outbound WhatsApp link, because there was no in-app booking surface —
        the most important control in the product handed the customer to another
        application. There is one now. */
+    /* MADE PLAIN AT THE BOUNDARY. `StudioScreen` is a client component, and
+       these three are the only things in any projection handed to a renderer
+       as whole Firestore documents — the booking flow wants the Service
+       objects themselves. Those documents carry `Timestamp` CLASS instances
+       (`Service.createdAt`, `Vehicle.createdAt`, `Subscription.createdAt` and
+       friends), and React refuses to serialise a class instance across the
+       server/client boundary. The room threw for every signed-in customer.
+
+       Converted HERE rather than in `loadCustomerPicture`: `customerPicture`,
+       `ownership` and this file all sort on `createdAt?.toMillis?.()`, which
+       with optional chaining would quietly return 0 for a converted value and
+       break every ordering in the product without raising anything. */
     booking: {
-      services: picture.catalogue,
-      vehicles: picture.cars.map(c => c.vehicle),
-      membership: picture.subscription ?? null,
+      services: plainValue(picture.catalogue) as Service[],
+      vehicles: plainValue(picture.cars.map(c => c.vehicle)) as Vehicle[],
+      membership: (plainValue(picture.subscription ?? null) ?? null) as Subscription | null,
     },
 
     /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE. `changeable` mirrors
