@@ -45,3 +45,9 @@ coverage/
 .idea/
 .playwright-mcp/
 
+# Service-account keys. A Firebase "Generate new private key" download lands
+# wherever the browser puts it — which was this directory — and it is one
+# `git add -A` away from being pushed to a public remote. Never tracked.
+*firebase-adminsdk*.json
+*service-account*.json
+serviceAccountKey.json
