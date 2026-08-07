@@ -23,6 +23,7 @@ import {
 import {
   Hero, Heading, Text, Button, Timeline, Modal,
   OfflineNote,
+  LiveRefresh,
 } from '@/components/system';
 import type { TimelineStep } from '@/components/system';
 
@@ -80,6 +81,24 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${space.rest}px)`,
       }}
     >
+      {/* THE ONE ROOM THAT HAS TO KEEP ITSELF CURRENT.
+          Rendered on the server, this screen used to be frozen at the moment
+          it was requested: the act it was in when the page loaded, and
+          nothing after. New photographs never appeared and the rail never
+          advanced — the one surface called "live" was the only one that never
+          changed. It asks again now, quietly, and only while somebody is
+          actually looking (see LiveRefresh).
+
+          NO PREDICATE. `app/history/[id]` renders this room only while
+          `toLiveVisit` still answers; the moment the visit is no longer in
+          flight the same address renders the RECORD instead and this
+          unmounts, which stops the polling for the right reason. Guessing at
+          "finished" from the last act would stop one step early — a visit
+          whose work is done but whose car has not been handed back is still
+          live, and that hand-back is the transition the customer is waiting
+          for. */}
+      <LiveRefresh />
+
       {/* §20.3 — the visit so far was rendered on the server and is still
           true; only what happens NEXT needs a connection. Whoever is
           watching their car in the studio is the likeliest to be on a
