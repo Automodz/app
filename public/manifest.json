@@ -36,7 +36,7 @@
       "name": "Your car",
       "short_name": "Garage",
       "description": "Open your garage",
-      "url": "/app",
+      "url": "/",
       "icons": [
         {
           "src": "/icons/icon-192.png",
@@ -48,7 +48,7 @@
       "name": "Book a visit",
       "short_name": "Book",
       "description": "Arrange a visit",
-      "url": "/app?sheet=arrange",
+      "url": "/studio?arrange=1",
       "icons": [
         {
           "src": "/icons/icon-192.png",

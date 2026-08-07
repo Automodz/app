@@ -143,6 +143,46 @@ it('Vehicle renders through the renderer boundary', () => {
   expect(html).not.toContain('aria-pressed');
 });
 
+/**
+ * NO ROOM SHIPS A DEAD CONTROL.
+ *
+ * §10.5 — "if there is no destination yet, there is no control yet" — is
+ * guarded at runtime in `Button`, and the guard only writes to the console in
+ * development, where a dozen identical lines across seven rooms is a warning
+ * nobody can act on. Rendering every screen here turns it into a failing test
+ * that names the control.
+ */
+it('no screen renders a button that does nothing', () => {
+  const rendering = photograph(toVehiclePhotograph(car));
+  const screens: [string, React.ReactElement][] = [
+    ['Home', <HomeScreen model={toHome(picture)!} />],
+    ['Garage', <GarageScreen model={toGarage(picture)} />],
+    ['Vehicle', <VehicleScreen model={toVehicle(car, picture)} rendering={rendering} />],
+    ['History', <HistoryScreen model={toHistory(car, picture.invoices)} />],
+    ['Visit', <VisitScreen visit={toVisit(visitsOf(car)[0], car)} />],
+    ['Studio', <StudioScreen model={toStudio(picture)} />],
+    /* `onSignOut` is how the room actually receives it — see YouRoom. Rendered
+       without it, the guard would fire on the harness rather than on the
+       product. */
+    ['You', <YouScreen model={toYou(picture)} onSignOut={() => {}} />],
+    ['Membership', <MembershipScreen model={toMembership(picture)} />],
+  ];
+
+  const inert: string[] = [];
+  const real = console.error;
+  console.error = (...args: unknown[]) => {
+    const first = String(args[0] ?? '');
+    if (first.includes('[Button]')) inert.push(first);
+  };
+  try {
+    for (const [, node] of screens) renderToStaticMarkup(node);
+  } finally {
+    console.error = real;
+  }
+
+  expect(inert).toEqual([]);
+});
+
 it('Vehicle says what the car has coming, and how to change it', () => {
   /* The room named the car's STATE — "Booked in" — and then said nothing about
      when, what for, or how to change it. A customer looking at their own car

@@ -109,7 +109,14 @@ export function Button({
 }: ButtonProps) {
   if (process.env.NODE_ENV !== 'production' && !onClick && !href && type !== 'submit') {
     // §10.5 — "If there is no destination yet, there is no control yet."
-    console.error('[Button] has no onClick, href or submit type — nothing is inert (§10.5).');
+    /* NAMES ITSELF. The bare sentence told you a dead control existed and
+       gave you no way to find it — with a dozen of them across seven rooms,
+       that is a warning nobody can act on. The label is what a customer reads,
+       so it is what identifies the control. */
+    console.error(
+      `[Button] "${typeof children === 'string' ? children : '(unnamed)'}" has no `
+      + 'onClick, href or submit type — nothing is inert (§10.5).',
+    );
   }
 
   const interactive = !(disabled || loading);

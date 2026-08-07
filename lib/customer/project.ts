@@ -398,7 +398,12 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
         href: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
       };
     }),
-    beginHref: hrefForDestination({ to: 'studio' }),
+    /* OPENS THE SHEET. Pointing at `/studio` alone landed the customer in the
+       room and left them to find the control — the same half-step the Vehicle
+       room's "change or cancel" made. An invitation should complete the act it
+       names. */
+    beginHref: `${hrefForDestination({ to: 'studio' })}?arrange=1`,
+    addHref: hrefForDestination({ to: 'garage.add' }),
 
     /* The same cars in the shape the form writes back. Projected here rather
        than derived in the screen: a renderer that reshaped domain objects

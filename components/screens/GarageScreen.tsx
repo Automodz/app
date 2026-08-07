@@ -100,6 +100,12 @@ export interface GarageModel {
   vehicles: GarageVehicle[];
   /** §12.4 — where the invitation leads when there is no car yet. */
   beginHref: string;
+  /**
+   * Where a car is added. The Garage is where cars live and could not add one:
+   * a customer who had just signed in was offered arranging a visit and no way
+   * to say what car it was for.
+   */
+  addHref: string;
   /** The same cars, in the shape the form writes back. */
   editable: GarageEditable[];
 }
@@ -224,7 +230,7 @@ function Vehicle(
  * one line and one way to begin, and the line is about the car rather than
  * about the software's emptiness — §18.3, "emptiness is not failure."
  */
-function Invitation({ href }: { href: string }) {
+function Invitation({ href, addHref }: { href: string; addHref: string }) {
   return (
     <div
       style={{
@@ -236,15 +242,29 @@ function Invitation({ href }: { href: string }) {
       }}
     >
       <Heading level="display">Your car&rsquo;s place is ready.</Heading>
-      <div style={{ marginTop: space.gap }}>
-        <Button tier="forward" href={href}>Arrange its first visit</Button>
+      <Text role="body" tone="ink2" style={{ marginTop: space.line, maxWidth: MEASURE }}>
+        Add it and everything else follows &mdash; its protection, its visits,
+        its record.
+      </Text>
+      {/* THE GARAGE IS WHERE CARS LIVE, AND IT COULD NOT ADD ONE.
+          A customer who had just signed in was offered exactly one act here —
+          arranging a visit — with no way to tell us what car it was for. §18.4
+          gives an empty room "one line and one action", and the action has to
+          be the one that resolves the emptiness: this room is empty because
+          there is no car in it. Arranging stays, one tier down, because a
+          first visit is still worth offering. */}
+      <div style={{
+        marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap',
+      }}>
+        <Button tier="primary" href={addHref}>Add your car</Button>
+        <Button tier="quiet" href={href}>Arrange its first visit</Button>
       </div>
     </div>
   );
 }
 
 export function GarageScreen({ model }: { model: GarageModel }) {
-  const { vehicles, beginHref, editable } = model;
+  const { vehicles, beginHref, addHref, editable } = model;
 
   /* THE FORM IS ADDRESSABLE (§6.4). `?add=1` opens a new car, `?edit=<id>`
      corrects one — so both are linkable, restorable on reload, and closed by
@@ -296,7 +316,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
           what happens NEXT needs a connection. One implementation (§22.2). */}
       <OfflineNote />
       {vehicles.length === 0 ? (
-        <Invitation href={beginHref} />
+        <Invitation href={beginHref} addHref={addHref} />
       ) : (
         /* No gaps, no dividers, no padding between frames. The strip is
            continuous on purpose: each photograph's own scrim darkens toward

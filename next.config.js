@@ -110,6 +110,11 @@ const nextConfig = {
          emulator; only ever emitted in a development build. */
       [
         "frame-src 'self'", 'https://accounts.google.com', 'https://*.firebaseapp.com',
+        /* The landing page's map. `www.google.com` is NOT covered by the
+           sign-in entry above, so the embed was blocked by our own policy and
+           the Contact section rendered an empty box — on the one page every
+           visitor arrives at. */
+        'https://www.google.com',
         ...(dev ? ['http://127.0.0.1:9099'] : []),
       ].join(' '),
       "worker-src 'self' blob:",
