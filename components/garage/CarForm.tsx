@@ -20,6 +20,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { addVehicle, updateVehicle } from '@/lib/services/vehicles';
+import { currentUid } from '@/lib/clientSession';
 import type { Vehicle } from '@/lib/types';
 import { BottomSheet, Heading, Text, Button } from '@/components/system';
 import {
@@ -39,7 +40,7 @@ export interface CarFormProps {
 
 export function CarForm({ open, onClose, editing = null }: CarFormProps) {
   const router = useRouter();
-  const { user, vehicles, addVehicleToStore, updateVehicleInStore } = useAppStore();
+  const { vehicles, addVehicleToStore, updateVehicleInStore } = useAppStore();
 
   const [name, setName] = useState('');
   const [plate, setPlate] = useState('');
@@ -62,8 +63,11 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
     vehicles.some(v => v.id !== editing?.id && normPlate(v.registrationNumber) === p);
 
   const save = async () => {
-    if (!user) return;
-
+    /* NOT `user` FROM THE STORE. The Garage renders on the SERVER and mounts no
+       `AuthProvider`, so the store's user is always null here — and this method
+       opened with `if (!user) return`, which meant pressing "Add the car" did
+       nothing at all, silently, for every customer. A car could not be added to
+       the garage from the garage. See lib/clientSession.ts. */
     let ok = true;
     if (name.trim().length < 2) {
       setNameErr('The car needs a name — “Mercedes-AMG C 43”.');
@@ -82,12 +86,17 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
     setBusy(true);
     setError(null);
     try {
+      const uid = await currentUid();
+      if (!uid) {
+        setError('Your session has expired. Sign in again and we’ll keep this.');
+        return;
+      }
       const data = { name: name.trim(), registrationNumber: p };
       if (editing) {
-        await updateVehicle(user.uid, editing.id, data);
+        await updateVehicle(uid, editing.id, data);
         updateVehicleInStore(editing.id, data);
       } else {
-        const id = await addVehicle(user.uid, data as Omit<Vehicle, 'id' | 'createdAt'>);
+        const id = await addVehicle(uid, data as Omit<Vehicle, 'id' | 'createdAt'>);
         addVehicleToStore({ ...data, id } as Vehicle);
       }
       onClose();

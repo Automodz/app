@@ -63,7 +63,10 @@ describe('one profile, one preference source, one referral', () => {
   });
 
   it('the settings sheet writes preferences through that one service', () => {
-    expect(settings).toMatch(/updateUserProfile\(user\.uid, \{ notificationPrefs: next \}\)/);
+    /* Against the ACCOUNT it loaded, not the client store's user. `/you`
+       renders on the server and mounts no `AuthProvider`, so that user is
+       always null there — every switch moved on screen and wrote nothing. */
+    expect(settings).toMatch(/updateUserProfile\(account\.uid, \{ notificationPrefs: next \}\)/);
   });
 
   it('a preference is saved when touched, not behind a Save button', () => {

@@ -21,7 +21,9 @@
  * browser session, so only these carry one.
  */
 import { useEffect, useState } from 'react';
-import { idToken } from '@/lib/clientSession';
+import { currentUid, idToken } from '@/lib/clientSession';
+import { getUserProfile } from '@/lib/firebaseService';
+import type { User } from '@/lib/types';
 import { useAppStore } from '@/lib/store';
 import { updateUserProfile } from '@/lib/services/auth';
 import { enablePush, disablePush, pushEnabled, pushSupported } from '@/lib/services/push';
@@ -77,17 +79,35 @@ export function AccountSettings({
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  /**
+   * THE ACCOUNT, READ FROM THE ACCOUNT.
+   *
+   * This filled itself from `user` in the client store — and `/you` renders on
+   * the SERVER and mounts no `AuthProvider`, so that user is always null here.
+   * The fields opened blank whatever the customer's name actually was, saving
+   * returned at `if (!user)` without writing anything, and every notification
+   * switch did the same: it moved on screen and changed nothing.
+   */
+  const [account, setAccount] = useState<User | null>(null);
   useEffect(() => {
-    if (!user) return;
-    setName(user.name ?? '');
-    setPhone(user.phone ?? '');
-    setPrefs({
-      serviceReminders: user.notificationPrefs?.serviceReminders ?? true,
-      membershipReminders: user.notificationPrefs?.membershipReminders ?? true,
-      promotions: user.notificationPrefs?.promotions ?? true,
-      whatsapp: user.notificationPrefs?.whatsapp ?? true,
-    });
-  }, [user]);
+    let cancelled = false;
+    void (async () => {
+      const uid = await currentUid();
+      if (!uid || cancelled) return;
+      const p = await getUserProfile(uid).catch(() => null);
+      if (!p || cancelled) return;
+      setAccount(p);
+      setName(p.name ?? '');
+      setPhone(p.phone ?? '');
+      setPrefs({
+        serviceReminders: p.notificationPrefs?.serviceReminders ?? true,
+        membershipReminders: p.notificationPrefs?.membershipReminders ?? true,
+        promotions: p.notificationPrefs?.promotions ?? true,
+        whatsapp: p.notificationPrefs?.whatsapp ?? true,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!panel) return;
@@ -110,13 +130,14 @@ export function AccountSettings({
   }, [panel, user, code]);
 
   const saveProfile = async () => {
-    if (!user) return;
+    if (!account) return;
     setSaving(true);
     setError(null);
     try {
-      const next = { name: name.trim() || user.name, phone: phone.trim() };
-      await updateUserProfile(user.uid, next);
-      setUser({ ...user, ...next });
+      const next = { name: name.trim() || account.name, phone: phone.trim() };
+      await updateUserProfile(account.uid, next);
+      setAccount({ ...account, ...next });
+      if (user) setUser({ ...user, ...next });
       setSaved(true);
     } catch {
       setError('That didn’t save. Try again in a moment.');
@@ -129,12 +150,13 @@ export function AccountSettings({
      would mean a customer who turns something off and closes the sheet is
      still sent it — the one outcome this screen exists to prevent. */
   const togglePref = async (key: keyof NotificationPrefs) => {
-    if (!user) return;
+    if (!account) return;
     const next = { ...prefs, [key]: !prefs[key] };
     setPrefs(next);
     try {
-      await updateUserProfile(user.uid, { notificationPrefs: next });
-      setUser({ ...user, notificationPrefs: next });
+      await updateUserProfile(account.uid, { notificationPrefs: next });
+      setAccount({ ...account, notificationPrefs: next });
+      if (user) setUser({ ...user, notificationPrefs: next });
     } catch {
       /* Put it back, so the switch never claims something the server refused. */
       setPrefs(prefs);

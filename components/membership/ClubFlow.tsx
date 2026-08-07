@@ -17,8 +17,9 @@
  * chooses and submits, and computes nothing.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { currentUid } from '@/lib/clientSession';
+import { getUserProfile } from '@/lib/firebaseService';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/store';
 import { createSubscription, updateSubscriptionStatus } from '@/lib/services/subscriptions';
 import { fireOpsEvent } from '@/lib/services/notifications';
 import { cycleEnd } from '@/lib/os/club';
@@ -59,7 +60,6 @@ export interface ClubFlowProps {
 export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlowProps) {
   const router = useRouter();
   const online = useOnline();
-  const { user } = useAppStore();
 
   const [plan, setPlan] = useState<MembershipPlan | null>(null);
   const [method, setMethod] = useState<'cash' | 'upi'>('cash');
@@ -81,19 +81,32 @@ export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlow
   }, [open, intent, currentPlan]);
 
   const submit = async () => {
-    if (!user || !chosen) return;
+    if (!chosen) return;
     if (!online) { setError('You’re offline — reconnect to do this.'); return; }
     setBusy(true);
     setError(null);
     const start = todayISO();
     try {
+      /* NOT `user` FROM THE STORE. Membership renders on the SERVER and mounts
+         no `AuthProvider`, so the store's user is always null here — and this
+         opened with `if (!user) return`, which meant pressing join did nothing
+         at all, silently, for every customer. The one act in the product that
+         takes a standing payment could not be performed.
+         The identity is read from the account itself, which is also the only
+         copy `firestore.rules` will accept a subscription against. */
+      const uid = await currentUid();
+      if (!uid) {
+        setError('Your session has expired. Sign in again and we’ll pick this up.');
+        return;
+      }
+      const profile = await getUserProfile(uid);
       /* Exactly the old payload. `status: 'pending'` is not a choice — the
          rules refuse anything else from a customer. */
       const payload: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'> = {
-        userId: user.uid,
-        userName: user.name,
-        userEmail: user.email,
-        userPhone: user.phone || '',
+        userId: uid,
+        userName: profile?.name ?? '',
+        userEmail: profile?.email ?? '',
+        userPhone: profile?.phone ?? '',
         plan: chosen.id,
         status: 'pending',
         startDate: start,

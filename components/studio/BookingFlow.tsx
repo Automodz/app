@@ -396,6 +396,27 @@ export function BookingFlow({
 
         <OfflineNote inline caption="You’re offline. We can’t hold a slot until you’re back." />
 
+        {/* NO CAR AT ALL — THE DEAD END THIS SHEET USED TO BE.
+            With an empty garage `vehicleId` stayed null, the picker below
+            never rendered (it needs TWO cars to appear), and `ready` could
+            never become true — so a customer chose a service, chose a day,
+            chose an hour, and then found "Arrange it" greyed out with nothing
+            anywhere saying why. Three separate invitations lead here from
+            empty rooms, so it was the first thing a new customer met.
+            §10.5 — the way out is a control, not an explanation. */}
+        {vehicles.length === 0 ? (
+          <div style={{ marginTop: space.rest }}>
+            <Text role="body" tone="ink">Which car is this for?</Text>
+            <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+              Add it once and it stays &mdash; every visit after this one
+              remembers it.
+            </Text>
+            <div style={{ marginTop: space.gap }}>
+              <Button tier="primary" href="/garage?add=1">Add your car</Button>
+            </div>
+          </div>
+        ) : null}
+
         {/* WHICH CAR — only when there is a choice to make. */}
         {vehicles.length > 1 ? (
           <Group label="Which car">
@@ -409,6 +430,8 @@ export function BookingFlow({
           </Group>
         ) : null}
 
+        {vehicles.length === 0 ? null : (
+        <>
         {/* WHAT — grouped by category, never a flat list.
             THE CHOICE IS LEGIBLE NOW. These were bare name chips: a customer
             picked a ₹64,000 service from a single word, with no idea what it
@@ -612,6 +635,9 @@ export function BookingFlow({
           </div>
         ) : null}
 
+        </>
+        )}
+
         {error ? (
           <Text role="body" tone="ink2" aria-live="polite" style={{ marginTop: space.gap }}>
             {error}
@@ -619,9 +645,13 @@ export function BookingFlow({
         ) : null}
 
         <div style={{ marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
-          <Button tier="primary" onClick={confirm} loading={busy} disabled={!ready}>
-            Arrange it
-          </Button>
+          {/* Offered only once it can succeed. A permanently disabled primary
+              is a control that never explains itself (§10.5). */}
+          {vehicles.length > 0 ? (
+            <Button tier="primary" onClick={confirm} loading={busy} disabled={!ready}>
+              Arrange it
+            </Button>
+          ) : null}
           <Button tier="quiet" onClick={onClose}>Not now</Button>
         </div>
         </>

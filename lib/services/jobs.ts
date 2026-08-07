@@ -51,7 +51,6 @@ export const createWalkInJob = async (data: {
      `assignments` too. Handing that back typed as `Job` would be a trap for the
      next caller. The live job-board listener supplies the real document. */
 }): Promise<{ id: string }> => {
-  const { auth } = await import('../firebase');
   const token = await idToken();
   if (!token) throw new Error('not-signed-in');
   const res = await fetch('/api/booking/create', {
@@ -211,7 +210,6 @@ export const updateJobStatus = async (
        recovered by the idempotent backfill, whereas a kiosk that hangs on a
        network call strands a car at the counter. */
     try {
-      const { auth } = await import('../firebase');
       const idToken = await token();
       if (idToken) {
         await fetch('/api/visit/seal', {
