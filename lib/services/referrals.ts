@@ -1,7 +1,8 @@
 import {
   doc, getDoc, updateDoc, getDocs, collection, query, where, serverTimestamp,
 } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
+import { idToken as token } from '../clientSession';
 import { REFERRAL } from '../config/storeConfig';
 import type { User } from '../types';
 
@@ -57,7 +58,7 @@ export const claimReferral = async () => {
   let code: string | null = null;
   try { code = sessionStorage.getItem(CODE_KEY); } catch {}
   if (!code) return;
-  const idToken = await auth.currentUser?.getIdToken();
+  const idToken = await token();
   if (!idToken) return;
   const res = await fetch('/api/referral/claim', {
     method: 'POST',

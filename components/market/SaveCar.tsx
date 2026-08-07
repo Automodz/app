@@ -11,6 +11,7 @@
  * goes back to what it was and says so, rather than lying quietly.
  */
 import { useState, useTransition } from 'react';
+import { idToken } from '@/lib/clientSession';
 import { useRouter } from 'next/navigation';
 import { space } from '@/design';
 import { Button, Text } from '@/components/system';
@@ -42,8 +43,7 @@ export function SaveCar(
     setFailed(false);
     start(async () => {
       try {
-        const { auth } = await import('@/lib/firebase');
-        const token = await auth.currentUser?.getIdToken();
+        const token = await idToken();
         if (!token) throw new Error('no-token');
         const res = await fetch('/api/cars/save', {
           method: 'POST',

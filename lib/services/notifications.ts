@@ -2,7 +2,8 @@ import {
   collection, doc, updateDoc, getDocs, writeBatch,
   query, where, limit,
 } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
+import { idToken } from '../clientSession';
 import type { Notification } from '../types';
 
 export const getUserNotifications = async (uid: string): Promise<Notification[]> => {
@@ -31,7 +32,7 @@ export const markAllNotificationsRead = async (uid: string) => {
 /** Fire-and-forget ops event → owner gets notified (server-verified ownership). */
 export const fireOpsEvent = async (event: 'booking_created' | 'booking_cancelled' | 'membership_pending' | 'quote_requested', id: string) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
+    const token = await idToken();
     if (!token) return;
     await fetch('/api/notify/event', {
       method: 'POST',

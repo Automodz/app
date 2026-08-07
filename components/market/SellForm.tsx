@@ -12,6 +12,7 @@
  * write cannot guarantee that.
  */
 import { useState } from 'react';
+import { idToken, currentUid } from '@/lib/clientSession';
 import { useRouter } from 'next/navigation';
 import { color, space, radius, HAIRLINE } from '@/design';
 import { Heading, Text, Button } from '@/components/system';
@@ -49,8 +50,7 @@ export function SellForm({ garage }: { garage: { id: string; name: string }[] })
     setUploading(true);
     try {
       const { uploadImage } = await import('@/lib/services/storage');
-      const { auth } = await import('@/lib/firebase');
-      const uid = auth.currentUser?.uid;
+      const uid = await currentUid();
       if (!uid) throw new Error('signed-out');
 
       const room = Math.max(0, MAX_PHOTOS - photos.length);
@@ -81,8 +81,7 @@ export function SellForm({ garage }: { garage: { id: string; name: string }[] })
 
     setSending(true);
     try {
-      const { auth } = await import('@/lib/firebase');
-      const token = await auth.currentUser?.getIdToken();
+      const token = await idToken();
       if (!token) throw new Error('signed-out');
 
       const res = await fetch('/api/cars/sell', {

@@ -12,6 +12,7 @@
  * and the customer are the same person.
  */
 import { useState } from 'react';
+import { idToken } from '@/lib/clientSession';
 import { color, space, radius, HAIRLINE } from '@/design';
 import { Modal, Heading, Text, Button } from '@/components/system';
 
@@ -53,11 +54,9 @@ export function AskAboutCar(
     try {
       /* The token is used if there is one and never required — the route
          accepts an anonymous enquiry deliberately. */
-      let token: string | undefined;
-      try {
-        const { auth } = await import('@/lib/firebase');
-        token = await auth.currentUser?.getIdToken();
-      } catch { /* signed out: expected, and fine */ }
+      /* `idToken()` waits for the SDK to decide and answers null rather than
+         throwing, so the anonymous case needs no try/catch of its own. */
+      const token = (await idToken()) ?? undefined;
 
       const res = await fetch('/api/cars/lead', {
         method: 'POST',

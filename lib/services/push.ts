@@ -1,4 +1,5 @@
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { idToken as token } from '../clientSession';
 import { db, app } from '../firebase';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
@@ -58,8 +59,7 @@ export const sendPushToUser = async (data: {
   userId: string; title: string; body: string; url?: string;
 }) => {
   try {
-    const { auth } = await import('../firebase');
-    const idToken = await auth.currentUser?.getIdToken();
+    const idToken = await token();
     if (!idToken) return;
     await fetch('/api/push/send', {
       method: 'POST',

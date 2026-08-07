@@ -1,0 +1,79 @@
+/**
+ * WHO IS SIGNED IN, IN THE BROWSER — WAITED FOR, NOT GUESSED AT.
+ *
+ * `auth.currentUser` is null for the first moments of every page load. The SDK
+ * restores the persisted session from IndexedDB asynchronously, and until that
+ * lands it has no idea who anybody is. Code that reads `currentUser` straight
+ * after an import is not reading "signed out" — it is reading "not yet".
+ *
+ * ON THE ADMIN AND KIOSK TREES that was survivable, because `ClientSession`
+ * mounts `AuthProvider`, whose `onAuthStateChanged` subscription is what drives
+ * the restore and holds the answer by the time anything is clickable.
+ *
+ * THE CUSTOMER ROOMS MOUNT NONE OF IT. They render on the server and
+ * deliberately ship no provider — which is the right trade for a first paint,
+ * and it means nothing in those rooms ever subscribes, so `currentUser` can
+ * still be null at the moment a customer presses something. What that produced:
+ *
+ *   · finishing the first arrival threw `signed-out` and told the customer
+ *     "that didn't save" — so `welcomedAt` was never written and the welcome
+ *     greeted them again on every single sign-in, forever;
+ *   · a booking, and the availability lookup behind it, went out with no
+ *     Authorization header and came back 401.
+ *
+ * Each was found and fixed separately as though it were its own bug. They are
+ * one bug, and this is the one answer to it: subscribe once, resolve the moment
+ * the SDK knows, and never ask before then. §22.2 — one implementation of
+ * anything.
+ *
+ * `onAuthStateChanged` rather than `authStateReady()` because the latter is not
+ * in this SDK version's modular surface, and this works on every version.
+ */
+import type { User } from 'firebase/auth';
+
+/**
+ * The signed-in user once the SDK has actually decided, or null.
+ *
+ * Resolves immediately when the answer is already known, so the common case
+ * costs nothing. Never rejects: "we could not tell" and "nobody" are the same
+ * answer to every caller here, and a throw would only turn a signed-out state
+ * into an error somebody has to catch.
+ */
+export async function waitForUser(): Promise<User | null> {
+  if (typeof window === 'undefined') return null;
+  const { auth } = await import('./firebase');
+  if (!auth) return null;
+  if (auth.currentUser) return auth.currentUser;
+
+  const { onAuthStateChanged } = await import('firebase/auth');
+  return new Promise<User | null>((resolve) => {
+    /* Unsubscribed on the first answer — this is a question, not a feed. */
+    const stop = onAuthStateChanged(
+      auth,
+      (user) => { stop(); resolve(user); },
+      () => { stop(); resolve(null); },
+    );
+  });
+}
+
+/**
+ * A fresh ID token for the signed-in customer, or null.
+ *
+ * This is what every authenticated `fetch` in the browser should carry: the
+ * server routes verify a Bearer token and read no cookie, because the session
+ * cookie exists for SERVER RENDERING and those routes never see it.
+ */
+export async function idToken(force = false): Promise<string | null> {
+  const user = await waitForUser();
+  if (!user) return null;
+  try {
+    return await user.getIdToken(force);
+  } catch {
+    return null;
+  }
+}
+
+/** The signed-in customer's uid once known, or null. */
+export async function currentUid(): Promise<string | null> {
+  return (await waitForUser())?.uid ?? null;
+}

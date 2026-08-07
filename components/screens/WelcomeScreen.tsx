@@ -73,8 +73,14 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
     setBusy(true);
     setNote(null);
     try {
-      const { auth } = await import('@/lib/firebase');
-      const token = await auth.currentUser?.getIdToken();
+      /* WAITED FOR, NOT GUESSED AT. This read `auth.currentUser` immediately
+         after importing the SDK — and on a customer room nothing has ever
+         subscribed to auth state, so the persisted session had not been
+         restored yet and it was reliably null. Every customer saw "that
+         didn't save", `welcomedAt` was never written, and the arrival greeted
+         them again on every sign-in for ever. See lib/clientSession.ts. */
+      const { idToken } = await import('@/lib/clientSession');
+      const token = await idToken();
       if (!token) throw new Error('signed-out');
 
       const res = await fetch('/api/welcome/complete', {
@@ -108,8 +114,8 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
     setNote(null);
     try {
       const { pushSupported, enablePush } = await import('@/lib/services/push');
-      const { auth } = await import('@/lib/firebase');
-      const uid = auth.currentUser?.uid;
+      const { currentUid } = await import('@/lib/clientSession');
+      const uid = await currentUid();
       if (!pushSupported() || !uid) {
         setNote('This device can’t be told. You can still see everything here.');
       } else {

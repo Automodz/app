@@ -54,7 +54,7 @@ describe('a member is quoted the member rate', () => {
     );
     /* Falls back to the Firebase session, and skips promos when neither is
        available — rather than abandoning the whole quote. */
-    expect(effect).toMatch(/auth\?\.currentUser\?\.uid/);
+    expect(effect).toMatch(/await currentUid\(\)/);
     expect(effect).toMatch(/if \(uid\) \{/);
   });
 

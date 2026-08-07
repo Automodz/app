@@ -11,8 +11,9 @@
 // billing card for Storage, and Cloudinary's CDN serves images faster anyway.
 
 const idToken = async (): Promise<string> => {
-  const { auth } = await import('../firebase');
-  const t = await auth.currentUser?.getIdToken();
+  /* Waited for, not guessed at — see lib/clientSession.ts. */
+  const { idToken: token } = await import('../clientSession');
+  const t = await token();
   if (!t) throw new Error('not-signed-in');
   return t;
 };

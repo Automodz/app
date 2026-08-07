@@ -12,7 +12,8 @@ import {
   onSnapshot,
   setDoc,
   } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
+import { idToken } from '../clientSession';
 import type { Booking, Notification } from '../types';
 import { notificationHref } from '@/navigation/resolve';
 
@@ -88,7 +89,9 @@ export const cancelBooking = async (
   bookingId: string,
   opts: { reason?: string; noShow?: boolean } = {},
 ): Promise<void> => {
-  const token = await auth.currentUser?.getIdToken();
+  /* Waited for — `/studio` is a customer room and mounts no AuthProvider, so
+     `currentUser` can still be null when a customer presses cancel. */
+  const token = await idToken();
   if (!token) throw new Error('not-signed-in');
   const res = await fetch('/api/booking/cancel', {
     method: 'POST',

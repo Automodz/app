@@ -75,7 +75,22 @@ async function _loadCustomerPicture(session: {
   );
 
   const profile = profileSnap.data() as Partial<User> | undefined;
+  /**
+   * THE PROFILE IS CARRIED, NOT RE-TYPED.
+   *
+   * This listed five fields by hand and `as User` silenced the compiler about
+   * every one it did not list — so `welcomedAt` never reached the projection.
+   * `shouldWelcome` therefore fell through to "has no car", and every customer
+   * without a car in their garage was greeted by the first-arrival flow ON
+   * EVERY SINGLE SIGN-IN, for ever, no matter how many times they finished it.
+   * The flag was being written correctly the whole time; nothing ever read it.
+   *
+   * Spreading the document first and overriding only what needs a fallback
+   * means a field added to `User` arrives here without anybody remembering to
+   * add it — which is the failure this had.
+   */
   const user: User = {
+    ...(profile ?? {}),
     uid,
     name: profile?.name ?? session.name ?? '',
     email: profile?.email ?? session.email ?? '',

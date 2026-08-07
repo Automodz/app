@@ -27,7 +27,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import { auth } from '@/lib/firebase';
+/* WAITED FOR, NOT GUESSED AT — `auth.currentUser` is null until the SDK has
+   restored the persisted session, and no customer room subscribes to make that
+   happen. See lib/clientSession.ts. */
+import { idToken, currentUid } from '@/lib/clientSession';
 import { getEligiblePromos } from '@/lib/services/promos';
 import { computeBestDiscount, applyDiscount } from '@/lib/services/pricing';
 import { washesLeftOf } from '@/lib/os/club';
@@ -189,7 +192,7 @@ export function BookingFlow({
        as "that slot has just gone". A silent failure that reads as an answer
        is worse than an error. */
     void (async () => {
-      const token = await auth?.currentUser?.getIdToken().catch(() => null);
+      const token = await idToken();
       if (!token || cancelled) return;
       try {
         const r = await fetch('/api/availability', {
@@ -249,7 +252,7 @@ export function BookingFlow({
         : null;
 
       let promos: Awaited<ReturnType<typeof getEligiblePromos>> = [];
-      const uid = user?.uid ?? auth?.currentUser?.uid;
+      const uid = user?.uid ?? await currentUid();
       if (uid) {
         try {
           promos = await getEligiblePromos({
@@ -316,7 +319,7 @@ export function BookingFlow({
          anybody. Every other client caller already did this; this one did not.
          The token is the same one `/api/session` was given — minted by the
          client SDK, refreshed by it, and verified server-side. */
-      const token = await auth?.currentUser?.getIdToken().catch(() => null);
+      const token = await idToken();
       if (!token) {
         setError('Your session has expired. Sign in again and we’ll hold the slot.');
         return;

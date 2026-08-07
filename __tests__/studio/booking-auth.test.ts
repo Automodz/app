@@ -36,9 +36,14 @@ describe('the booking request identifies the customer', () => {
     expect(call).toMatch(/Authorization: `Bearer \$\{token\}`/);
   });
 
-  it('gets that token from the signed-in Firebase session', () => {
+  it('gets that token from the signed-in Firebase session, WAITING for it', () => {
+    /* `auth.currentUser` is null until the SDK restores the persisted session,
+       and a customer room mounts no AuthProvider to make that happen — so
+       reading it directly returned "not yet", not "signed out". One helper
+       waits; see lib/clientSession.ts. */
     const flow = codeOf('components/studio/BookingFlow.tsx');
-    expect(flow).toMatch(/auth\?\.currentUser\?\.getIdToken\(\)/);
+    expect(flow).toMatch(/const token = await idToken\(\)/);
+    expect(flow).not.toMatch(/auth\??\.currentUser/);
   });
 
   it('says so plainly when there is no session, rather than blaming the studio', () => {

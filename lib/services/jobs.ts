@@ -4,6 +4,7 @@ import {
   serverTimestamp, Timestamp, arrayUnion,
 } from 'firebase/firestore';
 import { format } from 'date-fns';
+import { idToken, idToken as token } from '../clientSession';
 import { db } from '../firebase';
 import { uploadImage } from './storage';
 import type { Job, JobStatus, JobServiceItem, JobPhoto, JobAssignment, PaymentRecord, User, Booking } from '../types';
@@ -51,7 +52,7 @@ export const createWalkInJob = async (data: {
      next caller. The live job-board listener supplies the real document. */
 }): Promise<{ id: string }> => {
   const { auth } = await import('../firebase');
-  const token = await auth.currentUser?.getIdToken();
+  const token = await idToken();
   if (!token) throw new Error('not-signed-in');
   const res = await fetch('/api/booking/create', {
     method: 'POST',
@@ -211,7 +212,7 @@ export const updateJobStatus = async (
        network call strands a car at the counter. */
     try {
       const { auth } = await import('../firebase');
-      const idToken = await auth?.currentUser?.getIdToken();
+      const idToken = await token();
       if (idToken) {
         await fetch('/api/visit/seal', {
           method: 'POST',

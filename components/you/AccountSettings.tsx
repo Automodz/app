@@ -21,6 +21,7 @@
  * browser session, so only these carry one.
  */
 import { useEffect, useState } from 'react';
+import { idToken } from '@/lib/clientSession';
 import { useAppStore } from '@/lib/store';
 import { updateUserProfile } from '@/lib/services/auth';
 import { enablePush, disablePush, pushEnabled, pushSupported } from '@/lib/services/push';
@@ -181,7 +182,7 @@ export function AccountSettings({
     setError(null);
     try {
       const [{ auth }] = await Promise.all([import('@/lib/firebase')]);
-      const token = await auth.currentUser?.getIdToken(true);
+      const token = await idToken(true);
       if (!token) throw new Error('not-signed-in');
 
       const res = await fetch('/api/account/delete', {
