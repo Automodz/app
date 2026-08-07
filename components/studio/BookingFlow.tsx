@@ -24,9 +24,10 @@
  *      a retry after a timeout joins the first booking instead of making a
  *      second one.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
+import { auth } from '@/lib/firebase';
 import { getEligiblePromos } from '@/lib/services/promos';
 import { computeBestDiscount, applyDiscount } from '@/lib/services/pricing';
 import { washesLeftOf } from '@/lib/os/club';
@@ -51,6 +52,63 @@ const nextDays = (n = 14) =>
 
 const dayLabel = (i: string) =>
   new Date(`${i}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+
+/** Today and tomorrow are named, because that is how anybody books. */
+const dayName = (i: string) => {
+  const today = iso(new Date());
+  const t = new Date(); t.setDate(t.getDate() + 1);
+  if (i === today) return 'Today';
+  if (i === iso(t)) return 'Tomorrow';
+  return new Date(`${i}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short' });
+};
+
+const dayNumeral = (i: string) =>
+  new Date(`${i}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+/**
+ * WHEN THE CAR COMES BACK.
+ *
+ * A start time on its own answers half the question a customer is actually
+ * asking. Ceramic work runs for hours; "10:00" and "10:00 – 15:00" are
+ * different decisions, and only one of them can be planned around.
+ */
+const endTime = (start: string, durationMin: number) => {
+  if (!Number.isFinite(durationMin) || durationMin <= 0) return null;
+  const [h, m] = start.split(':').map(Number);
+  const total = h * 60 + m + durationMin;
+  /* Work spilling past closing is carried to the next day by the studio, and
+     the slot generator already refuses to start one that cannot finish — so a
+     wrapped time here would be a lie rather than a rounding. */
+  if (total >= 24 * 60) return null;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+};
+
+/**
+ * How long the car is away, said the way a person would say it.
+ *
+ * RETURNS NULL RATHER THAN NONSENSE. A catalogue document written without a
+ * `duration` — the shape drifted once already — rendered "NaN hour" on the
+ * control a customer uses to commit thousands of rupees. A fact we do not
+ * have is not shown; it is never shown wrong.
+ */
+const spokenDuration = (min: number): string | null => {
+  if (!Number.isFinite(min) || min <= 0) return null;
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h >= 24) {
+    const d = Math.round(h / 24);
+    return d === 1 ? 'a full day' : `about ${d} days`;
+  }
+  return m ? `${h}h ${m}m` : `${h} hour${h > 1 ? 's' : ''}`;
+};
+
+/** Morning, afternoon, evening — a flat strip of times is a list to parse. */
+const PART_OF_DAY = [
+  ['Morning', (h: number) => h < 12],
+  ['Afternoon', (h: number) => h >= 12 && h < 17],
+  ['Evening', (h: number) => h >= 17],
+] as const;
 
 export interface BookingFlowProps {
   open: boolean;
@@ -93,9 +151,23 @@ export function BookingFlow({
     return [...m.entries()];
   }, [services]);
 
-  /* Opening resets, and honours the category the proposal named. */
+  /**
+   * OPENING resets, and honours the category the proposal named.
+   *
+   * ONLY ON THE TRANSITION INTO OPEN, and that is the whole point. `services`
+   * and `vehicles` arrive as fresh array identities on every render of the
+   * room above, so this effect used to re-run constantly — and the run
+   * immediately after a successful booking was fatal: `confirm` calls
+   * `router.refresh()`, the server re-renders, new arrays come down, and
+   * `setDone(null)` wiped the receipt. The customer's booking succeeded and
+   * the sheet showed them the empty form again, which reads as it having
+   * failed. They book a second time.
+   */
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) { wasOpen.current = false; return; }
+    if (wasOpen.current) return;
+    wasOpen.current = true;
     setVehicleId(vehicles[0]?.id ?? null);
     const active = services.filter(s => s.active !== false);
     setService(prefillCategory ? active.find(s => s.category === prefillCategory) ?? null : null);
@@ -109,18 +181,34 @@ export function BookingFlow({
   useEffect(() => {
     if (!open || !service) return;
     let cancelled = false;
-    void fetch('/api/availability', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        dates: nextDays(),
-        category: service.category,
-        durationMinutes: service.duration,
-      }),
-    })
-      .then(r => r.json())
-      .then(d => { if (!cancelled) setFull({ fullDates: d.fullDates ?? [], fullSlots: d.fullSlots ?? {} }); })
-      .catch(() => { /* the studio may still take it; the server decides */ });
+
+    /* THIS ROUTE IS BEARER-AUTHENTICATED TOO, and it was called without a
+       token. The 401 body parsed cleanly into `{ fullDates: undefined }`, so
+       the sheet defaulted to "everything is free" and offered days and hours
+       that were already taken — the customer only found out at the very end,
+       as "that slot has just gone". A silent failure that reads as an answer
+       is worse than an error. */
+    void (async () => {
+      const token = await auth?.currentUser?.getIdToken().catch(() => null);
+      if (!token || cancelled) return;
+      try {
+        const r = await fetch('/api/availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            dates: nextDays(),
+            category: service.category,
+            durationMinutes: service.duration,
+          }),
+        });
+        if (!r.ok || cancelled) return;
+        const d = await r.json();
+        if (!cancelled) setFull({ fullDates: d.fullDates ?? [], fullSlots: d.fullSlots ?? {} });
+      } catch {
+        /* Unreachable — the studio may still take it; the server decides. */
+      }
+    })();
+
     return () => { cancelled = true; };
   }, [open, service]);
 
@@ -175,9 +263,24 @@ export function BookingFlow({
     ? generateTimeSlots(service.duration).filter((t: string) => !(full.fullSlots[date] ?? []).includes(t))
     : [];
 
-  /* 4 · one key per intent, so a retry joins rather than duplicates */
+  /**
+   * 4 · one key per intent, so a retry joins rather than duplicates.
+   *
+   * SANITISED, because the server's rule is `^[A-Za-z0-9_-]+$` and the time
+   * this is built from contains a colon. Every appointment booked from the
+   * customer application was refused `bad-idempotency-key` 400 — the studio
+   * looked like it was declining work, and the sheet said "we couldn't arrange
+   * that", which is the same sentence it uses for a genuine outage.
+   *
+   * The substitution is deterministic, so the key is still THE SAME KEY for
+   * the same intent and a retry after a timeout still joins the first booking
+   * rather than making a second one.
+   */
   const idempotencyKey = () =>
-    `${vehicleId ?? 'v'}_${service?.id ?? 's'}_${date ?? 'd'}_${time ?? 't'}`;
+    `${vehicleId ?? 'v'}_${service?.id ?? 's'}_${date ?? 'd'}_${time ?? 't'}`
+      .replace(/[^A-Za-z0-9_-]/g, '-');
+
+  const chosenVehicle = vehicles.find(v => v.id === vehicleId) ?? null;
 
   const ready = !!(vehicleId && service && date && time) && online && !busy;
 
@@ -186,9 +289,24 @@ export function BookingFlow({
     setBusy(true);
     setError(null);
     try {
+      /* THE REQUEST HAS TO SAY WHO IS MAKING IT.
+         `/api/booking/create` authenticates with a Bearer ID token — the
+         session cookie is for SERVER RENDERING and this route never reads it.
+         Sent without one, every booking in the product came back 401 and the
+         customer was told "we couldn't arrange that", which reads as the
+         studio being full rather than as a request that never identified
+         anybody. Every other client caller already did this; this one did not.
+         The token is the same one `/api/session` was given — minted by the
+         client SDK, refreshed by it, and verified server-side. */
+      const token = await auth?.currentUser?.getIdToken().catch(() => null);
+      if (!token) {
+        setError('Your session has expired. Sign in again and we’ll hold the slot.');
+        return;
+      }
+
       const res = await fetch('/api/booking/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           vehicleId,
           serviceId: service!.id,
@@ -270,48 +388,114 @@ export function BookingFlow({
           </Group>
         ) : null}
 
-        {/* WHAT — grouped by category, never a flat list */}
+        {/* WHAT — grouped by category, never a flat list.
+            THE CHOICE IS LEGIBLE NOW. These were bare name chips: a customer
+            picked a ₹64,000 service from a single word, with no idea what it
+            cost or how long their car would be gone, and found out only after
+            committing. §22.1 keeps prices out of the Studio's PROSE — this is
+            the booking sheet, which has always had to state the figure, and
+            stating it at the moment of choosing is the difference between a
+            menu and a guess. */}
         <Group label="What it needs">
           {menu.map(([category, list]) => (
-            <div key={category} style={{ marginTop: space.line }}>
+            <div key={category} style={{ marginTop: space.gap }}>
               <Text role="whisper" tone="ink3">{category}</Text>
-              <Row>
+              <div style={{ display: 'grid', gap: space.breath, marginTop: space.breath }}>
                 {list.map(s => (
-                  <Chip
+                  <ServiceChoice
                     key={s.id}
+                    service={s}
                     on={service?.id === s.id}
+                    covered={
+                      s.category === 'Washing'
+                      && !!membership
+                      && membership.status === 'active'
+                      && washesLeftOf(membership) > 0
+                    }
                     onClick={() => { setService(s); setDate(null); setTime(null); }}
-                  >
-                    {s.name}
-                  </Chip>
+                  />
                 ))}
-              </Row>
+              </div>
             </div>
           ))}
         </Group>
 
-        {/* WHEN */}
+        {/* WHEN — the day, then the hour, and the hour says when the car is
+            back. A full day is said to be full rather than merely being
+            unpressable, which is the difference between an answer and a dead
+            control (§10.5). */}
         {service ? (
           <Group label="When">
-            <Row>
-              {nextDays().map(d => (
-                <Chip
-                  key={d}
-                  on={date === d}
-                  disabled={full.fullDates.includes(d)}
-                  onClick={() => { setDate(d); setTime(null); }}
-                >
-                  {dayLabel(d)}
-                </Chip>
-              ))}
-            </Row>
+            <div style={{
+              display: 'flex',
+              gap: space.breath,
+              marginTop: space.breath,
+              overflowX: 'auto',
+              paddingBottom: space.hair,
+              scrollbarWidth: 'none',
+              WebkitOverflowScrolling: 'touch',
+            }}>
+              {nextDays().map(d => {
+                const gone = full.fullDates.includes(d);
+                const on = date === d;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={on}
+                    disabled={gone}
+                    onClick={() => { setDate(d); setTime(null); }}
+                    style={{
+                      flex: '0 0 auto',
+                      minWidth: 74,
+                      minHeight: TARGET_MIN + 20,
+                      paddingBlock: space.breath,
+                      paddingInline: space.line,
+                      borderRadius: radius.card,
+                      border: `${HAIRLINE}px solid ${on ? color.ink : color.edge}`,
+                      background: on ? color.ink : 'transparent',
+                      color: on ? color.paper : gone ? color.ink3 : color.ink2,
+                      cursor: gone ? 'default' : 'pointer',
+                      opacity: gone ? 0.45 : 1,
+                      display: 'grid',
+                      gap: 2,
+                      justifyItems: 'center',
+                      fontFamily: typeScale.body.family,
+                    }}
+                  >
+                    <span style={{ fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.75 }}>
+                      {dayName(d)}
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{dayNumeral(d)}</span>
+                    {gone ? <span style={{ fontSize: 10, opacity: 0.8 }}>full</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+
             {date ? (
               slots.length ? (
-                <Row>
-                  {slots.map((t: string) => (
-                    <Chip key={t} on={time === t} onClick={() => setTime(t)}>{t}</Chip>
-                  ))}
-                </Row>
+                <div style={{ marginTop: space.gap, display: 'grid', gap: space.line }}>
+                  {PART_OF_DAY.map(([label, within]) => {
+                    const band = slots.filter(t => within(Number(t.split(':')[0])));
+                    if (!band.length) return null;
+                    return (
+                      <div key={label}>
+                        <Text role="whisper" tone="ink3">{label}</Text>
+                        <Row>
+                          {band.map((t: string) => {
+                            const back = endTime(t, service.duration);
+                            return (
+                              <Chip key={t} on={time === t} onClick={() => setTime(t)}>
+                                {back ? `${t} – ${back}` : t}
+                              </Chip>
+                            );
+                          })}
+                        </Row>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
                   Nothing left that day. Try another.
@@ -321,21 +505,86 @@ export function BookingFlow({
           </Group>
         ) : null}
 
-        {/* WHAT IT COMES TO — a preview; the server decides the real figure. */}
-        {service ? (
+        {/* WHAT YOU ARE ARRANGING — the whole intent in one place, before it
+            is committed rather than after. The sheet used to end on a bare
+            figure: the car, the work, the day and the hour had each been
+            chosen several screens of scrolling apart and were never once
+            stated back together. A booking nobody can check is a booking
+            people make wrong.
+
+            The figure remains a PREVIEW — `/api/booking/create` recomputes
+            every rupee and ignores anything sent from here. */}
+        {service && date && time ? (
+          <div
+            style={{
+              marginTop: space.rest,
+              padding: space.gap,
+              borderRadius: radius.card,
+              border: `${HAIRLINE}px solid ${color.edge}`,
+            }}
+          >
+            <Text role="whisper" tone="ink3">You&rsquo;re arranging</Text>
+            <div style={{ marginTop: space.breath, display: 'grid', gap: space.breath }}>
+              <SummaryLine
+                label={chosenVehicle?.name ?? 'Your car'}
+                said={service.name}
+              />
+              <SummaryLine
+                label={dayLabel(date)}
+                said={[
+                  endTime(time, service.duration)
+                    ? `${time} – ${endTime(time, service.duration)}`
+                    : time,
+                  spokenDuration(service.duration),
+                ].filter(Boolean).join(' · ')}
+              />
+              <div
+                style={{
+                  marginTop: space.hair,
+                  paddingTop: space.line,
+                  borderTop: `${HAIRLINE}px solid ${color.edge}`,
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  gap: space.line,
+                }}
+              >
+                <Text role="body" tone="ink2">
+                  {washCovered ? 'Membership wash' : discount ? discount.label : 'Total'}
+                </Text>
+                <span
+                  style={{
+                    fontFamily: typeScale.display.family,
+                    fontSize: 20,
+                    fontWeight: 700,
+                    letterSpacing: '-0.01em',
+                    color: color.ink,
+                  }}
+                >
+                  {washCovered ? 'Covered' : spokenPrice(total) ?? '\u2014'}
+                </span>
+              </div>
+            </div>
+            <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
+              {washCovered
+                ? 'Taken from this month\u2019s washes. Nothing to settle.'
+                : 'Settled at the studio \u2014 UPI or cash. Nothing is charged now.'}
+            </Text>
+          </div>
+        ) : service ? (
+          /* Chosen the work but not yet the hour — say what it costs and how
+             long it takes anyway, so the next choice is made knowing both. */
           <div style={{ marginTop: space.rest }}>
             {washCovered ? (
-              <Text role="body" tone="ink">
-                Covered by your membership.
-              </Text>
+              <Text role="body" tone="ink">Covered by your membership.</Text>
             ) : (
               <>
                 <Text role="body" tone="ink">
-                  {formatCurrency(total)}
-                  {discount ? ` · ${discount.label}` : ''}
+                  {[spokenPrice(total), discount?.label, spokenDuration(service.duration)]
+                    .filter(Boolean).join(' \u00b7 ')}
                 </Text>
                 <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
-                  Settled at the studio — UPI or cash.
+                  Settled at the studio &mdash; UPI or cash.
                 </Text>
               </>
             )}
@@ -375,6 +624,94 @@ function Row({ children }: { children: React.ReactNode }) {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: space.breath, marginTop: space.breath }}>
       {children}
     </div>
+  );
+}
+
+/** A figure we actually have, or nothing at all. Never `₹NaN`. */
+const spokenPrice = (n: number): string | null =>
+  Number.isFinite(n) ? formatCurrency(n) : null;
+
+/** One line of the summary: what it is, and what it says. */
+function SummaryLine({ label, said }: { label: string; said: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: space.line }}>
+      <Text role="body" tone="ink">{label}</Text>
+      <Text role="body" tone="ink2" style={{ textAlign: 'right' }}>{said}</Text>
+    </div>
+  );
+}
+
+/**
+ * ONE SERVICE, AS A DECISION RATHER THAN A WORD.
+ *
+ * What a customer needs in order to choose is the name, what it costs, and how
+ * long their car is gone — and the third is the one nobody ever puts on the
+ * control, which is why people book a full-day job for a morning they do not
+ * have. A membership wash says it is covered here, at the point of choosing,
+ * rather than surprising somebody pleasantly two steps later.
+ */
+function ServiceChoice({
+  service, on, covered, onClick,
+}: {
+  service: Service;
+  on: boolean;
+  covered: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      style={{
+        width: '100%',
+        textAlign: 'left',
+        minHeight: TARGET_MIN,
+        padding: space.line,
+        borderRadius: radius.card,
+        border: `${HAIRLINE}px solid ${on ? color.ink : color.edge}`,
+        background: on ? 'rgba(244,245,246,0.06)' : 'transparent',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: space.line,
+        fontFamily: typeScale.body.family,
+      }}
+    >
+      <span style={{ display: 'grid', gap: 2, minWidth: 0 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: space.breath, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: typeScale.body.size, fontWeight: on ? 640 : 560, color: color.ink }}>
+            {service.name}
+          </span>
+          {service.popular ? (
+            <span style={{
+              fontSize: 10,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: color.ink3,
+              border: `${HAIRLINE}px solid ${color.edge}`,
+              borderRadius: radius.pill,
+              padding: '2px 7px',
+            }}>
+              Most asked for
+            </span>
+          ) : null}
+        </span>
+        <span style={{ fontSize: typeScale.whisper.size, color: color.ink3 }}>
+          {[spokenDuration(service.duration), service.warranty || null]
+            .filter(Boolean).join(' \u00b7 ') || 'Ask the studio'}
+        </span>
+      </span>
+      <span style={{
+        flexShrink: 0,
+        fontSize: typeScale.body.size,
+        fontWeight: 620,
+        color: covered ? color.assent : color.ink,
+      }}>
+        {covered ? 'Covered' : spokenPrice(service.price) ?? '—'}
+      </span>
+    </button>
   );
 }
 
