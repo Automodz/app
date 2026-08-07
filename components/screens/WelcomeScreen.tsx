@@ -17,7 +17,7 @@
  */
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MotionConfig, motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { color, space, INSET, MEASURE, duration, curve, HAIRLINE } from '@/design';
 import { Heading, Text, Button } from '@/components/system';
@@ -30,6 +30,30 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
   const { panel, position, homeHref, addCarHref, hasCar, greeting } = model;
   const router = useRouter();
   const still = useReducedMotion();
+  /**
+   * THE ENTRANCE IS A CLIENT-ONLY ENHANCEMENT.
+   *
+   * Two faults, one cause. `initial={{ opacity: 0 }}` is rendered BY THE
+   * SERVER, so the first screen a new customer ever sees was shipped
+   * invisible and depended on JavaScript arriving to reveal it — §7.1 says
+   * motion never gates content, and this gated all of it. On a slow phone
+   * that is a blank screen; with JS blocked it is a permanently blank one.
+   *
+   * And it did not survive hydration either: the server wrote
+   * `opacity: "0"` while the client computed `opacity: 0`, plus a transform
+   * that existed on only one side, so React reported a mismatch it explicitly
+   * would not patch. `useReducedMotion()` compounded it by answering
+   * differently on the two sides.
+   *
+   * `initial={false}` tells the library to start AT the animate values, so
+   * the server emits the visible state and the first client render agrees.
+   * Once mounted, every later panel animates exactly as before — which is
+   * where the motion was actually wanted, since arriving at step two is a
+   * transition and arriving at step one is just the page.
+   */
+  const [entered, setEntered] = useState(false);
+  useEffect(() => { setEntered(true); }, []);
+
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -124,7 +148,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
               /* §21.6 — where you are in the arrival, for a screen reader,
                  without drawing progress dots at anybody. */
               aria-label={`Step ${position.index} of ${position.total}`}
-              initial={still ? { opacity: 0 } : { opacity: 0, y: space.gap }}
+              initial={entered ? (still ? { opacity: 0 } : { opacity: 0, y: space.gap }) : false}
               animate={{ opacity: 1, y: 0 }}
               exit={still ? { opacity: 0 } : { opacity: 0, y: -space.breath }}
               transition={{ duration: duration.move / 1000, ease: curve.ease }}

@@ -23,6 +23,8 @@ import { StudioScreen } from '@/components/screens/StudioScreen';
 import { YouScreen } from '@/components/screens/YouScreen';
 import { MembershipScreen } from '@/components/screens/MembershipScreen';
 import { photograph } from '@/components/vehicle';
+import { WelcomeScreen } from '@/components/screens/WelcomeScreen';
+import { toWelcome } from '@/lib/customer/welcome';
 
 const ts = (iso: string) => Timestamp.fromDate(new Date(iso));
 
@@ -152,6 +154,26 @@ it('Vehicle renders through the renderer boundary', () => {
  * nobody can act on. Rendering every screen here turns it into a failing test
  * that names the control.
  */
+/**
+ * THE ARRIVAL IS VISIBLE WITHOUT JAVASCRIPT.
+ *
+ * §7.1 — motion never gates content. `initial={{ opacity: 0 }}` is rendered by
+ * the SERVER, so the first screen a new customer ever sees was shipped
+ * invisible and depended on JavaScript arriving to reveal it: a blank screen
+ * on a slow phone, a permanently blank one with JS blocked. It also could not
+ * survive hydration — the server wrote `opacity: "0"` where the client
+ * computed `opacity: 0` — and React reported a mismatch it would not patch.
+ */
+it('Welcome is legible before its animation runs', () => {
+  const model = toWelcome(picture, 'hello', false);
+  const html = renderToStaticMarkup(<WelcomeScreen model={model} />);
+  /* The words are in the server HTML... */
+  expect(html).toContain(model.panel.title);
+  /* ...and are not hidden by the entrance. */
+  expect(html).toMatch(/aria-label="Step 1 of \d+" style="opacity:1/);
+  expect(html).not.toMatch(/aria-label="Step 1 of \d+" style="opacity:0/);
+});
+
 it('no screen renders a button that does nothing', () => {
   const rendering = photograph(toVehiclePhotograph(car));
   const screens: [string, React.ReactElement][] = [
