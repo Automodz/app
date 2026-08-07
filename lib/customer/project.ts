@@ -338,7 +338,76 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
       call: telLink(),
       message: waLink(`Hi ${COMPANY.name}! A question about my ${car.vehicle.name}.`),
     },
+
+    /* ── THE DASHBOARD ────────────────────────────────────────────────
+       All of this was already in the picture and none of it was offered
+       here. Home showed the car and then sent the customer elsewhere to do
+       anything with it. */
+
+    /* THE MENU, AS FOUR TAPS. `?arrange=1&cat=` is the address the Studio
+       already answers, so this opens the sheet with the work chosen rather
+       than dropping somebody on a blank one. Most-asked first, then by the
+       studio's own order. */
+    quickBook: picture.catalogue
+      .filter(x => x.active !== false)
+      .sort((a, b) => Number(b.popular) - Number(a.popular) || (a.order ?? 0) - (b.order ?? 0))
+      .slice(0, 4)
+      .map(x => ({
+        id: x.id,
+        label: x.name,
+        said: [
+          Number.isFinite(x.price) ? `₹${x.price.toLocaleString('en-IN')}` : null,
+          spokenSpan(x.duration),
+        ].filter(Boolean).join(' · '),
+        href: `${hrefForDestination({ to: 'studio' })}?arrange=1&cat=${encodeURIComponent(x.category)}`,
+      })),
+
+    /* WHAT HAS ACTUALLY BEEN DONE. Three, because Home is a glance and the
+       album is one tap away. */
+    recent: visits.slice(0, 3).map(v => {
+      const frames = framesOfVisit(v, car);
+      return {
+        id: v.id,
+        title: visitTitle(v),
+        when: longDate(isoOf(v.createdAt)),
+        photo: frames[0]?.url,
+        href: hrefForDestination({ to: 'visit', visitId: v.id }),
+      };
+    }),
+
+    membership: picture.subscription && picture.subscription.status === 'active'
+      ? {
+          line: `${picture.subscription.plan} member`,
+          said: `${washesLeftOf(picture.subscription)} washes left this cycle`,
+          href: hrefForDestination({ to: 'membership' }),
+        }
+      : undefined,
+
+    /* Filled by the page, which is where a server read belongs — a projection
+       is pure and reads nothing (ARCHITECTURE §1). */
+    forSale: [],
+    marketHref: hrefForDestination({ to: 'cars' }),
+
+    garage: picture.cars.length > 1
+      ? {
+          line: `${picture.cars.length} cars live here`,
+          href: hrefForDestination({ to: 'garage' }),
+        }
+      : undefined,
   };
+}
+
+/** How long the car is away, said the way a person would. Never "NaN". */
+function spokenSpan(min: number): string | null {
+  if (!Number.isFinite(min) || min <= 0) return null;
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  if (h >= 24) {
+    const d = Math.round(h / 24);
+    return d === 1 ? 'a full day' : `about ${d} days`;
+  }
+  const m = min % 60;
+  return m ? `${h}h ${m}m` : `${h} hour${h > 1 ? 's' : ''}`;
 }
 
 /**

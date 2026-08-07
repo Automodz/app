@@ -5,6 +5,7 @@ import { ServerRoom, NoCar } from '@/components/screens/ServerRoom';
 import { toHome } from '@/lib/customer/project';
 import { currentSession } from '@/lib/server/session';
 import { loadPriceFloor } from '@/lib/server/publicCatalogue';
+import { loadListings } from '@/lib/server/marketplace';
 import { shouldWelcome } from '@/lib/os/welcome';
 import { hrefForDestination } from '@/navigation/resolve';
 
@@ -53,8 +54,40 @@ export default async function RootPage() {
         }
 
         const model = toHome(picture);
-        return model ? <HomeScreen model={model} /> : <NoCar />;
+        if (!model) return <NoCar />;
+        /* THE MARKET, READ HERE. A projection is pure and reads nothing
+           (ARCHITECTURE §1), so the listings are fetched at the page and
+           handed down. `loadListings` is `cache`d, so the strip costs one
+           query however many places ask for it. */
+        return <HomeMarket model={model} />;
       }}
     </ServerRoom>
   );
+}
+
+
+/**
+ * The market strip, filled.
+ *
+ * Separate because `ServerRoom`'s children are synchronous — it hands over a
+ * picture, not a promise — and this needs one await. Three cars, because Home
+ * is a glance and the market itself is one tap away.
+ */
+async function HomeMarket({ model }: { model: NonNullable<ReturnType<typeof toHome>> }) {
+  const listings = await loadListings().catch(() => []);
+  const forSale = listings
+    .filter(c => c.status === 'available')
+    .sort((a, b) => Number(b.featured) - Number(a.featured))
+    .slice(0, 3)
+    .map(c => ({
+      id: c.id,
+      title: c.title,
+      price: `₹${(c.price / 100000).toFixed(c.price % 100000 === 0 ? 0 : 1)}L`,
+      detail: [c.year, `${(c.kmDriven / 1000).toFixed(0)}k km`, c.fuel]
+        .filter(Boolean).join(' · '),
+      photo: c.photos?.[0]?.url,
+      href: hrefForDestination({ to: 'car', listingId: c.id }),
+    }));
+
+  return <HomeScreen model={{ ...model, forSale }} />;
 }

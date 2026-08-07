@@ -184,6 +184,49 @@ export interface HomeModel {
   /** Newest first, future events above the present. May be empty. */
   timeline: HomeTimelineEvent[];
   studio: HomeStudio;
+
+  /* ── THE DASHBOARD ────────────────────────────────────────────────────
+     Home was the car and nothing else: to book, a customer went to the
+     Studio and started from a blank sheet; to see what had been done they
+     went to History; to look at a car for sale they had to know the market
+     existed at all. Everything below is already in the picture the server
+     reads — it was simply never offered here. */
+
+  /** One tap into the booking sheet, prefilled. The studio's own menu. */
+  quickBook: readonly {
+    id: string;
+    label: string;
+    /** What it costs and how long the car is away — the two facts that decide. */
+    said: string;
+    href: string;
+  }[];
+
+  /** What this owner has had done, most recent first. Never more than three. */
+  recent: readonly {
+    id: string;
+    title: string;
+    when: string;
+    photo?: string;
+    href: string;
+  }[];
+
+  /** The club, when they are in it. §18.1 — nothing when they are not. */
+  membership?: { line: string; said: string; href: string };
+
+  /** Cars the studio has for sale. Absent when there are none. */
+  forSale: readonly {
+    id: string;
+    title: string;
+    price: string;
+    detail: string;
+    photo?: string;
+    href: string;
+  }[];
+  /** Where the rest of them are. */
+  marketHref: string;
+
+  /** The garage, when there is more than one car in it. */
+  garage?: { line: string; href: string };
 }
 
 /**
@@ -282,7 +325,10 @@ function Protection({ label, term, remaining, tone }: HomeProtection) {
 }
 
 export function HomeScreen({ model }: { model: HomeModel }) {
-  const { vehicle, state, protections, liveActivity, nextAction, timeline, studio } = model;
+  const {
+    vehicle, state, protections, liveActivity, nextAction, timeline, studio,
+    quickBook, recent, membership, forSale, marketHref, garage,
+  } = model;
   const still = useReducedMotion();
   const frame = useRef<HTMLDivElement>(null);
 
@@ -601,6 +647,124 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           {nextAction.label}
         </Button>
       </section>
+
+      {/* ── QUICK BOOK ──────────────────────────────────────────────────
+          §6.3 makes arranging "the single most frequent deliberate act", and
+          Home offered no way to do it: a customer went to the Studio and
+          started from a blank sheet, choosing the work again every time. Each
+          of these opens that sheet with the work already chosen, and says what
+          it costs and how long the car is away — the two facts that decide.
+          §18.1 — an empty catalogue shows nothing here. */}
+      {quickBook.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Text role="whisper" tone="ink3">Book in a tap</Text>
+          <div style={{ display: 'grid', gap: space.breath, marginTop: space.line }}>
+            {quickBook.map(q => (
+              <Link key={q.id} href={q.href} style={{ textDecoration: 'none', display: 'block' }}>
+                <Glass pad="gap">
+                  <div style={{
+                    display: 'flex', alignItems: 'baseline',
+                    justifyContent: 'space-between', gap: space.line,
+                  }}>
+                    <Text role="body" tone="ink">{q.label}</Text>
+                    <Text role="whisper" tone="ink3" style={{ textAlign: 'right', flexShrink: 0 }}>
+                      {q.said}
+                    </Text>
+                  </div>
+                </Glass>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── WHAT HAS BEEN DONE ──────────────────────────────────────────
+          The record, three deep, as photographs. History is one tap from
+          here; this is the reminder that it exists at all. */}
+      {recent.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Text role="whisper" tone="ink3">Its record</Text>
+          <div style={{
+            display: 'flex', gap: space.line, marginTop: space.line,
+            overflowX: 'auto', paddingBottom: space.hair, scrollbarWidth: 'none',
+          }}>
+            {recent.map(v => (
+              <Link key={v.id} href={v.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 156 }}>
+                <div style={{
+                  position: 'relative', width: '100%', aspectRatio: '4 / 3',
+                  borderRadius: radius.card, overflow: 'hidden', background: color.surface,
+                }}>
+                  {v.photo ? (
+                    <Image src={v.photo} alt={v.title} fill sizes="156px" style={{ objectFit: 'cover' }} />
+                  ) : null}
+                </div>
+                <Text role="body" tone="ink" style={{ marginTop: space.breath }}>{v.title}</Text>
+                <Text role="whisper" tone="ink3">{v.when}</Text>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── THE CLUB, AND THE GARAGE ────────────────────────────────────
+          Two facts an owner checks and could previously only find by
+          navigating to the room that holds them. §8.6 — a fact is a line. */}
+      {(membership || garage) ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <div style={{ display: 'grid', gap: space.line }}>
+            {membership ? (
+              <Link href={membership.href} style={{ textDecoration: 'none' }}>
+                <Glass pad="gap">
+                  <Text role="body" tone="ink">{membership.line}</Text>
+                  <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+                    {membership.said}
+                  </Text>
+                </Glass>
+              </Link>
+            ) : null}
+            {garage ? (
+              <Link href={garage.href} style={{ textDecoration: 'none' }}>
+                <Glass pad="gap">
+                  <Text role="body" tone="ink">{garage.line}</Text>
+                </Glass>
+              </Link>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── CARS THE STUDIO HAS FOR SALE ────────────────────────────────
+          The market existed and Home never mentioned it, so a customer had to
+          already know to look. §18.1 — nothing for sale, nothing here. */}
+      {forSale.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <Text role="whisper" tone="ink3">Cars we&rsquo;re selling</Text>
+            <Link href={marketHref} style={{ textDecoration: 'none' }}>
+              <Text role="whisper" tone="ink2">See all</Text>
+            </Link>
+          </div>
+          <div style={{
+            display: 'flex', gap: space.line, marginTop: space.line,
+            overflowX: 'auto', paddingBottom: space.hair, scrollbarWidth: 'none',
+          }}>
+            {forSale.map(c => (
+              <Link key={c.id} href={c.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 200 }}>
+                <div style={{
+                  position: 'relative', width: '100%', aspectRatio: '4 / 3',
+                  borderRadius: radius.card, overflow: 'hidden', background: color.surface,
+                }}>
+                  {c.photo ? (
+                    <Image src={c.photo} alt={c.title} fill sizes="200px" style={{ objectFit: 'cover' }} />
+                  ) : null}
+                </div>
+                <Text role="body" tone="ink" style={{ marginTop: space.breath }}>{c.title}</Text>
+                <Text role="whisper" tone="ink3">{c.price} &middot; {c.detail}</Text>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* ── THE TIMELINE ────────────────────────────────────────────────
           docs/HOME-STATE-MAP.md § Timeline events. One living record of
