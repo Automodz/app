@@ -63,15 +63,14 @@
 import { useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useOpenPalette } from '@/navigation/Palette';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import {
-  color, space, MEASURE, HAIRLINE, radius,
+  color, space, MEASURE, INSET, HAIRLINE, TARGET_MIN, radius,
   heroMotion, stack, imageSizes, column,
 } from '@/design';
 import type { StateTone } from '@/design';
-import { Hero, Heading, Text, Button, Expansion, Glass, toneColor } from '@/components/system';
+import { Hero, Heading, Text, Button, Glass } from '@/components/system';
 import { OfflineNote } from '@/components/system';
 import type { Tone } from '@/components/system';
 
@@ -89,74 +88,16 @@ export interface HomeVehicle {
 }
 
 export interface HomeState {
-  /**
-   * §5.3 — one phrase, unmissable. The single Display on this screen.
-   *
-   * It names WHAT IS HAPPENING TO THE CAR, in the present tense: "Receiving
-   * ceramic coating", "Paint correction underway", "Ready for collection",
-   * "Protected". Never a filing category. "In care" could be true for a week
-   * and describes the studio's relationship to the car rather than the car,
-   * which §2.1 forbids — the car is the subject, not the transaction.
-   */
+  /** §5.3 — one phrase, unmissable. The single Display on this screen. */
   word: string;
-  /** One sentence, in the studio's voice. §13.3 */
+  /** One sentence beneath it, in the studio's voice. */
   line?: string;
-  /**
-   * A second, quieter fact: the service name, or why a visit was refused.
-   * Ported from the old Home, where six of the nine states carried one.
-   */
-  note?: string;
-  /** One honest line about time while the car is here, from `os/stay`. */
+  /** One honest line about time, or nothing at all (§19.2). */
   timing?: string;
-  /**
-   * §3.3 — colour only where it carries meaning grey cannot. `lapsed` is the
-   * neutral tone here: it renders as ink, spending no colour on "nothing is
-   * wrong".
-   */
-  tone: StateTone;
-}
-
-export interface HomeProtection {
-  id: string;
-  /** In the customer's words. §14.2 */
-  label: string;
-  /**
-   * The term, already spoken in the unit that suits it (§14.3) and at the
-   * precision that is honest (§14.4): a date when it is far off, a countdown
-   * only when the number is small enough to act on, an amount when it is a
-   * balance — never a balance described in time.
-   */
-  term: string;
-  /**
-   * How much of the term is left, 0–1. Omitted for a perpetual protection,
-   * which does not deplete and must not be drawn as though it did.
-   */
-  remaining?: number;
-  tone: StateTone;
-}
-
-export interface HomeLiveActivity {
-  title: string;
-  when: string;
-  /** One quiet sentence. What it felt like, not what was billed. */
+  /** A quieter second fact — why a visit was refused, and the like. */
   note?: string;
-  photo?: string;
-  href: string;
 }
 
-/** One line of the ownership record. docs/HOME-STATE-MAP.md § Timeline events */
-export interface HomeTimelineEvent {
-  id: string;
-  title: string;
-  line?: string;
-  /** Already spoken — "12 March 2026", never a raw ISO string. */
-  when: string;
-  href?: string;
-  /** Dated ahead of today: a booked visit, a warranty about to end. */
-  ahead: boolean;
-}
-
-/** §5.2 — the studio is a place, reached from the thing it cares for. */
 export interface HomeStudio {
   name: string;
   address: string;
@@ -165,199 +106,115 @@ export interface HomeStudio {
   message: string;
 }
 
+export interface HomeProtection {
+  id: string;
+  /** In the customer's words (§14.2). */
+  label: string;
+  /** Already spoken at the precision that is honest (§14.3, §14.4). */
+  term: string;
+  /** 0–1 of the term still to run, or absent when it does not run out. */
+  remaining?: number;
+  /* The state's own tone, not an arbitrary one — §3.3 keeps colour to
+     information, and `StateTone` is the vocabulary of states. */
+  tone: StateTone;
+}
+
+export interface HomeLiveActivity {
+  title: string;
+  when: string;
+  note?: string;
+  photo?: string;
+  href: string;
+}
+
+export interface HomeTimelineEvent {
+  id: string;
+  title: string;
+  line?: string;
+  when: string;
+  href?: string;
+  /** Dated ahead of today — a thing coming toward the owner. */
+  ahead?: boolean;
+}
+
 export interface HomeModel {
   vehicle: HomeVehicle;
   state: HomeState;
-  protections: HomeProtection[];
-  /**
-   * What is happening to the car now, or most recently. Was "Current Story" —
-   * renamed because "story" invited narrative padding and this is a fact with a
-   * time on it (ARCHITECTURE §4).
-   */
-  liveActivity?: HomeLiveActivity;
-  /**
-   * The one next thing to do, ALREADY RESOLVED. The engine emitted an intent
-   * and `navigation/resolve.ts` turned it into an address, so this renderer
-   * contains no destination logic (ARCHITECTURE §1, §4).
-   */
-  nextAction: { label: string; href: string };
-  /** Newest first, future events above the present. May be empty. */
-  timeline: HomeTimelineEvent[];
   studio: HomeStudio;
 
-  /* ── THE DASHBOARD ────────────────────────────────────────────────────
-     Home was the car and nothing else: to book, a customer went to the
-     Studio and started from a blank sheet; to see what had been done they
-     went to History; to look at a car for sale they had to know the market
-     existed at all. Everything below is already in the picture the server
-     reads — it was simply never offered here. */
+  /* THE ENGINE'S OUTPUT, KEPT. Home V1 composes differently — protection is
+     a disclosed state, the timeline belongs to the album — but these remain
+     the engine's answer and the projection tests guard them as such. What a
+     screen chooses to draw is a separate question from what it is told. */
+  protections: HomeProtection[];
+  liveActivity?: HomeLiveActivity;
+  /** The one act, already resolved to an address (ARCHITECTURE §1, §4). */
+  nextAction: { label: string; href: string };
+  timeline: HomeTimelineEvent[];
 
-  /** One tap into the booking sheet, prefilled. The studio's own menu. */
-  quickBook: readonly {
-    id: string;
-    label: string;
-    /** What it costs and how long the car is away — the two facts that decide. */
+  /* ── ONE COMPOSITION, NOT A DASHBOARD ─────────────────────────────────
+     Home answers four questions in its first five seconds: what is
+     happening to my car, is it all right, what can I do now, what is
+     coming. Everything below serves one of those. A section that serves
+     none of them does not belong on Home, however much data exists for it.
+
+     The previous shape — protection card, book-in-a-tap list, membership
+     card, garage card, record strip, timeline card, market strip — was ten
+     independent rectangles of equal weight. Ten equal things have no
+     hierarchy, and with no hierarchy the car stopped being the subject. */
+
+
+
+  /** The car's protection, as a state rather than a list of balances. */
+  protection?: {
+    /** "Protected", or what is wrong when something is. */
+    headline: string;
+    /** The layers, named: PPF · Ceramic · Glass. */
+    layers: readonly string[];
+    /** "Everything's holding", or the one thing that needs saying. */
     said: string;
-    href: string;
-  }[];
+    tone: Tone;
+    /** Behind a tap. The full terms, only when asked for. */
+    items: readonly { id: string; label: string; term: string; tone: Tone }[];
+  };
 
-  /** What this owner has had done, most recent first. Never more than three. */
-  recent: readonly {
-    id: string;
-    title: string;
-    when: string;
-    photo?: string;
-    href: string;
-  }[];
+  /** The visit that is coming. Absent when none is — never an empty frame. */
+  next?: { service: string; when: string; vehicleName: string; href: string };
 
-  /** The club, when they are in it. §18.1 — nothing when they are not. */
-  membership?: { line: string; said: string; href: string };
+  /** Its life here, as one photograph and one fact. Not a transaction log. */
+  life?: { photo?: string; count: string; href: string };
 
-  /** Cars the studio has for sale. Absent when there are none. */
+  /** The club, quietly, and only for members. */
+  membership?: { plan: string; said: string; href: string };
+
+  /** The other cars, as thumbnails. Discovery, not a card. */
+  garage?: { line: string; cars: readonly { id: string; name: string; photo?: string; href: string }[]; href: string };
+
+  /** What the studio is selling. Last, and visually subordinate. */
   forSale: readonly {
-    id: string;
-    title: string;
-    price: string;
-    detail: string;
-    photo?: string;
-    href: string;
+    id: string; title: string; price: string; detail: string; photo?: string; href: string;
   }[];
-  /** Where the rest of them are. */
   marketHref: string;
-
-  /** The garage, when there is more than one car in it. */
-  garage?: { line: string; href: string };
 }
 
-/**
- * §3.3 — "Colour appears only where it carries meaning that grey cannot: a
- * state that is failing, a state that needs attention."
- *
- * A protection that is simply fine carries no such meaning, so it is drawn in
- * ink. Spending green on "nothing is wrong" is decoration, and it is the
- * reason amber and red stop landing: if every state is coloured, colour has
- * stopped being information. Holding it back is what makes it work.
- *
- * §21.6 is untouched by this — colour was never the carrier here. The term
- * says "6 days left" in words.
- */
-const lifeTone = (tone: StateTone): Tone =>
-  /* ink3, not ink2. Rendered, ink2 made the one protection that is FINE the
-     brightest mark on the screen — a long bar at high contrast next to two
-     short dim ones — which is precisely backwards. Its length already says
-     there is plenty left; it does not also need weight. */
-  tone === 'assent' ? 'ink3' : tone;
 
-/**
- * ONE PROTECTION.
- *
- * §14.2 gives the card its contents; this is the Home reading of it, where a
- * protection is glanced at rather than examined. The full card, with its
- * provider and its file behind one tap (§14.6), belongs to the car's own room.
- *
- * It is not a chip and not a row in a list. It is a line of type with a
- * measure of its own life drawn beneath it: lit for what remains, dark for
- * what has gone. That is what makes it read as something currently HOLDING
- * rather than as a record that exists. A dot beside a label states that a
- * fact was stored; a line that is two-thirds lit shows a coating with two
- * thirds of its life in it.
- *
- * §3.4 — light is the only ornament, and this is the only ornament here.
- *
- * NO ENTRANCE ANIMATION. The instinct on being asked to make something feel
- * alive is to animate it, and here that instinct is wrong twice over. §7.1 —
- * "motion decorates content, it never gates it" — and a bar that grows from
- * zero is invisible until its animation runs, which makes the animation the
- * content. §3.5 — the aliveness is supposed to come from the thing being
- * true, not from it moving. It does.
- */
-function Protection({ label, term, remaining, tone }: HomeProtection) {
-  const life = lifeTone(tone);
-  /* Perpetual: §14.3 — "for as long as you own it". It has no proportion to
-     draw, so the measure is drawn whole. Anything less would say it is
-     running out. */
-  const share = remaining === undefined ? 1 : Math.max(0, Math.min(1, remaining));
 
-  return (
-    <div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          gap: space.gap,
-        }}
-      >
-        <Text role="body" tone="ink">{label}</Text>
-        {/* The term is the second carrier of the state, in words (§21.6). */}
-        <Text role="data" tone={life} style={{ textAlign: 'right', flexShrink: 0 }}>
-          {term}
-        </Text>
-      </div>
-
-      {/* The measure. `edge` is the unlit remainder — the same hairline the
-          rest of the product separates things with, so an empty protection
-          reads as a rule rather than as a broken component. */}
-      <div
-        aria-hidden
-        style={{
-          position: 'relative',
-          height: HAIRLINE,
-          marginTop: space.line,
-          background: color.edge,
-          borderRadius: radius.pill,
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            insetBlock: 0,
-            left: 0,
-            width: `${share * 100}%`,
-            background: toneColor(life),
-            borderRadius: radius.pill,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
 
 export function HomeScreen({ model }: { model: HomeModel }) {
   const {
-    vehicle, state, protections, liveActivity, nextAction, timeline, studio,
-    quickBook, recent, membership, forSale, marketHref, garage,
+    vehicle, state, nextAction, protection, next, life,
+    membership, garage, forSale, marketHref, studio,
   } = model;
   const still = useReducedMotion();
   const frame = useRef<HTMLDivElement>(null);
 
   /* Which protection is open. An id, not an object: the model is the source of
      truth and this only names a row in it. */
-  /* EVERY EXPANSION IS ADDRESSABLE (§6.4, ARCHITECTURE §5). The old Home put
-     each sheet in the URL (`?sheet=…`) so it could be linked, shared and
-     restored on reload; an expansion that lived only in component state would
-     lose all three. `?open=protection:p2` is that address, and the back button
-     closes the layer because it is a real history entry. */
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const open = params.get('open');
+  /* THE ADDRESSABLE EXPANSIONS ARE GONE WITH THE CARDS THEY OPENED.
+     Home no longer has a layer to link to: protection discloses in place with
+     a native `<details>`, and the timeline it used to open belongs to the
+     album. What is left needs no router state at all. */
   const openPalette = useOpenPalette();
-
-  const setOpen = (value: string | null) => {
-    const next = new URLSearchParams(params.toString());
-    if (value) next.set('open', value);
-    else next.delete('open');
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
-
-  const openProtection = open?.startsWith('protection:') ? open.slice(11) : null;
-  const opened = protections.find(p => p.id === openProtection);
-
-  const openEvent = open?.startsWith('event:') ? open.slice(6) : null;
-  const openedEvent = timeline.find(e => e.id === openEvent);
 
   /* §7.4 — parallax is one of the four motions the photograph is allowed.
      The lag is the token: at 0.82 the image travels at 82% of scroll speed,
@@ -482,6 +339,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                   is suppressed (one subject at a time), so the action lands
                   immediately under the state anyway — the order resolves
                   itself rather than needing a special case. */}
+
               {state.timing ? (
                 <Text
                   role="data"
@@ -534,258 +392,171 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         </Hero>
       </div>
 
-      {/* ── LIVE ACTIVITY ─────────────────────────────────────────────
-          §5.3 #4. A memory, not a section: one photograph, full width, and
-          three lines beneath it. The whole block is the link, so there is no
-          control to label — a caption under a photograph of your own car does
-          not need a button reading "what we did".
+      {/* ── 02 · THE ONE ACTION ─────────────────────────────────────────
+          It follows the car directly, with no card between them, so the state
+          above and the act below read as one thought. §10.4 gives the filled
+          tier to "the thing this screen exists to let you do", and there is
+          exactly one on this screen — the engine already chose which. */}
+      <section style={{ ...column, paddingTop: space.rest }}>
+        <Button tier="primary" href={nextAction.href} full>{nextAction.label}</Button>
+      </section>
 
-          §8.4 — the photograph is full-bleed while the words stay in the
-          gutter. That alternation is what stops the page reading as a column
-          of cards. */}
-      {liveActivity ? (
+      {/* ── 03 · PROTECTION ─────────────────────────────────────────────
+          A state, not a stack of balances. The layers are named and the
+          verdict is one line; the terms are behind a tap because a customer
+          glancing at Home is asking "is my car all right", not "how many days
+          of ceramic remain". §14.4 — a countdown only when the number is
+          small enough to act on. */}
+      {protection ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          {/* Native disclosure. No state, no JavaScript, and it is open-able
+              before hydration — progressive disclosure that cannot fail. */}
+          <details style={{ borderTop: `${HAIRLINE}px solid ${color.edge}`, paddingTop: space.gap }}>
+            <summary style={{ listStyle: 'none', cursor: 'pointer', minHeight: TARGET_MIN }}>
+              <Text role="body" tone={protection.tone === 'ink3' ? 'ink' : protection.tone} as="span">
+                {protection.headline}
+              </Text>
+              <Text role="whisper" tone="ink3" style={{ display: 'block', marginTop: space.hair }}>
+                {protection.layers.join(' · ')} &middot; {protection.said}
+              </Text>
+            </summary>
+            <div style={{ display: 'grid', gap: space.line, paddingTop: space.gap }}>
+              {protection.items.map(p => (
+                <div key={p.id} style={{
+                  display: 'flex', alignItems: 'baseline',
+                  justifyContent: 'space-between', gap: space.line,
+                }}>
+                  <Text role="body" tone="ink2">{p.label}</Text>
+                  <Text role="whisper" tone={p.tone === 'ink3' ? 'ink3' : p.tone} style={{ textAlign: 'right' }}>
+                    {p.term}
+                  </Text>
+                </div>
+              ))}
+            </div>
+          </details>
+        </section>
+      ) : null}
+
+      {/* ── 04 · WHAT IS COMING ─────────────────────────────────────────
+          The one thing a customer opens this screen to check when their car
+          is not here. §18.1 — nothing booked, nothing drawn. */}
+      {next ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Link href={next.href} style={{ textDecoration: 'none', display: 'block' }}>
+            <Text role="data" tone="ink3" as="span">NEXT VISIT</Text>
+            <Heading level="title" as="h2" style={{ marginTop: space.breath }}>
+              {next.service}
+            </Heading>
+            <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
+              {next.when}
+            </Text>
+            <Text role="whisper" tone="ink3">{next.vehicleName}</Text>
+          </Link>
+        </section>
+      ) : null}
+
+      {/* ── 05 · ITS LIFE ───────────────────────────────────────────────
+          One photograph and one fact. The album is where a life is read;
+          this is what makes somebody want to open it. Not a log, not a
+          strip of thumbnails, not a timeline in a box. */}
+      {life ? (
         <section style={{ paddingTop: space.movement }}>
-          <Link
-            href={liveActivity.href}
-            style={{ display: 'block', textDecoration: 'none' }}
-          >
-            {liveActivity.photo ? (
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  /* Photographic, and deliberately not the 16:10 it was: a
-                     wide crop reads as a banner across the page, and a banner
-                     is an advertisement rather than a memory. */
-                  aspectRatio: '4 / 3',
-                }}
-              >
+          <Link href={life.href} style={{ textDecoration: 'none', display: 'block' }}>
+            {life.photo ? (
+              <div style={{
+                position: 'relative', width: '100%', aspectRatio: '3 / 2',
+                overflow: 'hidden', background: color.surface,
+              }}>
                 <Image
-                  src={liveActivity.photo}
-                  alt={`${liveActivity.title}, finished at AutoModz`}
+                  src={life.photo}
+                  alt={`${vehicle.name} at ${studio.name}`}
                   fill
                   sizes={imageSizes.fullBleed}
                   style={{ objectFit: 'cover' }}
                 />
               </div>
             ) : null}
-
-            <div style={{ ...column, marginTop: space.gap }}>
-              {/* The date first. It is what makes the photograph a memory
-                  rather than a picture. */}
-              <Text role="data" tone="ink3">{liveActivity.when}</Text>
-              <Heading level="title" style={{ marginTop: space.breath }}>
-                {liveActivity.title}
-              </Heading>
-              {liveActivity.note ? (
-                <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
-                  {liveActivity.note}
-                </Text>
-              ) : null}
+            <div style={{ ...column, paddingTop: space.gap }}>
+              <Heading level="title" as="h2">Its life at {studio.name}</Heading>
+              <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+                {life.count}
+              </Text>
             </div>
           </Link>
         </section>
       ) : null}
 
-      {/* ── WHAT IS PROTECTING IT ───────────────────────────────────────
-          §5.3 #3, §14. No heading: each line says what it is and how much of
-          it is left, which is the whole of what a heading would have claimed.
-          §18.1 — with nothing to say, nothing appears.
-
-          The air between protections is `rest`, the step §8.3 gives for
-          "between groups", because each of these IS a group: a different
-          thing, from a different provider, running out at its own rate. At
-          `gap` they read as one list of four; at `rest` they read as four
-          separate things that happen to be true at once. */}
-      {protections.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.rest }}>
-          {/* ONE CARD OF LAYERS, not four naked rows on the ground.
-              Protection is a single subject — what is covering this car — and
-              four separate rows read as four unrelated facts. Inside the glass
-              they read as a stack, which is what they are. §10.2: this is the
-              one material; there is no second card nested in it. */}
-          <Glass pad="gap" style={{ display: 'grid', gap: space.gap }}>
-            <Text role="whisper" tone="ink3">Protecting this car</Text>
-          {/* ARCHITECTURE §5 — a protection is an object already on this
-              screen, so it OPENS rather than routing. The row and the layer
-              share a `layoutId`, which is what makes the layer read as this
-              row growing rather than a panel arriving from nowhere. */}
-          {protections.map(p => (
-            <motion.button
-              key={p.id}
-              type="button"
-              layoutId={`protection-${p.id}`}
-              onClick={() => setOpen(`protection:${p.id}`)}
-              style={{
-                appearance: 'none',
-                background: 'transparent',
-                border: 0,
-                padding: 0,
-                textAlign: 'left',
-                width: '100%',
-                cursor: 'pointer',
-                display: 'block',
-              }}
-            >
-              <Protection {...p} />
-            </motion.button>
-          ))}
-          </Glass>
+      {/* ── 06 · THE CLUB ───────────────────────────────────────────────
+          Members only. §18.1 — somebody who is not in it is not sold it from
+          their own car's screen. */}
+      {membership ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Link href={membership.href} style={{ textDecoration: 'none', display: 'block' }}>
+            <Text role="data" tone="ink3" as="span">{studio.name.toUpperCase()} CLUB</Text>
+            <Text role="body" tone="ink" style={{ marginTop: space.breath }}>
+              {membership.plan}
+            </Text>
+            <Text role="whisper" tone="ink3">{membership.said}</Text>
+          </Link>
         </section>
       ) : null}
 
-      {/* ── NEXT BEST ACTION ────────────────────────────────────────────
-          §4.1 — the one way in, and it sits HERE rather than in the hero so
-          the owner reads the position of the car first: what is happening,
-          what protects it, and only then what they might do about it.
-
-          `primary` rather than `forward`: off the photograph there is no
-          competing subject, and §10.4 reserves the filled tier for "the thing
-          this screen exists to let you do". There is at most one. */}
-      <section style={{ ...column, paddingTop: space.movement }}>
-        <Button tier="primary" href={nextAction.href}>
-          {nextAction.label}
-        </Button>
-      </section>
-
-      {/* ── QUICK BOOK ──────────────────────────────────────────────────
-          §6.3 makes arranging "the single most frequent deliberate act", and
-          Home offered no way to do it: a customer went to the Studio and
-          started from a blank sheet, choosing the work again every time. Each
-          of these opens that sheet with the work already chosen, and says what
-          it costs and how long the car is away — the two facts that decide.
-          §18.1 — an empty catalogue shows nothing here. */}
-      {quickBook.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.movement }}>
-          <Text role="whisper" tone="ink3">Book in a tap</Text>
-          <div style={{ display: 'grid', gap: space.breath, marginTop: space.line }}>
-            {quickBook.map(q => (
-              <Link key={q.id} href={q.href} style={{ textDecoration: 'none', display: 'block' }}>
-                <Glass pad="gap">
-                  <div style={{
-                    display: 'flex', alignItems: 'baseline',
-                    justifyContent: 'space-between', gap: space.line,
-                  }}>
-                    <Text role="body" tone="ink">{q.label}</Text>
-                    <Text role="whisper" tone="ink3" style={{ textAlign: 'right', flexShrink: 0 }}>
-                      {q.said}
-                    </Text>
-                  </div>
-                </Glass>
-              </Link>
-            ))}
+      {/* ── 07 · DISCOVERY ──────────────────────────────────────────────
+          Only after the customer's own car is done with. Thumbnails and
+          rails, deliberately quieter than everything above — nothing here
+          may compete with the car at the top of the screen. */}
+      {garage ? (
+        <section style={{ paddingTop: space.movement }}>
+          <div style={{ ...column }}>
+            <Text role="whisper" tone="ink3">{garage.line}</Text>
           </div>
-        </section>
-      ) : null}
-
-      {/* ── WHAT HAS BEEN DONE ──────────────────────────────────────────
-          The record, three deep, as photographs. History is one tap from
-          here; this is the reminder that it exists at all. */}
-      {recent.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.movement }}>
-          <Text role="whisper" tone="ink3">Its record</Text>
           <div style={{
             display: 'flex', gap: space.line, marginTop: space.line,
-            overflowX: 'auto', paddingBottom: space.hair, scrollbarWidth: 'none',
+            overflowX: 'auto', paddingInline: INSET, scrollbarWidth: 'none',
           }}>
-            {recent.map(v => (
-              <Link key={v.id} href={v.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 156 }}>
+            {garage.cars.map(c => (
+              <Link key={c.id} href={c.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 116 }}>
                 <div style={{
-                  position: 'relative', width: '100%', aspectRatio: '4 / 3',
+                  position: 'relative', width: '100%', aspectRatio: '1',
                   borderRadius: radius.card, overflow: 'hidden', background: color.surface,
                 }}>
-                  {v.photo ? (
-                    <Image src={v.photo} alt={v.title} fill sizes="156px" style={{ objectFit: 'cover' }} />
+                  {c.photo ? (
+                    <Image src={c.photo} alt={c.name} fill sizes="116px" style={{ objectFit: 'cover' }} />
                   ) : null}
                 </div>
-                <Text role="body" tone="ink" style={{ marginTop: space.breath }}>{v.title}</Text>
-                <Text role="whisper" tone="ink3">{v.when}</Text>
+                <Text role="whisper" tone="ink2" style={{ marginTop: space.breath }}>{c.name}</Text>
               </Link>
             ))}
           </div>
         </section>
       ) : null}
 
-      {/* ── THE CLUB, AND THE GARAGE ────────────────────────────────────
-          Two facts an owner checks and could previously only find by
-          navigating to the room that holds them. §8.6 — a fact is a line. */}
-      {(membership || garage) ? (
-        <section style={{ ...column, paddingTop: space.movement }}>
-          <div style={{ display: 'grid', gap: space.line }}>
-            {membership ? (
-              <Link href={membership.href} style={{ textDecoration: 'none' }}>
-                <Glass pad="gap">
-                  <Text role="body" tone="ink">{membership.line}</Text>
-                  <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
-                    {membership.said}
-                  </Text>
-                </Glass>
-              </Link>
-            ) : null}
-            {garage ? (
-              <Link href={garage.href} style={{ textDecoration: 'none' }}>
-                <Glass pad="gap">
-                  <Text role="body" tone="ink">{garage.line}</Text>
-                </Glass>
-              </Link>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-
-      {/* ── CARS THE STUDIO HAS FOR SALE ────────────────────────────────
-          The market existed and Home never mentioned it, so a customer had to
-          already know to look. §18.1 — nothing for sale, nothing here. */}
       {forSale.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.movement }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <Text role="whisper" tone="ink3">Cars we&rsquo;re selling</Text>
+        <section style={{ paddingTop: space.movement }}>
+          <div style={{ ...column }}>
             <Link href={marketHref} style={{ textDecoration: 'none' }}>
-              <Text role="whisper" tone="ink2">See all</Text>
+              <Text role="whisper" tone="ink3">Cars we&rsquo;re selling</Text>
             </Link>
           </div>
           <div style={{
             display: 'flex', gap: space.line, marginTop: space.line,
-            overflowX: 'auto', paddingBottom: space.hair, scrollbarWidth: 'none',
+            overflowX: 'auto', paddingInline: INSET, scrollbarWidth: 'none',
           }}>
             {forSale.map(c => (
-              <Link key={c.id} href={c.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 200 }}>
+              <Link key={c.id} href={c.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 208 }}>
                 <div style={{
-                  position: 'relative', width: '100%', aspectRatio: '4 / 3',
+                  position: 'relative', width: '100%', aspectRatio: '3 / 2',
                   borderRadius: radius.card, overflow: 'hidden', background: color.surface,
                 }}>
                   {c.photo ? (
-                    <Image src={c.photo} alt={c.title} fill sizes="200px" style={{ objectFit: 'cover' }} />
+                    <Image src={c.photo} alt={c.title} fill sizes="208px" style={{ objectFit: 'cover' }} />
                   ) : null}
                 </div>
-                <Text role="body" tone="ink" style={{ marginTop: space.breath }}>{c.title}</Text>
+                <Text role="whisper" tone="ink2" style={{ marginTop: space.breath }}>{c.title}</Text>
                 <Text role="whisper" tone="ink3">{c.price} &middot; {c.detail}</Text>
               </Link>
             ))}
           </div>
-        </section>
-      ) : null}
-
-      {/* ── THE TIMELINE ────────────────────────────────────────────────
-          docs/HOME-STATE-MAP.md § Timeline events. One living record of
-          ownership, and it runs FORWARD as well as back: a booked visit and a
-          warranty about to end are both dated ahead of today and sort above
-          the present. §18.1 — with nothing to say, nothing appears. */}
-      {timeline.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.movement }}>
-          <Glass pad="gap">
-            <Text role="whisper" tone="ink3">Its life</Text>
-            <div style={{ marginTop: space.gap }}>
-            {timeline.slice(0, TIMELINE_ON_HOME).map((e, i) => (
-              <TimelineRow
-                key={e.id}
-                event={e}
-                first={i === 0}
-                onOpen={() => setOpen(`event:${e.id}`)}
-              />
-            ))}
-            </div>
-          </Glass>
         </section>
       ) : null}
 
@@ -818,118 +589,9 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         </Glass>
       </section>
 
-      {/* THE EXPANSION. Radix owns focus, dismissal and the scroll lock;
-          every visual value is ours (ARCHITECTURE §6). */}
-      <Expansion
-        open={openProtection !== null}
-        onOpenChange={o => { if (!o) setOpen(null); }}
-        title={opened?.label ?? 'Protection'}
-        layoutId={opened ? `protection-${opened.id}` : undefined}
-      >
-        {opened ? (
-          <>
-            <Text role="body" tone="ink2">{opened.term}</Text>
-            {opened.remaining !== undefined ? (
-              <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
-                {Math.round(opened.remaining * 100)}% of the term remains.
-              </Text>
-            ) : (
-              <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
-                This one does not run out.
-              </Text>
-            )}
-          </>
-        ) : null}
-      </Expansion>
 
-      {/* A timeline event opens as itself, then offers the room it belongs to
-          — the object first, the address second. */}
-      <Expansion
-        open={openEvent !== null}
-        onOpenChange={o => { if (!o) setOpen(null); }}
-        title={openedEvent?.title ?? 'Timeline'}
-        layoutId={openedEvent ? `event-${openedEvent.id}` : undefined}
-      >
-        {openedEvent ? (
-          <>
-            <Text role="data" tone="ink3">
-              {openedEvent.when}{openedEvent.ahead ? ' · still to come' : ''}
-            </Text>
-            {openedEvent.line ? (
-              <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
-                {openedEvent.line}
-              </Text>
-            ) : null}
-            {openedEvent.href ? (
-              <div style={{ marginTop: space.gap }}>
-                <Button tier="forward" href={openedEvent.href}>Open it</Button>
-              </div>
-            ) : null}
-          </>
-        ) : null}
-      </Expansion>
 
     </main>
   );
 }
 
-/** How much of the record Home shows. The rest lives in History. */
-const TIMELINE_ON_HOME = 6;
-
-/**
- * ONE TIMELINE EVENT.
- *
- * A rule above each row rather than a card around it: the timeline is one
- * continuous record, and boxing each entry would make six separate objects out
- * of one story. An event dated ahead of today is dimmer, not louder — it has
- * not happened yet, and drawing it at full weight would let a warranty that
- * expires in March outshout a visit that actually took place.
- */
-function TimelineRow(
-  { event, first, onOpen }: { event: HomeTimelineEvent; first: boolean; onOpen: () => void },
-) {
-  const body = (
-    <>
-      <Text role="data" tone="ink3">
-        {event.when}{event.ahead ? ' · ahead' : ''}
-      </Text>
-      <Text role="body" tone={event.ahead ? 'ink3' : 'ink'} style={{ marginTop: space.hair }}>
-        {event.title}
-      </Text>
-      {event.line ? (
-        <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
-          {event.line}
-        </Text>
-      ) : null}
-    </>
-  );
-
-  const style = {
-    paddingBlock: space.gap,
-    borderTop: first ? undefined : `${HAIRLINE}px solid ${color.edge}`,
-    display: 'block',
-    textDecoration: 'none',
-  } as const;
-
-  /* ARCHITECTURE §5 — it OPENS. The address still exists and the expansion
-     offers it, but tapping the row does not leave the page. */
-  return (
-    <motion.button
-      type="button"
-      layoutId={`event-${event.id}`}
-      onClick={onOpen}
-      style={{
-        ...style,
-        appearance: 'none',
-        background: 'transparent',
-        border: 0,
-        borderTop: style.borderTop,
-        width: '100%',
-        textAlign: 'left',
-        cursor: 'pointer',
-      }}
-    >
-      {body}
-    </motion.button>
-  );
-}

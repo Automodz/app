@@ -118,7 +118,13 @@ it('Home renders the projected model', () => {
   expect(html).toContain('Skoda Superb');
   expect(html).toContain('GJ 01 KP 4471');
   expect(html).toContain('Ceramic coating');
-  expect(html).toContain('Membership');
+  /* The club is its own section now, not a row in the protection list.
+     §15.2 made a membership "a protection" so it would appear at all; Home V1
+     gives it a place of its own, so it no longer has to pretend to be one. */
+  expect(html).toContain('CLUB');
+  expect(html).toContain('Gold');
+  /* ONE primary action, never two competing. */
+  expect((html.match(/background:#F4F5F6/g) ?? []).length).toBe(1);
 });
 
 it('Garage renders every car', () => {

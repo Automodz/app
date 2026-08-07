@@ -294,10 +294,22 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
        membership, a refused visit, a dormant car and an expiring warranty were
        all literally unsayable. See docs/HOME-STATE-MAP.md. */
     state: homeStateCopy(read, car.vehicle.name),
-    /* §15.2 — "a membership is a protection. It appears alongside everything
-       else protecting the car." It lives in `subscriptions` rather than
-       `protections`, so it is projected in here rather than being absent from
-       the one surface that shows the car whole. */
+
+
+
+    studio: {
+      name: COMPANY.name,
+      address: COMPANY.address,
+      directions: COMPANY.mapsUrl,
+      call: telLink(),
+      message: waLink(`Hi ${COMPANY.name}! A question about my ${car.vehicle.name}.`),
+    },
+
+    /* ── ONE COMPOSITION ──────────────────────────────────────────────
+       Home answers four questions and nothing else: what is happening,
+       is the car all right, what can I do now, what is coming. */
+
+    /* THE ENGINE'S OUTPUT, KEPT — see the note on HomeModel. */
     protections: [
       ...protections.map(p => ({
         id: p.id,
@@ -309,7 +321,6 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
       ...membershipAsProtection(picture.subscription, now),
     ],
     nextAction: resolveAction(read.nextAction),
-
     liveActivity: latest ? {
       title: visitTitle(latest),
       when: longDate(isoOf(latest.createdAt)),
@@ -317,10 +328,6 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
       photo: latestFrames[0]?.url,
       href: hrefForDestination({ to: 'visit', visitId: latest.id }),
     } : undefined,
-
-    /* THE TIMELINE — one living record, reusable on Vehicle and History.
-       Future events sort above the present, so a booked visit and an expiring
-       warranty both read as things coming toward the owner. */
     timeline: projectTimeline({ car, protections, club: read.club, now })
       .map<HomeTimelineEvent>(e => ({
         id: e.id,
@@ -331,84 +338,80 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
         ahead: e.ahead,
       })),
 
-    studio: {
-      name: COMPANY.name,
-      address: COMPANY.address,
-      directions: COMPANY.mapsUrl,
-      call: telLink(),
-      message: waLink(`Hi ${COMPANY.name}! A question about my ${car.vehicle.name}.`),
-    },
 
-    /* ── THE DASHBOARD ────────────────────────────────────────────────
-       All of this was already in the picture and none of it was offered
-       here. Home showed the car and then sent the customer elsewhere to do
-       anything with it. */
 
-    /* THE MENU, AS FOUR TAPS. `?arrange=1&cat=` is the address the Studio
-       already answers, so this opens the sheet with the work chosen rather
-       than dropping somebody on a blank one. Most-asked first, then by the
-       studio's own order. */
-    quickBook: picture.catalogue
-      .filter(x => x.active !== false)
-      .sort((a, b) => Number(b.popular) - Number(a.popular) || (a.order ?? 0) - (b.order ?? 0))
-      .slice(0, 4)
-      .map(x => ({
-        id: x.id,
-        label: x.name,
-        said: [
-          Number.isFinite(x.price) ? `₹${x.price.toLocaleString('en-IN')}` : null,
-          spokenSpan(x.duration),
-        ].filter(Boolean).join(' · '),
-        href: `${hrefForDestination({ to: 'studio' })}?arrange=1&cat=${encodeURIComponent(x.category)}`,
-      })),
-
-    /* WHAT HAS ACTUALLY BEEN DONE. Three, because Home is a glance and the
-       album is one tap away. */
-    recent: visits.slice(0, 3).map(v => {
-      const frames = framesOfVisit(v, car);
+    protection: protections.length > 0 ? (() => {
+      const worst = protections[0];
+      const holding = protections.every(p => p.health === 'healthy');
       return {
-        id: v.id,
-        title: visitTitle(v),
-        when: longDate(isoOf(v.createdAt)),
-        photo: frames[0]?.url,
-        href: hrefForDestination({ to: 'visit', visitId: v.id }),
+        headline: holding ? 'Protected' : PROTECTION_TITLE[worst.kind],
+        layers: protections.map(p => PROTECTION_TITLE[p.kind]),
+        /* §14.4 — a date when it is far off, a countdown only when the number
+           is small enough to act on. "Everything's holding" is the honest
+           thing to say when nothing needs doing, and saying it in days would
+           invent an urgency that is not there. */
+        said: holding
+          ? 'Everything’s holding'
+          : termWords(worst.term, now),
+        tone: TONE[worst.health],
+        items: protections.map(p => ({
+          id: p.id,
+          label: PROTECTION_TITLE[p.kind],
+          term: termWords(p.term, now),
+          tone: TONE[p.health],
+        })),
       };
-    }),
+    })() : undefined,
+
+    /* THE VISIT THAT IS COMING. Not one in progress — that is the state at
+       the top of the screen, and saying it twice is the dashboard habit. */
+    next: (() => {
+      const b = liveBooking(car);
+      if (!b || visitPhase(b.status) === 'live') return undefined;
+      return {
+        service: b.serviceName,
+        when: `${longDate(b.scheduledDate)}${b.scheduledTime ? ` · ${b.scheduledTime}` : ''}`,
+        vehicleName: car.vehicle.name,
+        href: hrefForDestination({ to: 'visit', visitId: b.id }),
+      };
+    })(),
+
+    /* ITS LIFE — one photograph and one fact, not a log. The album is where
+       a life is read; this is what makes a customer want to open it. */
+    life: visits.length > 0 ? {
+      photo: latestFrames[0]?.url ?? framesOfVisit(visits[0], car)[0]?.url,
+      count: `${visits.length} ${visits.length === 1 ? 'visit' : 'visits'} ${sinceWords(car, 'since')}`,
+      href: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),
+    } : undefined,
 
     membership: picture.subscription && picture.subscription.status === 'active'
       ? {
-          line: `${picture.subscription.plan} member`,
-          said: `${washesLeftOf(picture.subscription)} washes left this cycle`,
+          plan: picture.subscription.plan,
+          said: `${washesLeftOf(picture.subscription)} washes remaining this cycle`,
           href: hrefForDestination({ to: 'membership' }),
         }
       : undefined,
 
-    /* Filled by the page, which is where a server read belongs — a projection
-       is pure and reads nothing (ARCHITECTURE §1). */
-    forSale: [],
-    marketHref: hrefForDestination({ to: 'cars' }),
-
     garage: picture.cars.length > 1
       ? {
-          line: `${picture.cars.length} cars live here`,
+          line: `${picture.cars.length} cars at ${COMPANY.name}`,
+          cars: picture.cars.map(c => ({
+            id: c.vehicle.id,
+            name: c.vehicle.name,
+            photo: c.vehicle.photo ?? c.vehicle.photos?.[0],
+            href: hrefForDestination({ to: 'vehicle' }),
+          })),
           href: hrefForDestination({ to: 'garage' }),
         }
       : undefined,
+
+    /* Filled by the page — a projection reads nothing (ARCHITECTURE §1). */
+    forSale: [],
+    marketHref: hrefForDestination({ to: 'cars' }),
   };
 }
 
-/** How long the car is away, said the way a person would. Never "NaN". */
-function spokenSpan(min: number): string | null {
-  if (!Number.isFinite(min) || min <= 0) return null;
-  if (min < 60) return `${min} min`;
-  const h = Math.floor(min / 60);
-  if (h >= 24) {
-    const d = Math.round(h / 24);
-    return d === 1 ? 'a full day' : `about ${d} days`;
-  }
-  const m = min % 60;
-  return m ? `${h}h ${m}m` : `${h} hour${h > 1 ? 's' : ''}`;
-}
+
 
 /**
  * §15.2 — the membership, in the shape every other protection takes. Its term
