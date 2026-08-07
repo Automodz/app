@@ -221,9 +221,25 @@ export function BookingFlow({
        authoritatively; this only decides what the sheet SAYS. */
     && washesLeftOf(membership) > 0;
 
-  /* 3 · the membership discount must never depend on the promo lookup */
+  /**
+   * 3 · THE MEMBERSHIP DISCOUNT MUST NEVER DEPEND ON ANYTHING OPTIONAL.
+   *
+   * The promo call was already wrapped for exactly this reason — a promo
+   * outage must not cost a member their rate — and then the whole effect was
+   * gated on `user` from the client store, which reintroduced the same
+   * failure by a different door. `ClientSession` (and with it `AuthProvider`)
+   * is mounted only under `/admin`, `/store` and `/auth`; the customer rooms
+   * render on the server and mount none of it, so `user` is ALWAYS null here.
+   * Every member was quoted the full price and then charged the discounted
+   * one — the server got it right, the screen did not, and being surprised
+   * about money is not made acceptable by the surprise being pleasant.
+   *
+   * The membership is a SERVER-PROVIDED PROP and needs no session to read.
+   * The uid is needed only to look up personal promos, so its absence costs
+   * a promo, never the membership rate.
+   */
   useEffect(() => {
-    if (!open || !service || !user || washCovered) { setDiscount(undefined); return; }
+    if (!open || !service || washCovered) { setDiscount(undefined); return; }
     let cancelled = false;
 
     void (async () => {
@@ -233,16 +249,18 @@ export function BookingFlow({
         : null;
 
       let promos: Awaited<ReturnType<typeof getEligiblePromos>> = [];
-      try {
-        promos = await getEligiblePromos({
-          serviceId: service.id,
-          category: service.category,
-          userId: user.uid,
-          date: today,
-        });
-      } catch {
-        /* No promos reachable — the membership still stands. This wrapping is
-           the whole point: a promo outage must not cost a member their rate. */
+      const uid = user?.uid ?? auth?.currentUser?.uid;
+      if (uid) {
+        try {
+          promos = await getEligiblePromos({
+            serviceId: service.id,
+            category: service.category,
+            userId: uid,
+            date: today,
+          });
+        } catch {
+          /* No promos reachable — the membership still stands. */
+        }
       }
 
       if (cancelled) return;
