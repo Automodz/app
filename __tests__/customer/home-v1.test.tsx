@@ -92,6 +92,24 @@ describe('Home V1 — one composition', () => {
       expect(h).toContain('Saturday · 10:30');
     });
 
+    it('the one sentence is carried, not rewritten', () => {
+      /* `os/truth` phrases it; Home prints it. A second wording of the same
+         fact would be a second source of truth about it. */
+      const h = html({ truth: 'Ceramic coating - 23 days of protection left.' });
+      expect(h).toContain('Ceramic coating - 23 days of protection left.');
+    });
+
+    it('and is absent when it would repeat the hero or say nothing', () => {
+      /* Suppression lives in the projection — these assert the render simply
+         obeys it, and that Home never invents a sentence of its own. */
+      expect(html()).not.toContain('All quiet');
+      const live = html({
+        state: { word: 'In care', line: 'Caring for it.' },
+        live: { acts: [], frames: [], href: '/x' },
+      });
+      expect(live).not.toContain('In the studio -');
+    });
+
     it('protection is a state, disclosed — not a wall of countdowns', () => {
       const h = html({
         protection: {
@@ -165,11 +183,24 @@ describe('Home V1 — one composition', () => {
     });
 
     it('its life is a photograph and a fact, not a log', () => {
-      const h = html({ life: { count: '11 visits since 2023', href: '/history?car=v1' } });
+      const h = html({ life: { count: '11 visits since 2023', href: '/history?car=v1', entries: [] } });
       expect(h).toContain('Its life at AutoModz');
       expect(h).toContain('11 visits since 2023');
-      /* No dates, no rows, no "see all". */
+      /* No "see all" — the photograph is the way in. */
       expect(h).not.toContain('See all');
+    });
+
+    it('its life carries what the studio already said', () => {
+      /* `os/log` reached the customer only through the command palette, which
+         a phone customer never opens. Carried verbatim — this is not a second
+         timeline, and nothing here re-derives it. */
+      const h = html({ life: { count: '2 visits since 2025', href: '/history?car=v1', entries: [
+        { id: 'l1', line: 'Ceramic coating applied - protected until August 2026.', when: '10 November 2025' },
+        { id: 'l2', line: 'The studio confirmed your Club membership on Gold.', when: '14 July 2026' },
+      ] } });
+      expect(h).toContain('Ceramic coating applied');
+      expect(h).toContain('10 November 2025');
+      expect(h).toContain('Club membership on Gold');
     });
   });
 });

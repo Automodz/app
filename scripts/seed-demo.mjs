@@ -27,7 +27,7 @@
 import { readFileSync } from 'fs';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 
 const DRY = process.argv.includes('--dry');
 const EMAIL = process.env.DEMO_EMAIL ?? 'sheth871@gmail.com';
@@ -248,27 +248,44 @@ if (bmw) {
     { subtotal: 73500, discount: 11025, total: 62475 }, '');
 }
 
+/* THE PAPERS BEHIND THE VISIT.
+   WRITTEN AGAINST THE REAL SCHEMA THIS TIME. The first attempt invented its
+   own field names — `userId`, `items`, `number`, a numeric `discount` and a
+   numeric `tax` — none of which `Invoice` declares. `customerPicture` queries
+   invoices by `customerId`, so it was orphaned: not merely mis-rendered but
+   invisible to the customer it belonged to. The stale keys are deleted rather
+   than left beside the correct ones, because two spellings of one fact is how
+   the next reader gets it wrong too. */
 await put(`invoices/inv-demo-glass`, {
   id: 'inv-demo-glass',
-  userId: uid,
+  invoiceNumber: 'AMZ-2026-0184',
+  customerId: uid,
+  customerName: user.displayName ?? 'Meet Sheth',
+  customerPhone: '',
+  vehicleName: 'Kia Seltos',
+  vehicleRegNo: 'GJ01AB8539',
   bookingId: DONE_BOOKING,
   jobId: doneJob?.id ?? '',
-  visitId: 'vis-demo-glass',
-  number: 'AM-2026-0184',
-  items: [
-    { name: 'Glass coating', qty: 1, rate: 12000, amount: 12000 },
-    { name: 'Maintenance wash', qty: 1, rate: 1200, amount: 1200 },
+  lineItems: [
+    { name: 'Glass coating', qty: 1, unitPrice: 12000, amount: 12000 },
+    { name: 'Maintenance wash', qty: 1, unitPrice: 1200, amount: 1200 },
   ],
   subtotal: 13200,
-  discount: 1980,
-  discountLabel: 'Gold member 15% off',
-  tax: 2020,
+  discount: { label: 'Gold member 15% off', amount: 1980 },
+  gst: { rate: 18, amount: 2020 },
   total: 13240,
-  paymentStatus: 'paid',
   paymentMethod: 'upi',
+  paymentStatus: 'paid',
   publicToken: 'demo-glass-0184',
-  issuedOn: '2026-07-20',
   createdAt: ts('2026-07-20'),
+  /* The shapes the first attempt invented. Removed, not shadowed. */
+  userId: FieldValue.delete(),
+  items: FieldValue.delete(),
+  number: FieldValue.delete(),
+  tax: FieldValue.delete(),
+  discountLabel: FieldValue.delete(),
+  issuedOn: FieldValue.delete(),
+  visitId: FieldValue.delete(),
 });
 
 /* ── 5 · THE CLUB ─────────────────────────────────────────────────────────

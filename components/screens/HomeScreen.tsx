@@ -179,6 +179,25 @@ export interface HomeModel {
   };
 
   /**
+   * THE ONE SENTENCE ABOUT THE CAR — `os/truth`, verbatim.
+   *
+   * The ownership engine has produced this for every car on every request
+   * since it was written, and it reached the customer ONLY through the
+   * command palette. A phone customer never presses ⌘K, so the studio's own
+   * answer to "what do I need to know" was, in practice, unreachable.
+   *
+   * Carried exactly as the engine phrases it. Nothing here re-derives it, and
+   * nothing rewrites its wording — a second sentence about the same fact is a
+   * second source of truth about it.
+   *
+   * Absent when the engine's answer is one Home has already given: while the
+   * car is in the studio or booked in, the hero says so in larger type, and
+   * `truthOf`'s quiet fallbacks ("All quiet.") are the engine saying it has
+   * nothing to add. Both are suppressed in the projection, not here.
+   */
+  truth?: string;
+
+  /**
    * WHILE THE CAR IS HERE, HOME BECOMES THE VISIT.
    *
    * Not a card announcing that something is happening — the stage it is at,
@@ -205,8 +224,23 @@ export interface HomeModel {
   /** The visit that is coming. Absent when none is — never an empty frame. */
   next?: { service: string; when: string; vehicleName: string; href: string };
 
-  /** Its life here, as one photograph and one fact. Not a transaction log. */
-  life?: { photo?: string; count: string; href: string };
+  /**
+   * ITS LIFE — one photograph, one fact, and what the studio has already told
+   * them about this car.
+   *
+   * `entries` is `os/log`, the concierge log, carried verbatim. Like `truth`
+   * it existed for every car and reached the customer only through the command
+   * palette. It is NOT a second timeline: every line is a projection of an
+   * object that really happened — a membership the studio verified, a coat it
+   * applied, a visit the floor moved through — and the album is still where a
+   * life is read whole. This is what makes somebody open it.
+   */
+  life?: {
+    photo?: string;
+    count: string;
+    href: string;
+    entries: readonly { id: string; line: string; when: string }[];
+  };
 
   /** The club, quietly, and only for members. */
   membership?: { plan: string; said: string; href: string };
@@ -236,7 +270,7 @@ export interface HomeModel {
 
 export function HomeScreen({ model }: { model: HomeModel }) {
   const {
-    vehicle, state, nextAction, live, suggestion, protection, next, life,
+    vehicle, state, truth, nextAction, live, suggestion, protection, next, life,
     membership, garage, forSale, marketHref, studio,
   } = model;
   const still = useReducedMotion();
@@ -435,6 +469,16 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         <Button tier="primary" href={nextAction.href} full>{nextAction.label}</Button>
       </section>
 
+      {/* ── 02a · THE ONE SENTENCE ─────────────────────────────────────
+          Between the car and the act, because it is the sentence that makes
+          the act make sense. Type on the ground, not a card — it belongs to
+          the hero above it, and a box would make it a fifth object. */}
+      {truth ? (
+        <section style={{ ...column, paddingTop: space.rest }}>
+          <Text role="body" tone="ink" style={{ maxWidth: MEASURE }}>{truth}</Text>
+        </section>
+      ) : null}
+
       {/* ── 02b · WHILE THE CAR IS HERE ─────────────────────────────────
           Home becomes the visit. The stage it is at, the studio's own words,
           and the photographs as they are taken — none of which the customer
@@ -591,6 +635,21 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               </Text>
             </div>
           </Link>
+
+          {/* WHAT THE STUDIO HAS ALREADY TOLD THEM. In the studio's own words,
+              newest first, on the ground rather than in a box — these are
+              sentences, and boxing each one would make five objects out of one
+              account. §18.1: a car with nothing recorded shows none of it. */}
+          {life.entries.length > 0 ? (
+            <div style={{ ...column, paddingTop: space.gap, display: 'grid', gap: space.line }}>
+              {life.entries.map(e => (
+                <div key={e.id}>
+                  <Text role="body" tone="ink2" style={{ maxWidth: MEASURE }}>{e.line}</Text>
+                  <Text role="whisper" tone="ink3">{e.when}</Text>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

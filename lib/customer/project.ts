@@ -372,6 +372,16 @@ export function toHome(
       };
     })() : undefined,
 
+    /* THE ONE SENTENCE, VERBATIM FROM `os/truth`.
+       Suppressed in the two cases where the engine's answer is one Home has
+       already given in larger type — a car in the studio, or one booked in —
+       and in the quiet fallbacks, which are the engine saying it has nothing
+       to add. Everything else (a term on its edge, a car not cared for in a
+       month) is exactly what the customer opened the app to learn. */
+    truth: (read.live || read.agreed) ? undefined
+      : /^All quiet/.test(read.truth) ? undefined
+      : read.truth,
+
     /* HOME BECOMES THE VISIT while the car is here: the stage it is at, the
        studio's own words about it, and the photographs as they are taken. */
     live: read.stay && read.live ? {
@@ -419,6 +429,14 @@ export function toHome(
       photo: latestFrames[0]?.url ?? framesOfVisit(visits[0], car)[0]?.url,
       count: `${visits.length} ${visits.length === 1 ? 'visit' : 'visits'} ${sinceWords(car, 'since')}`,
       href: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),
+      /* `os/log`, verbatim. Three on Home — enough to give the count meaning,
+         short of becoming the timeline the album already is. The palette
+         takes twelve of the same list; neither re-derives anything. */
+      entries: read.log.slice(0, 3).map(e => ({
+        id: e.id,
+        line: e.line,
+        when: longDate(e.at.toISOString().slice(0, 10)),
+      })),
     } : undefined,
 
     membership: picture.subscription && picture.subscription.status === 'active'
