@@ -486,7 +486,10 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
              the same rule `toStudio`'s `manageable` uses, so the room never
              offers an act the server will refuse. */
           manageHref: ['pending', 'confirmed'].includes(next.status)
-            ? hrefForDestination({ to: 'studio' })
+            /* Straight at THIS visit's sheet. Pointing at `/studio` alone sent
+               the customer to a room that, until the arranged visits were
+               drawn, showed no trace of the booking they had come to change. */
+            ? `${hrefForDestination({ to: 'studio' })}?manage=${next.id}`
             : undefined,
         }
       : undefined,

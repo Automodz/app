@@ -146,6 +146,20 @@ export function StudioScreen({ model }: { model: StudioModel }) {
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
+  /* §6.4 — moving or cancelling is addressable, so opening the sheet writes
+     the address rather than setting local state. The back button closes it,
+     and Home's "Manage the visit" lands on exactly the same URL. */
+  const openManage = (id: string) => {
+    const next = new URLSearchParams(params.toString());
+    next.set('manage', id);
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  };
+
+  /** The day a visit falls on, said the way a person would say it. */
+  const longDay = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', {
+      weekday: 'short', day: 'numeric', month: 'long',
+    });
   const prefillCategory = params.get('cat');
 
   const setArranging = (on: boolean) => {
@@ -316,6 +330,42 @@ export function StudioScreen({ model }: { model: StudioModel }) {
           </div>
         </Glass>
       </section>
+
+      {/* ── 6b · THE VISITS ALREADY ARRANGED ────────────────────────────
+          `ManageVisit` has always been able to move or cancel one, and until
+          now NOTHING RENDERED A CONTROL THAT OPENED IT: the sheet was reachable
+          only by typing `?manage=<id>` into the address bar. A customer could
+          make a booking and then had no way in the product to change it — and
+          no way to see it at all. `manageable` was already projected and
+          already mirrored `firestore.rules`; it simply was not drawn.
+
+          §18.1 — nothing booked, nothing here. The invitation is the primary
+          control below, not a second empty card. */}
+      {manageable.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Text role="whisper" tone="ink3">
+            {manageable.length === 1 ? 'Your visit' : 'Your visits'}
+          </Text>
+          <div style={{ display: 'grid', gap: space.line, marginTop: space.line }}>
+            {manageable.map(v => (
+              <Glass key={v.id} pad="gap">
+                <Text role="body" tone="ink">{v.service}</Text>
+                <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+                  {v.vehicleName} &middot; {longDay(v.scheduledDate)}
+                  {v.scheduledTime ? ` at ${v.scheduledTime}` : ''}
+                </Text>
+                {v.changeable ? (
+                  <div style={{ marginTop: space.gap }}>
+                    <Button tier="forward" onClick={() => openManage(v.id)}>
+                      Change or cancel
+                    </Button>
+                  </div>
+                ) : null}
+              </Glass>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* ── 7 · ARRANGING A VISIT ───────────────────────────────────────
           §10.4 — "primary: the thing this screen exists to let you do — at
