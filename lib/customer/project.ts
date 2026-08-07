@@ -272,8 +272,17 @@ function visitTitle(visit: Visit): string {
 
 /* ── HOME ────────────────────────────────────────────────────────────────── */
 
-export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | null {
-  const car = leadCar(picture);
+export function toHome(
+  picture: CustomerPicture,
+  now = new Date(),
+  /** The car the customer chose, when they chose one (`?car=`). */
+  selectedId?: string,
+): HomeModel | null {
+  /* THE CAR THE CUSTOMER IS LOOKING AT. `leadCar` decides for them on first
+     arrival — the one that needs attention — and the garage rail lets them
+     say otherwise. An unknown id falls back rather than showing nothing. */
+  const car = (selectedId && picture.cars.find(c => c.vehicle.id === selectedId))
+    ?? leadCar(picture);
   if (!car) return null;
 
   const protections = protectionsOf(car, picture.catalogue, now);
@@ -363,6 +372,34 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
       };
     })() : undefined,
 
+    /* HOME BECOMES THE VISIT while the car is here: the stage it is at, the
+       studio's own words about it, and the photographs as they are taken. */
+    live: read.stay && read.live ? {
+      acts: read.stay.acts.map(a => ({
+        label: a.title,
+        done: a.state === 'done',
+        current: a.state === 'current',
+      })),
+      timing: read.stay.timing ?? undefined,
+      frames: (car.jobs.find(j => j.bookingId === read.live!.id)?.photos ?? [])
+        .map((p, i) => ({
+          id: `${read.live!.id}-${i}`,
+          url: p.url,
+          caption: SHOT_CAPTION[p.kind as 'before' | 'during' | 'after'],
+        })),
+      href: hrefForDestination({ to: 'visit', visitId: read.live.id }),
+    } : undefined,
+
+    /* THE PROPOSAL ENGINE'S OWN REASONING. It names the object it reasons
+       from, and `readOwnership` already suppresses it while a visit is booked
+       or in flight — a car that is booked in does not need to be told to book
+       in. Nothing here decides anything; it is carried. */
+    suggestion: read.proposal ? {
+      headline: read.proposal.headline,
+      reason: read.proposal.reason,
+      href: `${hrefForDestination({ to: 'studio' })}?arrange=1&cat=${encodeURIComponent(read.proposal.serviceCategory)}`,
+    } : undefined,
+
     /* THE VISIT THAT IS COMING. Not one in progress — that is the state at
        the top of the screen, and saying it twice is the dashboard habit. */
     next: (() => {
@@ -392,16 +429,18 @@ export function toHome(picture: CustomerPicture, now = new Date()): HomeModel | 
         }
       : undefined,
 
+    /* THE CARS ARE THE NAVIGATION. Each carries its own state — the same word
+       its own room would use — and tapping one makes Home that car's home. */
     garage: picture.cars.length > 1
       ? {
-          line: `${picture.cars.length} cars at ${COMPANY.name}`,
           cars: picture.cars.map(c => ({
             id: c.vehicle.id,
             name: c.vehicle.name,
+            state: stateWordFor(picture, c, now),
             photo: c.vehicle.photo ?? c.vehicle.photos?.[0],
-            href: hrefForDestination({ to: 'vehicle' }),
+            href: `${hrefForDestination({ to: 'home' })}?car=${c.vehicle.id}`,
+            current: c.vehicle.id === car.vehicle.id,
           })),
-          href: hrefForDestination({ to: 'garage' }),
         }
       : undefined,
 

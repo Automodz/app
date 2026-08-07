@@ -30,7 +30,13 @@ export const dynamic = 'force-dynamic';
  * client they would have pulled the Firebase SDK into the one address every
  * visitor arrives at.
  */
-export default async function RootPage() {
+export default async function RootPage(
+  { searchParams }: { searchParams: Promise<{ car?: string }> },
+) {
+  /* THE CAR THE CUSTOMER CHOSE. The garage rail writes `?car=<id>`, so which
+     car Home is about is an ADDRESS — linkable, restorable, and closed by the
+     back button. Local state would lose all three. */
+  const { car: selectedCar } = await searchParams;
   const session = await currentSession();
 
   if (!session) {
@@ -53,7 +59,7 @@ export default async function RootPage() {
           redirect(hrefForDestination({ to: 'welcome' }));
         }
 
-        const model = toHome(picture);
+        const model = toHome(picture, new Date(), selectedCar);
         if (!model) return <NoCar />;
         /* THE MARKET, READ HERE. A projection is pure and reads nothing
            (ARCHITECTURE §1), so the listings are fetched at the page and

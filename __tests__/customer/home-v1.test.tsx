@@ -40,7 +40,7 @@ describe('Home V1 — one composition', () => {
     expect(primaries(html({ nextAction: { label: 'Follow the visit', href: '/x' } }))).toBe(1);
     expect(primaries(html({
       membership: { plan: 'Gold', said: '2 washes remaining this cycle', href: '/membership' },
-      garage: { line: '2 cars at AutoModz', cars: [], href: '/garage' },
+      garage: { cars: [{ id: 'v1', name: 'M4', state: 'Protected', href: '/?car=v1', current: true }] },
       forSale: [{ id: 'c1', title: 'A car', price: '₹9L', detail: '2019', href: '/cars/c1' }],
     }))).toBe(1);
   });
@@ -74,7 +74,8 @@ describe('Home V1 — one composition', () => {
       expect(html()).not.toContain('CLUB');
     });
     it('one car, no garage rail', () => {
-      expect(html()).not.toContain('cars at');
+      /* The cars ARE the navigation; with one there is nothing to navigate. */
+      expect(html()).not.toContain('aria-current');
     });
     it('nothing for sale, no market rail', () => {
       expect(html()).not.toContain('selling');
@@ -106,6 +107,61 @@ describe('Home V1 — one composition', () => {
       /* Behind a tap, so a glance is not a reading exercise. */
       expect(h).toContain('<details');
       expect(h).toContain('Through March 2027');
+    });
+
+    it('while the car is here, Home becomes the visit', () => {
+      /* The stage it is at, the studio's own timing, and the photographs as
+         they are taken — none of which the customer could see without leaving
+         Home. This is the differentiator, not a card announcing one. */
+      const h = html({
+        state: { word: 'In care', line: 'Caring for it.' },
+        nextAction: { label: 'Follow the visit', href: '/history/b1' },
+        live: {
+          acts: [
+            { label: 'Received', done: true, current: false },
+            { label: 'In care', done: false, current: true },
+            { label: 'Ready', done: false, current: false },
+          ],
+          timing: 'Expected back this evening',
+          frames: [{ id: 'f1', url: 'https://example.test/a.jpg', caption: 'On arrival' }],
+          href: '/history/b1',
+        },
+      });
+      expect(h).toContain('Received');
+      expect(h).toContain('Expected back this evening');
+      expect(h).toContain('On arrival');
+      /* Still one primary action. */
+      expect(primaries(h)).toBe(1);
+    });
+
+    it('a recommendation always says why', () => {
+      /* The proposal engine names the object it reasons from. A suggestion
+         that cannot explain itself is an advertisement. */
+      const h = html({
+        suggestion: {
+          headline: 'Your ceramic is due',
+          reason: 'The ceramic coat applied in March is six weeks from its end.',
+          href: '/studio?arrange=1&cat=Ceramic',
+        },
+      });
+      expect(h).toContain('WORTH CONSIDERING');
+      expect(h).toContain('Your ceramic is due');
+      expect(h).toContain('six weeks from its end');
+    });
+
+    it('the other cars are the navigation, each with its own state', () => {
+      const h = html({
+        garage: { cars: [
+          { id: 'v1', name: 'M4', state: 'Protected', href: '/?car=v1', current: true },
+          { id: 'v2', name: 'Fortuner', state: 'In care', href: '/?car=v2', current: false },
+        ] },
+      });
+      expect(h).toContain('Fortuner');
+      expect(h).toContain('In care');
+      /* Tapping one makes Home that car's home — an address, not local state. */
+      expect(h).toContain('/?car=v2');
+      /* The one being shown says so. */
+      expect(h).toContain('aria-current="true"');
     });
 
     it('its life is a photograph and a fact, not a log', () => {

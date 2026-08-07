@@ -66,7 +66,7 @@ import Link from 'next/link';
 import { useOpenPalette } from '@/navigation/Palette';
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import {
-  color, space, MEASURE, INSET, HAIRLINE, TARGET_MIN, radius,
+  color, space, MEASURE, INSET, HAIRLINE, TARGET_MIN, radius, type as typeScale,
   heroMotion, stack, imageSizes, column,
 } from '@/design';
 import type { StateTone } from '@/design';
@@ -178,6 +178,30 @@ export interface HomeModel {
     items: readonly { id: string; label: string; term: string; tone: Tone }[];
   };
 
+  /**
+   * WHILE THE CAR IS HERE, HOME BECOMES THE VISIT.
+   *
+   * Not a card announcing that something is happening — the stage it is at,
+   * the studio's own words, and the photographs as they are taken. This is
+   * the thing the product is actually for, and Home used to send the customer
+   * to another screen to see any of it.
+   */
+  live?: {
+    acts: readonly { label: string; done: boolean; current: boolean }[];
+    timing?: string;
+    frames: readonly { id: string; url: string; caption?: string }[];
+    href: string;
+  };
+
+  /**
+   * WORTH CONSIDERING — the proposal engine's own reasoning, never a sell.
+   *
+   * It names the object it is reasoning from ("your ceramic is six weeks from
+   * its end"), and it is suppressed entirely while a visit is booked or in
+   * flight. A recommendation that cannot say why is an advertisement.
+   */
+  suggestion?: { headline: string; reason: string; href: string };
+
   /** The visit that is coming. Absent when none is — never an empty frame. */
   next?: { service: string; when: string; vehicleName: string; href: string };
 
@@ -187,8 +211,18 @@ export interface HomeModel {
   /** The club, quietly, and only for members. */
   membership?: { plan: string; said: string; href: string };
 
-  /** The other cars, as thumbnails. Discovery, not a card. */
-  garage?: { line: string; cars: readonly { id: string; name: string; photo?: string; href: string }[]; href: string };
+  /**
+   * THE OTHER CARS ARE THE NAVIGATION.
+   *
+   * Not a card saying how many there are — the cars themselves, each with its
+   * own state, and tapping one makes Home that car's home. One car and there
+   * is no section at all.
+   */
+  garage?: {
+    cars: readonly {
+      id: string; name: string; state: string; photo?: string; href: string; current: boolean;
+    }[];
+  };
 
   /** What the studio is selling. Last, and visually subordinate. */
   forSale: readonly {
@@ -202,7 +236,7 @@ export interface HomeModel {
 
 export function HomeScreen({ model }: { model: HomeModel }) {
   const {
-    vehicle, state, nextAction, protection, next, life,
+    vehicle, state, nextAction, live, suggestion, protection, next, life,
     membership, garage, forSale, marketHref, studio,
   } = model;
   const still = useReducedMotion();
@@ -401,6 +435,61 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         <Button tier="primary" href={nextAction.href} full>{nextAction.label}</Button>
       </section>
 
+      {/* ── 02b · WHILE THE CAR IS HERE ─────────────────────────────────
+          Home becomes the visit. The stage it is at, the studio's own words,
+          and the photographs as they are taken — none of which the customer
+          could see without leaving Home before. This is the thing the product
+          is for; on the day it applies it outranks everything below it. */}
+      {live ? (
+        <section style={{ ...column, paddingTop: space.rest }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: space.line }}>
+            {live.acts.map(a => (
+              <span
+                key={a.label}
+                style={{
+                  fontFamily: typeScale.data.family,
+                  fontSize: 12,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  color: a.current ? color.ink : a.done ? color.ink2 : color.ink3,
+                  opacity: a.done || a.current ? 1 : 0.5,
+                }}
+              >
+                {a.label}
+              </span>
+            ))}
+          </div>
+          {live.timing ? (
+            <Text role="whisper" tone="ink3" aria-live="polite" style={{ marginTop: space.line }}>
+              {live.timing}
+            </Text>
+          ) : null}
+
+          {/* The studio's own photographs, as they arrive. Not a gallery — a
+              window onto a bay the customer cannot stand in. */}
+          {live.frames.length > 0 ? (
+            <div style={{
+              display: 'flex', gap: space.line, marginTop: space.gap,
+              overflowX: 'auto', scrollbarWidth: 'none',
+            }}>
+              {live.frames.map(f => (
+                <Link key={f.id} href={live.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 168 }}>
+                  <div style={{
+                    position: 'relative', width: '100%', aspectRatio: '4 / 3',
+                    borderRadius: radius.card, overflow: 'hidden', background: color.surface,
+                  }}>
+                    <Image src={f.url} alt={f.caption ?? vehicle.name} fill sizes="168px" style={{ objectFit: 'cover' }} />
+                  </div>
+                  {f.caption ? (
+                    <Text role="whisper" tone="ink3" style={{ marginTop: space.breath }}>{f.caption}</Text>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       {/* ── 03 · PROTECTION ─────────────────────────────────────────────
           A state, not a stack of balances. The layers are named and the
           verdict is one line; the terms are behind a tap because a customer
@@ -434,6 +523,25 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               ))}
             </div>
           </details>
+        </section>
+      ) : null}
+
+      {/* ── 03b · WORTH CONSIDERING ─────────────────────────────────────
+          The proposal engine's reasoning, carried whole. It names the object
+          it reasons from, so this can never read as an advertisement — and
+          the engine suppresses itself entirely when a visit is already booked
+          or in flight. Nothing is decided here. */}
+      {suggestion ? (
+        <section style={{ ...column, paddingTop: space.movement }}>
+          <Link href={suggestion.href} style={{ textDecoration: 'none', display: 'block' }}>
+            <Text role="data" tone="ink3" as="span">WORTH CONSIDERING</Text>
+            <Text role="body" tone="ink" style={{ marginTop: space.breath }}>
+              {suggestion.headline}
+            </Text>
+            <Text role="whisper" tone="ink3" style={{ marginTop: space.hair, maxWidth: MEASURE }}>
+              {suggestion.reason}
+            </Text>
+          </Link>
         </section>
       ) : null}
 
@@ -507,24 +615,29 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           may compete with the car at the top of the screen. */}
       {garage ? (
         <section style={{ paddingTop: space.movement }}>
-          <div style={{ ...column }}>
-            <Text role="whisper" tone="ink3">{garage.line}</Text>
-          </div>
           <div style={{
-            display: 'flex', gap: space.line, marginTop: space.line,
-            overflowX: 'auto', paddingInline: INSET, scrollbarWidth: 'none',
+            display: 'flex', gap: space.line, overflowX: 'auto',
+            paddingInline: INSET, scrollbarWidth: 'none',
           }}>
             {garage.cars.map(c => (
-              <Link key={c.id} href={c.href} style={{ textDecoration: 'none', flex: '0 0 auto', width: 116 }}>
+              <Link
+                key={c.id}
+                href={c.href}
+                aria-current={c.current ? 'true' : undefined}
+                style={{ textDecoration: 'none', flex: '0 0 auto', width: 132, opacity: c.current ? 1 : 0.72 }}
+              >
                 <div style={{
-                  position: 'relative', width: '100%', aspectRatio: '1',
+                  position: 'relative', width: '100%', aspectRatio: '4 / 3',
                   borderRadius: radius.card, overflow: 'hidden', background: color.surface,
+                  outline: c.current ? `${HAIRLINE}px solid ${color.ink2}` : undefined,
+                  outlineOffset: 2,
                 }}>
                   {c.photo ? (
-                    <Image src={c.photo} alt={c.name} fill sizes="116px" style={{ objectFit: 'cover' }} />
+                    <Image src={c.photo} alt={c.name} fill sizes="132px" style={{ objectFit: 'cover' }} />
                   ) : null}
                 </div>
                 <Text role="whisper" tone="ink2" style={{ marginTop: space.breath }}>{c.name}</Text>
+                <Text role="whisper" tone="ink3">{c.state}</Text>
               </Link>
             ))}
           </div>
