@@ -143,11 +143,71 @@ it('Vehicle renders through the renderer boundary', () => {
   expect(html).not.toContain('aria-pressed');
 });
 
+it('Vehicle says what the car has coming, and how to change it', () => {
+  /* The room named the car's STATE — "Booked in" — and then said nothing about
+     when, what for, or how to change it. A customer looking at their own car
+     had to go to the Studio and find this visit among every other car's. */
+  const model = toVehicle(car, picture);
+  const html = renderToStaticMarkup(
+    <VehicleScreen model={model} rendering={photograph(toVehiclePhotograph(car))} />,
+  );
+  assertClean(html, 'vehicle-next');
+  if (model.next) {
+    expect(html).toContain(model.next.service);
+    expect(html).toContain(model.next.when);
+  } else {
+    /* §18.1 — nothing booked is an invitation, and the invitation is the act. */
+    expect(html).toContain('Nothing booked');
+    expect(html).toContain(model.arrangeHref);
+  }
+});
+
+it('Vehicle never offers an act the server would refuse', () => {
+  /* `manageHref` mirrors firestore.rules — pending or confirmed only — the
+     same rule `toStudio`'s `manageable` uses. A car whose visit has started
+     must not be offered "change or cancel". */
+  const model = toVehicle(car, picture);
+  const html = renderToStaticMarkup(
+    <VehicleScreen model={model} rendering={photograph(toVehiclePhotograph(car))} />,
+  );
+  if (model.next && !model.next.manageHref) {
+    expect(html).not.toContain('Change or cancel');
+  }
+});
+
 it('History renders the album', () => {
   const html = renderToStaticMarkup(<HistoryScreen model={toHistory(car, picture.invoices)} />);
   assertClean(html, 'history');
   expect(html).toContain('18 July 2026');
   expect(html).toContain('Ceramic coating');
+});
+
+it('History states what the record adds up to', () => {
+  /* §16.1 calls this "a series of transformations", and a series has a shape.
+     The room used to show none of it — a customer scrolled photographs with no
+     idea how many visits there had been or how long their car had been cared
+     for here, though every one of those facts was already in the model. */
+  const model = toHistory(car, picture.invoices);
+  const html = renderToStaticMarkup(<HistoryScreen model={model} />);
+  expect(model.count).toBe(model.visits.length);
+  expect(html).toContain(model.count === 1 ? 'One visit' : `${model.count} visits`);
+  expect(html).toContain('cared for here since');
+});
+
+it('History is never a blank screen', () => {
+  /* THE HOLE THIS CLOSES. §18.1 says a car with no completed visits has no
+     History SECTION, which is right for a section inside another room. This is
+     a ROOM with its own address in the navigation bar: a customer who tapped
+     History before their first visit was handed an empty black screen with
+     nothing on it whatsoever. §19.1 — an absence is not a state. */
+  const empty = { ...toHistory(car, picture.invoices), visits: [], count: 0, since: undefined, settledTotal: undefined };
+  const html = renderToStaticMarkup(<HistoryScreen model={empty} />);
+  assertClean(html, 'history-empty');
+  expect(html).toContain('Nothing written yet');
+  /* And it offers the act that begins a record, rather than describing it. */
+  expect(html).toContain('/studio?arrange=1');
+  /* The empty room keeps the one Display it is now allowed to spend. */
+  expect((html.match(/<h1/g) ?? []).length).toBe(1);
 });
 
 it('one visit renders its account with the money as one line', () => {

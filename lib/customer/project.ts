@@ -455,10 +455,52 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     });
   }
 
+  /**
+   * THE CAR'S NEXT VISIT.
+   *
+   * The room named the car's STATE — "Booked in" — and then said nothing about
+   * when, what for, or how to change it. A customer looking at their own car
+   * had to go to the Studio, find the visit among every other car's, and work
+   * out which one was this one's. The booking already belongs to this car;
+   * this is the room that should say so.
+   *
+   * `liveBooking` is the same helper Home and Garage read, so the car cannot
+   * disagree with itself about which visit is the one in hand.
+   */
+  const next = liveBooking(car);
+  const nextPhase = next ? visitPhase(next.status) : undefined;
+
   return {
     name: car.vehicle.name,
     plate: car.vehicle.registrationNumber,
     state: stateWordFor(picture, car, now),
+    next: next && nextPhase !== 'live'
+      ? {
+          service: next.serviceName,
+          /* The day in the customer's terms, and the hour as booked. */
+          when: `${longDate(next.scheduledDate)}${next.scheduledTime ? ` at ${next.scheduledTime}` : ''}`,
+          /* §16 — pending is not the same promise as confirmed, and a customer
+             who is waiting on the studio should be told they are. */
+          settled: next.status === 'confirmed',
+          /* Only where the customer may still act — mirrors `firestore.rules`,
+             the same rule `toStudio`'s `manageable` uses, so the room never
+             offers an act the server will refuse. */
+          manageHref: ['pending', 'confirmed'].includes(next.status)
+            ? hrefForDestination({ to: 'studio' })
+            : undefined,
+        }
+      : undefined,
+    /* WHILE THE CAR IS ACTUALLY HERE, there is nothing to arrange and nothing
+       to change — there is work to watch. Inviting a booking under the word
+       "In care" is the room contradicting itself in the space of one screen.
+       §5.4 — the live account is a takeover reached from the car, so this is
+       the car pointing at it. */
+    followHref: next && nextPhase === 'live'
+      ? hrefForDestination({ to: 'visit', visitId: next.id })
+      : undefined,
+    /* Arranging for THIS car, from this car — the Studio's sheet opens with
+       the category unset but the room already knows whose visit it is. */
+    arrangeHref: `${hrefForDestination({ to: 'studio' })}?arrange=1`,
     since: sinceWords(car, 'With AutoModz since').replace(/^with/, 'With'),
     /* Carries the car. Without it, following History from the second car in a
        garage showed the FIRST car's life. */
@@ -506,7 +548,27 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
  */
 export function toHistory(car: CarPicture, invoices: Invoice[] = []): HistoryModel {
   const visits = visitsOf(car);
-  return { vehicle: car.vehicle.name, visits: visits.map(v => toVisit(v, car, invoices)) };
+
+  /* THE STANDING. §16.1 calls History "a series of transformations" — but a
+     series has a shape, and the room showed none of it: a customer scrolled
+     photographs with no idea how many visits there had been, how long the car
+     had been cared for here, or what the record added up to. The facts were
+     all already in hand and none of them were said.
+
+     Summed from the SEALED amounts (§16.2 — never recomputed from today's
+     price list), so this total is the sum of what was actually settled. */
+  const oldest = visits[visits.length - 1];
+  const settledTotal = visits.reduce((n, v) => n + (v.amounts?.total ?? 0), 0);
+
+  return {
+    vehicle: car.vehicle.name,
+    count: visits.length,
+    since: oldest ? longDate(isoOf(oldest.createdAt)) : undefined,
+    settledTotal: settledTotal > 0
+      ? `₹${settledTotal.toLocaleString('en-IN')}`
+      : undefined,
+    visits: visits.map(v => toVisit(v, car, invoices)),
+  };
 }
 
 export function toVisit(
@@ -526,6 +588,9 @@ export function toVisit(
   return {
     id: visit.id,
     when: longDate(isoOf(visit.createdAt)),
+    /* The year alone, so the album can put a divider between one year and the
+       next without re-parsing a formatted date on the client. */
+    year: isoOf(visit.createdAt).slice(0, 4),
     title: visitTitle(visit),
     line: visitLine(visit),
     photo: cover ? { url: cover.url, description: `${car.vehicle.name}, finished at AutoModz` } : undefined,

@@ -37,7 +37,9 @@ import { space, MEASURE, photoSize, stack, imageSizes } from '@/design';
 import { Hero } from '@/components/system/Hero';
 import { Heading } from '@/components/system/Heading';
 import { Text } from '@/components/system/Text';
+import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
+import { color, INSET, HAIRLINE } from '@/design';
 
 export interface HistoryPhoto {
   url: string;
@@ -55,6 +57,8 @@ export interface HistoryDocument {
 export interface HistoryVisit {
   id: string;
   when: string;
+  /** `2026` — the album puts a divider between one year and the next. */
+  year?: string;
   title: string;
   /** One sentence. What it felt like, not what was billed. */
   line: string;
@@ -83,6 +87,12 @@ export interface HistoryModel {
   vehicle: string;
   /** §16.1 — newest first. */
   visits: readonly HistoryVisit[];
+  /** How many transformations there have been. */
+  count: number;
+  /** The day the record starts — the oldest visit. Absent when there is none. */
+  since?: string;
+  /** What the record adds up to, as SEALED (§16.2). Absent when nothing was. */
+  settledTotal?: string;
 }
 
 function Visit({ visit, newest, vehicle }: {
@@ -135,8 +145,115 @@ function Visit({ visit, newest, vehicle }: {
   );
 }
 
+/** A quiet marker between one year and the next. Never a heading — the
+    photographs are the content and a year is only where you are in them. */
+function Year({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        paddingInline: INSET,
+        paddingBlock: space.rest,
+        display: 'flex',
+        alignItems: 'center',
+        gap: space.gap,
+      }}
+    >
+      <Text role="data" tone="ink3" as="span">{label}</Text>
+      <span
+        aria-hidden
+        style={{ flex: 1, height: HAIRLINE, background: color.edge }}
+      />
+    </div>
+  );
+}
+
+/**
+ * THE STANDING — what the record adds up to.
+ *
+ * §16.1 calls this "a series of transformations", and a series has a shape the
+ * room was not showing: a customer scrolled photographs with no idea how many
+ * visits there had been, how long their car had been cared for here, or what
+ * the record came to. Every one of those facts was already in the model.
+ *
+ * It is a sentence, not a dashboard (§8.6 — a fact is a line of text). No
+ * tiles, no counters, no chart.
+ */
+function Standing({ vehicle, count, since, settledTotal }: {
+  vehicle: string;
+  count: number;
+  since?: string;
+  settledTotal?: string;
+}) {
+  return (
+    <header
+      style={{
+        paddingInline: INSET,
+        paddingTop: stack.top,
+        paddingBottom: space.rest,
+        maxWidth: MEASURE + INSET * 2,
+        marginInline: 'auto',
+        width: '100%',
+      }}
+    >
+      {/* NOT A HEADING. §9.5 gives the room exactly one Display and the album
+          has already spent it on the newest photograph — which is right, because
+          the photographs are the content and this is only context for them.
+          §8.6 — a fact is a line of text, so that is what this is. */}
+      <Text role="data" tone="ink3" as="span">{vehicle}</Text>
+      <Text role="body" tone="ink" style={{ marginTop: space.hair }}>
+        {count === 1 ? 'One visit' : `${count} visits`}
+        {since ? `, cared for here since ${since}` : ''}.
+      </Text>
+      {settledTotal ? (
+        <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+          {settledTotal} settled in all.
+        </Text>
+      ) : null}
+    </header>
+  );
+}
+
+/**
+ * A CAR WITH NO RECORD YET.
+ *
+ * §18.1 says a car with no completed visits has no History SECTION — and that
+ * is right for a section inside another room. This is a ROOM, and it has its
+ * own address in the navigation bar: a customer who taps History before their
+ * first visit was handed a blank black screen with nothing on it at all. An
+ * absence is not a state (§19.1). The record is genuinely empty, so this says
+ * that plainly and offers the act that begins one, which is a visit.
+ */
+function NoRecord({ vehicle }: { vehicle: string }) {
+  return (
+    <section
+      style={{
+        paddingInline: INSET,
+        maxWidth: MEASURE + INSET * 2,
+        marginInline: 'auto',
+        width: '100%',
+        minHeight: '60svh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+      }}
+    >
+      <Text role="data" tone="ink3" as="span">{vehicle}</Text>
+      <Heading level="display" as="h1" style={{ marginTop: space.hair }}>
+        Nothing written yet.
+      </Heading>
+      <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+        Every visit your car makes is kept here &mdash; what was done, how it
+        looked, and what it was promised. The first one starts the record.
+      </Text>
+      <div style={{ marginTop: space.rest }}>
+        <Button tier="primary" href="/studio?arrange=1">Arrange a visit</Button>
+      </div>
+    </section>
+  );
+}
+
 export function HistoryScreen({ model }: { model: HistoryModel }) {
-  const { vehicle, visits } = model;
+  const { vehicle, visits, count, since, settledTotal } = model;
 
   return (
     <main
@@ -153,12 +270,30 @@ export function HistoryScreen({ model }: { model: HistoryModel }) {
       {/* §20.3 — the room was rendered on the server and is still true; only
           what happens NEXT needs a connection. One implementation (§22.2). */}
       <OfflineNote />
-      {/* §18.1 — a car with no completed visits has no History section. Not an
-          empty one. None. There is nothing here to invite, because a first
-          visit is arranged in the Studio, not in a record of the past. */}
-      {visits.map((visit, i) => (
-        <Visit key={visit.id} visit={visit} newest={i === 0} vehicle={vehicle} />
-      ))}
+
+      {visits.length === 0 ? (
+        <NoRecord vehicle={vehicle} />
+      ) : (
+        <>
+          <Standing
+            vehicle={vehicle}
+            count={count}
+            since={since}
+            settledTotal={settledTotal}
+          />
+          {visits.map((visit, i) => (
+            <div key={visit.id}>
+              {/* The divider falls where the year changes, never above the
+                  first visit — the standing has just named the car and a
+                  year immediately under it reads as a subtitle. */}
+              {i > 0 && visit.year && visit.year !== visits[i - 1].year ? (
+                <Year label={visit.year} />
+              ) : null}
+              <Visit visit={visit} newest={i === 0} vehicle={vehicle} />
+            </div>
+          ))}
+        </>
+      )}
     </main>
   );
 }

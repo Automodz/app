@@ -132,6 +132,30 @@ export interface VehicleModel {
    * `/studio`, which has no declare flow.
    */
   declareHref?: string;
+  /**
+   * THE VISIT THIS CAR HAS COMING.
+   *
+   * The room named the car's state — "Booked in" — and then said nothing about
+   * when, what for, or how to change it. Absent while the car is actually here:
+   * a visit in flight is a takeover of its own (§5.4) and must not be reduced
+   * to a line on another screen.
+   */
+  next?: {
+    service: string;
+    when: string;
+    /** Confirmed by the studio, rather than still pending its answer. */
+    settled: boolean;
+    /** Present only while the customer may still change or cancel it. */
+    manageHref?: string;
+  };
+  /**
+   * Present only while the car is actually at the studio. §5.4 — the live
+   * account is a takeover reached from the car, and inviting a new booking
+   * under the word "In care" is the room contradicting itself.
+   */
+  followHref?: string;
+  /** Arranging a visit for THIS car, from its own room. */
+  arrangeHref: string;
 }
 
 /**
@@ -287,6 +311,91 @@ function Saying({
   );
 }
 
+/**
+ * WHAT THE ROOM CARRIES BENEATH THE CAR.
+ *
+ * Extracted because a car with NO PHOTOGRAPH used to lose all of it. §11.5's
+ * composed absence is the right treatment for the portrait — "never a grey
+ * box, never a placeholder silhouette" — but it was an early return, so the
+ * whole room went with the picture: a customer whose car had not been
+ * photographed yet could not book a visit, reach its history, or correct its
+ * details from its own room. A new customer's first car is exactly that car,
+ * so the room was a dead end at the moment it mattered most.
+ *
+ * The absence keeps the first screenful. Everything the car can DO lives
+ * beneath it either way.
+ */
+function Acts({ model }: { model: VehicleModel }) {
+  return (
+    <>
+      {/* ── WHAT IT HAS COMING ──────────────────────────────────────────
+          The room named the car's state and then said nothing about when. A
+          customer looking at their own car had to go to the Studio and find
+          this visit among every other car's to learn the date, or to change
+          it. §18.1 — a car with nothing booked shows an invitation instead,
+          and the invitation is the act, not a description of it. */}
+      <section style={{ ...column, paddingTop: space.rest }}>
+        <Glass pad="gap">
+          {model.followHref ? (
+            <>
+              <Text role="whisper" tone="ink3">With us now</Text>
+              <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
+                Your car is at the studio. You can watch the work as it happens.
+              </Text>
+              <div style={{ marginTop: space.gap }}>
+                <Button tier="forward" href={model.followHref}>Follow the work</Button>
+              </div>
+            </>
+          ) : model.next ? (
+            <>
+              <Text role="whisper" tone="ink3">
+                {model.next.settled ? 'Booked in' : 'Waiting on the studio'}
+              </Text>
+              <Heading level="title" as="h2" style={{ marginTop: space.hair }}>
+                {model.next.service}
+              </Heading>
+              <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
+                {model.next.when}
+                {model.next.settled ? '' : ' — we’ll confirm shortly.'}
+              </Text>
+              <div style={{
+                marginTop: space.gap, display: 'flex', gap: space.line, flexWrap: 'wrap',
+              }}>
+                {model.next.manageHref ? (
+                  <Button tier="forward" href={model.next.manageHref}>
+                    Change or cancel
+                  </Button>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <>
+              <Text role="whisper" tone="ink3">Nothing booked</Text>
+              <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
+                Whenever it needs us, its place is ready.
+              </Text>
+              <div style={{ marginTop: space.gap }}>
+                <Button tier="forward" href={model.arrangeHref}>Arrange a visit</Button>
+              </div>
+            </>
+          )}
+        </Glass>
+      </section>
+
+      {/* ── THE CAR'S OWN ACTS ──────────────────────────────────────────
+          Correcting it and reading its life. Both were on the old Garage's
+          "The car" section; they belong to the car's own room. */}
+      <section style={{ ...column, paddingTop: space.rest }}>
+        <Glass pad="gap" style={{ display: 'flex', gap: space.line, flexWrap: 'wrap' }}>
+          <Button tier="forward" href={model.historyHref}>Its history</Button>
+          <Button tier="quiet" href={model.editHref}>Correct the car</Button>
+        </Glass>
+      </section>
+
+    </>
+  );
+}
+
 export function VehicleScreen({
   model, rendering,
 }: {
@@ -335,31 +444,33 @@ export function VehicleScreen({
      marks are drawn and nothing explains their absence (§18.1). */
   if (!rendering.present) {
     return (
-      <main
-        style={{
-          position: 'relative',
-          height: '100svh',
-          overflow: 'hidden',
-          background: color.paper,
-        }}
-      >
-        <rendering.Surface focus={null} priority />
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            ...column,
-            paddingBottom: stack.bottom,
-          }}
-        >
-          {/* Inline here: the photograph's surface is `inset: 0` and would
-              cover a rule across the top. §22.2 — the same component. */}
-          <OfflineNote inline />
-          <Saying model={model} asked={null} answer={undefined} />
-        </div>
+      /* THE ROOM STILL SCROLLS. This used to be `height: 100svh` with
+         `overflow: hidden` and an early return, so a car awaiting its first
+         photograph lost every act the room offers — booking, its history,
+         correcting its details. The absence keeps the first screenful, which
+         is what §11.5 is about; it does not get to keep the whole room. */
+      <main style={{ background: color.paper, paddingBottom: stack.contentFloor }}>
+        <section style={{ position: 'relative', height: '100svh', overflow: 'hidden' }}>
+          <rendering.Surface focus={null} priority />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              ...column,
+              paddingBottom: stack.bottom,
+            }}
+          >
+            {/* Inline here: the photograph's surface is `inset: 0` and would
+                cover a rule across the top. §22.2 — the same component. */}
+            <OfflineNote inline />
+            <Saying model={model} asked={null} answer={undefined} />
+          </div>
+        </section>
+
+        <Acts model={model} />
       </main>
     );
   }
@@ -425,15 +536,7 @@ export function VehicleScreen({
       </div>
     </Hero>
 
-      {/* ── THE CAR'S OWN ACTS ──────────────────────────────────────────
-          Correcting it and reading its life. Both were on the old Garage's
-          "The car" section; they belong to the car's own room. */}
-      <section style={{ ...column, paddingTop: space.rest }}>
-        <Glass pad="gap" style={{ display: 'flex', gap: space.line, flexWrap: 'wrap' }}>
-          <Button tier="forward" href={model.historyHref}>Its history</Button>
-          <Button tier="quiet" href={model.editHref}>Correct the car</Button>
-        </Glass>
-      </section>
+      <Acts model={model} />
 
       {/* ── MEDIA ───────────────────────────────────────────────────────
           `os/moment` groups by month, never by job — a life is remembered in
