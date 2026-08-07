@@ -34,6 +34,12 @@ const env = Object.fromEntries(
 );
 
 const ORIGIN = process.env.ORIGIN ?? 'https://automodz.vercel.app';
+/* Pointed at a dev server, two of these checks are about the BUILD rather than
+   about the sign-in: a cookie cannot be `Secure` over http, and `next dev`
+   serves `page.js` where a production build serves `page-<hash>.js`. Reporting
+   those as failures would make the script cry wolf at the one origin a
+   developer runs it against most. */
+const built = ORIGIN.startsWith('https://');
 const AS = process.env.VERIFY_AS ?? env.NEXT_PUBLIC_ADMIN_EMAIL ?? 'hello.automodz@gmail.com';
 const API_KEY = env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -92,7 +98,8 @@ if (res.status !== 200) console.log('    body:', (await res.text()).slice(0, 200
 const setCookie = res.headers.get('set-cookie') ?? '';
 check('session cookie created', setCookie.includes('automodz-session-id'));
 check('httpOnly', /httponly/i.test(setCookie));
-check('Secure (production)', /secure/i.test(setCookie));
+if (built) check('Secure (production)', /secure/i.test(setCookie));
+else console.log('  – Secure — skipped, http origin cannot set it');
 check('SameSite=Lax', /samesite=lax/i.test(setCookie));
 
 const value = /automodz-session-id=([^;]+)/.exec(setCookie)?.[1] ?? '';
@@ -134,11 +141,10 @@ console.log('\n══ 5 · /auth/login while signed in');
 const door = await get('/auth/login');
 const doorHtml = await door.text();
 check('the door still answers (the guard is client-side)', door.status === 200, `status ${door.status}`);
+const doorChunk = /\/_next\/static\/chunks\/app\/auth\/login\/page[^"]*\.js/.exec(doorHtml)?.[0];
+const doorSrc = doorChunk ? await (await fetch(`${ORIGIN}${doorChunk}`)).text() : '';
 check('and it carries the guard that opens a session before it leaves',
-  /api\/session/.test(
-    // the door's own chunk, which is what performs the redirect
-    await (await fetch(`${ORIGIN}${/\/_next\/static\/chunks\/app\/auth\/login\/page-[^"]*\.js/.exec(doorHtml)?.[0] ?? ''}`)).text(),
-  ));
+  /api\/session/.test(doorSrc), doorChunk ?? 'no chunk found');
 
 /* 6 · every protected room */
 console.log('\n══ 6 · every protected route');
@@ -162,15 +168,21 @@ check('Home settles without bouncing', hops.length <= 1, hops.join(' → ') || '
 
 /* 9 · nothing diagnostic shipped */
 console.log('\n══ 9 · no debug instrumentation in the deployed bundle');
-const loginChunk = /\/_next\/static\/chunks\/app\/auth\/login\/page-[^"]*\.js/.exec(doorHtml)?.[0];
+const loginChunk = /\/_next\/static\/chunks\/app\/auth\/login\/page[^"]*\.js/.exec(doorHtml)?.[0];
 const chunkSrc = loginChunk ? await (await fetch(`${ORIGIN}${loginChunk}`)).text() : '';
+if (!loginChunk) console.log('  ! could not locate the door chunk');
 check('no stage trace', !/automodz-auth-trace|POST \/api\/session started|popup NEVER opened/.test(chunkSrc));
-check('no console calls on the door', !/console\.(log|debug|info)\(/.test(chunkSrc));
+/* `removeConsole` only strips in a production build, and a dev chunk carries
+   React's own dev-time logging — so this asserts what SHIPS, not what a
+   developer's server happens to serve. */
+if (built) check('no console calls on the door', !/console\.(log|debug|info)\(/.test(chunkSrc));
+else console.log('  – console calls — skipped, dev build keeps them by design');
 
 /* leave nothing behind */
 await fetch(`${ORIGIN}/api/session`, { method: 'DELETE', headers: { cookie: jar } });
 
+const where = built ? 'PRODUCTION' : ORIGIN;
 console.log(`\n${failures === 0
-  ? '✓ PRODUCTION: sign-in lands inside the application and stays there'
-  : `✕ PRODUCTION: ${failures} failing`}\n`);
+  ? `✓ ${where}: sign-in lands inside the application and stays there`
+  : `✕ ${where}: ${failures} failing`}\n`);
 process.exit(failures === 0 ? 0 : 1);
