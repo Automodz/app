@@ -171,7 +171,10 @@ it('Studio renders the place with no price and no named person', () => {
      happens here, so the control is a real button and not a link out. */
   expect(html).not.toContain('wa.me');
   expect(html).toContain('Arrange a visit');
-  expect(html).toContain('<button type="button"');
+  /* Matched on the ELEMENT, not on attribute adjacency. This read
+     `<button type="button"` and broke the moment `Button` gained a class for
+     its press feedback — the attribute order changed, the meaning did not. */
+  expect(html).toMatch(/<button[^>]*type="button"/);
 });
 
 it('You renders identity with no avatar and no form', () => {

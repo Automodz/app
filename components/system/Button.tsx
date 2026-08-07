@@ -139,13 +139,28 @@ export function Button({
     cursor: interactive ? 'pointer' : 'default',
     opacity: interactive ? 1 : 0.5,
     textDecoration: 'none',
-    transition: `opacity ${duration.tick}ms ${easing.ease}`,
+    /* BOTH properties, because this inline value overrides the stylesheet.
+       `.am-tap` declares a transform transition for the press and an inline
+       `transition: opacity` silently replaced it — the scale still applied,
+       it simply snapped instead of easing. */
+    transition: `opacity ${duration.tick}ms ${easing.ease}, `
+      + `transform ${duration.tick}ms ${easing.ease}`,
     /* §21.5 — the focus ring is global (app/globals.css). This component used
        to carry its own because the global one failed 1.4.11; it no longer does,
        and a local copy would be a second implementation of the same guarantee. */
     ...TIER[tier],
     ...style,
   }), [tier, full, interactive, style, t]);
+
+    /* TACTILE FEEDBACK. Every control in the product renders through here, and
+     none of them acknowledged a press — a tap changed nothing until the
+     navigation happened, which is what makes an interface feel dead under a
+     finger. `.am-tap` scales by 2% for `duration.tick`, the token §7.3 defines
+     for exactly this ("acknowledgement — a press, a toggle").
+
+     CSS rather than framer-motion: a press must respond on the compositor
+     within a frame, and a state-driven re-render cannot promise that. */
+  const press = interactive ? `am-tap${className ? ` ${className}` : ''}` : className;
 
   const inner = (
     <>
@@ -161,7 +176,7 @@ export function Button({
     if (isExternal(href)) {
       return (
         <a
-          className={className}
+          className={press}
           href={href}
           style={base}
           target="_blank"
@@ -172,7 +187,7 @@ export function Button({
       );
     }
     return (
-      <Link className={className} href={href} style={base}>
+      <Link className={press} href={href} style={base}>
         {inner}
       </Link>
     );
@@ -180,7 +195,7 @@ export function Button({
 
   return (
     <button
-      className={className}
+      className={press}
       type={type}
       onClick={interactive ? onClick : undefined}
       disabled={!interactive}

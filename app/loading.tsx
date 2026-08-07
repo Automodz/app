@@ -7,7 +7,7 @@
  * a blank page and not a spinner. §19.3 permits a spinner only inside a control
  * the customer just pressed; this is a whole surface, so it is the breath.
  */
-import { color, space, INSET, MEASURE, stack } from '@/design';
+import { space, INSET, MEASURE, stack } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
@@ -19,7 +19,11 @@ export default function RoomLoading() {
   return (
     <main
       style={{
-        background: color.paper,
+        /* Transparent, like every room. This painted `color.paper`, so each
+         navigation flashed an opaque dark page and then revealed the ambient
+         field underneath — the one moment in the product where the room
+         visibly changed material. */
+      background: 'transparent',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
         display: 'flex',

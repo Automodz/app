@@ -56,3 +56,7 @@ export {
   iconSize, iconPadding, STROKE, ICON_TARGET,
 } from './icons';
 export type { IconSize } from './icons';
+
+/* The room the application stands in, and the one glass material over it. */
+export { ambient, glass } from './ambient';
+export type { AmbientLight } from './ambient';

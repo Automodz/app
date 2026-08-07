@@ -192,7 +192,11 @@ function Card({ car }: { car: MarketCard }) {
             position: 'absolute', top: space.line, right: space.line,
             paddingInline: space.breath, paddingBlock: space.hair,
             borderRadius: radius.pill,
-            background: color.paper,
+            /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
+           which is fixed behind everything (components/system/Ambient.tsx).
+           Painting `color.paper` here would occlude it completely. The dark
+           ground still exists — it is on `body` — so nothing loses contrast. */
+        background: 'transparent',
             color: color.ink,
             fontSize: 12,
             letterSpacing: '0.08em',

@@ -28,7 +28,7 @@
  */
 import Image from 'next/image';
 import Link from 'next/link';
-import { color, space, MEASURE, photoSize, stack, imageSizes } from '@/design';
+import { space, MEASURE, photoSize, stack, imageSizes } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
@@ -141,7 +141,11 @@ export function HistoryScreen({ model }: { model: HistoryModel }) {
   return (
     <main
       style={{
-        background: color.paper,
+        /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
+           which is fixed behind everything (components/system/Ambient.tsx).
+           Painting `color.paper` here would occlude it completely. The dark
+           ground still exists — it is on `body` — so nothing loses contrast. */
+        background: 'transparent',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
       }}

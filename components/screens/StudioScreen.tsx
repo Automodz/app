@@ -58,7 +58,7 @@ import type { Service, Subscription, Vehicle } from '@/lib/types';
 import { BookingFlow } from '@/components/studio/BookingFlow';
 import { ManageVisit } from '@/components/studio/ManageVisit';
 import type { ManageVisitModel } from '@/components/studio/ManageVisit';
-import { Hero, Heading, Text, Button, OfflineNote } from '@/components/system';
+import { Hero, Heading, Text, Button, OfflineNote, Glass } from '@/components/system';
 
 /* ── What the Studio needs to be true ────────────────────────────────────
    One field per thing §5.2 says this room holds, and nothing else. */
@@ -166,7 +166,11 @@ export function StudioScreen({ model }: { model: StudioModel }) {
   return (
     <main
       style={{
-        background: color.paper,
+        /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
+           which is fixed behind everything (components/system/Ambient.tsx).
+           Painting `color.paper` here would occlude it completely. The dark
+           ground still exists — it is on `body` — so nothing loses contrast. */
+        background: 'transparent',
         minHeight: '100svh',
         /* §8.5 — content clears the navigation by arithmetic. */
         paddingBottom: stack.contentFloor,
@@ -298,13 +302,19 @@ export function StudioScreen({ model }: { model: StudioModel }) {
           standing alone, which keeps it a consequence of the address rather
           than a button in a row. */}
       <section style={{ ...column, paddingTop: space.movement }}>
-        <Text role="body" tone="ink">{hours}</Text>
-        <Text role="whisper" tone="ink2" style={{ marginTop: space.line }}>
-          {address}
-        </Text>
-        <div style={{ marginTop: space.breath }}>
-          <Button tier="forward" href={directionsHref}>How to find us</Button>
-        </div>
+        {/* Hours and address are the practical facts a customer checks while
+            deciding to come, and they were three loose lines on the ground.
+            On a card they read as the studio's details rather than as more
+            prose in the same column as the studio's voice. */}
+        <Glass pad="gap">
+          <Text role="body" tone="ink">{hours}</Text>
+          <Text role="whisper" tone="ink2" style={{ marginTop: space.line }}>
+            {address}
+          </Text>
+          <div style={{ marginTop: space.gap }}>
+            <Button tier="forward" href={directionsHref}>How to find us</Button>
+          </div>
+        </Glass>
       </section>
 
       {/* ── 7 · ARRANGING A VISIT ───────────────────────────────────────

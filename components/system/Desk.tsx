@@ -105,6 +105,7 @@ export function Desk({ open, onOpenChange, items, log = [], truth }: DeskProps) 
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild>
               <motion.div
+                className="am-scrim"
                 initial={still ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={still ? undefined : { opacity: 0 }}

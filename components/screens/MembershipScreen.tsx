@@ -34,7 +34,7 @@ import { ClubFlow, LeaveClub } from '@/components/membership/ClubFlow';
 import type { ClubIntent } from '@/components/membership/ClubFlow';
 import { color, space, column, stack, radius, HAIRLINE, MEASURE, INSET } from '@/design';
 import type { StateTone } from '@/design';
-import { Heading, Text, Button, toneColor, OfflineNote } from '@/components/system';
+import { Heading, Text, Button, toneColor, OfflineNote, Glass } from '@/components/system';
 
 /** One line of the record. */
 export interface MembershipHistoryEntry {
@@ -100,7 +100,11 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
   return (
     <main
       style={{
-        background: color.paper,
+        /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
+           which is fixed behind everything (components/system/Ambient.tsx).
+           Painting `color.paper` here would occlude it completely. The dark
+           ground still exists — it is on `body` — so nothing loses contrast. */
+        background: 'transparent',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
       }}
@@ -200,14 +204,20 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
           {/* WHAT IT INCLUDES — the plan's own perks. */}
           {benefits.length > 0 ? (
             <section style={{ ...column, paddingTop: space.movement }}>
-              <Text role="data" tone="ink3">What it includes</Text>
-              <ul style={{ margin: 0, marginTop: space.gap, paddingLeft: INSET }}>
-                {benefits.map(b => (
-                  <li key={b} style={{ marginTop: space.breath }}>
-                    <Text role="body" tone="ink2" as="span">{b}</Text>
-                  </li>
-                ))}
-              </ul>
+              {/* The membership's perks are one object — what you get — so
+                  they sit on one card rather than as a bare list on the
+                  ground. It also gives the plan somewhere to feel like a
+                  card the customer holds. */}
+              <Glass pad="gap">
+                <Text role="whisper" tone="ink3">What it includes</Text>
+                <ul style={{ margin: 0, marginTop: space.gap, paddingLeft: INSET }}>
+                  {benefits.map(b => (
+                    <li key={b} style={{ marginTop: space.breath }}>
+                      <Text role="body" tone="ink2" as="span">{b}</Text>
+                    </li>
+                  ))}
+                </ul>
+              </Glass>
             </section>
           ) : null}
 

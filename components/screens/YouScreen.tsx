@@ -32,7 +32,7 @@
  * defended by a maze).
  */
 import { color, space, column, stack } from '@/design';
-import { Heading, Text, Button, OfflineNote } from '@/components/system';
+import { Heading, Text, Button, OfflineNote, Glass } from '@/components/system';
 
 /** A sentence, and the one way onward from it. */
 export interface YouEntry {
@@ -86,16 +86,21 @@ export interface YouModel {
 function Entry({ entry, gap }: { entry: YouEntry; gap: 'rest' | 'movement' }) {
   return (
     <section style={{ ...column, paddingTop: space[gap] }}>
+      {/* Each account entry is its own card. As bare text on the ground these
+          read as one long column of sentences with links in it; in glass each
+          becomes a distinct thing a customer can act on. */}
+      <Glass pad="gap">
       {/* The STATEMENT is secondary ink and the ACTION is primary — the
           opposite of the obvious arrangement, and rendered it is the only one
           that works. At equal weight a `forward` link looks exactly like the
           sentence above it and stops reading as something you can touch, and
           the alternatives are all chrome: a chevron, an underline, an icon.
           The context is quiet; the live thing is bright. */}
-      <Text role="body" tone="ink2">{entry.line}</Text>
-      <div style={{ marginTop: space.breath }}>
-        <Button tier="forward" href={entry.action.href}>{entry.action.label}</Button>
-      </div>
+        <Text role="body" tone="ink2">{entry.line}</Text>
+        <div style={{ marginTop: space.breath }}>
+          <Button tier="forward" href={entry.action.href}>{entry.action.label}</Button>
+        </div>
+      </Glass>
     </section>
   );
 }

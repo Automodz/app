@@ -59,6 +59,7 @@ export function Expansion({ open, onOpenChange, title, layoutId, children }: Exp
             {/* The layer beneath. §9.3's scrim, not a Radix default. */}
             <Dialog.Overlay asChild>
               <motion.div
+                className="am-scrim"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

@@ -14,7 +14,7 @@ import 'server-only';
  * is a room that was never absent.
  */
 import type { ReactNode } from 'react';
-import { color, space, column, stack } from '@/design';
+import { space, column, stack } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
@@ -23,6 +23,7 @@ import { color, space, column, stack } from '@/design';
 import { Heading } from '@/components/system/Heading';
 import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
+import { Glass } from '@/components/system/Glass';
 import { currentSession } from '@/lib/server/session';
 import { loadCustomerPicture } from '@/lib/server/customerPicture';
 import { toPalette } from '@/lib/customer/palette';
@@ -33,7 +34,8 @@ function Centred({ children }: { children: ReactNode }) {
   return (
     <main
       style={{
-        background: color.paper,
+        /* Transparent, like every room — the ambient field is behind it. */
+        background: 'transparent',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
       }}
@@ -47,7 +49,12 @@ function Centred({ children }: { children: ReactNode }) {
           justifyContent: 'center',
         }}
       >
-        {children}
+        {/* On glass. These are the first surfaces a new customer meets — an
+            invitation and a sign-in — and as bare type on the field they read
+            as an error page rather than as somewhere to begin. */}
+        <Glass pad="rest" round="sheet">
+          {children}
+        </Glass>
       </section>
     </main>
   );

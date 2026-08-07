@@ -4,7 +4,7 @@
  * §19.3 forbids a spinner for a whole surface; this is the breath, exactly as
  * the rooms use it.
  */
-import { color, space, INSET, MEASURE } from '@/design';
+import { space, INSET, MEASURE } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
@@ -15,7 +15,11 @@ import { Loading } from '@/components/system/Loading';
 export default function CarsLoading() {
   return (
     <main style={{
-      background: color.paper,
+      /* Transparent, like every room. This painted `color.paper`, so each
+         navigation flashed an opaque dark page and then revealed the ambient
+         field underneath — the one moment in the product where the room
+         visibly changed material. */
+      background: 'transparent',
       minHeight: '100svh',
       display: 'flex',
       flexDirection: 'column',

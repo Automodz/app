@@ -77,6 +77,11 @@ export type { DeskProps, DeskItem } from './Desk';
 
 export { useOnline } from './useOnline';
 
+export { Ambient } from './Ambient';
+
+export { Glass } from './Glass';
+export type { GlassProps } from './Glass';
+
 export { OfflineNote } from './OfflineNote';
 export type { OfflineNoteProps } from './OfflineNote';
 

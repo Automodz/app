@@ -160,13 +160,18 @@ export function BottomNavigation() {
       }}
     >
       <div
+        className="am-glass"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: space.breath,
           padding: space.breath,
           borderRadius: radius.pill,
-          background: color.surface,
+          /* GLASS. The bar sits on every screen, so it is the surface that
+             most establishes the material — an opaque pill over a lit field
+             reads as a bar bolted onto the room rather than a part of it.
+             `am-glass` is the ONE material (§10.2); the class carries the
+             blur, the fill and the lit top edge. */
           boxShadow: elevation.nav.shadow,
         }}
       >

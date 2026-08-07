@@ -71,7 +71,7 @@ import {
   heroMotion, stack, imageSizes, column,
 } from '@/design';
 import type { StateTone } from '@/design';
-import { Hero, Heading, Text, Button, Expansion, toneColor } from '@/components/system';
+import { Hero, Heading, Text, Button, Expansion, Glass, toneColor } from '@/components/system';
 import { OfflineNote } from '@/components/system';
 import type { Tone } from '@/components/system';
 
@@ -344,7 +344,11 @@ export function HomeScreen({ model }: { model: HomeModel }) {
   return (
     <main
       style={{
-        background: color.paper,
+        /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
+           which is fixed behind everything (components/system/Ambient.tsx).
+           Painting `color.paper` here would occlude it completely. The dark
+           ground still exists — it is on `body` — so nothing loses contrast. */
+        background: 'transparent',
         minHeight: '100svh',
         /* §8.5 — the stacking contract. Content clears the navigation by
            arithmetic, never by measuring it. */
@@ -548,14 +552,14 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           `gap` they read as one list of four; at `rest` they read as four
           separate things that happen to be true at once. */}
       {protections.length > 0 ? (
-        <section
-          style={{
-            ...column,
-            paddingTop: space.rest,
-            display: 'grid',
-            gap: space.rest,
-          }}
-        >
+        <section style={{ ...column, paddingTop: space.rest }}>
+          {/* ONE CARD OF LAYERS, not four naked rows on the ground.
+              Protection is a single subject — what is covering this car — and
+              four separate rows read as four unrelated facts. Inside the glass
+              they read as a stack, which is what they are. §10.2: this is the
+              one material; there is no second card nested in it. */}
+          <Glass pad="gap" style={{ display: 'grid', gap: space.gap }}>
+            <Text role="whisper" tone="ink3">Protecting this car</Text>
           {/* ARCHITECTURE §5 — a protection is an object already on this
               screen, so it OPENS rather than routing. The row and the layer
               share a `layoutId`, which is what makes the layer read as this
@@ -580,6 +584,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               <Protection {...p} />
             </motion.button>
           ))}
+          </Glass>
         </section>
       ) : null}
 
@@ -604,8 +609,9 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           the present. §18.1 — with nothing to say, nothing appears. */}
       {timeline.length > 0 ? (
         <section style={{ ...column, paddingTop: space.movement }}>
-          <Text role="data" tone="ink3">Timeline</Text>
-          <div style={{ marginTop: space.gap }}>
+          <Glass pad="gap">
+            <Text role="whisper" tone="ink3">Its life</Text>
+            <div style={{ marginTop: space.gap }}>
             {timeline.slice(0, TIMELINE_ON_HOME).map((e, i) => (
               <TimelineRow
                 key={e.id}
@@ -614,7 +620,8 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                 onOpen={() => setOpen(`event:${e.id}`)}
               />
             ))}
-          </div>
+            </div>
+          </Glass>
         </section>
       ) : null}
 
@@ -623,22 +630,28 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           Three ways to reach it, all of them leaving the application, so all
           three are plain anchors (`Button` handles that itself). */}
       <section style={{ ...column, paddingTop: space.movement }}>
-        <Text role="data" tone="ink3">{studio.name}</Text>
-        <Text role="body" tone="ink2" style={{ marginTop: space.breath, maxWidth: MEASURE }}>
-          {studio.address}
-        </Text>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: space.gap,
-            marginTop: space.gap,
-          }}
-        >
-          <Button tier="forward" href={studio.directions}>Directions</Button>
-          <Button tier="forward" href={studio.call}>Call</Button>
-          <Button tier="forward" href={studio.message}>WhatsApp</Button>
-        </div>
+        {/* The studio, as a card rather than three loose links on the ground.
+            The address is the subject and the three ways to reach it sit
+            beneath it — before, they were the same visual weight as the place
+            itself, so the block read as a toolbar. */}
+        <Glass pad="gap">
+          <Text role="whisper" tone="ink3">{studio.name}</Text>
+          <Text role="body" tone="ink" style={{ marginTop: space.breath, maxWidth: MEASURE }}>
+            {studio.address}
+          </Text>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: space.line,
+              marginTop: space.gap,
+            }}
+          >
+            <Button tier="forward" href={studio.directions}>Directions</Button>
+            <Button tier="forward" href={studio.call}>Call</Button>
+            <Button tier="forward" href={studio.message}>WhatsApp</Button>
+          </div>
+        </Glass>
       </section>
 
       {/* THE EXPANSION. Radix owns focus, dismissal and the scroll lock;

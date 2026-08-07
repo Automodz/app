@@ -65,7 +65,7 @@ import {
   HAIRLINE, INSET, MEASURE, TARGET_MIN, color, column, duration, easing, imageSizes, radius, scrim, space, stack,
 } from '@/design';
 import Image from 'next/image';
-import { Hero, Heading, Text, Button, Modal, OfflineNote } from '@/components/system';
+import { Hero, Heading, Text, Button, Modal, OfflineNote, Glass } from '@/components/system';
 import { REGION_NAME } from '@/components/vehicle';
 import type { RegionId, RenderedRegion, VehicleRendering } from '@/components/vehicle';
 
@@ -428,9 +428,11 @@ export function VehicleScreen({
       {/* ── THE CAR'S OWN ACTS ──────────────────────────────────────────
           Correcting it and reading its life. Both were on the old Garage's
           "The car" section; they belong to the car's own room. */}
-      <section style={{ ...column, paddingTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
-        <Button tier="forward" href={model.historyHref}>Its history</Button>
-        <Button tier="quiet" href={model.editHref}>Correct the car</Button>
+      <section style={{ ...column, paddingTop: space.rest }}>
+        <Glass pad="gap" style={{ display: 'flex', gap: space.line, flexWrap: 'wrap' }}>
+          <Button tier="forward" href={model.historyHref}>Its history</Button>
+          <Button tier="quiet" href={model.editHref}>Correct the car</Button>
+        </Glass>
       </section>
 
       {/* ── MEDIA ───────────────────────────────────────────────────────
@@ -439,7 +441,8 @@ export function VehicleScreen({
           there is nothing to say yet. */}
       {model.media.length > 0 ? (
         <section style={{ ...column, paddingTop: space.movement }}>
-          <Text role="data" tone="ink3">Media</Text>
+          <Glass pad="gap">
+          <Text role="whisper" tone="ink3">Its photographs</Text>
           {model.media.map(group => (
             <div key={group.month} style={{ marginTop: space.gap }}>
               <Text role="whisper" tone="ink3">{group.month}</Text>
@@ -481,6 +484,7 @@ export function VehicleScreen({
               </div>
             </div>
           ))}
+          </Glass>
         </section>
       ) : null}
 

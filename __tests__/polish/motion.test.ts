@@ -158,9 +158,14 @@ describe('the stylesheet carries nothing dead', () => {
   });
 
   it('it is meaningfully smaller than it was', () => {
-    /* 60,071 bytes before this pass, 41,632 after — a third of the stylesheet
-       was rules for three retired eras, shipping on every page. Guarded so the
-       dead weight cannot creep back without somebody noticing. */
-    expect(css.length).toBeLessThan(45_000);
+    /* 60,071 chars before the dead-CSS pass, 41,632 after — a third of the
+       stylesheet was rules for three retired eras, shipping on every page.
+
+       The ceiling has since moved to 48,000 to admit the ambient field, the
+       glass material, the press feedback and the focus ring — all live rules
+       with call sites, all asserted above by "every class it defines is used
+       somewhere". The guard's job is to catch DEAD weight creeping back, and
+       that assertion is the one doing it; this is the coarse backstop. */
+    expect(css.length).toBeLessThan(48_000);
   });
 });

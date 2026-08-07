@@ -29,7 +29,8 @@ import { usePathname } from 'next/navigation';
 import { NavigationProvider } from './NavigationProvider';
 import { BottomNavigation } from './BottomNavigation';
 import { PaletteProvider } from './Palette';
-import { StudioBoot } from '@/components/system';
+import { RoomTransition } from './RoomTransition';
+import { StudioBoot, Ambient } from '@/components/system';
 import { roomFor, HOME } from './routes';
 
 export function CustomerChrome(
@@ -49,11 +50,19 @@ export function CustomerChrome(
 
   return (
     <NavigationProvider>
+      {/* THE ROOM. Mounted once, behind everything, for the life of the
+          session — not per screen, or each navigation would restart its drift
+          and the field would visibly jump between rooms. */}
+      <Ambient />
       <StudioBoot />
       {/* The palette is chrome, not a screen. Mounted once here, it answers
           ⌘K at every address in the customer application — see Palette.tsx. */}
       <PaletteProvider>
-        {children}
+        {/* The room arrives rather than appearing. Inside the palette provider
+            so the Desk is not remounted on every navigation, and OUTSIDE the
+            navigation bar so the bar never fades — it is the one thing that
+            stays put while rooms change. */}
+        <RoomTransition>{children}</RoomTransition>
         <BottomNavigation />
       </PaletteProvider>
     </NavigationProvider>

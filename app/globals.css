@@ -257,6 +257,15 @@ body {
   box-shadow:
     0 0 0 2px #FFFFFF,
     0 0 0 4px rgba(0, 0, 0, 0.55);
+  /* FOLLOWS THE CONTROL. This was a flat 4px, which drew a nearly-square ring
+     around every pill button in the product — and every control that renders
+     through `Button` is a pill. `inherit` takes the element's own radius, so
+     the ring traces the shape it is marking. Controls with no radius of their
+     own fall back to the 4px they had. */
+  border-radius: inherit;
+}
+
+:focus-visible:where(:not([style*="border-radius"]):not(.am-glass)) {
   border-radius: 4px;
 }
 
@@ -1050,4 +1059,101 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
    is unaffected at every width. */
 @media (max-width: 389px) {
   [data-nav-word] { display: none; }
+}
+
+/* ── THE AMBIENT FIELD ───────────────────────────────────────────────────
+   The room's drift and its lean toward the pointer. Both live here rather
+   than in React: this runs for the whole session, and a spring driving three
+   radial gradients would repaint every frame for as long as the app is open.
+   The keyframe runs on the compositor; the lean is two custom properties
+   written straight to the node. Neither costs a render.
+
+   §7.6 — reduced motion stops the MOVEMENT and keeps the light. The field is
+   still magenta, it simply stands still. */
+.am-field {
+  --lean-x: 0%;
+  --lean-y: 0%;
+  will-change: transform;
+  transform: translate3d(var(--lean-x), var(--lean-y), 0);
+  animation: am-drift 32s ease-in-out infinite;
+}
+
+@keyframes am-drift {
+  0%, 100% { transform: translate3d(var(--lean-x), var(--lean-y), 0) scale(1); }
+  33%      { transform: translate3d(calc(var(--lean-x) + 4%), calc(var(--lean-y) - 3%), 0) scale(1.06); }
+  66%      { transform: translate3d(calc(var(--lean-x) - 3%), calc(var(--lean-y) + 4%), 0) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-field { animation: none; transform: none; }
+}
+
+/* ── THE ONE GLASS ───────────────────────────────────────────────────────
+   §10.2 — one material. A card is this, a sheet is this. There is no
+   glassier variant, because two translucencies in one view is the stacking
+   §3.6 forbids even when they are not literally nested.
+
+   The top-edge sheen is what makes it read as lit from above (§3.4) rather
+   than as a grey box with blur behind it. */
+.am-glass {
+  position: relative;
+  background: rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.am-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 32%, rgba(255,255,255,0.14) 68%, transparent);
+  pointer-events: none;
+}
+
+/* A browser without backdrop-filter gets an opaque surface rather than
+   unreadable text over a gradient. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .am-glass { background: #15181B; }
+}
+
+/* ── THE PRESS ───────────────────────────────────────────────────────────
+   §7.3 `tick` (120ms) is "acknowledgement — a press, a toggle", and until
+   now nothing in the product used it. Every control rendered through
+   `Button` changed nothing under a finger until the navigation happened,
+   which is what makes an interface feel dead.
+
+   Scale, not opacity: a control that dims reads as becoming disabled. 0.98
+   is the smallest step that registers as a press on a phone without the
+   control appearing to move.
+
+   On the compositor, and off entirely under reduced motion. */
+.am-tap {
+  /* The transition itself is declared inline by `Button`, because an inline
+     style overrides this file and a duplicate here would be dead. This owns
+     the press and the tap highlight only. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.am-tap:active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-tap { transition: none; }
+  .am-tap:active { transform: none; }
+}
+
+/* ── THE SCRIM BEHIND A LAYER ────────────────────────────────────────────
+   A layer used to darken the room and nothing more. Blurring it as well is
+   what makes the room RECEDE rather than merely dim — the difference between
+   a panel drawn over a page and a sheet held above a surface.
+
+   Carries no text, so the blur costs no legibility. The darkening stays: it
+   is what guarantees contrast for the layer's own content regardless of what
+   is behind it. */
+.am-scrim {
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
 }
