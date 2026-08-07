@@ -6,11 +6,37 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   fallbacks: { document: '/offline' },
   // Fresh-first: a new deploy takes over as soon as the page reloads,
   // instead of returning visitors being served the previously cached shell.
+  /**
+   * THE SERVICE WORKER MUST NEVER ANSWER FOR SIGNING IN.
+   *
+   * The default `pages` strategy is NetworkFirst with a timeout: on a slow
+   * connection it falls back to the CACHED document, and that document names
+   * the chunk hashes of whatever build it was captured from. Those chunks are
+   * still in the CacheFirst static bucket, so a returning customer runs an
+   * OLD COPY OF THE APPLICATION — indefinitely, and only in a profile that has
+   * a worker installed. That is exactly the shape of "it fails in Safari and
+   * works in a private window", and it is why a bug fixed and deployed can
+   * keep being reported.
+   *
+   * Nowhere does that matter more than the door: a stale `/auth/login`
+   * reintroduces whatever sign-in bug was current when it was cached, and a
+   * cached or replayed `/api/session` is a session exchange nobody can reason
+   * about. Both are pinned to the network, so they are always the deployed
+   * code talking to the deployed server.
+   */
+  extendDefaultRuntimeCaching: true,
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
     cleanupOutdatedCaches: true,
     disableDevLogs: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ url }) =>
+          url.pathname.startsWith('/auth/') || url.pathname.startsWith('/api/'),
+        handler: 'NetworkOnly',
+      },
+    ],
   },
 });
 
