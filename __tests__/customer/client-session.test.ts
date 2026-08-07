@@ -118,3 +118,54 @@ describe('the first arrival happens once', () => {
     expect(built).toMatch(/\.\.\.\(profile \?\? \{\}\)|welcomedAt/);
   });
 });
+
+/**
+ * A CONTROL ON A CUSTOMER ROOM MAY NOT DEPEND ON THE CLIENT STORE'S USER.
+ *
+ * `ClientSession` — and with it `AuthProvider`, the only thing that ever puts
+ * a user in the Zustand store — is mounted by `/admin`, `/auth` and `/store`
+ * alone. Every customer room renders on the server and mounts none of it, so
+ * `useAppStore().user` is ALWAYS null there.
+ *
+ * Code written against it does not fail loudly. It returns at the guard and
+ * the press does nothing at all:
+ *
+ *   · "Add the car" — a car could not be added to the garage, from the garage
+ *   · joining the club — the one act that takes a standing payment
+ *   · "Save" on your details, and every notification switch
+ *   · the push toggle
+ *   · the referral panel, which loaded no code and stayed empty for ever
+ *
+ * Five separate features, one cause, none of them reported by a test — each
+ * was found only by pressing the button. This is the test that presses them.
+ */
+describe('no customer-room control depends on the store user', () => {
+  /** Components reached only from `/admin`, `/store` or `/auth`. */
+  const behindAProvider = [
+    'components/workspace/', 'components/intake/', 'components/admin/',
+  ];
+
+  it('none of them guards on it', () => {
+    const offenders: string[] = [];
+    for (const file of walk('components')) {
+      if (behindAProvider.some(d => file.startsWith(d))) continue;
+      const src = codeOf(file);
+      if (!/useAppStore/.test(src)) continue;
+      /* The shapes that silently do nothing: an early return, or a uid taken
+         straight off the store user without a fallback. */
+      if (/if \(!user[^)]*\)\s*(return|\{)/.test(src)) offenders.push(`${file} — guards on !user`);
+      if (/\buser\.uid\b/.test(src)) offenders.push(`${file} — writes with user.uid`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('the account sheet reads the account it loaded', () => {
+    const src = codeOf('components/you/AccountSettings.tsx');
+    /* Every write and every read that needs an identity goes through the
+       profile this sheet fetched, never through the store. */
+    expect(src).toMatch(/const uid = await currentUid\(\)/);
+    expect(src).toMatch(/updateUserProfile\(account\.uid/);
+    expect(src).toMatch(/getMyReferralCode\(account\)/);
+    expect(src).toMatch(/disablePush\(account\.uid\)/);
+  });
+});

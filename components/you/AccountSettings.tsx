@@ -125,9 +125,12 @@ export function AccountSettings({
   }, [panel]);
 
   useEffect(() => {
-    if (panel !== 'referral' || !user || code) return;
-    void getMyReferralCode(user).then(setCode).catch(() => setCode(null));
-  }, [panel, user, code]);
+    /* Against the loaded account. Guarded on the store's user this never ran
+       on `/you` — the referral panel opened and stayed empty for ever, which
+       reads as the studio having no referral programme. */
+    if (panel !== 'referral' || !account || code) return;
+    void getMyReferralCode(account).then(setCode).catch(() => setCode(null));
+  }, [panel, account, code]);
 
   const saveProfile = async () => {
     if (!account) return;
@@ -165,15 +168,18 @@ export function AccountSettings({
   };
 
   const togglePush = async () => {
-    if (!user || push === 'unsupported') return;
+    /* The account, not the store's user — see the note on the load above.
+       Guarded on `user` this switch did nothing on a customer room, which is
+       the one place it is ever offered. */
+    if (!account || push === 'unsupported') return;
     setPushBusy(true);
     setPushErr(null);
     try {
       if (push === 'on') {
-        await disablePush(user.uid);
+        await disablePush(account.uid);
         setPush('off');
       } else {
-        const ok = await enablePush(user.uid);
+        const ok = await enablePush(account.uid);
         setPush(ok ? 'on' : 'off');
         if (!ok) setPushErr('Your browser refused notifications. Allow them in its settings, then try again.');
       }
