@@ -53,6 +53,7 @@ import {
   duration, curve, TARGET_MIN, HAIRLINE,
 } from '@/design';
 import { isInAppBrowser, currentUserAgent } from '@/lib/browser';
+import { rememberDevice, forgetDevice } from '@/components/auth/SessionKeeper';
 
 /**
  * Only ever return to an internal customer path — never an attacker's URL, and
@@ -82,24 +83,51 @@ const safeDest = (redirect: string | null): string | null =>
  * the studio is misconfigured rather than the customer being unwelcome.
  * `'refused'` is anything else, including a token the server would not take.
  */
-type SessionResult = 'ok' | 'unavailable' | 'refused';
+/** `'offline'` is the network failing, which says nothing about the customer. */
+type SessionResult = 'ok' | 'unavailable' | 'refused' | 'offline';
 
 async function openServerSession(): Promise<SessionResult> {
   const current = auth?.currentUser;
   if (!current) return 'refused';
   let idToken: string;
   try {
-    idToken = await current.getIdToken();
+    /**
+     * FORCED, AND THIS IS THE WHOLE BUG.
+     *
+     * `createSessionCookie` will only accept an ID token MINTED IN THE LAST
+     * FIVE MINUTES. `getIdToken()` without the flag returns the cached one,
+     * which the SDK refreshes only as it nears its hour-long expiry — so it is
+     * routinely fifty minutes old.
+     *
+     * On a fresh sign-in the token is seconds old and everything worked. On
+     * every RETURN VISIT the effect below handed over a stale one, the server
+     * refused it, and the customer was told "We could not open your studio.
+     * Please sign in again." and then SIGNED OUT — losing a perfectly good
+     * session because of a cache. Sign in, wait five minutes, reload: broken,
+     * every time, for everyone.
+     *
+     * One network round trip, once per session open. That is the correct price
+     * for the thing that decides whether somebody is signed in.
+     */
+    idToken = await current.getIdToken(true);
   } catch {
-    return 'refused';
+    /* Offline, or Google unreachable. NOT a refusal — see the caller. */
+    return 'offline';
   }
   const res = await fetch('/api/session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),
   }).catch(() => null);
-  if (res?.ok) return 'ok';
-  return res?.status === 503 ? 'unavailable' : 'refused';
+  if (res?.ok) {
+    /* This device has a session now, so `SessionKeeper` may reopen it without
+       sending the customer back through the door. */
+    rememberDevice();
+    return 'ok';
+  }
+  /* No response at all is the network, not a verdict on the customer. */
+  if (!res) return 'offline';
+  return res.status === 503 ? 'unavailable' : 'refused';
 }
 
 /**
@@ -247,14 +275,36 @@ function Login() {
          Staff land in `/admin`, which renders in the browser and reads no
          cookie, so neither is kept waiting on one. */
       const needsCookie = Boolean(auth?.currentUser) && href !== '/admin';
-      if (needsCookie && (await openServerSession()) !== 'ok') {
-        /* The session could not be opened, so entering would only land on the
-           signed-out landing. Say so and stay at the door. */
+      if (needsCookie) {
+        const result = await openServerSession();
         if (cancelled) return;
-        setError('We could not open your studio. Please sign in again.');
-        await signOut(auth).catch(() => {});
-        setUser(null);
-        return;
+        if (result !== 'ok') {
+          /**
+           * ONLY A REFUSAL DESTROYS THE SESSION.
+           *
+           * Every failure used to end in `signOut` — so a dropped connection,
+           * a studio with no Admin credentials, or a stale ID token all threw
+           * away a Firebase session that was on disk and perfectly valid, and
+           * the customer had to go through Google again to get back what they
+           * already had.
+           *
+           * A refusal is the server saying no to this customer: revoked,
+           * disabled, forged. That is worth signing out for. Nothing else is.
+           */
+          setError(
+            result === 'offline'
+              ? 'We couldn’t reach the studio. Check your connection and try again.'
+              : result === 'unavailable'
+                ? 'The studio can’t open accounts right now. Please try again shortly.'
+                : 'We could not open your studio. Please sign in again.',
+          );
+          if (result === 'refused') {
+            forgetDevice();
+            await signOut(auth).catch(() => {});
+            setUser(null);
+          }
+          return;
+        }
       }
       if (!cancelled) enter(href);
     })();

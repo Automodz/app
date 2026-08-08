@@ -3,6 +3,7 @@ import { Unbounded, Outfit, DM_Sans, DM_Mono } from 'next/font/google';
 import { CustomerChrome } from '@/navigation';
 import { SITE_URL } from '@/lib/company';
 import { hasSessionCookie } from '@/lib/server/session';
+import { SessionKeeper } from '@/components/auth/SessionKeeper';
 import './globals.css';
 
 /**
@@ -127,6 +128,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             customer shell is gated rather than mounted. `CustomerChrome`
             mounts nothing at all at an address that is not a room — see
             that file for why "nothing" is stronger than "hidden". */}
+        {/* TWO SESSIONS, ONE OF WHICH EXPIRES FIRST. The Firebase session on
+            this device outlives the server's fourteen-day cookie, and only the
+            cookie is readable by a room — so without this, a customer whose
+            cookie lapsed was shown the public landing page and had to find the
+            sign-in to recover a session they still had. Renders nothing, and
+            loads no Firebase at all for a browser that has never signed in. */}
+        <SessionKeeper signedIn={signedIn} />
         <CustomerChrome signedIn={signedIn}>{children}</CustomerChrome>
       </body>
     </html>
