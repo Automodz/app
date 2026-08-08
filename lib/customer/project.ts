@@ -244,6 +244,25 @@ export function visitsOf(car: CarPicture): Visit[] {
   return car.visits.filter(v => v.status === 'sealed');
 }
 
+/**
+ * THE PHOTOGRAPHS A JOB RECORDED, WITH THE KIND IT RECORDED THEM AS.
+ *
+ * `framesOfVisit` prefers stage media, and stage media carries `kind: 'photo'`
+ * — the moment it was taken is not on it. The before/during/after distinction
+ * exists ONLY on the job, and was therefore discarded for every visit whose
+ * stages carried any media at all. That is why no visit could show a
+ * comparison: not missing data, shadowed data.
+ *
+ * Read separately here, so the sequence keeps stage media as its source and
+ * the comparison gets the kinds. Neither reaches into the other.
+ */
+function shotsOfVisit(visit: Visit, car: CarPicture) {
+  const job = car.jobs.find(j => j.bookingId === visit.bookingId || j.id === visit.jobId);
+  const photos = job?.photos ?? [];
+  const of = (kind: string) => photos.filter(p => p.kind === kind).map(p => p.url);
+  return { before: of('before'), during: of('during'), after: of('after') };
+}
+
 /** The photographs a visit produced, in the order they were taken. */
 function framesOfVisit(visit: Visit, car: CarPicture) {
   const fromStages = visit.stages.flatMap(s =>
@@ -780,10 +799,48 @@ export function toVisit(
       label: PROTECTION_TITLE[t.kind],
       term: termWords(t.term).toLowerCase(),
     })),
-    /* §16 — the amount as SEALED, not as the price list reads today. */
+    /* §16 — the amount as SEALED, not as the price list reads today. Kept for
+       the album, where a visit is a line and not an account. The VISIT screen
+       shows the receipt instead — one fact, one place. */
     settled: visit.amounts.total > 0
       ? `₹${visit.amounts.total.toLocaleString('en-IN')}`
       : undefined,
+
+    /* BEFORE AND AFTER, from the kinds the job recorded. Only when BOTH
+       exist: a comparison with one side missing is not a comparison, and
+       inventing the other half from an unrelated frame would be a lie about
+       the customer's own car. */
+    comparison: (() => {
+      const shots = shotsOfVisit(visit, car);
+      return shots.before[0] && shots.after[0]
+        ? { before: shots.before[0], after: shots.after[0] }
+        : undefined;
+    })(),
+
+    /* THE RECEIPT, INLINE. The figures already existed and lived one tap away
+       at `/invoice/[id]`, so the customer had to leave the record of the work
+       to learn what the work cost. Carried verbatim from the invoice — nothing
+       here recomputes a total, and the paper remains reachable for whoever
+       wants the document itself. */
+    receipt: invoice ? {
+      number: invoice.invoiceNumber,
+      lineItems: (invoice.lineItems ?? []).map(li => ({
+        name: li.name,
+        qty: li.qty,
+        unitPrice: `₹${(li.unitPrice ?? 0).toLocaleString('en-IN')}`,
+        amount: `₹${(li.amount ?? 0).toLocaleString('en-IN')}`,
+      })),
+      subtotal: `₹${(invoice.subtotal ?? 0).toLocaleString('en-IN')}`,
+      discount: invoice.discount
+        ? { label: invoice.discount.label, amount: `₹${invoice.discount.amount.toLocaleString('en-IN')}` }
+        : undefined,
+      gst: invoice.gst
+        ? { rate: `${invoice.gst.rate}%`, amount: `₹${invoice.gst.amount.toLocaleString('en-IN')}` }
+        : undefined,
+      total: `₹${(invoice.total ?? 0).toLocaleString('en-IN')}`,
+      paid: invoice.paymentStatus === 'paid',
+      method: invoice.paymentMethod,
+    } : undefined,
     /* SHARE. The chapter's public address is the invoice's share token, and
        `/api/invoice/[id]?view=chapter` already strips amounts, the phone and
        every internal reference before anything leaves the server. */

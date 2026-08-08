@@ -70,8 +70,37 @@ export interface HistoryVisit {
   photos?: readonly HistoryPhoto[];
   /** §16.3 — what it promised, and for how long. */
   promised?: readonly { label: string; term: string }[];
-  /** §16.3 — what it cost and how it was settled. One line, never a table. */
+  /** §16.3 — what it cost and how it was settled. One line, never a table.
+      The ALBUM's reading of the money; the Visit screen shows the receipt. */
   settled?: string;
+
+  /**
+   * BEFORE AND AFTER, when the job recorded both.
+   *
+   * Present only when both sides exist — a comparison missing one half is not
+   * a comparison, and filling it from an unrelated frame would be a lie about
+   * the customer's own car.
+   */
+  comparison?: { before: string; after: string };
+
+  /**
+   * THE RECEIPT, carried verbatim from the invoice.
+   *
+   * These figures existed and lived one tap away at `/invoice/[id]`, so the
+   * customer had to leave the record of the work to learn what the work cost.
+   * Nothing here recomputes a total; the paper is still reachable for whoever
+   * wants the document itself.
+   */
+  receipt?: {
+    number: string;
+    lineItems: readonly { name: string; qty: number; unitPrice: string; amount: string }[];
+    subtotal: string;
+    discount?: { label: string; amount: string };
+    gst?: { rate: string; amount: string };
+    total: string;
+    paid: boolean;
+    method?: string;
+  };
   /** §14.6 — the file, behind one tap, never on the surface. */
   documents?: readonly HistoryDocument[];
   /**

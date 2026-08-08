@@ -31,7 +31,10 @@
  * and `/history/[id]` lights the History slot, which is the way back.
  */
 import Image from 'next/image';
-import { color, space, INSET, MEASURE, column, stack, imageSizes } from '@/design';
+import {
+  color, space, INSET, MEASURE, column, stack, imageSizes,
+  HAIRLINE, TARGET_MIN, type as typeScale,
+} from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
@@ -42,10 +45,30 @@ import { Heading } from '@/components/system/Heading';
 import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
+import { BeforeAfter } from '@/components/visit/BeforeAfter';
 import type { HistoryVisit } from './HistoryScreen';
+/* Deep import — this is a SERVER component and the barrel pulls a dozen
+   client modules with it. See the note at the top of this file. */
+import type { Tone } from '@/components/system/tone';
+
+/** One line of the breakdown. A receipt is columns of facts, not cards. */
+function Row({ label, value, tone = 'ink3' }: { label: string; value: string; tone?: Tone }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'baseline',
+      justifyContent: 'space-between', gap: space.line,
+    }}>
+      <Text role="whisper" tone={tone}>{label}</Text>
+      <Text role="whisper" tone={tone}>{value}</Text>
+    </div>
+  );
+}
 
 export function VisitScreen({ visit }: { visit: HistoryVisit }) {
-  const { when, title, photo, did, photos = [], promised = [], settled, documents = [], shareHref } = visit;
+  const {
+    when, title, photo, did, photos = [], promised = [],
+    comparison, receipt, settled, documents = [], shareHref,
+  } = visit;
 
   return (
     <main
@@ -92,6 +115,18 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
         <Text role="body" tone="ink">{did}</Text>
       </section>
 
+      {/* ── BEFORE ← drag → AFTER ────────────────────────────────────────
+          The one part of the record that argues for itself; everything else
+          here is the studio's account of the work, and this is the work. Only
+          when the job recorded both sides — a comparison missing a half is not
+          a comparison, and filling it from another frame would be a lie about
+          the customer's own car. */}
+      {comparison ? (
+        <section style={{ paddingTop: space.movement }}>
+          <BeforeAfter before={comparison.before} after={comparison.after} subject={title} />
+        </section>
+      ) : null}
+
       {/* §16.3, §16.5 — the photographs. Full-bleed and sequential, each named
           for the moment it was taken. A sequence, never a grid: a grid of
           thumbnails makes the evidence smaller than the caption. */}
@@ -131,12 +166,77 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
         </section>
       ) : null}
 
-      {/* §16.3 — what it cost and how it was settled. One line. An invoice
-          table is what §16.1 means by "not a list of invoices"; the fact
-          itself is a line of text and the customer is entitled to it. */}
-      {settled ? (
+      {/* ── WHAT IT CAME TO ──────────────────────────────────────────────
+          The figures existed and lived one tap away at `/invoice/[id]`, so a
+          customer had to LEAVE the record of the work to learn what the work
+          cost. The total and how it was settled are stated plainly; the
+          breakdown is behind a tap, because §16.1's "not a list of invoices"
+          is about what a record LEADS with, not about withholding the
+          arithmetic from the person who paid it.
+
+          One fact, one place: the bare `settled` line this replaces said the
+          same total, and the album still uses it — there, a visit is a line
+          rather than an account. */}
+      {!receipt && settled ? (
+        /* A SEALED VISIT KNOWS ITS TOTAL EVEN WITHOUT AN INVOICE DOCUMENT.
+           §16 — the amount as sealed. Losing this when the receipt was added
+           would have hidden the money on every visit the studio never raised
+           paper for, which is most of them. */
         <section style={{ ...column, paddingTop: space.rest }}>
           <Text role="data" tone="ink2">{settled}</Text>
+        </section>
+      ) : null}
+
+      {receipt ? (
+        <section style={{ ...column, paddingTop: space.rest }}>
+          <div style={{
+            display: 'flex', alignItems: 'baseline',
+            justifyContent: 'space-between', gap: space.line,
+          }}>
+            <span style={{
+              fontFamily: typeScale.display.family, fontSize: 24, fontWeight: 700,
+              letterSpacing: '-0.01em', color: color.ink,
+            }}>
+              {receipt.total}
+            </span>
+            <Text role="whisper" tone={receipt.paid ? 'assent' : 'caution'}>
+              {receipt.paid
+                ? `Paid${receipt.method ? ` · ${receipt.method.toUpperCase()}` : ''}`
+                : 'Payable at the studio'}
+            </Text>
+          </div>
+
+          <details style={{
+            marginTop: space.gap,
+            borderTop: `${HAIRLINE}px solid ${color.edge}`,
+            paddingTop: space.gap,
+          }}>
+            <summary style={{ listStyle: 'none', cursor: 'pointer', minHeight: TARGET_MIN }}>
+              <Text role="whisper" tone="ink3">{receipt.number}</Text>
+            </summary>
+
+            <div style={{ display: 'grid', gap: space.line, paddingTop: space.gap }}>
+              {receipt.lineItems.map(li => (
+                <div key={li.name} style={{
+                  display: 'flex', alignItems: 'baseline',
+                  justifyContent: 'space-between', gap: space.line,
+                }}>
+                  <Text role="body" tone="ink2">
+                    {li.name}{li.qty > 1 ? ` × ${li.qty}` : ''}
+                  </Text>
+                  <Text role="body" tone="ink2">{li.amount}</Text>
+                </div>
+              ))}
+
+              <Row label="Subtotal" value={receipt.subtotal} />
+              {receipt.discount ? (
+                <Row label={receipt.discount.label} value={`− ${receipt.discount.amount}`} tone="assent" />
+              ) : null}
+              {receipt.gst ? (
+                <Row label={`GST ${receipt.gst.rate}`} value={receipt.gst.amount} />
+              ) : null}
+            </div>
+          </details>
         </section>
       ) : null}
 
