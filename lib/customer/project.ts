@@ -16,7 +16,7 @@ import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
 import { liveProtection, projectProtections, sortByUrgency } from '@/lib/os/protection';
 import { visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
-import { readOwnership, clubOf, proposalApplies } from './ownership';
+import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst } from './ownership';
 import { cycleDaysLeft, washesLeftOf } from '@/lib/os/club';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
@@ -64,6 +64,18 @@ const isoOf = (t?: { toDate?: () => Date }) =>
 const TONE: Record<Health, HomeProtection['tone']> = {
   healthy: 'assent', attention: 'caution', urgent: 'urgent', lapsed: 'lapsed',
 };
+
+/**
+ * WHERE A VISIT THAT HAS NOT STARTED IS REACHED.
+ *
+ * Not `/history/{id}`. Home's NEXT VISIT block pointed there, and a booking has
+ * no record until it is sealed — so tapping the visit you have booked told a
+ * customer with four cars in their garage "Your car's place is ready. Add your
+ * car." The Studio's own sheet is the one surface a pending visit HAS, and the
+ * Vehicle room was already pointing at it; this makes that the single answer.
+ */
+const manageHref = (bookingId: string) =>
+  `${hrefForDestination({ to: 'studio' })}?manage=${bookingId}`;
 
 /**
  * §14.3 and §14.4 in one place: the unit that suits the term, at the precision
@@ -144,12 +156,13 @@ function computeProtections(car: CarPicture, catalogue: Service[], now = new Dat
   return projectProtections({ vehicleId: car.vehicle.id, completed, catalogue, now });
 }
 
-/** The visit a customer would call "happening now", if there is one. */
-function liveBooking(car: CarPicture): Booking | undefined {
-  return car.bookings.find(b => visitPhase(b.status) === 'live')
-    ?? car.bookings.find(b => visitPhase(b.status) === 'agreed')
-    ?? car.bookings.find(b => visitPhase(b.status) === 'proposed');
-}
+/* `liveBooking` STOOD HERE — the second implementation of "the next visit",
+   and the one that disagreed with the first. It read `car.bookings` in
+   `createdAt` order and returned the newest open booking rather than the
+   soonest, and it never looked at whether the day had already passed. Both
+   answers now come from `lib/customer/ownership`: `liveOf` for the visit
+   actually in flight, `nextVisitOf` for the one still ahead. Two questions,
+   two functions, one answer each. */
 
 /** What is happening to the car, in the present tense (§5.3 #2). Memoised. */
 /**
@@ -173,16 +186,18 @@ export function stateWordFor(
   return homeStateCopy(readOwnership(picture, car, protections, now), car.vehicle.name).word;
 }
 
-export function stateOf(car: CarPicture): { word: string; line?: string } {
+export function stateOf(car: CarPicture, now = new Date()): { word: string; line?: string } {
   const hit = stateCache.get(car);
   if (hit) return hit;
-  const out = computeState(car);
+  const out = computeState(car, now);
   stateCache.set(car, out);
   return out;
 }
 
-function computeState(car: CarPicture): { word: string; line?: string } {
-  const b = liveBooking(car);
+function computeState(car: CarPicture, now: Date): { word: string; line?: string } {
+  /* The visit in flight outranks the one that is coming — a car being worked on
+     is not "booked in". Both from the canonical readers. */
+  const b = liveOf(car) ?? nextVisitOf(car, now);
   if (!b) {
     const finished = car.bookings.some(b2 => b2.status === 'completed');
     return finished
@@ -330,6 +345,26 @@ export function toHome(
    */
   const heroOwnsTheProposal = !!read.proposal
     && (read.state === 'warranty_expiring' || proposalApplies(read.state));
+
+  /**
+   * THE SAME IDEA, FOR THE VISIT THAT IS COMING.
+   *
+   * `homeStateCopy` builds the hero out of `read.agreed` in exactly one state —
+   * `booked` — where the Display reads "Requested" or "Booked in" and the line
+   * under it is already "Regular Wash, 27 July 2026 at 09:00." A NEXT VISIT
+   * section repeating that sentence is the screen saying one fact twice, which
+   * is the habit `heroOwnsTheProposal` exists to prevent.
+   *
+   * Derived from the ownership STATE, not by comparing the two sentences: the
+   * day either is reworded, string equality would silently stop matching and
+   * the duplication would come back unnoticed.
+   *
+   * It stays when the hero is about something else — a car in the studio that
+   * ALSO has a visit booked for next week is two facts, and the second one is
+   * not on the screen anywhere else.
+   */
+  const heroOwnsTheVisit = read.state === 'booked' && !!read.agreed;
+
   const latest = visits[0];
   const latestFrames = latest ? framesOfVisit(latest, car) : [];
 
@@ -457,16 +492,19 @@ export function toHome(
       href: `${hrefForDestination({ to: 'studio' })}?arrange=1&cat=${encodeURIComponent(read.proposal.serviceCategory)}`,
     } : undefined,
 
-    /* THE VISIT THAT IS COMING. Not one in progress — that is the state at
-       the top of the screen, and saying it twice is the dashboard habit. */
+    /* THE VISIT THAT IS COMING — `read.agreed`, which IS `nextVisitOf`, the
+       same booking the hero and the Vehicle room and the Studio all name. Not
+       one in progress: that is the state at the top of the screen. And not one
+       whose day has passed, which is what made three lapsed requests read as
+       this week's plans. §18.1 — nothing ahead, nothing drawn. */
     next: (() => {
-      const b = liveBooking(car);
-      if (!b || visitPhase(b.status) === 'live') return undefined;
+      const b = read.agreed;
+      if (!b || heroOwnsTheVisit) return undefined;
       return {
         service: b.serviceName,
         when: `${longDate(b.scheduledDate)}${b.scheduledTime ? ` · ${b.scheduledTime}` : ''}`,
         vehicleName: car.vehicle.name,
-        href: hrefForDestination({ to: 'visit', visitId: b.id }),
+        href: manageHref(b.id),
       };
     })(),
 
@@ -554,8 +592,7 @@ export function leadCar(picture: CustomerPicture): CarPicture | undefined {
 }
 
 const attention = (car: CarPicture): number => {
-  const live = liveBooking(car);
-  if (live && visitPhase(live.status) === 'live') return Number.MAX_SAFE_INTEGER;
+  if (liveOf(car)) return Number.MAX_SAFE_INTEGER;
   return Math.max(millis(car.vehicle.createdAt), ...car.bookings.map(b => millis(b.createdAt)), 0);
 };
 
@@ -654,17 +691,19 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
    * out which one was this one's. The booking already belongs to this car;
    * this is the room that should say so.
    *
-   * `liveBooking` is the same helper Home and Garage read, so the car cannot
-   * disagree with itself about which visit is the one in hand.
+   * `nextVisitOf` is the same reader Home, the Studio and the ownership engine
+   * use, so the car cannot disagree with itself — or with Home — about which
+   * visit is the one in hand. It was `liveBooking`, which answered a different
+   * question and sometimes named a different booking.
    */
-  const next = liveBooking(car);
-  const nextPhase = next ? visitPhase(next.status) : undefined;
+  const live = liveOf(car);
+  const next = nextVisitOf(car, now);
 
   return {
     name: car.vehicle.name,
     plate: car.vehicle.registrationNumber,
     state: stateWordFor(picture, car, now),
-    next: next && nextPhase !== 'live'
+    next: next
       ? {
           service: next.serviceName,
           /* The day in the customer's terms, and the hour as booked. */
@@ -672,15 +711,12 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
           /* §16 — pending is not the same promise as confirmed, and a customer
              who is waiting on the studio should be told they are. */
           settled: next.status === 'confirmed',
-          /* Only where the customer may still act — mirrors `firestore.rules`,
-             the same rule `toStudio`'s `manageable` uses, so the room never
-             offers an act the server will refuse. */
-          manageHref: ['pending', 'confirmed'].includes(next.status)
-            /* Straight at THIS visit's sheet. Pointing at `/studio` alone sent
-               the customer to a room that, until the arranged visits were
-               drawn, showed no trace of the booking they had come to change. */
-            ? `${hrefForDestination({ to: 'studio' })}?manage=${next.id}`
-            : undefined,
+          /* Straight at THIS visit's sheet — the same address Home's NEXT
+             VISIT now uses, so one booking has one destination. Every upcoming
+             visit is by definition pending or confirmed, which is exactly the
+             set `firestore.rules` lets the customer change, so the room can
+             never offer an act the server will refuse. */
+          manageHref: manageHref(next.id),
         }
       : undefined,
     /* WHILE THE CAR IS ACTUALLY HERE, there is nothing to arrange and nothing
@@ -688,8 +724,8 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
        "In care" is the room contradicting itself in the space of one screen.
        §5.4 — the live account is a takeover reached from the car, so this is
        the car pointing at it. */
-    followHref: next && nextPhase === 'live'
-      ? hrefForDestination({ to: 'visit', visitId: next.id })
+    followHref: live
+      ? hrefForDestination({ to: 'visit', visitId: live.id })
       : undefined,
     /* Arranging for THIS car, from this car — the Studio's sheet opens with
        the category unset but the room already knows whose visit it is. */
@@ -904,11 +940,8 @@ export function toLiveVisit(
   };
 }
 
-export function toStudio(picture: CustomerPicture): StudioModel {
-  const here = picture.cars.find(c => {
-    const b = liveBooking(c);
-    return b && visitPhase(b.status) === 'live';
-  });
+export function toStudio(picture: CustomerPicture, now = new Date()): StudioModel {
+  const here = picture.cars.find(c => liveOf(c));
 
   return {
     place: 'Maninagar · Ahmedabad',
@@ -948,22 +981,33 @@ export function toStudio(picture: CustomerPicture): StudioModel {
       membership: (plainValue(picture.subscription ?? null) ?? null) as Subscription | null,
     },
 
-    /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE. `changeable` mirrors
-       firestore.rules — pending or confirmed only — so the sheet never offers
-       an act the server will refuse. The rule is enforced there, not here. */
-    manageable: picture.cars.flatMap(car =>
-      car.bookings
-        .filter(b => ['pending', 'confirmed'].includes(b.status))
-        .map(b => ({
-          id: b.id,
-          service: b.serviceName,
-          vehicleName: car.vehicle.name,
-          scheduledDate: b.scheduledDate,
-          scheduledTime: b.scheduledTime,
-          durationMinutes: b.serviceDurationMinutes ?? 60,
-          changeable: true,
-        })),
-    ),
+    /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE — `upcomingOf`, the same
+       reader every other room uses, so "Your visits" cannot list a visit the
+       car's own room has stopped believing in.
+
+       TWO THINGS CHANGED HERE. It filtered on status alone, so a request the
+       studio never actioned sat in this list for ever under a heading that
+       says these are your visits, offering "Move it" and "Cancel the visit"
+       for a day that had already gone. And the list came out in GARAGE order —
+       27 July, then 28 July, then 24 July — because it walked the cars and
+       concatenated. Sorted across every car now, soonest first, by the one
+       comparator; the answer to "when is my next visit" is the top row.
+
+       Every upcoming visit is pending or confirmed by construction, which is
+       the same set `firestore.rules` allows the customer to change, so the
+       sheet still cannot offer an act the server will refuse. */
+    manageable: picture.cars
+      .flatMap(car => upcomingOf(car, now).map(b => ({ b, car })))
+      .sort((x, y) => soonestFirst(x.b, y.b))
+      .map(({ b, car }) => ({
+        id: b.id,
+        service: b.serviceName,
+        vehicleName: car.vehicle.name,
+        scheduledDate: b.scheduledDate,
+        scheduledTime: b.scheduledTime,
+        durationMinutes: b.serviceDurationMinutes ?? 60,
+        changeable: true,
+      })),
   };
 }
 

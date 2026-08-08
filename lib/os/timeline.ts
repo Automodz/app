@@ -28,7 +28,7 @@ import type { LiveProtection } from './protection';
 import type { ClubModel } from './club';
 import type { CarPicture } from '@/lib/customer/source';
 import { visitPhase } from './visit';
-import { completedOf, agreedOf, declinedOf } from '@/lib/customer/ownership';
+import { completedOf, nextVisitOf, declinedOf } from '@/lib/customer/ownership';
 
 export type TimelineKind =
   | 'acquired'
@@ -121,7 +121,7 @@ export function projectTimeline({ car, protections, club, now = new Date() }: Ti
     if (e) out.push(e);
   }
 
-  const booked = agreedOf(car);
+  const booked = nextVisitOf(car, now);
   if (booked) {
     const confirmed = visitPhase(booked.status) === 'agreed';
     const e = visitEvent(

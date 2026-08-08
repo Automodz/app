@@ -43,9 +43,59 @@ const millisOf = (t: unknown): number =>
 const newestFirst = (a: Booking, b: Booking) =>
   String(b.scheduledDate ?? '').localeCompare(String(a.scheduledDate ?? ''));
 
-/** Soonest scheduled first — what "the next visit" means. */
-const soonestFirst = (a: Booking, b: Booking) =>
-  String(a.scheduledDate ?? '').localeCompare(String(b.scheduledDate ?? ''));
+/**
+ * THE NEXT VISIT — one definition, for every surface that names one.
+ *
+ * There used to be two. This file's `agreedOf` took the SOONEST open booking
+ * and fed the Home hero, the ownership state machine and the timeline;
+ * `project.ts` kept a private `liveBooking` that took the FIRST match in a list
+ * ordered by `createdAt`, and fed Home's NEXT VISIT block, the Vehicle room and
+ * the Studio. On a car holding two open bookings the two disagreed, and Home
+ * said "Teflon Coating, 24 July" in its largest type directly above a section
+ * headed NEXT VISIT that said "Kovalent Prolong, 28 July". Both sentences were
+ * true about different bookings. Neither was the answer to the question.
+ *
+ * AND NEITHER LOOKED AT THE DATE. A request the studio never actioned stayed
+ * the car's next visit for ever: three of them were still being offered with a
+ * "Move it" control eleven days after the day they named.
+ *
+ * A visit is upcoming while the DAY it is booked for has not ended — not the
+ * hour. A customer whose 09:00 wash is still on the forecourt at 09:05 has not
+ * stopped having a visit today, and retiring it mid-morning would be the
+ * product being pedantic at their expense.
+ */
+
+/**
+ * Today, as the studio's booking records spell a day. Compared as a string
+ * against `scheduledDate`, which is the same shape and the same comparison
+ * `os/club` already uses to decide a membership has lapsed — §22.2, one
+ * implementation of one idea. (It reads UTC, as every other date comparison in
+ * the product does; a booking therefore turns over at 05:30 local rather than
+ * at midnight. Correcting that is a change to the whole date layer, not to this
+ * function, and inventing a second convention here would be worse than the
+ * five hours.)
+ */
+const todayISO = (now: Date) => now.toISOString().slice(0, 10);
+
+/** Open — requested or confirmed — and still ahead of us. */
+export const isUpcoming = (b: Booking, now: Date): boolean =>
+  ['proposed', 'agreed'].includes(visitPhase(b.status))
+  && String(b.scheduledDate ?? '') >= todayISO(now);
+
+/**
+ * Soonest first, and DETERMINISTIC. Two visits on the same day are separated by
+ * the hour, and two at the same hour by id, so which one a room calls "next"
+ * can never depend on the order Firestore happened to return the documents in.
+ */
+export const soonestFirst = (a: Booking, b: Booking) =>
+  String(a.scheduledDate ?? '').localeCompare(String(b.scheduledDate ?? ''))
+  || String(a.scheduledTime ?? '').localeCompare(String(b.scheduledTime ?? ''))
+  || String(a.id ?? '').localeCompare(String(b.id ?? ''));
+
+/** Every visit still ahead of this car, soonest first. */
+export function upcomingOf(car: CarPicture, now = new Date()): Booking[] {
+  return visitsOfCar(car).filter(b => isUpcoming(b, now)).sort(soonestFirst);
+}
 
 /**
  * The visits that count as this car's story: everything but the cancelled.
@@ -66,11 +116,14 @@ export function liveOf(car: CarPicture): Booking | null {
   return visitsOfCar(car).find(b => visitPhase(b.status) === 'live') ?? null;
 }
 
-/** The next visit agreed or requested — soonest, not newest. */
-export function agreedOf(car: CarPicture): Booking | null {
-  return visitsOfCar(car)
-    .filter(b => ['proposed', 'agreed'].includes(visitPhase(b.status)))
-    .sort(soonestFirst)[0] ?? null;
+/**
+ * THE next visit, or none at all. The single answer every room gives.
+ *
+ * Named for what it IS rather than for a booking status: `agreedOf` invited the
+ * reading "the confirmed one", and it returned requested visits too.
+ */
+export function nextVisitOf(car: CarPicture, now = new Date()): Booking | null {
+  return upcomingOf(car, now)[0] ?? null;
 }
 
 /**
@@ -81,7 +134,7 @@ export function agreedOf(car: CarPicture): Booking | null {
  * and it only speaks when nothing is in flight for the car.
  */
 export function declinedOf(car: CarPicture, now = Date.now()): Booking | null {
-  if (liveOf(car) || agreedOf(car)) return null;
+  if (liveOf(car) || nextVisitOf(car, new Date(now))) return null;
   return car.bookings
     .filter(b => b.status === 'cancelled' && (b.rejectionReason != null || b.noShow === true))
     .filter(b => now - (millisOf(b.cancelledAt) || millisOf(b.updatedAt)) <= DECLINE_WINDOW_MS)
@@ -108,6 +161,7 @@ export interface OwnershipRead {
   /** A recommendation, or null. Already suppressed per the rules below. */
   proposal: Proposal | null;
   live: Booking | null;
+  /** THE next visit — `nextVisitOf`, never anything a room worked out itself. */
   agreed: Booking | null;
   declined: Booking | null;
   completed: Booking[];
@@ -148,7 +202,7 @@ export function readOwnership(
   now = new Date(),
 ): OwnershipRead {
   const live = liveOf(car);
-  const agreed = agreedOf(car);
+  const agreed = nextVisitOf(car, now);
   const declined = declinedOf(car, now.getTime());
   const completed = completedOf(car);
   const club = clubOf(picture, now);

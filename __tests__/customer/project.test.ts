@@ -91,7 +91,17 @@ describe('stateOf — §5.3 #2, the present tense', () => {
   });
 
   it('a reserved visit is reserved, not "confirmed"', () => {
-    expect(stateOf(car({ bookings: [booking({ status: 'confirmed' })] })).word).toBe('Reserved');
+    /* Dated AHEAD of `NOW`. It used to sit on the fixture's default 18 July —
+       twelve days behind the clock these tests run at — and still read as
+       "Reserved", which is the whole of H2 in one assertion: a visit whose day
+       has gone was being presented as one that is coming. */
+    const ahead = booking({ status: 'confirmed', scheduledDate: '2026-08-04' });
+    expect(stateOf(car({ bookings: [ahead] }), NOW).word).toBe('Reserved');
+  });
+
+  it('a reservation whose day has passed is not the car’s state any more', () => {
+    const gone = booking({ status: 'confirmed', scheduledDate: '2026-07-18' });
+    expect(stateOf(car({ bookings: [gone] }), NOW).word).not.toBe('Reserved');
   });
 });
 

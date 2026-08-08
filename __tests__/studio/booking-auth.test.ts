@@ -171,10 +171,11 @@ describe('an arranged visit is visible and changeable', () => {
     expect(studio).toMatch(/next\.set\('manage', id\)/);
   });
 
-  it('the car points at its OWN visit, not merely at the Studio', () => {
-    /* `/studio` alone sent the customer to a room that showed no trace of the
-       booking they had come to change. */
-    const project = codeOf('lib/customer/project.ts');
-    expect(project).toMatch(/\?manage=\$\{next\.id\}/);
-  });
+  /* The assertion that stood here matched the literal `?manage=${next.id}` in
+     the projection's source. It broke the moment that expression moved into a
+     named helper, having proved nothing about what the customer gets — and a
+     source-shape check where the model itself can be asked is the string-
+     matching this codebase keeps having to unlearn. Asked of the model now, in
+     `__tests__/customer/next-visit.test.ts`, where every room's answer is
+     compared against every other room's. */
 });
