@@ -54,40 +54,65 @@ describe('visit translation boundary', () => {
 describe('truthOf priority', () => {
   const visit = (status: Booking['status'], date = iso(3)): Booking =>
     ({ status, scheduledDate: date, scheduledTime: '10:00' } as unknown as Booking);
+  const none = { live: null, next: null };
 
   it('live beats everything', () => {
     expect(truthOf({
-      visits: [visit('in_progress'), visit('confirmed')],
+      live: visit('in_progress'), next: visit('confirmed'),
       protections: [{ label: 'Ceramic coat', expiresOn: iso(5) }],
       now: NOW,
     })).toBe('In the studio - in care.');
   });
   it('ready reads as ready', () => {
-    expect(truthOf({ visits: [visit('ready_for_delivery')], protections: [], now: NOW }))
+    expect(truthOf({ ...none, live: visit('ready_for_delivery'), protections: [], now: NOW }))
       .toBe('Ready for collection.');
   });
   it('agreed beats term edge', () => {
     const t = truthOf({
-      visits: [visit('confirmed')],
+      ...none, next: visit('confirmed'),
       protections: [{ label: 'Ceramic coat', expiresOn: iso(5) }],
       now: NOW,
     });
     expect(t).toContain("we're ready for it");
   });
+
+  /**
+   * IT DOES NOT DECIDE WHICH VISIT IS NEXT, AND MUST NOT LEARN TO.
+   *
+   * This engine used to take the whole booking list and pick the next visit
+   * itself — the third implementation of that question, and the one that
+   * outlived the other two. It was hidden because Home suppressed this
+   * sentence whenever a visit was booked; when lapsed requests stopped
+   * counting as booked, this line began announcing the bookings that had just
+   * been retired, under a hero reading "Cared for".
+   */
+  it('says nothing about a visit it was not handed', () => {
+    expect(truthOf({ ...none, protections: [], now: NOW })).not.toContain('ready for it');
+  });
+  it('a booking with no hour is named by its day, not by an invented time', () => {
+    const noTime = { status: 'confirmed', scheduledDate: iso(3) } as unknown as Booking;
+    const t = truthOf({ ...none, next: noTime, protections: [], now: NOW });
+    expect(t).toContain("we're ready for it");
+    expect(t).not.toContain('undefined');
+  });
+
   it('term edge beats care due; protected is the quiet floor', () => {
     expect(truthOf({
-      visits: [], protections: [{ label: 'Ceramic coat', expiresOn: iso(5) }],
+      ...none, protections: [{ label: 'Ceramic coat', expiresOn: iso(5) }],
       lastCaredOn: iso(-60), now: NOW,
     })).toBe('Ceramic coat - 6 days of protection left.');
     expect(truthOf({
-      visits: [], protections: [{ label: 'Ceramic coat', expiresOn: iso(200) }], now: NOW,
+      ...none, protections: [{ label: 'Ceramic coat', expiresOn: iso(200) }], now: NOW,
     })).toBe('All quiet. Protected.');
-    expect(truthOf({ visits: [], protections: [], now: NOW })).toBe('All quiet.');
+    expect(truthOf({ ...none, protections: [], now: NOW })).toBe('All quiet.');
   });
   it('never leaks ops vocabulary', () => {
-    for (const s of ['pending', 'in_progress', 'quality_check', 'ready_for_delivery'] as const) {
-      expect(truthOf({ visits: [visit(s)], protections: [], now: NOW })).not.toMatch(/_|pending|progress|quality/);
+    for (const s of ['in_progress', 'quality_check', 'ready_for_delivery'] as const) {
+      expect(truthOf({ ...none, live: visit(s), protections: [], now: NOW }))
+        .not.toMatch(/_|pending|progress|quality/);
     }
+    expect(truthOf({ ...none, next: visit('pending'), protections: [], now: NOW }))
+      .not.toMatch(/_|pending|progress|quality/);
   });
 });
 

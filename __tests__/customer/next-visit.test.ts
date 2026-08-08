@@ -127,6 +127,14 @@ describe('the next visit', () => {
     expect(a.studioAll).toEqual([]);
     /* And the car is not described as booked in. */
     expect(stateOf(car([gone, alsoGone]), NOW).word).not.toBe('Reserved');
+
+    /* NOR ANYWHERE ELSE ON THE SCREEN. `os/truth` derived its own next visit
+       from the raw list, and Home only ever hid that because a booked car
+       suppressed the sentence. Retiring the booking unsuppressed it, and Home
+       read "Cared for" over "Friday 11:00 - we're ready for it." about a
+       Friday that had gone. */
+    const home = toHome(picture([car([gone, alsoGone])]), NOW);
+    expect(home?.truth ?? '').not.toContain('ready for it');
   });
 
   it('PAST AND FUTURE — the past one is never the answer', () => {

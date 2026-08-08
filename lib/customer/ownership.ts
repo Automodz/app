@@ -243,8 +243,12 @@ export function readOwnership(
       expiresOn: (p.term as { expiresOn: string }).expiresOn,
     }));
 
+  /* THE SAME TWO BOOKINGS the state, the hero, the Vehicle room and the Studio
+     are reading. `truthOf` used to be handed the whole list and pick its own,
+     which made it a third answer to "the next visit" — see its own note. */
   const truth = truthOf({
-    visits,
+    live,
+    next: agreed,
     protections: facts,
     lastCaredOn: completed[0]?.scheduledDate,
     now,
