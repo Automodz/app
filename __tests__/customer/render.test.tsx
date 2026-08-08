@@ -86,7 +86,7 @@ const car: CarPicture = {
 
 const picture: CustomerPicture = {
   user: { uid: 'u1', name: 'Meera Shah', email: 'meera@example.test', phone: '+91 90000 00000', role: 'customer' } as User,
-  cars: [car], subscription, subscriptions: [subscription], invoices: [], catalogue: [] as Service[],
+  cars: [car], subscription, subscriptions: [subscription], invoices: [], notifications: [], catalogue: [] as Service[],
 };
 
 /** Ops vocabulary that must never reach a customer surface (§5.5, §21.8, §2.2). */
@@ -334,7 +334,7 @@ it('Membership renders the three facts, and the invitation when unheld', () => {
 it('a brand-new customer with one unphotographed car renders every room', () => {
   const bare: CustomerPicture = {
     ...picture,
-    subscription: null, subscriptions: [], invoices: [],
+    subscription: null, subscriptions: [], invoices: [], notifications: [],
     cars: [{
       vehicle: { id: 'v9', name: 'Tata Nexon', registrationNumber: 'GJ 01 ZZ 9999', createdAt: ts('2026-07-29T10:00:00Z') },
       protections: [], visits: [], bookings: [], jobs: [],

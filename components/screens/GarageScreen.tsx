@@ -82,6 +82,15 @@ export interface GarageVehicle {
    * the subject, and a tally is the transaction talking.
    */
   relationship: string;
+  /**
+   * SOMETHING THE STUDIO SAID ABOUT THIS CAR THAT HAS NOT BEEN SEEN.
+   *
+   * §17.1 — "State changes surface as state. The car is the inbox." A mark on
+   * the car, so the collection is where the customer discovers it; the car's
+   * own room carries the doorway to the object it is about (§17.3). Never a
+   * count, never a body, and never a list.
+   */
+  news?: boolean;
   href: string;
 }
 
@@ -127,7 +136,7 @@ function Vehicle(
   { vehicle, lead, onEdit }:
   { vehicle: GarageVehicle; lead: boolean; onEdit: () => void },
 ) {
-  const { name, plate, photo, state, protection, relationship, href } = vehicle;
+  const { name, plate, photo, state, protection, relationship, news, href } = vehicle;
 
   /* The frame is the link and the edit control sits ON it, so the control is a
      sibling of the link rather than a child — a button inside an anchor is
@@ -155,9 +164,24 @@ function Vehicle(
         style={photo ? { height: lead ? photoSize.lead : photoSize.next } : undefined}
         overlay={
           <div style={{ maxWidth: MEASURE }}>
-            <Text role="data" tone="over" as="span">
-              {name} · {plate}
-            </Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: space.line }}>
+              <Text role="data" tone="over" as="span">
+                {name} · {plate}
+              </Text>
+              {news ? (
+                /* One mark. It says only that there is something here the
+                   customer has not seen, which is the whole of what §17.1
+                   permits a notification to become. */
+                <span
+                  aria-label="Something new"
+                  role="img"
+                  style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: color.over, flex: '0 0 auto',
+                  }}
+                />
+              ) : null}
+            </div>
 
             {/* §9.5 — the one Display belongs to the first position. Every
                 other car speaks at Title: still the subject of its own

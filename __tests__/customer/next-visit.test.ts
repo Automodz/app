@@ -54,7 +54,7 @@ const car = (bookings: Booking[] = [], over: Partial<CarPicture> = {}): CarPictu
 
 const picture = (cars: CarPicture[]): CustomerPicture => ({
   user: { uid: 'u1', name: 'Nikhil Patel', email: 'n@example.com', role: 'customer' } as User,
-  cars, subscription: null, subscriptions: [], invoices: [], catalogue: [] as Service[],
+  cars, subscription: null, subscriptions: [], invoices: [], notifications: [], catalogue: [] as Service[],
 });
 
 /** What each room calls the next visit, by id. `undefined` when it names none. */

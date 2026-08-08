@@ -46,7 +46,7 @@ const car = (over: Partial<CarPicture> = {}): CarPicture => ({
 const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
   user: { uid: 'u1', name: 'Nikhil Patel', email: 'n@example.com',
     role: 'customer' } as User,
-  cars: [], subscription: null, subscriptions: [], invoices: [],
+  cars: [], subscription: null, subscriptions: [], invoices: [], notifications: [],
   catalogue: [] as Service[], ...over,
 });
 

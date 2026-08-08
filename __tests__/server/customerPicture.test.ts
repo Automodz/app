@@ -10,6 +10,9 @@ const makeQuery = (path: string, docs: unknown[]) => {
   const wheres: [string, string, unknown][] = [];
   const q = {
     where(f: string, op: string, v: unknown) { wheres.push([f, op, v]); return q; },
+    /* The notification read caps its page, so the fake has to answer `limit`
+       as Firestore does — chainably, and without losing the filters. */
+    limit(_n: number) { return q; },
     async get() {
       calls.push({ path, wheres });
       return { docs: docs.map((d, i) => ({ id: `${path}-${i}`, data: () => d })) };
@@ -29,6 +32,11 @@ const DATA: Record<string, unknown[]> = {
   visits: [{ vehicleId: 'x', status: 'sealed' }],
   bookings: [{ userId: 'u1', status: 'completed' }],
   jobs: [{ customerId: 'u1' }],
+  /* §17.1 — read to resolve an unread record to the surface that owns it,
+     never to draw a list. Owned data, so it is scoped like everything else. */
+  notifications: [
+    { userId: 'u1', title: 'Ready for Pickup', type: 'booking_update', read: false },
+  ],
 };
 
 jest.mock('@/lib/server/firebaseAdmin', () => ({
@@ -50,6 +58,7 @@ it('loads the whole picture for one verified customer', async () => {
   expect(p.cars).toHaveLength(2);
   expect(p.subscription).not.toBeNull();
   expect(p.catalogue).toHaveLength(1);
+  expect(p.notifications).toHaveLength(1);
 });
 
 it('SCOPES EVERY collection query by the session uid or by a vehicle under it', async () => {
@@ -69,11 +78,13 @@ it('SCOPES EVERY collection query by the session uid or by a vehicle under it', 
     expect(c.wheres.some(([f, op]) => f === 'vehicleId' && op === '==')).toBe(true);
   }
   expect(byPath('subscriptions')[0].wheres).toEqual([['userId', '==', 'u1']]);
+  /* And the notifications, which are as much this customer's as their cars. */
+  expect(byPath('notifications')[0].wheres).toEqual([['userId', '==', 'u1']]);
 });
 
 it('never issues an unscoped query against an owned collection', async () => {
   await loadCustomerPicture({ uid: 'u1' });
-  const owned = ['bookings', 'jobs', 'protections', 'visits', 'subscriptions'];
+  const owned = ['bookings', 'jobs', 'protections', 'visits', 'subscriptions', 'notifications'];
   for (const c of calls) {
     if (owned.includes(c.path)) expect(c.wheres.length).toBeGreaterThan(0);
   }

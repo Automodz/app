@@ -9,14 +9,14 @@
  * fallback — comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
-import type { Booking, Invoice, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
+import type { Booking, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
 import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
 import { liveProtection, projectProtections, sortByUrgency } from '@/lib/os/protection';
 import { visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
-import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst } from './ownership';
+import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst, isUpcoming } from './ownership';
 import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
@@ -693,6 +693,9 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
             ? 'Fully protected'
             : `${PROTECTION_TITLE[worst.kind]}, ${termWords(worst.term, now).toLowerCase()}`,
         relationship: sinceWords(car),
+        /* §17.1 — the car is the inbox, so the collection carries the mark and
+           the car's own room carries the doorway. Nothing here is a message. */
+        news: !!noticeOf(picture, car, now),
         href: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
       };
     }),
@@ -712,6 +715,88 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
       registrationNumber: car.vehicle.registrationNumber,
     })),
   };
+}
+
+/* ── NEWS ────────────────────────────────────────────────────────────────── */
+
+/**
+ * AN UNREAD NOTIFICATION, RESOLVED TO THE SURFACE THAT OWNS IT.
+ *
+ * §17.1 — "A list of notifications is the same mistake as a list of documents.
+ * State changes surface as state. The car is the inbox." So there is no inbox
+ * and this builds none: it returns AT MOST ONE unread record per car, as a mark
+ * on the car it belongs to, and the mark is a doorway to the object rather than
+ * a message to be processed.
+ *
+ * §17.3 — "A notification is a doorway. It opens the exact surface it is about
+ * — never the home screen, never a generic list." Which surface that is depends
+ * on the state of the object NOW, not on the state it was in when the push went
+ * out. `navigation/resolve.notificationHref` is the WRITE-time resolver and it
+ * is right at the moment it runs; by the time the customer taps, the visit it
+ * addressed may have been sealed under a different id, or never sealed at all.
+ * Resolved against the picture here for that reason, using the same readers
+ * every other room uses — `liveOf`, the sealed visit, `isUpcoming`.
+ *
+ * WHERE THERE IS NO OWNING SURFACE, THERE IS NO SIGNAL. Ten of the nineteen
+ * customer notifications in production are about a booking that was completed
+ * or cancelled and never sealed into a visit; those have no surface to open and
+ * no destination is invented for them. That gap is reported, not papered over.
+ */
+export interface Notice {
+  /** The record, so consuming the doorway can mark exactly it read. */
+  id: string;
+  /** The studio's own subject line. Never the body, and never a list of them. */
+  title: string;
+  /** The surface that owns the fact. Always real, or there is no notice. */
+  href: string;
+}
+
+/** Where this notification's object lives now, or null if nowhere. */
+function surfaceOf(
+  n: Notification, picture: CustomerPicture, car: CarPicture, now: Date,
+): string | null {
+  if (n.type === 'membership') return hrefForDestination({ to: 'membership' });
+  if (!n.bookingId) return null;
+
+  const live = liveOf(car);
+  if (live && live.id === n.bookingId) {
+    return hrefForDestination({ to: 'visit', visitId: live.id });
+  }
+  /* The sealed record carries its own id, which is NOT the booking's — a
+     notification written during the visit addresses the booking. */
+  const sealed = visitsOf(car).find(v => v.bookingId === n.bookingId);
+  if (sealed) return hrefForDestination({ to: 'visit', visitId: sealed.id });
+
+  const booking = car.bookings.find(b => b.id === n.bookingId);
+  if (booking && isUpcoming(booking, now)) return manageHref(booking.id);
+
+  return null;
+}
+
+/** The newest unread thing about this car that has somewhere to go. */
+export function noticeOf(
+  picture: CustomerPicture, car: CarPicture, now = new Date(),
+): Notice | undefined {
+  const mine = new Set([
+    ...car.bookings.map(b => b.id),
+  ]);
+  for (const n of picture.notifications) {
+    if (n.read === true) continue;
+    /* A membership notice belongs to the club, not to any one car, and is not
+       carried here — the Membership room is its own surface. */
+    if (!n.bookingId || !mine.has(n.bookingId)) continue;
+    const href = surfaceOf(n, picture, car, now);
+    if (href) return { id: n.id, title: n.title, href };
+  }
+  return undefined;
+}
+
+/** Every unread notification about this car that has nowhere to go. */
+export function unmappableOf(picture: CustomerPicture, car: CarPicture, now = new Date()): number {
+  const mine = new Set(car.bookings.map(b => b.id));
+  return picture.notifications.filter(n =>
+    n.read !== true && !!n.bookingId && mine.has(n.bookingId)
+    && !surfaceOf(n, picture, car, now)).length;
 }
 
 /* ── VEHICLE ─────────────────────────────────────────────────────────────── */
@@ -826,6 +911,9 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
        the category unset but the room already knows whose visit it is. */
     arrangeHref: `${hrefForDestination({ to: 'studio' })}?arrange=1`,
     since: sinceWords(car, 'With AutoModz since').replace(/^with/, 'With'),
+    /* §17.1 — the car IS the inbox. One unread thing about this car, as a
+       doorway to the object it is about. Never a feed, never a body. */
+    notice: noticeOf(picture, car, now),
     /* Carries the car. Without it, following History from the second car in a
        garage showed the FIRST car's life. */
     historyHref: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),

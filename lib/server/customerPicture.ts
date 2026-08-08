@@ -21,11 +21,13 @@ import 'server-only';
 import { cache } from 'react';
 import { adminDb } from './firebaseAdmin';
 import type {
-  Booking, Invoice, Job, Protection, Service, Subscription, User, Vehicle, Visit,
+  Booking, Invoice, Job, Notification, Protection, Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
 
 const normReg = (reg: string) => reg.replace(/\s+/g, '').toUpperCase();
+
+const millis = (t?: { toMillis?: () => number }) => t?.toMillis?.() ?? 0;
 
 /** Admin `Timestamp` is structurally the client's; the projections read both. */
 const rows = <T>(snap: { docs: { id: string; data: () => unknown }[] }): T[] =>
@@ -58,7 +60,7 @@ async function _loadCustomerPicture(session: {
   const db = adminDb;
   const { uid } = session;
 
-  const [profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap] = await Promise.all([
+  const [profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap, notifSnap] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.collection(`users/${uid}/vehicles`).get(),
     db.collection('subscriptions').where('userId', '==', uid).get(),
@@ -68,6 +70,11 @@ async function _loadCustomerPicture(session: {
        History stays one server read, and scoped to this customer — the rules
        would refuse anything wider anyway. */
     db.collection('invoices').where('customerId', '==', uid).get(),
+    /* WHAT THE STUDIO HAS SENT THEM — scoped by the session uid like every
+       other query here. Read to resolve an unread record to the surface that
+       owns it (§17.3), never to draw a list (§17.1). No `orderBy`, so no
+       composite index; sorted below. */
+    db.collection('notifications').where('userId', '==', uid).limit(30).get(),
   ]);
 
   const subscriptions = rows<Subscription>(subSnap).sort(
@@ -135,5 +142,8 @@ async function _loadCustomerPicture(session: {
     subscriptions,
     catalogue: rows<Service>(serviceSnap),
     invoices: rows<Invoice>(invoiceSnap),
+    /* Newest first — which one is "the latest news" depends on it. */
+    notifications: rows<Notification>(notifSnap)
+      .sort((a, b) => millis(b.createdAt) - millis(a.createdAt)),
   };
 }

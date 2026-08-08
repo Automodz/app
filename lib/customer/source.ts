@@ -24,8 +24,9 @@ import { getProtections } from '@/lib/services/protections';
 import { getVisitsForVehicle } from '@/lib/services/visits';
 import { getUserSubscription } from '@/lib/services/subscriptions';
 import { getServices } from '@/lib/services/services';
+import { getUserNotifications } from '@/lib/services/notifications';
 import type {
-  Booking, Invoice, Job, Protection, Service, Subscription, User, Vehicle, Visit,
+  Booking, Invoice, Job, Notification, Protection, Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 
 /** Everything known about one car. */
@@ -47,6 +48,17 @@ export interface CustomerPicture {
   subscriptions: Subscription[];
   /** This owner's invoices — the papers a chapter hands over. */
   invoices: Invoice[];
+  /**
+   * WHAT THE STUDIO HAS SENT THEM.
+   *
+   * NOT so a list can be drawn — §17.1 forbids one, and the enforcement test
+   * still stands. Read so that an UNREAD record can be resolved to the surface
+   * that owns the fact it is about (§17.3) and surfaced there as state. Forty-
+   * two of these had been written and nothing in the customer application read
+   * one, so a car that was ready to collect said so only in a push the customer
+   * may never have seen.
+   */
+  notifications: Notification[];
   /** Consulted only to capture terms that were never recorded. */
   catalogue: Service[];
 }
@@ -64,10 +76,12 @@ export type CustomerState =
  * can be tested without a renderer — the hook does React, this does data.
  */
 export async function loadPicture(user: User): Promise<CustomerPicture> {
-  const [vehicles, subscription, catalogue] = await Promise.all([
+  const [vehicles, subscription, catalogue, notifications] = await Promise.all([
     getVehicles(user.uid),
     getUserSubscription(user.uid),
     getServices(),
+    /* The existing reader, reused. Rules already scope it to its owner. */
+    getUserNotifications(user.uid),
   ]);
 
   /* A customer has a handful of cars, so this is a handful of parallel queries
@@ -82,7 +96,11 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
     return { vehicle, protections, visits, bookings, jobs };
   }));
 
-  return { user, cars, subscription, subscriptions: subscription ? [subscription] : [], invoices: [], catalogue };
+  return {
+    user, cars, subscription,
+    subscriptions: subscription ? [subscription] : [],
+    invoices: [], notifications, catalogue,
+  };
 }
 
 export function useCustomerPicture(): CustomerState {

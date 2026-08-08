@@ -57,7 +57,7 @@ const picture = (): CustomerPicture => ({
     createdAt: ts('2026-07-10T00:00:00Z'), updatedAt: ts('2026-07-10T00:00:00Z'),
   } as Subscription,
   subscriptions: [],
-  invoices: [],
+  invoices: [], notifications: [],
   catalogue: [{
     id: 'svc1', name: 'Ceramic coating', category: 'Ceramic', price: 64000,
     createdAt: ts('2026-01-01T00:00:00Z'),

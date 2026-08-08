@@ -66,6 +66,11 @@ import {
 } from '@/design';
 import type { StateTone } from '@/design';
 import Image from 'next/image';
+import Link from 'next/link';
+/* The existing single-record writer, reused. `getUserNotifications` and
+   `markAllNotificationsRead` stay out of `app/` and `components/` — §17.1's
+   enforcement test forbids them there, and nothing here needs them. */
+import { markNotificationRead } from '@/lib/services/notifications';
 import { Hero, Heading, Text, Button, Modal, OfflineNote, Glass } from '@/components/system';
 import { REGION_NAME } from '@/components/vehicle';
 import type { RegionId, RenderedRegion, VehicleRendering } from '@/components/vehicle';
@@ -134,6 +139,16 @@ export interface VehicleModel {
   historyHref: string;
   /** §11.1 — protection belongs to the car. Keyed to the part it protects. */
   protections: readonly VehicleProtection[];
+  /**
+   * ONE UNREAD THING ABOUT THIS CAR — §17.1's own prescription, applied.
+   *
+   * "There is no inbox. State changes surface as state. The car is the inbox."
+   * So this is not a message and not a feed: it is a mark on the car, carrying
+   * the studio's own subject line, and it is a doorway to the object the fact
+   * belongs to (§17.3) — the visit in flight, the sealed record, or the booking
+   * still to come. Where the object has no surface, there is no mark.
+   */
+  notice?: { id: string; title: string; href: string };
   /** Every photograph of this car, newest month first. May be empty. */
   media: readonly VehicleMediaMonth[];
   /** Where the car is corrected. */
@@ -337,9 +352,49 @@ function Saying({
  * The absence keeps the first screenful. Everything the car can DO lives
  * beneath it either way.
  */
+/**
+ * THE ONE UNREAD THING, AS A DOORWAY.
+ *
+ * §17.1 forbids a list and this is not one: at most one mark, on the car it
+ * belongs to. §17.3 makes it a doorway to the exact surface the fact lives on,
+ * and opening that surface is what "reading" it means — so it is marked read on
+ * the way through rather than by a control that says "mark as read".
+ *
+ * A failure to write costs a mark that reappears on the next load, so it is not
+ * worth an alarm and never blocks the navigation.
+ */
+function Notice({ notice }: { notice: NonNullable<VehicleModel['notice']> }) {
+  return (
+    <section style={{ ...column, paddingTop: space.rest }}>
+      <Link
+        href={notice.href}
+        onClick={() => { void markNotificationRead(notice.id).catch(() => {}); }}
+        style={{ textDecoration: 'none', display: 'block' }}
+      >
+        <Glass pad="gap">
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: space.line }}>
+            {/* The mark sits on the words, not in a corner: it is the one
+                thing here that says this has not been seen. */}
+            <span
+              aria-hidden
+              style={{
+                width: 6, height: 6, borderRadius: '50%', background: color.ink,
+                flex: '0 0 auto', transform: 'translateY(-3px)',
+              }}
+            />
+            <Text role="body" tone="ink">{notice.title}</Text>
+          </div>
+        </Glass>
+      </Link>
+    </section>
+  );
+}
+
 function Acts({ model }: { model: VehicleModel }) {
   return (
     <>
+      {model.notice ? <Notice notice={model.notice} /> : null}
+
       {/* ── WHAT IT HAS COMING ──────────────────────────────────────────
           The room named the car's state and then said nothing about when. A
           customer looking at their own car had to go to the Studio and find

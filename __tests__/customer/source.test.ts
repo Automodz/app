@@ -11,6 +11,7 @@ const getBookingsForVehicle = jest.fn();
 const getJobsForVehicle = jest.fn();
 const getUserSubscription = jest.fn();
 const getServices = jest.fn();
+const getUserNotifications = jest.fn();
 
 jest.mock('@/lib/services/vehicles', () => ({
   getVehicles: (...a: unknown[]) => getVehicles(...a),
@@ -24,6 +25,9 @@ jest.mock('@/lib/services/visits', () => ({
 }));
 jest.mock('@/lib/services/subscriptions', () => ({ getUserSubscription: (...a: unknown[]) => getUserSubscription(...a) }));
 jest.mock('@/lib/services/services', () => ({ getServices: (...a: unknown[]) => getServices(...a) }));
+/* §17.1 — read so an UNREAD record can be resolved to the surface that owns
+   it. No list is drawn from it; see `noticeOf`. */
+jest.mock('@/lib/services/notifications', () => ({ getUserNotifications: (...a: unknown[]) => getUserNotifications(...a) }));
 jest.mock('@/lib/store', () => ({ useAppStore: () => null }));
 
 import { loadPicture } from '@/lib/customer/source';
@@ -42,6 +46,7 @@ beforeEach(() => {
   getJobsForVehicle.mockResolvedValue([]);
   getUserSubscription.mockResolvedValue(null);
   getServices.mockResolvedValue([]);
+  getUserNotifications.mockResolvedValue([]);
 });
 
 it('loads one picture covering every car', async () => {
@@ -50,6 +55,8 @@ it('loads one picture covering every car', async () => {
   expect(p.cars.map(c => c.vehicle.id)).toEqual(['v1', 'v2']);
   expect(getVehicles).toHaveBeenCalledWith('u1');
   expect(getUserSubscription).toHaveBeenCalledWith('u1');
+  /* Scoped to the owner, like every other read here. */
+  expect(getUserNotifications).toHaveBeenCalledWith('u1');
 });
 
 it('reads protections and visits by vehicle id, and jobs and bookings by plate', async () => {
