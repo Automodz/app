@@ -98,7 +98,7 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
             <span>Subtotal</span><span>{inr(invoice.subtotal)}</span>
           </div>
           {invoice.discount && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13, color: '#059669' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13, color: '#444' }}>
               <span>{invoice.discount.label}</span><span>−{inr(invoice.discount.amount)}</span>
             </div>
           )}
@@ -115,7 +115,7 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
           </div>
           <div style={{
             textAlign: 'right', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: invoice.paymentStatus === 'paid' ? '#059669' : '#D97706', fontWeight: 700, marginTop: 4,
+            color: invoice.paymentStatus === 'paid' ? '#111' : '#666', fontWeight: 700, marginTop: 4,
           }}>
             {invoice.paymentStatus === 'paid' ? `Paid · ${invoice.paymentMethod.toUpperCase()}` : 'Payment pending'}
           </div>
@@ -138,7 +138,7 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
                   position: 'absolute', bottom: 4, left: 4, fontSize: 9, fontWeight: 700,
                   textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px',
                   borderRadius: 6, background: 'rgba(0,0,0,0.65)',
-                  color: p.kind === 'after' ? '#6EE7B7' : '#FCD34D',
+                  color: '#FFF',
                 }}>{p.kind}</span>
               </div>
             ))}

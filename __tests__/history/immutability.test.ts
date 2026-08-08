@@ -145,7 +145,12 @@ describe('a chapter carries what the visit sealed', () => {
   it('the invoice is matched on the visit’s own ids, never on date or amount', () => {
     const v = toVisit(sealed(), car(), [invoice]);
     expect(v.documents?.[0].label).toContain('AMZ-2026-0001');
-    expect(v.documents?.[0].href).toBe('/invoice/i1?t=tok');
+    /* The document, with its own share token. It also carries the visit that
+       sent them — the paper is a shared address and has no history behind it
+       when it arrives in a message, so without this there is no way back. */
+    expect(v.documents?.[0].href).toContain('/invoice/i1');
+    expect(v.documents?.[0].href).toContain('t=tok');
+    expect(v.documents?.[0].href).toContain(`from=${encodeURIComponent('/history/v1')}`);
   });
 
   it('a paid invoice reads as a receipt', () => {

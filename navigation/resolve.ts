@@ -129,7 +129,16 @@ export type Destination =
   | { to: 'sell' }
   | { to: 'history.car'; vehicleId: string }
   | { to: 'garage.edit'; vehicleId: string }
-  | { to: 'invoice'; invoiceId: string; token?: string }
+  /**
+   * `fromVisitId` — the visit that sent them, when one did.
+   *
+   * The paper is a SHARED address: opened from a message it has no history
+   * behind it, so `history.back()` is not a way out. Told which visit sent
+   * them, the page can offer the record itself. Built here because addresses
+   * are built here and nowhere else — a projection that assembled this query
+   * string would be a second route table (`__tests__/integration/product`).
+   */
+  | { to: 'invoice'; invoiceId: string; token?: string; fromVisitId?: string }
   | { to: 'chapter'; invoiceId: string; token?: string }
   | { to: 'welcome'; forced?: boolean }
   | { to: 'welcome.step'; step: string; forced?: boolean };
@@ -156,7 +165,9 @@ export const hrefForDestination = (d: Destination): string => {
     case 'sell':             return SELL;
     case 'history.car':      return `${HISTORY}?car=${d.vehicleId}`;
     case 'garage.edit':      return `${GARAGE}?edit=${d.vehicleId}`;
-    case 'invoice':          return shared('/invoice', d.invoiceId, d.token);
+    case 'invoice':          return d.fromVisitId
+      ? `${shared('/invoice', d.invoiceId, d.token)}${d.token ? '&' : '?'}from=${encodeURIComponent(visit(d.fromVisitId))}`
+      : shared('/invoice', d.invoiceId, d.token);
     case 'chapter':          return shared('/chapter', d.invoiceId, d.token);
     case 'welcome':          return welcome(undefined, d.forced);
     case 'welcome.step':     return welcome(d.step, d.forced);

@@ -1079,8 +1079,13 @@ export function toVisit(
           label: invoice.paymentStatus === 'paid'
             ? `Receipt · ${invoice.invoiceNumber}`
             : `Invoice · ${invoice.invoiceNumber}`,
+          /* CARRIES WHERE IT CAME FROM, resolved by the one resolver. The
+             paper is a shared address with no history behind it when opened
+             from a message; told which visit sent them, it offers the record
+             rather than a dead end. */
           href: hrefForDestination({
             to: 'invoice', invoiceId: invoice.id, token: invoice.publicToken,
+            fromVisitId: visit.id,
           }),
         }]
       : [],
