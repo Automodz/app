@@ -235,26 +235,45 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
     ...over,
   } as Protection);
 
-  it('maps only physical protections onto a region', () => {
+  it('carries EVERY protection, and a region only where there is one', () => {
+    /* It kept only the four kinds that sit somewhere on the paint and dropped
+       the rest, so insurance, the pollution certificate, the registration and
+       the FASTag were never projected into the car's own room at all. */
     const m = toVehicle(car({ protections: [
       protection({ kind: 'ceramic' }),
       protection({ id: 'p2', kind: 'insurance', term: { kind: 'dated', expiresOn: '2026-09-01' } }),
       protection({ id: 'p3', kind: 'glass' }),
     ] }), picture({ cars: [] }), NOW);
-    expect(m.protections.map(p => p.region).sort()).toEqual(['glass', 'paint']);
+
+    expect(m.protections.map(p => p.label).sort())
+      .toEqual(['Ceramic coating', 'Glass coating', 'Insurance']);
+    expect(m.protections.find(p => p.label === 'Insurance')?.region).toBeUndefined();
+    expect(m.protections.filter(p => p.region).map(p => p.region).sort())
+      .toEqual(['glass', 'paint']);
+    /* And each one says when it runs out, in the term engine's own words. */
+    expect(m.protections.every(p => p.term.length > 0)).toBe(true);
   });
 
-  it('never puts a membership on a car region', () => {
+  it('never puts a membership on the car', () => {
+    /* §15.2 places the membership among Home's protections, where `os/club`
+       owns it. In the car's room it would be the same fact under a second
+       owner — and it is not a layer on this vehicle. */
     const m = toVehicle(car({ protections: [protection({ kind: 'membership' })] }), picture({ cars: [] }), NOW);
     expect(m.protections).toHaveLength(0);
   });
 
-  it('one region answers once, even with two coatings on the paint', () => {
+  it('two coatings on the paint are both listed, and the region answers once', () => {
     const m = toVehicle(car({ protections: [
       protection({ id: 'a', kind: 'ceramic' }),
       protection({ id: 'b', kind: 'ppf' }),
     ] }), picture({ cars: [] }), NOW);
-    expect(m.protections.filter(p => p.region === 'paint')).toHaveLength(1);
+
+    /* Both are real and both are said — a car with film under a coating has
+       two layers on its paint. */
+    expect(m.protections.filter(p => p.region === 'paint')).toHaveLength(2);
+    /* Touching the region still resolves to exactly one answer, which is what
+       `Saying` does with `.find`. */
+    expect(m.protections.find(p => p.region === 'paint')?.label).toBeTruthy();
   });
 });
 

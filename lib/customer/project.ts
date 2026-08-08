@@ -746,17 +746,36 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
   const catalogue = picture.catalogue;
   const protections = protectionsOf(car, catalogue, now);
 
-  const byRegion: VehicleProtection[] = [];
-  for (const p of protections) {
-    const region = REGION_OF[p.kind];
-    if (!region || byRegion.some(x => x.region === region)) continue;
-    byRegion.push({
-      region,
-      label: PROTECTION_TITLE[p.kind],
-      term: termWords(p.term, now),
-      documentHref: p.document ? p.document.url : undefined,
-    });
-  }
+  /**
+   * EVERY LAYER, NOT THE FOUR THAT SIT SOMEWHERE ON THE PAINT.
+   *
+   * This built a list keyed by region and dropped anything without one, which
+   * threw away insurance, the pollution certificate, the registration and the
+   * FASTag — six of the ten kinds. The survivors were then drawn only as marks
+   * on the photograph, positioned by `regionsFor()`, which returns nothing
+   * because no photograph has ever had its regions authored. Between the two,
+   * a car with seven live protections showed none of them in its own room.
+   *
+   * The region is carried where there is one, so the marks work unchanged the
+   * day the studio starts locating them; `sortByUrgency` has already put the
+   * one that needs attention first.
+   */
+  const layers: VehicleProtection[] = protections
+    /* THE CLUB IS NOT A LAYER ON THE CAR. §15.2 places a membership among the
+       protections, and Home does exactly that — but it belongs to the person
+       and to `os/club`, and listing it in the car's own room would be the same
+       fact in a second place under a different owner. */
+    .filter(p => p.kind !== 'membership')
+    .map(p => ({
+    id: p.id,
+    region: REGION_OF[p.kind],
+    label: PROTECTION_TITLE[p.kind],
+    term: termWords(p.term, now),
+    tone: TONE[p.health],
+    /* §14.6 — the file where one exists. Nothing writes `document` yet, so
+       this is undefined throughout; the room draws no control for it. */
+    documentHref: p.document ? p.document.url : undefined,
+  }));
 
   /**
    * THE CAR'S NEXT VISIT.
@@ -810,7 +829,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     /* Carries the car. Without it, following History from the second car in a
        garage showed the FIRST car's life. */
     historyHref: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),
-    protections: byRegion,
+    protections: layers,
 
     /* THE CAR'S MEDIA, month by month — `os/moment`, connected. The old
        Garage carried this for the selected car; the car has its own room now,

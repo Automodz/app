@@ -64,6 +64,7 @@ import type { MouseEvent } from 'react';
 import {
   HAIRLINE, INSET, MEASURE, TARGET_MIN, color, column, duration, easing, imageSizes, radius, scrim, space, stack,
 } from '@/design';
+import type { StateTone } from '@/design';
 import Image from 'next/image';
 import { Hero, Heading, Text, Button, Modal, OfflineNote, Glass } from '@/components/system';
 import { REGION_NAME } from '@/components/vehicle';
@@ -74,10 +75,21 @@ import type { RegionId, RenderedRegion, VehicleRendering } from '@/components/ve
    rendering (§11.3). This is the car as facts. */
 
 export interface VehicleProtection {
-  /** Which part of the car it protects. §11.4 */
-  region: RegionId;
+  id: string;
+  /**
+   * Which part of the car it protects — §11.4 — WHEN it protects a part.
+   *
+   * This was required, and the list was filtered to the four kinds that map to
+   * a region: film, ceramic, glass and interior. The other six protect the car
+   * without being anywhere on it. A customer's insurance, PUC, registration
+   * and FASTag were therefore not merely unreachable in this room; they were
+   * never projected into it.
+   */
+  region?: RegionId;
   /** In the customer's words. §14.2 */
   label: string;
+  /** §9.2's four states — the same tone Home gives the same protection. */
+  tone: StateTone;
   /**
    * The term, spoken in the unit that suits it (§14.3) at the precision that
    * is honest (§14.4): a date when it is far off, a countdown only when the
@@ -381,6 +393,68 @@ function Acts({ model }: { model: VehicleModel }) {
           )}
         </Glass>
       </section>
+
+      {/* ── WHAT PROTECTS IT ────────────────────────────────────────────
+          §11.1 — protection belongs to the car, and this is the car's room.
+
+          It was projected only as marks on the photograph, positioned by
+          `regionsFor()`, which has never returned a region because nobody has
+          authored one. So the whole layer was unreachable here: a Kia with
+          seven live protections — one of them a pollution certificate
+          nineteen days from lapsing — showed a name, a plate, one state word
+          and two links. Home summarised it; the car itself said nothing.
+
+          Every layer, with its term at the precision `termWords` decided and
+          the tone `os/term` gave it. The marks stay: when the studio starts
+          locating regions on a photograph they light up, and this list is
+          what the room says either way. */}
+      {model.protections.length > 0 ? (
+        <section style={{ ...column, paddingTop: space.rest }}>
+          <Glass pad="gap">
+            <Text role="whisper" tone="ink3">What protects it</Text>
+            <div style={{ display: 'grid', gap: space.line, marginTop: space.gap }}>
+              {model.protections.map(p => (
+                <div key={p.id}>
+                  <div style={{
+                    display: 'flex', alignItems: 'baseline',
+                    justifyContent: 'space-between', gap: space.line,
+                  }}>
+                    <Text role="body" tone="ink2">{p.label}</Text>
+                    <Text role="whisper" tone={p.tone} style={{ textAlign: 'right' }}>
+                      {p.term}
+                    </Text>
+                  </div>
+                  {/* §14.6 — "every protection may carry its file. It sits
+                      behind one tap, labelled plainly." Only where there IS a
+                      file: nothing in the product writes one yet, so today
+                      this draws nothing rather than a control that lies. */}
+                  {p.documentHref ? (
+                    <Button tier="quiet" href={p.documentHref} style={{ paddingInline: 0 }}>
+                      The original
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </Glass>
+        </section>
+      ) : model.declareHref ? (
+        /* §18.4 — "no protection declared → invitation, one line, one action."
+           It existed only behind a region tap, which nothing could perform. */
+        <section style={{ ...column, paddingTop: space.rest }}>
+          <Glass pad="gap">
+            <Text role="whisper" tone="ink3">Nothing declared yet</Text>
+            <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
+              Tell us what already protects it and it will live here.
+            </Text>
+            <div style={{ marginTop: space.gap }}>
+              <Button tier="forward" href={model.declareHref}>
+                Tell us what protects it
+              </Button>
+            </div>
+          </Glass>
+        </section>
+      ) : null}
 
       {/* ── THE CAR'S OWN ACTS ──────────────────────────────────────────
           Correcting it and reading its life. Both were on the old Garage's
