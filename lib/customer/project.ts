@@ -16,7 +16,7 @@ import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
 import { liveProtection, projectProtections, sortByUrgency } from '@/lib/os/protection';
 import { visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
-import { readOwnership, clubOf } from './ownership';
+import { readOwnership, clubOf, proposalApplies } from './ownership';
 import { cycleDaysLeft, washesLeftOf } from '@/lib/os/club';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
@@ -288,6 +288,29 @@ export function toHome(
   const protections = protectionsOf(car, picture.catalogue, now);
   const read = readOwnership(picture, car, protections, now);
   const visits = visitsOf(car);
+
+  /**
+   * ONE IMPORTANT FACT, ONE DOMINANT PRESENTATION.
+   *
+   * `homeStateCopy` builds the hero out of the proposal itself in exactly two
+   * situations: the `warranty_expiring` state, and the steady states where
+   * `proposalApplies`. In both, `state.line` IS `proposal.headline` and
+   * `state.note` IS `proposal.reason` — so the hero is already saying what
+   * needs attention and why, in the largest type on the screen, above a
+   * primary action the same proposal resolved.
+   *
+   * Before this, `truth` and a separate WORTH CONSIDERING section said it
+   * again: the i20's ceramic appeared three times in three wordings on one
+   * screen. The hero wins, because it is the dominant presentation and it
+   * carries the act.
+   *
+   * Derived from the ownership STATE, not by comparing sentences: two engines
+   * phrasing the same fact differently must never be detected by string
+   * equality, or the day one of them is reworded the duplication comes back
+   * silently.
+   */
+  const heroOwnsTheProposal = !!read.proposal
+    && (read.state === 'warranty_expiring' || proposalApplies(read.state));
   const latest = visits[0];
   const latestFrames = latest ? framesOfVisit(latest, car) : [];
 
@@ -376,9 +399,13 @@ export function toHome(
        Suppressed in the two cases where the engine's answer is one Home has
        already given in larger type — a car in the studio, or one booked in —
        and in the quiet fallbacks, which are the engine saying it has nothing
-       to add. Everything else (a term on its edge, a car not cared for in a
-       month) is exactly what the customer opened the app to learn. */
+       to add. Everything else is what the customer opened the app to learn.
+
+       AND SUPPRESSED WHEN THE HERO IS ALREADY PRESENTING THE PROPOSAL. See
+       `heroOwnsTheProposal` — a car whose ceramic is on its edge had the same
+       fact stated three times on one screen, in three wordings. */
     truth: (read.live || read.agreed) ? undefined
+      : heroOwnsTheProposal ? undefined
       : /^All quiet/.test(read.truth) ? undefined
       : read.truth,
 
@@ -400,11 +427,12 @@ export function toHome(
       href: hrefForDestination({ to: 'visit', visitId: read.live.id }),
     } : undefined,
 
-    /* THE PROPOSAL ENGINE'S OWN REASONING. It names the object it reasons
-       from, and `readOwnership` already suppresses it while a visit is booked
-       or in flight — a car that is booked in does not need to be told to book
-       in. Nothing here decides anything; it is carried. */
-    suggestion: read.proposal ? {
+    /* THE PROPOSAL ENGINE'S OWN REASONING, when the hero is NOT already
+       presenting it. `readOwnership` suppresses the proposal entirely while a
+       visit is booked or in flight; this is the second half of the same idea —
+       a proposal the hero has already spoken does not get a second section of
+       its own. Nothing here decides anything; it is carried. */
+    suggestion: read.proposal && !heroOwnsTheProposal ? {
       headline: read.proposal.headline,
       reason: read.proposal.reason,
       href: `${hrefForDestination({ to: 'studio' })}?arrange=1&cat=${encodeURIComponent(read.proposal.serviceCategory)}`,
@@ -429,15 +457,24 @@ export function toHome(
       photo: latestFrames[0]?.url ?? framesOfVisit(visits[0], car)[0]?.url,
       count: `${visits.length} ${visits.length === 1 ? 'visit' : 'visits'} ${sinceWords(car, 'since')}`,
       href: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),
-      /* `os/log`, verbatim. Three on Home — enough to give the count meaning,
-         short of becoming the timeline the album already is. The palette
-         takes twelve of the same list; neither re-derives anything. */
-      entries: read.log.slice(0, 3).map(e => ({
-        id: e.id,
-        line: e.line,
-        when: longDate(e.at.toISOString().slice(0, 10)),
-      })),
     } : undefined,
+
+    /* THE CONCIERGE LOG, ON ITS OWN CONDITION.
+       It was nested inside `life`, which requires a SEALED VISIT — so a car
+       with a membership confirmed and a coating applied but no completed
+       visit computed its entries and could never show them. Two of the demo
+       customer's four cars were in exactly that position. The two facts are
+       unrelated: a life is a record of visits, a log is what the studio has
+       already told you, and either can exist without the other.
+
+       Three on Home — enough to give the record meaning, short of becoming
+       the timeline the album already is. The palette takes twelve of the same
+       list; neither re-derives anything. */
+    record: read.log.slice(0, 3).map(e => ({
+      id: e.id,
+      line: e.line,
+      when: longDate(e.at.toISOString().slice(0, 10)),
+    })),
 
     membership: picture.subscription && picture.subscription.status === 'active'
       ? {

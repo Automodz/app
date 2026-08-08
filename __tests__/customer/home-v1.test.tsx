@@ -26,6 +26,7 @@ const base: HomeModel = {
   },
   forSale: [],
   marketHref: '/cars',
+  record: [],
 };
 
 const html = (m: Partial<HomeModel> = {}) =>
@@ -183,25 +184,146 @@ describe('Home V1 — one composition', () => {
     });
 
     it('its life is a photograph and a fact, not a log', () => {
-      const h = html({ life: { count: '11 visits since 2023', href: '/history?car=v1', entries: [] } });
+      const h = html({ life: { count: '11 visits since 2023', href: '/history?car=v1' } });
       expect(h).toContain('Its life at AutoModz');
       expect(h).toContain('11 visits since 2023');
       /* No "see all" — the photograph is the way in. */
       expect(h).not.toContain('See all');
     });
 
-    it('its life carries what the studio already said', () => {
+    it('the log carries what the studio already said', () => {
       /* `os/log` reached the customer only through the command palette, which
          a phone customer never opens. Carried verbatim — this is not a second
          timeline, and nothing here re-derives it. */
-      const h = html({ life: { count: '2 visits since 2025', href: '/history?car=v1', entries: [
+      const h = html({ record: [
         { id: 'l1', line: 'Ceramic coating applied - protected until August 2026.', when: '10 November 2025' },
         { id: 'l2', line: 'The studio confirmed your Club membership on Gold.', when: '14 July 2026' },
-      ] } });
+      ] });
       expect(h).toContain('Ceramic coating applied');
       expect(h).toContain('10 November 2025');
       expect(h).toContain('Club membership on Gold');
     });
+  });
+});
+
+/* Keeps `Timestamp` imported for parity with the other render suites. */
+
+/**
+ * ONE IMPORTANT FACT = ONE DOMINANT PRESENTATION.
+ *
+ * A car whose ceramic is inside the attention window had the SAME underlying
+ * fact stated three times on one screen, in three different wordings:
+ *
+ *   hero `state.note`      "The ceramic coating has 23 days of protection
+ *                           left - time to renew it."   ← proposal.reason
+ *   `truth`                "Ceramic coating - 23 days of protection left."
+ *   WORTH CONSIDERING      the same headline and reason again
+ *
+ * `homeStateCopy` builds the hero OUT OF the proposal in those states, so the
+ * hero is already saying what needs attention and why, in the largest type on
+ * the screen, above a primary action the same proposal resolved. It wins.
+ *
+ * The suppression is derived from the ownership STATE, never by comparing
+ * sentences — two engines phrasing one fact differently must not be detected
+ * by string equality, or the day either is reworded the duplication returns
+ * silently.
+ */
+describe('the i20 attention state — one fact, one presentation', () => {
+  /** The hero as `homeStateCopy` builds it when a proposal is speaking. */
+  const attention = {
+    state: {
+      word: 'Care due',
+      line: 'Ceramic coating renewal due.',
+      note: 'The ceramic coating has 23 days of protection left - time to renew it.',
+    },
+    nextAction: { label: 'Renew it', href: '/studio?arrange=1&cat=Ceramic' },
+  } as const;
+
+  it('the hero states it, and nothing states it again', () => {
+    const h = html(attention);
+    /* The reason appears exactly once — on the hero. */
+    expect((h.match(/23 days of protection left/g) ?? []).length).toBe(1);
+    expect(h).toContain('Ceramic coating renewal due.');
+    expect(h).toContain('Renew it');
+  });
+
+  it('truth is absent when the hero owns the proposal', () => {
+    /* The projection decides this; the render simply has nothing to draw. */
+    const h = html({ ...attention, truth: undefined });
+    expect(h).not.toContain('Ceramic coating - 23 days');
+  });
+
+  it('and no second WORTH CONSIDERING section appears', () => {
+    const h = html(attention);
+    expect(h).not.toContain('WORTH CONSIDERING');
+  });
+
+  it('protection stays supporting detail, not a third repetition', () => {
+    const h = html({
+      ...attention,
+      protection: {
+        headline: 'Protected', layers: ['Ceramic coating', 'Warranty'],
+        said: 'Everything’s holding', tone: 'assent',
+        items: [{ id: 'p1', label: 'Ceramic coating', term: 'Through March 2027', tone: 'caution' }],
+      },
+    });
+    /* Behind a tap, and it does not restate the countdown. */
+    expect(h).toContain('<details');
+    expect((h.match(/23 days of protection left/g) ?? []).length).toBe(1);
+  });
+
+  it('still exactly one primary action', () => {
+    expect(primaries(html(attention))).toBe(1);
+  });
+});
+
+/**
+ * THE LOG AND THE LIFE ARE INDEPENDENT.
+ *
+ * `record` was nested inside `life`, and `life` requires a SEALED VISIT — so a
+ * car with a membership confirmed and a coating applied but no completed visit
+ * computed its entries and could never show them. Two of the demo customer's
+ * four cars were in exactly that position. A life is a record of visits; a log
+ * is what the studio has already said. Either can exist without the other.
+ */
+describe('the log and the life are gated separately', () => {
+  const entries = [
+    { id: 'l1', line: 'Ceramic coating applied - protected until August 2026.', when: '10 November 2025' },
+  ];
+  const life = { count: '3 visits since 2023', href: '/history?car=v1' };
+
+  it('sealed visit AND log — both appear', () => {
+    const h = html({ life, record: entries });
+    expect(h).toContain('Its life at');
+    expect(h).toContain('Ceramic coating applied');
+  });
+
+  it('NO sealed visit but a log — the log still appears', () => {
+    /* The defect, stated: this rendered nothing at all before. */
+    const h = html({ record: entries });
+    expect(h).not.toContain('Its life at');
+    expect(h).toContain('Ceramic coating applied');
+  });
+
+  it('a sealed visit but NO log — the life still appears', () => {
+    const h = html({ life, record: [] });
+    expect(h).toContain('Its life at');
+    expect(h).not.toContain('Ceramic coating applied');
+  });
+
+  it('neither — neither is drawn (§18.1)', () => {
+    const h = html({ record: [] });
+    expect(h).not.toContain('Its life at');
+    expect(h).not.toContain('Ceramic coating applied');
+  });
+
+  it('two cars, two independent logs — no leakage between them', () => {
+    const a = html({ record: [{ id: 'a', line: 'Work began on the Kia Seltos.', when: '23 July 2026' }] });
+    const b = html({ record: [{ id: 'b', line: 'The studio confirmed your Club membership on Gold.', when: '14 July 2026' }] });
+    expect(a).toContain('Kia Seltos');
+    expect(a).not.toContain('Club membership');
+    expect(b).toContain('Club membership');
+    expect(b).not.toContain('Kia Seltos');
   });
 });
 

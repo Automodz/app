@@ -224,23 +224,23 @@ export interface HomeModel {
   /** The visit that is coming. Absent when none is — never an empty frame. */
   next?: { service: string; when: string; vehicleName: string; href: string };
 
+  /** Its life here, as one photograph and one fact. Gated on sealed visits. */
+  life?: { photo?: string; count: string; href: string };
+
   /**
-   * ITS LIFE — one photograph, one fact, and what the studio has already told
-   * them about this car.
+   * WHAT THE STUDIO HAS ALREADY TOLD THEM — `os/log`, carried verbatim.
    *
-   * `entries` is `os/log`, the concierge log, carried verbatim. Like `truth`
-   * it existed for every car and reached the customer only through the command
-   * palette. It is NOT a second timeline: every line is a projection of an
-   * object that really happened — a membership the studio verified, a coat it
-   * applied, a visit the floor moved through — and the album is still where a
-   * life is read whole. This is what makes somebody open it.
+   * ON ITS OWN CONDITION, not nested inside `life`. It was, and `life`
+   * requires a SEALED VISIT — so a car with a membership confirmed and a
+   * coating applied but no completed visit computed its entries and could
+   * never show them. The two facts are unrelated: a life is a record of
+   * visits, a log is what the studio has said, and either can exist without
+   * the other.
+   *
+   * NOT a second timeline. Every entry is a projection of an object that
+   * really happened, and the album is still where a life is read whole.
    */
-  life?: {
-    photo?: string;
-    count: string;
-    href: string;
-    entries: readonly { id: string; line: string; when: string }[];
-  };
+  record: readonly { id: string; line: string; when: string }[];
 
   /** The club, quietly, and only for members. */
   membership?: { plan: string; said: string; href: string };
@@ -271,7 +271,7 @@ export interface HomeModel {
 export function HomeScreen({ model }: { model: HomeModel }) {
   const {
     vehicle, state, truth, nextAction, live, suggestion, protection, next, life,
-    membership, garage, forSale, marketHref, studio,
+    record, membership, garage, forSale, marketHref, studio,
   } = model;
   const still = useReducedMotion();
   const frame = useRef<HTMLDivElement>(null);
@@ -635,21 +635,23 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               </Text>
             </div>
           </Link>
+        </section>
+      ) : null}
 
-          {/* WHAT THE STUDIO HAS ALREADY TOLD THEM. In the studio's own words,
-              newest first, on the ground rather than in a box — these are
-              sentences, and boxing each one would make five objects out of one
-              account. §18.1: a car with nothing recorded shows none of it. */}
-          {life.entries.length > 0 ? (
-            <div style={{ ...column, paddingTop: space.gap, display: 'grid', gap: space.line }}>
-              {life.entries.map(e => (
-                <div key={e.id}>
-                  <Text role="body" tone="ink2" style={{ maxWidth: MEASURE }}>{e.line}</Text>
-                  <Text role="whisper" tone="ink3">{e.when}</Text>
-                </div>
-              ))}
+      {/* ── 05b · WHAT THE STUDIO HAS ALREADY TOLD THEM ─────────────────
+          In the studio's own words, newest first, on the ground rather than in
+          a box — these are sentences, and boxing each one would make three
+          objects out of one account. Independent of `life`: a car can have
+          been told things without ever having completed a visit. §18.1 — with
+          nothing recorded, nothing appears. */}
+      {record.length > 0 ? (
+        <section style={{ ...column, paddingTop: life ? space.gap : space.movement, display: 'grid', gap: space.line }}>
+          {record.map(e => (
+            <div key={e.id}>
+              <Text role="body" tone="ink2" style={{ maxWidth: MEASURE }}>{e.line}</Text>
+              <Text role="whisper" tone="ink3">{e.when}</Text>
             </div>
-          ) : null}
+          ))}
         </section>
       ) : null}
 
