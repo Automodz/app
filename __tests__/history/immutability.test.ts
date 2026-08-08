@@ -101,7 +101,13 @@ describe('history never consults the present', () => {
   });
 
   it('the amount comes from the visit, not from a service lookup', () => {
-    expect(historySlice).toMatch(/visit\.amounts\.total/);
+    /* BEHAVIOURAL, not a regex over the source. This matched the literal
+       `visit.amounts.total`, which broke the moment that read moved into
+       `moneyOfVisits` — while proving nothing about the figure a customer
+       sees. The structural guard above already forbids the catalogue; this
+       asserts the number itself, which is the fact §16 is about. */
+    const sold = sealed({ amounts: { subtotal: 40000, discount: 0, total: 40000 } });
+    expect(toVisit(sold, car({ visits: [sold] as never })).settled).toBe('₹40,000');
   });
 
   it('what was promised comes from termsCaptured', () => {

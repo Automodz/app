@@ -259,6 +259,67 @@ export function visitsOf(car: CarPicture): Visit[] {
   return car.visits.filter(v => v.status === 'sealed');
 }
 
+/* ── what a visit cost ───────────────────────────────────────────────────── */
+
+/**
+ * WHAT A VISIT COST — one figure, from one source, chosen once.
+ *
+ * Two numbers exist for the same visit and they are not the same kind of fact.
+ * `visit.amounts.total` is what the visit was SEALED at, from the services it
+ * carried. The invoice is what the studio actually billed, line by line, and
+ * it is the document the customer holds. They can differ: the studio can raise
+ * paper for a subset of the work, apply something at the counter, or correct a
+ * figure after the visit was sealed.
+ *
+ * THE ALBUM AND THE RECORD DISAGREED IN PRODUCTION. `toHistory` summed the
+ * sealed amounts and printed "₹2,12,640 settled in all"; opening the one visit
+ * with an invoice showed ₹1,250, because `VisitScreen` prefers the receipt.
+ * The album's total was ₹11,990 higher than the sum of everything the customer
+ * could actually open, and nothing in the product could see the gap.
+ *
+ * The invoice wins where one exists — it is the money that changed hands and
+ * the only figure with a document behind it. The sealed amount is the fallback,
+ * which is most visits: the studio raises paper for a minority of them.
+ *
+ * AND EACH INVOICE IS CLAIMED BY AT MOST ONE VISIT. Matching is by the visit's
+ * own ids, never by date or amount, and an invoice already taken by an earlier
+ * visit cannot be counted again by a later one — otherwise two visits sharing a
+ * booking would add the same money to the album twice.
+ */
+export interface VisitMoney {
+  /** In rupees. Zero when neither source has a figure. */
+  total: number;
+  source: 'invoice' | 'sealed';
+  invoice?: Invoice;
+}
+
+export function moneyOfVisits(
+  visits: Visit[], invoices: Invoice[],
+): Map<string, VisitMoney> {
+  const claimed = new Set<string>();
+  const out = new Map<string, VisitMoney>();
+
+  for (const v of visits) {
+    /* `!!v.bookingId` matters: three of the demo customer's four sealed visits
+       carry an empty string, and an empty string must not match an invoice
+       that simply has no booking. */
+    const invoice = invoices.find(i =>
+      !claimed.has(i.id)
+      && ((!!v.bookingId && i.bookingId === v.bookingId)
+        || (!!v.jobId && i.jobId === v.jobId)));
+
+    if (invoice) {
+      claimed.add(invoice.id);
+      out.set(v.id, { total: invoice.total ?? 0, source: 'invoice', invoice });
+    } else {
+      out.set(v.id, { total: v.amounts?.total ?? 0, source: 'sealed' });
+    }
+  }
+  return out;
+}
+
+const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+
 /**
  * THE PHOTOGRAPHS A JOB RECORDED, WITH THE KIND IT RECORDED THEM AS.
  *
@@ -802,15 +863,18 @@ export function toHistory(car: CarPicture, invoices: Invoice[] = []): HistoryMod
      Summed from the SEALED amounts (§16.2 — never recomputed from today's
      price list), so this total is the sum of what was actually settled. */
   const oldest = visits[visits.length - 1];
-  const settledTotal = visits.reduce((n, v) => n + (v.amounts?.total ?? 0), 0);
+  /* THE SUM OF WHAT EACH VISIT ACTUALLY SAYS. It summed the sealed amounts
+     while every visit that had an invoice showed the invoice, so this line and
+     the visits underneath it were adding up different money. One reader now,
+     for the total and for each record. */
+  const money = moneyOfVisits(visits, invoices);
+  const settledTotal = visits.reduce((n, v) => n + (money.get(v.id)?.total ?? 0), 0);
 
   return {
     vehicle: car.vehicle.name,
     count: visits.length,
     since: oldest ? longDate(isoOf(oldest.createdAt)) : undefined,
-    settledTotal: settledTotal > 0
-      ? `₹${settledTotal.toLocaleString('en-IN')}`
-      : undefined,
+    settledTotal: settledTotal > 0 ? rupees(settledTotal) : undefined,
     visits: visits.map(v => toVisit(v, car, invoices)),
   };
 }
@@ -820,12 +884,14 @@ export function toVisit(
   car: CarPicture,
   invoices: Invoice[] = [],
 ): HistoryVisit {
-  /* THE PAPERS THIS VISIT HANDED OVER. Matched on the visit's own ids, never
-     on date or amount — those can coincide. `documents` was hardcoded `[]`, so
-     no chapter has ever shown its invoice. */
-  const invoice = invoices.find(i =>
-    (visit.bookingId && i.bookingId === visit.bookingId)
-    || (visit.jobId && i.jobId === visit.jobId));
+  /* WHAT IT COST, AND THE PAPER BEHIND IT — `moneyOfVisits`, the same reader
+     the album totals with, run over the same list in the same order so a visit
+     opened on its own cannot be paired with a different invoice than the one
+     the album counted for it. This used to match the invoice here, privately,
+     and the album never learned the answer. */
+  const money = moneyOfVisits(visitsOf(car), invoices).get(visit.id)
+    ?? { total: visit.amounts?.total ?? 0, source: 'sealed' as const };
+  const invoice = money.invoice;
   const frames = framesOfVisit(visit, car);
   const [cover, ...rest] = frames;
 
@@ -850,11 +916,12 @@ export function toVisit(
       label: PROTECTION_TITLE[t.kind],
       term: termWords(t.term).toLowerCase(),
     })),
-    /* §16 — the amount as SEALED, not as the price list reads today. Kept for
-       the album, where a visit is a line and not an account. The VISIT screen
-       shows the receipt instead — one fact, one place. */
-    settled: visit.amounts.total > 0
-      ? `₹${visit.amounts.total.toLocaleString('en-IN')}`
+    /* §16 — the amount as SEALED, not as the price list reads today, and ONLY
+       where the sealed amount is the answer. Where an invoice exists the
+       receipt owns the money; carrying both invited the screen to add them up
+       or to show whichever it reached first. One figure, one source. */
+    settled: money.source === 'sealed' && money.total > 0
+      ? rupees(money.total)
       : undefined,
 
     /* BEFORE AND AFTER, from the kinds the job recorded. Only when BOTH
