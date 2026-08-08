@@ -137,7 +137,12 @@ export function declinedOf(car: CarPicture, now = Date.now()): Booking | null {
   if (liveOf(car) || nextVisitOf(car, new Date(now))) return null;
   return car.bookings
     .filter(b => b.status === 'cancelled' && (b.rejectionReason != null || b.noShow === true))
-    .filter(b => now - (millisOf(b.cancelledAt) || millisOf(b.updatedAt)) <= DECLINE_WINDOW_MS)
+    /* RECENT, MEASURED FROM WHEN IT WAS ACTUALLY CANCELLED. `updatedAt` stood
+       in when `cancelledAt` was absent, which meant editing an old refusal
+       made it recent again and put it back at the top of the customer's Home.
+       No true timestamp, no claim about recency — every cancelled booking in
+       production carries `cancelledAt`. */
+    .filter(b => !!b.cancelledAt && now - millisOf(b.cancelledAt) <= DECLINE_WINDOW_MS)
     .sort((a, b) => millisOf(b.cancelledAt) - millisOf(a.cancelledAt))[0] ?? null;
 }
 

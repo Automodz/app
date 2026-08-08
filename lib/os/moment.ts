@@ -54,8 +54,23 @@ export function projectMoments(args: {
     const photos = job.photos ?? [];
     if (!photos.length) continue;
 
-    // the moment happened when the studio recorded it, not when we read it
-    const at = job.completedAt ?? job.updatedAt ?? job.createdAt;
+    /**
+     * WHEN THE WORK HAPPENED — and `updatedAt` is not that.
+     *
+     * The comment below said "when the studio recorded it, not when we read
+     * it", and then fell back to `updatedAt`, which is when the document was
+     * last WRITTEN. Every later edit to a job dragged its photographs forward
+     * in time, and the room groups them by month: a job opened on 23 July and
+     * touched on 8 August filed its three photographs under August 2026, in a
+     * car whose own room shows the months as headings. That is live in
+     * production today.
+     *
+     * `completedAt` is a true event and every completed job in production
+     * carries one. `createdAt` — when the job was opened, which is when the car
+     * arrived — is the honest floor for one still in the bay. Neither can move
+     * because somebody corrected a note.
+     */
+    const at = job.completedAt ?? job.createdAt;
     if (!at) continue;
 
     photos.forEach((p, i) => {

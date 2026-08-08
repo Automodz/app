@@ -45,6 +45,25 @@ describe('the Moment engine', () => {
     expect(projectMoments({ vehicleId: 'car1', jobs: [] })).toEqual([]);
   });
 
+  /**
+   * A PHOTOGRAPH IS DATED BY THE WORK, NEVER BY THE LAST EDIT.
+   *
+   * `at` fell back to `job.updatedAt` — when the document was last written —
+   * and the Vehicle room groups photographs by MONTH under month headings. A
+   * job opened on 23 July and touched on 8 August filed its three photographs
+   * under "August 2026", which was live in production.
+   */
+  it('dates photographs from the work, not from when the record was touched', () => {
+    const inTheBay = job({
+      completedAt: undefined,
+      createdAt: ts('2026-07-23T09:00:00'),
+      updatedAt: ts('2026-08-08T16:00:00'),
+    });
+    const m = projectMoments({ vehicleId: 'car1', jobs: [inTheBay] });
+    expect(groupByMonth(sortMoments(m)).map(g => g.label)).toEqual(['July 2026']);
+    expect(m.every(x => x.at.toDate().getMonth() === 6)).toBe(true);
+  });
+
   it('skips work with no recorded time rather than inventing one', () => {
     const undated = job({ completedAt: undefined, updatedAt: undefined, createdAt: undefined });
     expect(projectMoments({ vehicleId: 'car1', jobs: [undated] })).toEqual([]);

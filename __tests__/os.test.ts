@@ -368,9 +368,29 @@ describe('the concierge log', () => {
       'Kovalent Graphene was finished and filed to the BMW M340i’s story.',
       'Work began on the BMW M340i.',
       'The BMW M340i arrived at the studio.',
-      'The studio confirmed 18 July 2026 for the BMW M340i.',
       'You asked for Kovalent Graphene on 18 July 2026.',
     ]);
+  });
+
+  /**
+   * EVERY DATE IN THIS LOG IS A DATE SOMETHING HAPPENED.
+   *
+   * There was a fifth line — "The studio confirmed 18 July 2026 for the …" —
+   * dated from `booking.updatedAt`, which is when the document was last
+   * WRITTEN. Nine of the eleven bookings in production have been edited since
+   * they were created, so for nine of them that date was the date of the last
+   * edit: Home showed "The studio confirmed 23 July 2026 for the Kia Seltos."
+   * stamped 8 August 2026, a fortnight after the visit it confirmed.
+   *
+   * `Booking.confirmedAt` does not exist. The line returns when the field does.
+   */
+  it('never dates an entry from when the record was last modified', () => {
+    /* A booking edited long after everything about it finished. If any entry
+       were anchored to `updatedAt` it would surface at the top, dated today. */
+    const edited = visit({ updatedAt: ts(new Date('2026-07-20T17:59:00')) });
+    for (const e of log({ visits: [edited] })) {
+      expect(e.at.getTime()).toBeLessThan(new Date('2026-07-19').getTime());
+    }
   });
 
   it('does not claim a confirmation the studio has not given', () => {
@@ -379,9 +399,18 @@ describe('the concierge log', () => {
   });
 
   it('records a cancellation plainly and files nothing after it', () => {
-    const entries = log({ visits: [visit({ status: 'cancelled' })], jobByBooking: new Map() });
+    const cancelled = visit({ status: 'cancelled', cancelledAt: ts(new Date('2026-07-17T11:00:00')) });
+    const entries = log({ visits: [cancelled], jobByBooking: new Map() });
     expect(entries.some(e => /was cancelled/.test(e.line))).toBe(true);
     expect(entries.some(e => /finished and filed/.test(e.line))).toBe(false);
+    expect(entries.find(e => /was cancelled/.test(e.line))?.at)
+      .toEqual(new Date('2026-07-17T11:00:00'));
+  });
+
+  it('a cancellation nobody timestamped is not given a plausible day', () => {
+    const undated = visit({ status: 'cancelled' });
+    const entries = log({ visits: [undated], jobByBooking: new Map() });
+    expect(entries.some(e => /was cancelled/.test(e.line))).toBe(false);
   });
 
   it('sends live visits to the Stay and finished ones to their Chapter', () => {

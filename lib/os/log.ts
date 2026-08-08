@@ -60,16 +60,28 @@ export function conciergeLog(args: {
       target: { kind: phase === 'archived' ? 'chapter' : 'visit', bookingId: b.id },
     });
 
-    // the studio's confirmation is real the moment the visit left `pending`
-    if (phase !== 'proposed' && phase !== 'cancelled') {
-      const confirmedAt = b.updatedAt?.toDate?.() ?? created;
-      out.push({
-        id: `${b.id}-confirmed`,
-        at: confirmedAt,
-        line: `The studio confirmed ${fmtLong(b.scheduledDate)} for the ${vehicleName}.`,
-        target: { kind: phase === 'archived' ? 'chapter' : 'visit', bookingId: b.id },
-      });
-    }
+    /**
+     * THE CONFIRMATION IS NOT WRITTEN DOWN, SO IT IS NOT SAID.
+     *
+     * There was a line here — "The studio confirmed {date} for the {car}." —
+     * dated from `b.updatedAt`. That is when the document was last WRITTEN, not
+     * when the studio confirmed anything, and the log presents its `at` to the
+     * customer as the day the thing happened. Nine of the eleven bookings in
+     * production have been edited since they were created, so for nine of them
+     * the date beside that sentence was simply the date of the last edit: Home
+     * read "The studio confirmed 23 July 2026 for the Kia Seltos." stamped
+     * 8 August 2026 — a confirmation appearing to arrive a fortnight after the
+     * visit it confirmed.
+     *
+     * MISSING FROM THE SCHEMA: `Booking.confirmedAt`, written once when a
+     * booking leaves `pending`, in the shape `cancelledAt` already has. Nothing
+     * records it, so there is no honest date for this event and no date is
+     * invented for it. The line returns when the field does.
+     *
+     * Every other entry in this log is anchored to a real event: the request to
+     * `createdAt`, each act of the floor to its own `statusHistory[].at`, the
+     * filing to `completedAt`, the cancellation to `cancelledAt`.
+     */
 
     if (phase === 'cancelled') {
       const line = b.noShow
@@ -77,11 +89,13 @@ export function conciergeLog(args: {
         : b.rejectionReason
         ? `The studio couldn’t take ${b.serviceName} on ${fmtLong(b.scheduledDate)}${b.rejectionReason ? ` - ${b.rejectionReason}` : ''}`
         : `${b.serviceName} on ${fmtLong(b.scheduledDate)} was cancelled.`;
-      out.push({
-        id: `${b.id}-cancelled`,
-        at: b.cancelledAt?.toDate?.() ?? b.updatedAt?.toDate?.() ?? created,
-        line,
-      });
+      /* `cancelledAt` ONLY. It is the true event and every cancelled booking
+         in production carries one; falling through to `updatedAt` would date
+         the cancellation from whenever the record was last touched. A
+         cancellation nobody timestamped cannot be placed in a chronology, so
+         it is left out of one rather than given a plausible day. */
+      const at = b.cancelledAt?.toDate?.();
+      if (at) out.push({ id: `${b.id}-cancelled`, at, line });
     }
 
     // the floor's own record - one line per act it actually moved through
