@@ -17,7 +17,7 @@ import { liveProtection, projectProtections, sortByUrgency } from '@/lib/os/prot
 import { visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE } from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
 import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst } from './ownership';
-import { cycleDaysLeft, washesLeftOf } from '@/lib/os/club';
+import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
 import { projectMoments, sortMoments, groupByMonth, SHOT_CAPTION } from '@/lib/os/moment';
@@ -404,7 +404,7 @@ export function toHome(
         remaining: remainingOf(p, now),
         tone: TONE[p.health],
       })),
-      ...membershipAsProtection(picture.subscription, now),
+      ...membershipAsProtection(picture.subscription, read.club, now),
     ],
     nextAction: resolveAction(read.nextAction),
     liveActivity: latest ? {
@@ -533,10 +533,17 @@ export function toHome(
       when: longDate(e.at.toISOString().slice(0, 10)),
     })),
 
-    membership: picture.subscription && picture.subscription.status === 'active'
+    /* THE CLUB, FROM THE CLUB ENGINE. This read `status === 'active'` off the
+       document, which is not the same question: a subscription can carry that
+       status and have run past its end date, and Home would go on offering
+       "10 washes remaining this cycle" on a cycle that had ended. `os/club`
+       resolves the five states — none, pending, active, grace, lapsed — and it
+       is the only thing entitled to. Home still shows the club only where it
+       showed it before, so the composition is unchanged. */
+    membership: read.club.state === 'active'
       ? {
-          plan: picture.subscription.plan,
-          said: `${washesLeftOf(picture.subscription)} washes remaining this cycle`,
+          plan: read.club.plan ?? '',
+          said: `${read.club.washesLeft} washes remaining this cycle`,
           href: hrefForDestination({ to: 'membership' }),
         }
       : undefined,
@@ -568,16 +575,24 @@ export function toHome(
  * §15.2 — the membership, in the shape every other protection takes. Its term
  * is dated with grace, which is the shape `Term` already gives a membership.
  */
-function membershipAsProtection(sub: Subscription | null, now: Date): HomeProtection[] {
-  if (!sub || sub.status === 'cancelled') return [];
-  const term: Term = { kind: 'dated', expiresOn: sub.endDate, grace: true };
-  const left = washesLeftOf(sub);
+/**
+ * WHETHER there is a membership at all is the club engine's answer, not a
+ * status check here. This asked `status !== 'cancelled'`, which is a different
+ * question and let an expired membership through as a live protection. The id
+ * is still the document's, because a `ClubModel` is a state and not a record.
+ */
+function membershipAsProtection(
+  sub: Subscription | null, club: ClubModel, now: Date,
+): HomeProtection[] {
+  if (!sub || club.state === 'none' || !club.renewsOn) return [];
+  const term: Term = { kind: 'dated', expiresOn: club.renewsOn, grace: true };
+  const left = club.washesLeft;
   return [{
     id: `membership_${sub.id}`,
     label: PROTECTION_TITLE.membership,
     /* What remains is washes, not days — §14.3's balance shape in words. */
     term: left === 0 ? termWords(term, now) : `${left} washes left`,
-    remaining: sub.washesTotal > 0 ? left / sub.washesTotal : 0,
+    remaining: club.washesTotal > 0 ? left / club.washesTotal : 0,
     tone: TONE[healthOf(term, now)],
   }];
 }
@@ -1016,9 +1031,25 @@ export function toStudio(picture: CustomerPicture, now = new Date()): StudioMode
 const CARS_IN_WORDS = ['No cars', 'One car', 'Two cars', 'Three cars', 'Four cars', 'Five cars'];
 
 export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
-  const { user, subscription, cars } = picture;
+  const { user, cars } = picture;
   const n = cars.length;
   const count = CARS_IN_WORDS[n] ?? `${n} cars`;
+
+  /**
+   * THE SAME ENGINE THE MEMBERSHIP ROOM READS.
+   *
+   * This asked `subscription ? …` — any subscription, whatever had become of
+   * it — and then derived the wording from the raw document. A customer whose
+   * Silver membership had been CANCELLED was told, on this screen,
+   *
+   *     Silver member.
+   *     4 washes left this cycle.
+   *     Renews 15 August 2026.
+   *
+   * while `/membership`, one tap away, said "You are not a member." Both
+   * sentences were about the same document; only one of them asked `os/club`.
+   */
+  const club = clubOf(picture, now);
 
   return {
     name: user.name || 'You',
@@ -1027,8 +1058,8 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
       line: `${count} live${n === 1 ? 's' : ''} here.`,
       action: { label: 'Your garage', href: hrefForDestination({ to: 'garage' }) },
     },
-    membership: subscription ? {
-      lines: membershipLines(subscription, now),
+    membership: club.state !== 'none' ? {
+      lines: membershipLines(club),
       action: { label: 'What it includes', href: hrefForDestination({ to: 'membership' }) },
     } : undefined,
     /* THE SURFACES NOW EXIST, so the controls return. Each opened `/you` —
@@ -1078,16 +1109,21 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
  * from settled visits, and nothing records that yet. A plausible number would
  * be the one figure §15.3 says decides renewal, invented.
  */
-function membershipLines(sub: Subscription, now: Date): string[] {
-  const remaining = washesLeftOf(sub);
-  const term: Term = { kind: 'dated', expiresOn: sub.endDate, grace: true };
-  const health = healthOf(term, now);
+function membershipLines(club: ClubModel): string[] {
+  const remaining = club.washesLeft;
+  /* The state is the engine's, so the third line cannot claim a renewal the
+     Membership room has already said will not happen. `healthOf` was being
+     asked here as a second opinion on a lifecycle `clubModel` had already
+     resolved — and it answered "healthy" for a cancelled plan, because a
+     cancellation is not a date. */
+  const when = club.renewsOn ? longDate(club.renewsOn) : '';
   return [
-    `${sub.plan} member.`,
+    `${club.plan} member.`,
     `${remaining === 0 ? 'No washes' : remaining === 1 ? 'One wash' : `${remaining} washes`} left this cycle.`,
-    health === 'lapsed'
-      ? `Lapsed ${longDate(sub.endDate)}.`
-      : `Renews ${longDate(sub.endDate)}.`,
+    club.state === 'lapsed' ? `Lapsed ${when}.`
+      : club.state === 'grace' ? `The cycle ended ${when}.`
+      : club.state === 'pending' ? 'Waiting on the studio to confirm it.'
+      : `Renews ${when}.`,
   ];
 }
 
