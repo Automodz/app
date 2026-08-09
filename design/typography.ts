@@ -24,8 +24,11 @@
  *   WHISPER is 13px — the quietest legible line. It is still normal text under
  *   WCAG, so it is still held to 4.5:1 (see colors.ts).
  *
- * Weights are restrained (§3.5). Display is 620, not 800: a statement carries
- * because it is large and alone, not because it is heavy.
+ * Weights are restrained (§3.5), and the ratified design takes that further
+ * than the scale originally did: Display is 200, not 620. A statement carries
+ * because it is large and alone — weight was doing work that size and silence
+ * already do, and at 46px a heavy face reads as a shout. Thin is only legible
+ * when it is large, so 200 appears nowhere below the Title step.
  *
  * FAMILIES are deliberately NOT named here. The constitution fixes only that
  * Data is monospaced (§9.5). The brand face is a decision this document does
@@ -61,10 +64,10 @@ export const type = {
    */
   display: {
     family: fontFamily.display,
-    size: 'clamp(34px, 10vw, 52px)',
-    weight: 620,
-    lineHeight: 1.05,
-    letterSpacing: '-0.03em',
+    size: 'clamp(30px, 8.6vw, 46px)',
+    weight: 200,
+    lineHeight: 1.15,
+    letterSpacing: '-0.02em',
     element: 'h1',
   },
 
@@ -72,8 +75,8 @@ export const type = {
   title: {
     family: fontFamily.display,
     size: '22px',
-    weight: 560,
-    lineHeight: 1.2,
+    weight: 300,
+    lineHeight: 1.25,
     letterSpacing: '-0.01em',
     element: 'h2',
   },

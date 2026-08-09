@@ -1,762 +1,504 @@
 'use client';
 /**
- * VEHICLE
+ * THE CAR
  *
- * Source: docs/AUTOMODZ-OS.md §3.1, §3.2, §3.4, §3.5, §3.6, §4.1, §4.3,
- *         §5.2, §5.3, §5.5, §7.1, §7.4, §7.6, §8.6, §9.5, §11.1, §11.2,
- *         §11.3, §11.4, §11.5, §14.2, §14.3, §14.4, §14.6, §18.1, §18.3,
- *         §18.4, §21.1, §21.3, §21.5, §21.6, §21.7, §21.8, §22.2
+ * Source: docs/AUTOMODZ-OS.md §2.1, §3.1, §3.2, §4.3, §5.5, §11.2, §11.3,
+ *         §11.4, §11.5, §14.2, §14.4, §14.6, §17.1, §17.3, §18.4, §21.1,
+ *         §21.5, §21.6
+ *         design "AutoModz App.dc.html" — screen 1d
  *
- * ── THIS SCREEN DOES NOT SCROLL ──────────────────────────────────────────
- * That is the whole design, stated once. A vehicle screen that scrolls is a
- * details page with a photograph on top, and the photograph stops being the
- * interface the moment there is a document underneath it to get to.
+ * ── WHAT THIS SCREEN IS ──────────────────────────────────────────────────
+ * §2.1 — the car is the subject of the product, and this is the one room
+ * where it is the subject of the screen too. The design opens on the
+ * photograph at half the height of the display, with nothing over it but the
+ * plate, the name and one line of description, and then states, in order:
  *
- * The car fills the viewport. Everything else is discovered by touching the
- * car. §11.4 — "regions of the photograph correspond to what protects them.
- * Touching a region reveals the state of that region." That sentence is not a
- * garnish on a details page; it is the navigation model, and this screen
- * implements it as the only one.
+ *   the protection ledger — every layer, as a proportion of its term
+ *   what the studio stands behind, and how far the car has gone
+ *   the album
  *
- * ── THE INTERACTION ──────────────────────────────────────────────────────
- *   AT REST      the car, whole. Hairline marks where it can be asked. Below
- *                them: its identity, its state, how long it has been ours.
+ * That order is the answer to "how is my car", asked from most permanent to
+ * most recent. Nothing on this screen is a control except the album, the
+ * notice and the one action at the foot.
  *
- *   ASKED        touch a mark. Everything but that region recedes, and the
- *                block below becomes the answer for that part of the car.
+ * ── THE PHOTOGRAPH IS NOT DRAWN HERE ─────────────────────────────────────
+ * §11.3 — a `VehicleRendering` is handed in. This screen never imports
+ * `next/image`, never positions a mark, and never learns what medium is
+ * showing the car. See components/vehicle/renderer.ts for why that boundary
+ * is drawn where it is; the design changed the composition around the
+ * photograph and changed nothing about it.
  *
- *   RELEASED     touch the same mark again, touch the car anywhere else, or
- *                press Escape.
- *
- * It is MODELESS. No sheet, no dialog, no scrim over the subject, no dismiss
- * button. §3.6 — glass never sits on glass, and a sheet would cover the exact
- * thing being asked about. The car is never hidden, because the customer is
- * standing in front of it.
- *
- * ── WHY THE ANSWER LANDS WHERE THE STATE WAS ─────────────────────────────
- * §9.5 — one Display per screen. There is exactly one at every moment, and it
- * always holds the most important phrase right now: the car's state when
- * nothing has been asked, the answer when something has. A second Display for
- * answers would be two subjects (§3.2); a smaller slot for answers would say
- * the car's reply matters less than the car's label.
- *
- * ── WHAT IS NOT HERE, AND WHERE IT WENT ──────────────────────────────────
- * §5.2 lists Vehicle as holding "hero, current state, protection, latest work,
- * media, entry to its history". Four of those six are on this surface. The
- * other two sit at depth one (§4.3), reached through the car rather than laid
- * out beside it:
- *
- *   latest work   through History, which the ownership line opens
- *   media         through each visit's own account (§16.3) — the only place a
- *                 photograph can actually answer "what visit was this?"
- *
- * Laying either of them out here is what would make this the details page the
- * screen exists not to be. It is a real deviation from §5.2, recorded rather
- * than hidden.
- *
- * ── DATA, AND THE MEDIUM ─────────────────────────────────────────────────
- * This component holds no data and fetches none. It also does not know what a
- * photograph is: it is handed a `VehicleRendering` (§11.3) and asks it to draw.
- * There is no image, no URL and no aspect ratio anywhere in this file.
+ * ── DATA ─────────────────────────────────────────────────────────────────
+ * This component holds none and fetches none.
  */
-import { useCallback, useEffect, useState } from 'react';
-import type { MouseEvent } from 'react';
-import {
-  HAIRLINE, INSET, MEASURE, TARGET_MIN, color, column, duration, easing, imageSizes, radius, scrim, space, stack,
-} from '@/design';
-import type { StateTone } from '@/design';
-import Image from 'next/image';
+import { useState } from 'react';
 import Link from 'next/link';
-/* The existing single-record writer, reused. `getUserNotifications` and
-   `markAllNotificationsRead` stay out of `app/` and `components/` — §17.1's
-   enforcement test forbids them there, and nothing here needs them. */
-import { markNotificationRead } from '@/lib/services/notifications';
-import { Hero, Heading, Text, Button, Modal, OfflineNote, Glass } from '@/components/system';
+import { color, space, INSET, MEASURE, radius, stack, TARGET_MIN } from '@/design';
+import type { StateTone } from '@/design';
+import type { RegionId, VehicleRendering } from '@/components/vehicle';
 import { REGION_NAME } from '@/components/vehicle';
-import type { RegionId, RenderedRegion, VehicleRendering } from '@/components/vehicle';
+import { OfflineNote } from '@/components/system';
+import {
+  Pane, Label, Rail, Pulse, Chevron, Meter, Action, Stat,
+} from '@/components/os';
 
-/* ── What the Vehicle needs to be true ───────────────────────────────────
-   No photograph, no URL, no aspect ratio — all of that belongs to the
-   rendering (§11.3). This is the car as facts. */
+/* ── What the car needs to be true ───────────────────────────────────── */
 
 export interface VehicleProtection {
   id: string;
-  /**
-   * Which part of the car it protects — §11.4 — WHEN it protects a part.
-   *
-   * This was required, and the list was filtered to the four kinds that map to
-   * a region: film, ceramic, glass and interior. The other six protect the car
-   * without being anywhere on it. A customer's insurance, PUC, registration
-   * and FASTag were therefore not merely unreachable in this room; they were
-   * never projected into it.
-   */
+  /** §11.4 — where on the car it is, when the medium can locate it. */
   region?: RegionId;
-  /** In the customer's words. §14.2 */
   label: string;
-  /** §9.2's four states — the same tone Home gives the same protection. */
   tone: StateTone;
-  /**
-   * The term, spoken in the unit that suits it (§14.3) at the precision that
-   * is honest (§14.4): a date when it is far off, a countdown only when the
-   * number is small enough to act on, an amount when it is a balance.
-   */
+  /** Already worded at the precision that is honest (§14.3, §14.4). */
   term: string;
-  /** §14.6 — the file, behind one tap, never on the surface. */
+  /**
+   * 0–1 of the term still to run. The design draws every layer as a
+   * proportion; a layer that does not deplete (perpetual, or a term with no
+   * recorded start) carries no bar and states its term alone.
+   */
+  remaining?: number;
+  /** §14.6 — the file, where one exists. */
   documentHref?: string;
 }
 
-/** One photograph of this car, from a visit that produced it. */
 export interface VehicleFrame {
   id: string;
   url: string;
   caption?: string;
-  /** The visit that produced it, when it came from one. */
   visitHref?: string;
 }
 
-/** The car's media, grouped the way a life is remembered: by month. */
 export interface VehicleMediaMonth {
   month: string;
   frames: VehicleFrame[];
 }
 
 export interface VehicleModel {
-  /** The customer's own words for their car. */
   name: string;
-  /** §5.5 — the registration is kept: "identity, not jargon". */
   plate: string;
-  /**
-   * What is happening to it, in the present tense. §5.3 #2 — the one phrase,
-   * unmissable, and the Display when nothing has been asked.
-   */
+  /** "Phantom Black · Hatchback · 2023", from what the owner has told us. */
+  descriptor?: string;
   state: string;
-  /**
-   * How long it has been ours to look after, in time rather than in counts.
-   * §2.1 — a tally is the transaction talking.
-   */
   since: string;
-  /** §5.2 — the entry to its history. Opened by the ownership line. */
+  /** §14.6 — the furthest date the studio stands behind, already worded. */
+  warranty?: string;
+  /** The owner's own number, grouped for reading. Absent until they give it. */
+  odometer?: string;
   historyHref: string;
-  /** §11.1 — protection belongs to the car. Keyed to the part it protects. */
   protections: readonly VehicleProtection[];
-  /**
-   * ONE UNREAD THING ABOUT THIS CAR — §17.1's own prescription, applied.
-   *
-   * "There is no inbox. State changes surface as state. The car is the inbox."
-   * So this is not a message and not a feed: it is a mark on the car, carrying
-   * the studio's own subject line, and it is a doorway to the object the fact
-   * belongs to (§17.3) — the visit in flight, the sealed record, or the booking
-   * still to come. Where the object has no surface, there is no mark.
-   */
   notice?: { id: string; title: string; href: string };
-  /** Every photograph of this car, newest month first. May be empty. */
   media: readonly VehicleMediaMonth[];
-  /** Where the car is corrected. */
   editHref: string;
-  /**
-   * §18.4 — "no protection declared → invitation, one line, one action."
-   * Optional: §10.5 forbids a control with no destination, and this pointed at
-   * `/studio`, which has no declare flow.
-   */
   declareHref?: string;
-  /**
-   * THE VISIT THIS CAR HAS COMING.
-   *
-   * The room named the car's state — "Booked in" — and then said nothing about
-   * when, what for, or how to change it. Absent while the car is actually here:
-   * a visit in flight is a takeover of its own (§5.4) and must not be reduced
-   * to a line on another screen.
-   */
   next?: {
     service: string;
     when: string;
-    /** Confirmed by the studio, rather than still pending its answer. */
     settled: boolean;
-    /** Present only while the customer may still change or cancel it. */
     manageHref?: string;
   };
-  /**
-   * Present only while the car is actually at the studio. §5.4 — the live
-   * account is a takeover reached from the car, and inviting a new booking
-   * under the word "In care" is the room contradicting itself.
-   */
   followHref?: string;
-  /** Arranging a visit for THIS car, from its own room. */
   arrangeHref: string;
 }
 
-/**
- * A REGION MARK.
- *
- * §11.4 — "this is discovered, never explained: no coach marks, no tutorial,
- * no pulsing dots demanding a tap." A hairline ring is none of those three: it
- * does not instruct, it does not animate, and it does not ask. It is part of
- * the composition, the way a seam between panels is. Read the other way —
- * nothing drawn at all — the mechanism §11.4 exists to create would be
- * undiscoverable, which is the worse of the two failures.
- *
- * NO ENTRANCE ANIMATION, deliberately. §7.1 — motion never gates content, and
- * a mark that fades in after the car settles is a mark that never appears at
- * all if the animation does not run.
- *
- * §21.1 / WCAG 1.4.11 — one white stroke cannot hold 3:1 against an unknown
- * photograph, so the ring is drawn twice: white over a ring of the same black
- * the scrim floor is built from. Whatever is behind it, one of the two reads.
- *
- * §21.3 — the ring is 12pt, the target is 44. §21.5 — a real button, so it is
- * tabbable and takes the GLOBAL focus ring; this component carried its own for
- * as long as the global one failed 1.4.11, and no longer needs to. §21.8 — its
- * name is the customer's word for that part of their car.
- */
-function Mark({
-  region, asked, onAsk,
-}: {
-  region: RenderedRegion;
-  asked: boolean;
-  onAsk: (id: RegionId) => void;
-}) {
+/** §3.3 — the state's own tone. One warm family, and nothing else. */
+const TONE: Record<StateTone, string> = {
+  assent: color.champagne,
+  caution: color.amber,
+  urgent: color.urgent,
+  lapsed: color.ink3,
+};
+
+export function VehicleScreen(
+  { model, rendering }: { model: VehicleModel; rendering: VehicleRendering },
+) {
+  const {
+    name, plate, descriptor, state, since, warranty, odometer, historyHref,
+    protections, notice, media, editHref, declareHref, next, followHref, arrangeHref,
+  } = model;
+
+  /* §11.4 — which region the customer is asking about. `null` is the resting
+     state and the only state the screen has to be whole in, because a medium
+     that cannot locate its regions never leaves it. */
+  const [focus, setFocus] = useState<RegionId | null>(null);
+
+  const frames = media.reduce((n, m) => n + m.frames.length, 0);
+
   return (
-    <button
-      type="button"
-      aria-pressed={asked}
-      aria-label={REGION_NAME[region.id]}
-      onClick={(e: MouseEvent) => {
-        /* The car behind releases on click; a mark must not be read as one. */
-        e.stopPropagation();
-        onAsk(region.id);
-      }}
+    <main
       style={{
-        width: TARGET_MIN,
-        height: TARGET_MIN,
-        display: 'grid',
-        placeItems: 'center',
+        position: 'relative',
+        minHeight: '100svh',
+        paddingBottom: stack.contentFloor,
         background: 'transparent',
-        border: 0,
-        padding: 0,
-        cursor: 'pointer',
-        borderRadius: radius.pill,
       }}
     >
-      <span
-        aria-hidden
-        style={{
-          width: space.line,
-          height: space.line,
-          borderRadius: radius.pill,
-          border: `${HAIRLINE}px solid ${color.over}`,
-          boxShadow: `0 0 0 ${HAIRLINE}px rgba(0,0,0,${scrim.photoFloor})`,
-          /* Asked: filled. The only difference between the two states, and it
-             is deliberately not a hue — over a photograph no state colour
-             survives the scrim (`urgent` measures 1.53:1 against a white
-             image). The marks carry no urgency; the words below carry it. */
-          background: asked ? color.over : 'transparent',
-          transition: `background ${duration.tick}ms ${easing.ease}`,
-        }}
-      />
-    </button>
-  );
-}
-
-/**
- * WHAT THE CAR IS SAYING.
- *
- * One block, two contents, always in the same place: the car's identity and
- * state when nothing has been asked, the answer for a region when something
- * has. Extracted because both compositions below need it and §22.2 wants one
- * implementation — not because it is reusable anywhere else.
- */
-function Saying({
-  model, asked, answer,
-}: {
-  model: VehicleModel;
-  asked: RegionId | null;
-  answer: VehicleProtection | undefined;
-}) {
-  const { name, plate, state, since, historyHref, declareHref } = model;
-
-  if (asked) {
-    return (
-      <>
-        {/* §21.8 — the customer's word for the part of their car. */}
-        <Text role="data" tone="over" as="span">{REGION_NAME[asked]}</Text>
-        {answer ? (
-          <>
-            <Heading level="display" tone="over" style={{ marginTop: space.hair }}>
-              {answer.label}
-            </Heading>
-            <Text role="body" tone="over" style={{ marginTop: space.line }}>
-              {answer.term}
-            </Text>
-            {/* §14.6 — "every protection may carry its file. It sits behind one
-                tap, labelled plainly. It is never the primary surface." One
-                line of type, and only when there is a file. */}
-            {answer.documentHref ? (
-              <div style={{ marginTop: space.breath }}>
-                <Button tier="forward" href={answer.documentHref} style={{ color: color.over }}>
-                  The original
-                </Button>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          /* §18.4 — "no protection declared → invitation, one line, one
-             action." §18.3 — the tone is calm. Nothing has gone wrong; this
-             part of the car simply has nothing on it yet. */
-          <>
-            <Heading level="display" tone="over" style={{ marginTop: space.hair }}>
-              Nothing on it yet
-            </Heading>
-            <div style={{ marginTop: space.gap }}>
-              <Button tier="forward" href={declareHref} style={{ color: color.over }}>
-                Tell us what protects it
-              </Button>
-            </div>
-          </>
-        )}
-      </>
-    );
-  }
-
-  return (
-    <>
-      {/* Identity. Mono, because a plate is a plate. §5.5 */}
-      <Text role="data" tone="over" as="span">{name} · {plate}</Text>
-      {/* §5.3 #2, §9.5 — the one Display, when nothing is asked. */}
-      <Heading level="display" tone="over" style={{ marginTop: space.hair }}>
-        {state}
-      </Heading>
-      {/* Ownership, and the way into everything that has happened. §5.2 puts
-          "entry to its history" on this surface; hanging it on how long the car
-          has been ours keeps it a fact about the car rather than a menu item
-          beside one. */}
-      <div style={{ marginTop: space.breath }}>
-        <Button tier="forward" href={historyHref} style={{ color: color.over }}>
-          {since}
-        </Button>
-      </div>
-    </>
-  );
-}
-
-/**
- * WHAT THE ROOM CARRIES BENEATH THE CAR.
- *
- * Extracted because a car with NO PHOTOGRAPH used to lose all of it. §11.5's
- * composed absence is the right treatment for the portrait — "never a grey
- * box, never a placeholder silhouette" — but it was an early return, so the
- * whole room went with the picture: a customer whose car had not been
- * photographed yet could not book a visit, reach its history, or correct its
- * details from its own room. A new customer's first car is exactly that car,
- * so the room was a dead end at the moment it mattered most.
- *
- * The absence keeps the first screenful. Everything the car can DO lives
- * beneath it either way.
- */
-/**
- * THE ONE UNREAD THING, AS A DOORWAY.
- *
- * §17.1 forbids a list and this is not one: at most one mark, on the car it
- * belongs to. §17.3 makes it a doorway to the exact surface the fact lives on,
- * and opening that surface is what "reading" it means — so it is marked read on
- * the way through rather than by a control that says "mark as read".
- *
- * A failure to write costs a mark that reappears on the next load, so it is not
- * worth an alarm and never blocks the navigation.
- */
-function Notice({ notice }: { notice: NonNullable<VehicleModel['notice']> }) {
-  return (
-    <section style={{ ...column, paddingTop: space.rest }}>
-      <Link
-        href={notice.href}
-        onClick={() => { void markNotificationRead(notice.id).catch(() => {}); }}
-        style={{ textDecoration: 'none', display: 'block' }}
-      >
-        <Glass pad="gap">
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: space.line }}>
-            {/* The mark sits on the words, not in a corner: it is the one
-                thing here that says this has not been seen. */}
-            <span
-              aria-hidden
-              style={{
-                width: 6, height: 6, borderRadius: '50%', background: color.ink,
-                flex: '0 0 auto', transform: 'translateY(-3px)',
-              }}
-            />
-            <Text role="body" tone="ink">{notice.title}</Text>
-          </div>
-        </Glass>
-      </Link>
-    </section>
-  );
-}
-
-function Acts({ model }: { model: VehicleModel }) {
-  return (
-    <>
-      {model.notice ? <Notice notice={model.notice} /> : null}
-
-      {/* ── WHAT IT HAS COMING ──────────────────────────────────────────
-          The room named the car's state and then said nothing about when. A
-          customer looking at their own car had to go to the Studio and find
-          this visit among every other car's to learn the date, or to change
-          it. §18.1 — a car with nothing booked shows an invitation instead,
-          and the invitation is the act, not a description of it. */}
-      <section style={{ ...column, paddingTop: space.rest }}>
-        <Glass pad="gap">
-          {model.followHref ? (
-            <>
-              <Text role="whisper" tone="ink3">With us now</Text>
-              <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
-                Your car is at the studio. You can watch the work as it happens.
-              </Text>
-              <div style={{ marginTop: space.gap }}>
-                <Button tier="forward" href={model.followHref}>Follow the work</Button>
-              </div>
-            </>
-          ) : model.next ? (
-            <>
-              <Text role="whisper" tone="ink3">
-                {model.next.settled ? 'Booked in' : 'Waiting on the studio'}
-              </Text>
-              <Heading level="title" as="h2" style={{ marginTop: space.hair }}>
-                {model.next.service}
-              </Heading>
-              <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
-                {model.next.when}
-                {model.next.settled ? '' : ' — we’ll confirm shortly.'}
-              </Text>
-              <div style={{
-                marginTop: space.gap, display: 'flex', gap: space.line, flexWrap: 'wrap',
-              }}>
-                {model.next.manageHref ? (
-                  <Button tier="forward" href={model.next.manageHref}>
-                    Change or cancel
-                  </Button>
-                ) : null}
-              </div>
-            </>
-          ) : (
-            <>
-              <Text role="whisper" tone="ink3">Nothing booked</Text>
-              <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
-                Whenever it needs us, its place is ready.
-              </Text>
-              <div style={{ marginTop: space.gap }}>
-                <Button tier="forward" href={model.arrangeHref}>Arrange a visit</Button>
-              </div>
-            </>
-          )}
-        </Glass>
-      </section>
-
-      {/* ── WHAT PROTECTS IT ────────────────────────────────────────────
-          §11.1 — protection belongs to the car, and this is the car's room.
-
-          It was projected only as marks on the photograph, positioned by
-          `regionsFor()`, which has never returned a region because nobody has
-          authored one. So the whole layer was unreachable here: a Kia with
-          seven live protections — one of them a pollution certificate
-          nineteen days from lapsing — showed a name, a plate, one state word
-          and two links. Home summarised it; the car itself said nothing.
-
-          Every layer, with its term at the precision `termWords` decided and
-          the tone `os/term` gave it. The marks stay: when the studio starts
-          locating regions on a photograph they light up, and this list is
-          what the room says either way. */}
-      {model.protections.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.rest }}>
-          <Glass pad="gap">
-            <Text role="whisper" tone="ink3">What protects it</Text>
-            <div style={{ display: 'grid', gap: space.line, marginTop: space.gap }}>
-              {model.protections.map(p => (
-                <div key={p.id}>
-                  <div style={{
-                    display: 'flex', alignItems: 'baseline',
-                    justifyContent: 'space-between', gap: space.line,
-                  }}>
-                    <Text role="body" tone="ink2">{p.label}</Text>
-                    <Text role="whisper" tone={p.tone} style={{ textAlign: 'right' }}>
-                      {p.term}
-                    </Text>
-                  </div>
-                  {/* §14.6 — "every protection may carry its file. It sits
-                      behind one tap, labelled plainly." Only where there IS a
-                      file: nothing in the product writes one yet, so today
-                      this draws nothing rather than a control that lies. */}
-                  {p.documentHref ? (
-                    <Button tier="quiet" href={p.documentHref} style={{ paddingInline: 0 }}>
-                      The original
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </Glass>
-        </section>
-      ) : model.declareHref ? (
-        /* §18.4 — "no protection declared → invitation, one line, one action."
-           It existed only behind a region tap, which nothing could perform. */
-        <section style={{ ...column, paddingTop: space.rest }}>
-          <Glass pad="gap">
-            <Text role="whisper" tone="ink3">Nothing declared yet</Text>
-            <Text role="body" tone="ink2" style={{ marginTop: space.hair }}>
-              Tell us what already protects it and it will live here.
-            </Text>
-            <div style={{ marginTop: space.gap }}>
-              <Button tier="forward" href={model.declareHref}>
-                Tell us what protects it
-              </Button>
-            </div>
-          </Glass>
-        </section>
-      ) : null}
-
-      {/* ── THE CAR'S OWN ACTS ──────────────────────────────────────────
-          Correcting it and reading its life. Both were on the old Garage's
-          "The car" section; they belong to the car's own room. */}
-      <section style={{ ...column, paddingTop: space.rest }}>
-        <Glass pad="gap" style={{ display: 'flex', gap: space.line, flexWrap: 'wrap' }}>
-          <Button tier="forward" href={model.historyHref}>Its history</Button>
-          <Button tier="quiet" href={model.editHref}>Correct the car</Button>
-        </Glass>
-      </section>
-
-    </>
-  );
-}
-
-export function VehicleScreen({
-  model, rendering,
-}: {
-  model: VehicleModel;
-  rendering: VehicleRendering;
-}) {
-  const { protections } = model;
-  const [asked, setAsked] = useState<RegionId | null>(null);
-
-  /* Which photograph is open. An id, so the model stays the source of truth. */
-  const [viewing, setViewing] = useState<string | null>(null);
-  const viewed = model.media
-    .flatMap(g => g.frames)
-    .find(f => f.id === viewing);
-
-  /** Touching a mark asks; touching the one already asked releases it. */
-  const ask = useCallback((id: RegionId) => {
-    setAsked(current => (current === id ? null : id));
-  }, []);
-
-  /* §21.5 — a modeless reveal still needs a keyboard way out, and Escape is
-     the one every customer already knows. Bound at the document so it works
-     wherever focus is, including on the mark that opened the answer. */
-  useEffect(() => {
-    if (!asked) return;
-    const release = (e: KeyboardEvent) => { if (e.key === 'Escape') setAsked(null); };
-    document.addEventListener('keydown', release);
-    return () => document.removeEventListener('keydown', release);
-  }, [asked]);
-
-  const answer = asked ? protections.find(p => p.region === asked) : undefined;
-
-  /* §11.5 — THE CAR WITH NO RENDERING IS A DIFFERENT COMPOSITION, NOT THE
-     SAME ONE WITH THE PHOTOGRAPH MISSING.
-
-     "It is never a grey box, never a placeholder silhouette, NEVER A LARGE
-     EMPTY FIELD WITH A SMALL PLATE FLOATING IN IT." Rendered at full height
-     with the block anchored to the foot, that last clause is exactly what
-     appeared: 700px of near-black with a caption under it, which reads as a
-     photograph that failed to load rather than as a car awaiting its first
-     visit. The difference between broken and awaiting is composition, so the
-     block is centred in the field instead — the same treatment §12.4 gives an
-     empty garage, and for the same reason.
-
-     Nothing can be asked here: no photograph means no located regions, so no
-     marks are drawn and nothing explains their absence (§18.1). */
-  if (!rendering.present) {
-    return (
-      /* THE ROOM STILL SCROLLS. This used to be `height: 100svh` with
-         `overflow: hidden` and an early return, so a car awaiting its first
-         photograph lost every act the room offers — booking, its history,
-         correcting its details. The absence keeps the first screenful, which
-         is what §11.5 is about; it does not get to keep the whole room. */
-      <main style={{ background: color.paper, paddingBottom: stack.contentFloor }}>
-        <section style={{ position: 'relative', height: '100svh', overflow: 'hidden' }}>
-          <rendering.Surface focus={null} priority />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              ...column,
-              paddingBottom: stack.bottom,
-            }}
-          >
-            {/* Inline here: the photograph's surface is `inset: 0` and would
-                cover a rule across the top. §22.2 — the same component. */}
-            <OfflineNote inline />
-            <Saying model={model} asked={null} answer={undefined} />
-          </div>
-        </section>
-
-        <Acts model={model} />
-      </main>
-    );
-  }
-
-  return (
-    <main style={{ background: color.paper, paddingBottom: stack.contentFloor }}>
-      {/* §20.3 — the car and its record were rendered on the server and are
-          still true; only what happens NEXT needs a connection. */}
       <OfflineNote />
-    {/* §22.2 — one implementation of anything. The scrim, the entrance settle
-       and the overlay's gutter all belong to `Hero`, so this screen composes it
-       rather than growing a second copy of a contrast guarantee. The height is
-       overridden to the viewport because here the subject IS the screen; `svh`
-       rather than `vh` so a collapsing mobile chrome cannot push the answer
-       under a fold there is no scroll to recover it from.
 
-       THE SCREEN SCROLLS NOW. The car still owns the first viewport whole —
-       that has not changed — but its media and its acts live beneath it, as
-       they did on the old Garage. The car is still the subject; it is simply
-       no longer the only thing in the room. */}
-    <Hero
-      state="media"
-      band="full"
-      style={{ height: '100svh' }}
-      overlay={
-        /* §21.7 — announced politely when it changes, so the answer reaches
-           someone who cannot see the car recede.
-
-           §8.5 — the block clears the navigation by arithmetic. `Hero` insets
-           it to the gutter; the stack is this screen's business. */
-        <div
-          aria-live="polite"
-          style={{ maxWidth: MEASURE, paddingBottom: stack.bottom }}
-        >
-          <Saying model={model} asked={asked} answer={answer} />
-        </div>
-      }
-    >
-      {/* ── THE CAR ─────────────────────────────────────────────────────
-          §11.3 — the screen asks for the hero for this vehicle and receives
-          one. It does not know, and must never learn, what medium answered.
-
-          The release-on-touch-elsewhere handler sits on this wrapper rather
-          than on a transparent overlay, so nothing is ever laid over the car.
-          It is a convenience and not the accessible path — pressing the mark
-          again and Escape both do the same job and are both reachable by
-          keyboard — which is why it takes no role and no tab stop.
-
-          §18.1 — when the rendering can locate no region, no mark is drawn and
-          nothing explains the absence. The car simply cannot be asked about
-          itself yet, and the screen is whole without the interaction. */}
-      <div
-        style={{ position: 'absolute', inset: 0 }}
-        onClick={() => setAsked(null)}
+      {/* ── THE PHOTOGRAPH ──────────────────────────────────────────────
+          §11.2 — the largest element on the screen, and the design fixes it
+          at just over half the display so the ledger below is on the same
+          screen as the car it describes. That co-presence is the point: this
+          room is the car AND its condition, not one then the other. */}
+      <section
+        style={{
+          position: 'relative',
+          height: 'min(52svh, 440px)',
+          /* The rendering fills its frame absolutely and owns everything
+             inside it, so the frame needs a containing block and nothing
+             else. `container-type` is what makes the renderer's cqw/cqh
+             units resolve against this box. */
+          containerType: 'size',
+          overflow: 'hidden',
+        }}
       >
         <rendering.Surface
-          focus={asked}
+          focus={focus}
           priority
           mark={region => (
-            <Mark region={region} asked={asked === region.id} onAsk={ask} />
+            <button
+              type="button"
+              aria-label={`${REGION_NAME[region.id]} — ${
+                protections.find(p => p.region === region.id)?.term ?? 'no record'
+              }`}
+              aria-pressed={focus === region.id}
+              onClick={() => setFocus(focus === region.id ? null : region.id)}
+              className="am-tap"
+              style={{
+                minWidth: TARGET_MIN, minHeight: TARGET_MIN,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  width: 9, height: 9, borderRadius: '50%',
+                  background: color.amber,
+                  boxShadow: '0 0 14px 3px rgba(224,164,92,0.5)',
+                }}
+              />
+            </button>
           )}
         />
-      </div>
-    </Hero>
 
-      <Acts model={model} />
+        {/* §21.1 — the scrim, top and bottom. The words below are `over`. */}
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background:
+              'linear-gradient(180deg, rgba(8,9,10,0.7), rgba(8,9,10,0.05) 40%, #08090A 98%)',
+          }}
+        />
 
-      {/* ── MEDIA ───────────────────────────────────────────────────────
-          `os/moment` groups by month, never by job — a life is remembered in
-          months. §18.1: a car with no photographs shows nothing here, because
-          there is nothing to say yet. */}
-      {model.media.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.movement }}>
-          <Glass pad="gap">
-          <Text role="whisper" tone="ink3">Its photographs</Text>
-          {model.media.map(group => (
-            <div key={group.month} style={{ marginTop: space.gap }}>
-              <Text role="whisper" tone="ink3">{group.month}</Text>
-              <div
-                style={{
-                  marginTop: space.breath,
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
-                  gap: space.breath,
-                }}
-              >
-                {group.frames.map(f => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setViewing(f.id)}
-                    aria-label={f.caption ?? 'Open the photograph'}
+        {/* Identity, over the photograph. §5.5 — the plate is identity, not
+            jargon, so it is set in mono and named first. */}
+        <div
+          style={{
+            position: 'absolute', left: INSET, right: INSET, bottom: space.gap,
+            display: 'flex', flexDirection: 'column', gap: 6, maxWidth: MEASURE,
+          }}
+        >
+          <Label style={{ color: 'rgba(232,217,190,0.7)' }}>{plate}</Label>
+          <h1 className="am-display" style={{ margin: 0, fontSize: 34, letterSpacing: '-0.02em' }}>
+            {name}
+          </h1>
+          {descriptor ? (
+            <span style={{ fontSize: 13.5, color: color.over2 }}>{descriptor}</span>
+          ) : null}
+        </div>
+      </section>
+
+      <div
+        style={{
+          paddingInline: INSET,
+          maxWidth: MEASURE + INSET * 2,
+          marginInline: 'auto',
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: space.line,
+          marginTop: space.gap,
+        }}
+      >
+        {/* ── WHAT IS HAPPENING TO IT ─────────────────────────────────
+            §5.3 #2 — the present tense, always. The car's own room saying
+            nothing about the car's state while it sits at rest was the exact
+            silence §11.1 exists to prevent; only the WAY IN to the live
+            account is conditional, never the state itself.
+
+            §5.4 — the live visit is a takeover reached from the car, so while
+            there is one this pane is lit, breathing and pressable. */}
+        <Pane
+          tone={followHref ? 'lit' : 'plain'}
+          live={Boolean(followHref)}
+          as={followHref ? Link : 'div'}
+          {...(followHref ? { href: followHref } : {})}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            gap: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
+            textDecoration: 'none',
+          }}
+        >
+          <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 14, color: color.ink }}>{state}</span>
+            {followHref ? (
+              <Label style={{ letterSpacing: '0.16em', fontSize: 10 }}>Follow the visit</Label>
+            ) : null}
+          </span>
+          {followHref ? <Pulse /> : null}
+        </Pane>
+
+        {/* §17.1 — the car IS the inbox. One unread thing, as a doorway to
+            the object it is about (§17.3). Never a feed, never a count. */}
+        {notice ? (
+          <Pane
+            tone="warm"
+            as={Link}
+            {...{ href: notice.href }}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              gap: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
+              textDecoration: 'none',
+            }}
+          >
+            <span style={{ fontSize: 13.5, color: color.ink }}>{notice.title}</span>
+            <Chevron />
+          </Pane>
+        ) : null}
+
+        {/* ── THE PROTECTION LEDGER ───────────────────────────────────
+            §14.2 — every layer, in the customer's words, as a proportion of
+            its own term. One pane, because these are one fact about the car
+            rather than several facts of the same kind (§10.2).
+
+            The bar is drawn only where the term actually depletes. A
+            perpetual protection with a full bar would be a lie shaped like a
+            measurement; it states its term and nothing more. */}
+        {protections.length > 0 ? (
+          <Pane
+            as="section"
+            aria-labelledby="veh-ledger"
+            style={{
+              padding: `${space.gap + 2}px ${space.gap + 4}px`,
+              display: 'flex', flexDirection: 'column', gap: space.gap - 2,
+            }}
+          >
+            <h2 id="veh-ledger" style={{ margin: 0 }}>
+              <Label style={{ fontSize: 9.5, letterSpacing: '0.24em' }}>What protects it</Label>
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: space.line }}>
+              {protections.map(p => {
+                const value = (
+                  <>
+                    {p.term}
+                    {p.documentHref ? (
+                      <>
+                        {' '}
+                        <Link
+                          href={p.documentHref}
+                          style={{ color: 'inherit', textDecoration: 'underline' }}
+                        >
+                          The original
+                        </Link>
+                      </>
+                    ) : null}
+                  </>
+                );
+
+                return typeof p.remaining === 'number' ? (
+                  <Meter
+                    key={p.id}
+                    label={p.label}
+                    value={value}
+                    fill={p.remaining}
+                    tone={TONE[p.tone]}
+                  />
+                ) : (
+                  <div
+                    key={p.id}
                     style={{
-                      appearance: 'none',
-                      border: 0,
-                      padding: 0,
-                      background: color.surface,
-                      borderRadius: radius.card,
-                      overflow: 'hidden',
-                      aspectRatio: '1',
-                      position: 'relative',
-                      cursor: 'pointer',
+                      display: 'flex', justifyContent: 'space-between',
+                      gap: space.line, fontSize: 13.5,
                     }}
                   >
-                    <Image
-                      src={f.url}
-                      alt={f.caption ?? `${model.name}, photographed at AutoModz`}
-                      fill
-                      sizes="(max-width: 768px) 33vw, 160px"
-                      style={{ objectFit: 'cover' }}
-                    />
-                  </button>
-                ))}
-              </div>
+                    <span style={{ color: color.ink }}>{p.label}</span>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)', color: TONE[p.tone], flexShrink: 0,
+                      }}
+                    >
+                      {value}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-          </Glass>
-        </section>
-      ) : null}
+          </Pane>
+        ) : declareHref ? (
+          /* §18.4 — a car with nothing recorded is invited to say what
+             protects it, rather than shown an empty ledger. */
+          <Pane style={{ padding: `${space.gap + 2}px ${space.gap + 4}px` }}>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: color.ink2 }}>
+              Nothing declared yet. If this car has a coating, a film or a policy
+              from elsewhere, tell us and it will sit here.
+            </p>
+            <div style={{ marginTop: space.line }}>
+              <Action href={declareHref} quiet style={{ fontSize: 13.5 }}>
+                Tell us what protects it
+              </Action>
+            </div>
+          </Pane>
+        ) : null}
 
-      {/* THE VIEWER — a photograph deserves the whole surface (§13.2). */}
-      <Modal
-        open={viewed !== undefined}
-        onClose={() => setViewing(null)}
-        label={viewed?.caption ?? 'Photograph'}
-      >
-        {viewed ? (
-          <div style={{
-            minHeight: '100svh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            paddingInline: INSET,
-          }}>
-            <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3' }}>
-              <Image
-                src={viewed.url}
-                alt={viewed.caption ?? `${model.name}, photographed at AutoModz`}
-                fill
-                sizes={imageSizes.fullBleed}
-                style={{ objectFit: 'contain' }}
-              />
-            </div>
-            {viewed.caption ? (
-              <Text role="body" tone="ink2" style={{ marginTop: space.gap }}>
-                {viewed.caption}
-              </Text>
+        {/* ── THE TWO STANDING FIGURES ────────────────────────────────
+            Warranty and odometer. Either may be absent — a car with neither
+            draws no row at all rather than two tiles of dashes. */}
+        {warranty || odometer ? (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: warranty && odometer ? '1fr 1fr' : '1fr',
+              gap: space.line,
+            }}
+          >
+            {warranty ? (
+              <Pane style={{ padding: space.gap }}>
+                <Stat label="Warranty">
+                  <span style={{ fontSize: 15 }}>{warranty}</span>
+                </Stat>
+              </Pane>
             ) : null}
-            <div style={{ marginTop: space.gap, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
-              {viewed.visitHref ? (
-                <Button tier="forward" href={viewed.visitHref}>The visit it came from</Button>
-              ) : null}
-              <Button tier="quiet" onClick={() => setViewing(null)}>Close</Button>
-            </div>
+            {odometer ? (
+              <Pane style={{ padding: space.gap }}>
+                <Stat label="Odometer">
+                  <span style={{ fontSize: 15 }}>{odometer}</span>
+                </Stat>
+              </Pane>
+            ) : null}
           </div>
         ) : null}
-      </Modal>
+
+        {/* ── THE ALBUM ───────────────────────────────────────────────
+            One line: how much of this car's life the studio has photographed,
+            and the way into it. §4.3 — depth of one. */}
+        <Pane
+          as={Link}
+          {...{ href: historyHref }}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            gap: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
+            textDecoration: 'none',
+          }}
+        >
+          <span style={{ fontSize: 13.5, color: color.ink2 }}>
+            {frames > 0
+              ? `Its history · ${frames} photograph${frames === 1 ? '' : 's'} across ${media.length} month${media.length === 1 ? '' : 's'}`
+              : 'Its history · nothing photographed yet'}
+          </span>
+          <Chevron />
+        </Pane>
+
+        {/* ── WHAT IS COMING ──────────────────────────────────────────
+            §16 — pending is not the same promise as confirmed, and a customer
+            waiting on the studio is told they are waiting. */}
+        {next ? (
+          <Pane
+            as={next.manageHref ? Link : 'div'}
+            {...(next.manageHref ? { href: next.manageHref } : {})}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              gap: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
+              textDecoration: 'none',
+            }}
+          >
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: 14.5, color: color.ink }}>{next.service}</span>
+              <Label style={{ letterSpacing: '0.14em', fontSize: 10 }}>
+                {next.when} · {next.settled ? 'Confirmed' : 'Awaiting the studio'}
+              </Label>
+            </span>
+            {next.manageHref ? <Chevron /> : null}
+          </Pane>
+        ) : !followHref ? (
+          /* §18.1 — nothing booked is an invitation, and the invitation IS the
+             act: a line saying "nothing booked" with no way to book one is the
+             product noticing a gap and leaving it. */
+          <Pane
+            tone="warm"
+            as={Link}
+            {...{ href: arrangeHref }}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              gap: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
+              textDecoration: 'none',
+            }}
+          >
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: 14.5, color: color.ink }}>Nothing booked</span>
+              <Label style={{ letterSpacing: '0.14em', fontSize: 10 }}>Arrange a visit</Label>
+            </span>
+            <Chevron />
+          </Pane>
+        ) : null}
+
+        {/* ── THE RELATIONSHIP, AND THE TWO QUIET CONTROLS ────────────
+            §2.1 — time with the studio, never a tally of transactions. */}
+        <section
+          aria-labelledby="veh-more"
+          style={{ marginTop: space.gap, display: 'flex', flexDirection: 'column', gap: space.line }}
+        >
+          <h2 id="veh-more" style={{ margin: 0 }}><Rail>{since}</Rail></h2>
+          <div style={{ display: 'flex', gap: space.breath }}>
+            {!followHref ? (
+              <Action href={arrangeHref} style={{ fontSize: 14 }}>Arrange a visit</Action>
+            ) : null}
+            <Action href={editHref} quiet style={{ fontSize: 14 }}>Correct the car</Action>
+          </div>
+        </section>
+
+        {/* ── THE MEDIA, MONTH BY MONTH ───────────────────────────────
+            The car's own life, in the order it happened. Each frame is a link
+            into the visit it came from where the visit is known. */}
+        {media.map(month => (
+          <section
+            key={month.month}
+            aria-label={month.month}
+            style={{ marginTop: space.gap, display: 'flex', flexDirection: 'column', gap: space.line }}
+          >
+            <Rail>{month.month}</Rail>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))',
+                gap: space.breath,
+              }}
+            >
+              {month.frames.map(f => {
+                const tile = (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={f.url}
+                    alt={f.caption ?? `${name}, photographed at the studio`}
+                    loading="lazy"
+                    style={{
+                      width: '100%', aspectRatio: '1', objectFit: 'cover',
+                      borderRadius: radius.chip, display: 'block',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                    }}
+                  />
+                );
+                return f.visitHref ? (
+                  <Link key={f.id} href={f.visitHref} className="am-tap">{tile}</Link>
+                ) : (
+                  <span key={f.id}>{tile}</span>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
     </main>
   );
 }

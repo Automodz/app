@@ -2,7 +2,8 @@
 /**
  * THE ROOM.
  *
- * Three magenta lights on the far wall, drifting slowly and leaning very
+ * Three lights on the far wall — the studio's amber and its champagne
+ * reflection, over a cool counterweight — drifting slowly and leaning very
  * slightly toward wherever the customer is pointing. Everything else in the
  * application stands in front of this; nothing is ever drawn on top of the
  * content by it.

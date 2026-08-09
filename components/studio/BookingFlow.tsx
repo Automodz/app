@@ -392,7 +392,19 @@ export function BookingFlow({
           </div>
         ) : (
         <>
-        <Heading level="title">Arrange a visit</Heading>
+        {/* Design 1f — the label names WHAT is being arranged and for which
+            car, and the display says only the act. The two were one line
+            before, which made the sheet read as a form title rather than as
+            the studio setting a bay aside. */}
+        <span className="am-label" style={{ letterSpacing: '0.3em' }}>
+          {[service?.name, chosenVehicle?.name].filter(Boolean).join(' · ') || 'The studio'}
+        </span>
+        <h2
+          className="am-display"
+          style={{ margin: `${space.hair}px 0 0`, fontSize: 29 }}
+        >
+          Reserve the bay
+        </h2>
 
         <OfflineNote inline caption="You’re offline. We can’t hold a slot until you’re back." />
 
@@ -489,29 +501,42 @@ export function BookingFlow({
                     aria-pressed={on}
                     disabled={gone}
                     onClick={() => { setDate(d); setTime(null); }}
+                    className="am-tap"
                     style={{
                       flex: '0 0 auto',
-                      minWidth: 74,
+                      minWidth: 62,
                       minHeight: TARGET_MIN + 20,
-                      paddingBlock: space.breath,
-                      paddingInline: space.line,
-                      borderRadius: radius.card,
-                      border: `${HAIRLINE}px solid ${on ? color.ink : color.edge}`,
-                      background: on ? color.ink : 'transparent',
-                      color: on ? color.paper : gone ? color.ink3 : color.ink2,
+                      paddingBlock: space.line,
+                      paddingInline: space.breath + 2,
+                      borderRadius: radius.card - 2,
+                      /* Design 1f — the chosen day is LIT rather than
+                         inverted. An inverted tile is a selection control; a
+                         lit one is the day the studio has set aside, which is
+                         what it actually is. */
+                      border: `${HAIRLINE}px solid ${on ? 'rgba(224,164,92,0.4)' : 'transparent'}`,
+                      background: on
+                        ? 'linear-gradient(160deg, rgba(224,164,92,0.28), rgba(224,164,92,0.1))'
+                        : 'rgba(255,255,255,0.04)',
+                      boxShadow: on ? '0 0 24px -6px rgba(224,164,92,0.6)' : undefined,
+                      color: on ? color.ink : gone ? color.ink3 : color.ink2,
                       cursor: gone ? 'default' : 'pointer',
-                      opacity: gone ? 0.45 : 1,
+                      opacity: gone ? 0.4 : 1,
                       display: 'grid',
-                      gap: 2,
+                      gap: 4,
                       justifyItems: 'center',
                       fontFamily: typeScale.body.family,
                     }}
                   >
-                    <span style={{ fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.75 }}>
+                    <span
+                      className="am-label"
+                      style={{ fontSize: 9, letterSpacing: '0.14em', color: 'inherit', opacity: 0.75 }}
+                    >
                       {dayName(d)}
                     </span>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>{dayNumeral(d)}</span>
-                    {gone ? <span style={{ fontSize: 10, opacity: 0.8 }}>full</span> : null}
+                    <span style={{ fontSize: 16, fontWeight: 400, lineHeight: 1 }}>{dayNumeral(d)}</span>
+                    {gone ? (
+                      <span className="am-label" style={{ fontSize: 8, color: 'inherit' }}>full</span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -560,11 +585,11 @@ export function BookingFlow({
             every rupee and ignores anything sent from here. */}
         {service && date && time ? (
           <div
+            className="am-glass"
             style={{
               marginTop: space.rest,
-              padding: space.gap,
-              borderRadius: radius.card,
-              border: `${HAIRLINE}px solid ${color.edge}`,
+              padding: space.gap + 2,
+              borderRadius: radius.pane,
             }}
           >
             <Text role="whisper" tone="ink3">You&rsquo;re arranging</Text>
@@ -599,8 +624,8 @@ export function BookingFlow({
                 <span
                   style={{
                     fontFamily: typeScale.display.family,
-                    fontSize: 20,
-                    fontWeight: 700,
+                    fontSize: 24,
+                    fontWeight: 300,
                     letterSpacing: '-0.01em',
                     color: color.ink,
                   }}
@@ -664,7 +689,7 @@ export function BookingFlow({
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: space.rest }}>
-      <Text role="data" tone="ink3">{label}</Text>
+      <span className="am-label" style={{ letterSpacing: '0.24em', fontSize: 9.5 }}>{label}</span>
       {children}
     </div>
   );
@@ -784,12 +809,17 @@ function Chip({
       style={{
         minHeight: TARGET_MIN,
         paddingInline: space.gap,
-        borderRadius: radius.pill,
-        border: `${HAIRLINE}px solid ${on ? color.ink : color.edge}`,
-        background: on ? color.ink : 'transparent',
-        color: on ? color.paper : disabled ? color.ink3 : color.ink2,
-        fontFamily: typeScale.body.family,
-        fontSize: typeScale.data.size,
+        borderRadius: radius.card,
+        /* Design 1f — a drop-off hour is champagne, not amber. The DAY is the
+           studio setting time aside (amber, it is doing something); the hour
+           within it is simply the one you picked. Two lights, two meanings. */
+        border: `${HAIRLINE}px solid ${on ? 'rgba(232,217,190,0.32)' : color.edge}`,
+        background: on
+          ? 'linear-gradient(160deg, rgba(232,217,190,0.22), rgba(232,217,190,0.06))'
+          : 'rgba(255,255,255,0.045)',
+        color: on ? '#F3EADA' : disabled ? color.ink3 : color.ink2,
+        fontFamily: 'var(--font-mono)',
+        fontSize: 12,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.4 : 1,
       }}

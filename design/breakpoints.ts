@@ -33,4 +33,10 @@ export const imageSizes = {
   fullBleed: `(max-width: ${breakpoint.wide}px) 100vw, ${breakpoint.wide}px`,
   /** An image inside the measure — a card, a media tile. */
   inMeasure: `(max-width: ${breakpoint.tablet}px) 100vw, 600px`,
+  /**
+   * Half the measure — one of a pair of panes side by side, which the design
+   * uses on Home and on the Car. Without this the pair asked for a full-width
+   * image each and downloaded twice the pixels either one could show.
+   */
+  half: `(max-width: ${breakpoint.tablet}px) 50vw, 300px`,
 } as const;

@@ -1,13 +1,31 @@
 import {
-  collection, doc, addDoc, updateDoc, deleteDoc,
+  collection, doc, addDoc, updateDoc, deleteDoc, deleteField,
   getDocs, serverTimestamp, query, where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Vehicle } from '../types';
 
+/**
+ * `undefined` IS A VALUE THE FORM CAN PRODUCE AND FIRESTORE CANNOT STORE.
+ *
+ * The car form has optional fields — the odometer, the year — and clearing one
+ * means "remove this", not "write nothing". Firestore rejects `undefined`
+ * outright on a write, so a customer emptying their odometer would have got a
+ * failed save with no explanation. On a create the key is simply dropped; on
+ * an update it becomes `deleteField()`, which is the difference between a car
+ * that never had an odometer and one whose owner took it back.
+ */
+const forCreate = <T extends object>(v: T) =>
+  Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined));
+
+const forUpdate = <T extends object>(v: T) =>
+  Object.fromEntries(
+    Object.entries(v).map(([k, x]) => [k, x === undefined ? deleteField() : x]),
+  );
+
 export const addVehicle = async (uid: string, v: Omit<Vehicle, 'id' | 'createdAt'>) => {
   const r = await addDoc(collection(db, 'users', uid, 'vehicles'), {
-    ...v, createdAt: serverTimestamp(),
+    ...forCreate(v), createdAt: serverTimestamp(),
   });
   return r.id;
 };
@@ -18,7 +36,7 @@ export const getVehicles = async (uid: string): Promise<Vehicle[]> => {
 };
 
 export const updateVehicle = (uid: string, vid: string, data: Partial<Vehicle>) =>
-  updateDoc(doc(db, 'users', uid, 'vehicles', vid), data);
+  updateDoc(doc(db, 'users', uid, 'vehicles', vid), forUpdate(data));
 
 export const deleteVehicle = (uid: string, vid: string) =>
   deleteDoc(doc(db, 'users', uid, 'vehicles', vid));

@@ -3,29 +3,38 @@
  * THE VISIT, WHILE IT IS HAPPENING.
  *
  * Source: reference/customer-old/app/app/visit/[id]/page.tsx
- *         docs/AUTOMODZ-OS.md §13.2 · docs/AUTOMODZ-OS-ARCHITECTURE.md §1
+ *         docs/AUTOMODZ-OS.md §13.2, §19.2 · ARCHITECTURE §1
+ *         design "AutoModz App.dc.html" — screen 1g, "live, without noise"
  *
- * The completed visit is a record and lives in `VisitScreen`. This is the other
- * half the old application had and the rebuild lost: the car is HERE, now, and
- * the surface has to say so while it changes.
+ * The completed visit is a record and lives in `VisitScreen`. This is the car
+ * HERE, now, and the surface has to say so while it changes.
  *
  * §13.2 — a live visit is a takeover: it earns the whole surface and the
  * navigation stands down. Everything on it is `os/stay`'s derivation; not one
- * value is computed here. The rail is the system `Timeline`, so the product has
- * one implementation of "steps, and where we are among them" (§22.2) rather
- * than a second `StageRail`.
+ * value is computed here.
+ *
+ * ── "WITHOUT NOISE" IS THE WHOLE BRIEF ───────────────────────────────────
+ * The design's own title for this screen. Four things are on it: what is being
+ * done, the bay, the acts in order, and two ways to reach the studio. There is
+ * no progress percentage, no ETA counting down by the second, no activity
+ * feed. §19.2 — one honest line about time, or nothing at all. A customer
+ * watching their car being worked on wants to know it is being worked on;
+ * everything beyond that is the product performing busyness.
+ *
+ * ── THE TIMELINE IS DRAWN HERE, NOT BY `Timeline` ────────────────────────
+ * The system `Timeline` is a horizontal rail of steps. The design's is
+ * vertical, with a lit dot on the current act and a hairline running between
+ * them — it reads as a record accruing rather than as progress being made,
+ * which is the difference between a workshop and a delivery tracker. §22.2 is
+ * satisfied by there being ONE of each: the rail for horizontal steps, this
+ * for the visit's own ledger.
  */
 import { useState } from 'react';
 import Image from 'next/image';
-import {
-  color, space, INSET, MEASURE, radius, stack, imageSizes,
-} from '@/design';
-import {
-  Hero, Heading, Text, Button, Timeline, Modal,
-  OfflineNote,
-  LiveRefresh,
-} from '@/components/system';
-import type { TimelineStep } from '@/components/system';
+import Link from 'next/link';
+import { color, space, INSET, MEASURE, radius, stack, imageSizes } from '@/design';
+import { Modal, OfflineNote, LiveRefresh } from '@/components/system';
+import { Pane, Label, Statement, Pulse, Action } from '@/components/os';
 
 export interface LiveVisitFrame {
   id: string;
@@ -53,218 +62,261 @@ export interface LiveVisitModel {
   hero?: string;
   /** Back to the car. */
   backHref: string;
+  /** The studio, reachable. §20.1 */
+  messageHref?: string;
 }
 
 export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
   const [viewing, setViewing] = useState<string | null>(null);
   const viewed = model.frames.find(f => f.id === viewing);
-
-  const steps: TimelineStep[] = model.acts.map((a, i) => ({
-    id: String(i),
-    label: a.label,
-  }));
-  /* `Timeline` takes the index rather than a flag per step, so there is exactly
-     one place the current act can be — two steps could not both claim it. */
-  const current = Math.max(0, model.acts.findIndex(a => a.current));
+  const { vehicleName, word, line, timing, service, acts, frames, hero, backHref, messageHref } = model;
 
   return (
     <main
       style={{
-        /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
-           which is fixed behind everything (components/system/Ambient.tsx).
-           Painting `color.paper` here would occlude it completely. The dark
-           ground still exists — it is on `body` — so nothing loses contrast. */
-        background: 'transparent',
+        position: 'relative',
         minHeight: '100svh',
-        /* §13.2 — a takeover; the navigation stands down, so there is no bar
-           to clear and the surface runs to the safe area instead. */
-        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${space.rest}px)`,
+        background: 'transparent',
+        /* A takeover carries no dock, so it reserves only the safe area — but
+           it still needs room for its own two controls at the foot. */
+        paddingBottom: `calc(${space.movement}px + env(safe-area-inset-bottom, 0px))`,
+        paddingTop: `calc(${stack.top} + ${space.gap}px)`,
       }}
     >
-      {/* THE ONE ROOM THAT HAS TO KEEP ITSELF CURRENT.
-          Rendered on the server, this screen used to be frozen at the moment
-          it was requested: the act it was in when the page loaded, and
-          nothing after. New photographs never appeared and the rail never
-          advanced — the one surface called "live" was the only one that never
-          changed. It asks again now, quietly, and only while somebody is
-          actually looking (see LiveRefresh).
-
-          NO PREDICATE. `app/history/[id]` renders this room only while
-          `toLiveVisit` still answers; the moment the visit is no longer in
-          flight the same address renders the RECORD instead and this
-          unmounts, which stops the polling for the right reason. Guessing at
-          "finished" from the last act would stop one step early — a visit
-          whose work is done but whose car has not been handed back is still
-          live, and that hand-back is the transition the customer is waiting
-          for. */}
+      <OfflineNote />
+      {/* The page re-reads itself while the customer is actually looking, and
+          stops the moment they are not. See LiveRefresh. */}
       <LiveRefresh />
 
-      {/* §20.3 — the visit so far was rendered on the server and is still
-          true; only what happens NEXT needs a connection. Whoever is
-          watching their car in the studio is the likeliest to be on a
-          patchy connection, so this room says it too. */}
-      <OfflineNote />
-
-      <Hero
-        state={model.hero ? 'media' : 'awaiting'}
-        band="full"
-        overlay={
-          <div style={{ maxWidth: MEASURE, paddingBottom: stack.top }}>
-            <Text role="data" tone="over" as="span">{model.vehicleName}</Text>
-
-            {/* §21.7 — the act changes without the customer acting, so it is
-                announced politely rather than interrupting them. */}
-            <Heading level="display" tone="over" style={{ marginTop: space.hair }}>
-              {model.word}
-            </Heading>
-            <Text
-              role="body"
-              tone="over"
-              aria-live="polite"
-              style={{ marginTop: space.line }}
-            >
-              {model.line}
-            </Text>
-            {model.timing ? (
-              <Text role="data" tone="over" aria-live="polite" style={{ marginTop: space.breath }}>
-                {model.timing}
-              </Text>
-            ) : null}
-          </div>
-        }
-      >
-        {model.hero ? (
-          <Image
-            src={model.hero}
-            alt={`${model.vehicleName}, in the studio`}
-            fill
-            priority
-            sizes={imageSizes.fullBleed}
-            style={{ objectFit: 'cover' }}
-          />
-        ) : null}
-      </Hero>
-
-      {/* ── WHERE IT IS ─────────────────────────────────────────────────
-          The rail. `Timeline` is the one implementation of steps-and-position
-          in the product; a second `StageRail` would be a second answer. */}
-      <section style={{ paddingTop: space.rest }}>
-        <Timeline steps={steps} current={current} />
-      </section>
-
-      {/* ── WHAT WAS ASKED FOR ─────────────────────────────────────────── */}
-      <section
+      <div
         style={{
           paddingInline: INSET,
           maxWidth: MEASURE + INSET * 2,
           marginInline: 'auto',
           width: '100%',
-          paddingTop: space.rest,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: space.gap,
         }}
       >
-        <Text role="data" tone="ink3">{model.service}</Text>
-      </section>
+        {/* ── WHAT IS BEING DONE ────────────────────────────────────────
+            §9.5 — the one Display. The label above it names the visit and the
+            car, which is the only place either appears on this screen. */}
+        <Statement eyebrow={`${vehicleName} · in the studio`} lit size={29}>
+          {service}
+        </Statement>
 
-      {/* ── THE EVIDENCE ────────────────────────────────────────────────
-          §18.1 — before the studio has photographed anything there is nothing
-          here, and nothing explains the absence. */}
-      {model.frames.length > 0 ? (
-        <section
-          style={{
-            paddingInline: INSET,
-            maxWidth: MEASURE + INSET * 2,
-            marginInline: 'auto',
-            width: '100%',
-            paddingTop: space.movement,
-          }}
-        >
+        {/* ── THE BAY ───────────────────────────────────────────────────
+            The newest photograph of any kind, with the studio's own sentence
+            under it. §13.2 — the evidence is the point of a live visit; a
+            status word with no picture behind it is a claim. */}
+        {hero ? (
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
-              gap: space.breath,
+              position: 'relative', borderRadius: radius.sheet, overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.09)',
+              boxShadow: '0 24px 50px -24px rgba(0,0,0,0.95)',
             }}
           >
-            {model.frames.map(f => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setViewing(f.id)}
-                aria-label={f.caption ?? 'Open the photograph'}
-                style={{
-                  appearance: 'none',
-                  border: 0,
-                  padding: 0,
-                  background: color.surface,
-                  borderRadius: radius.card,
-                  overflow: 'hidden',
-                  aspectRatio: '1',
-                  position: 'relative',
-                  cursor: 'pointer',
-                }}
-              >
-                <Image
-                  src={f.url}
-                  alt={f.caption ?? `${model.vehicleName}, in the studio`}
-                  fill
-                  sizes="(max-width: 768px) 33vw, 160px"
-                  style={{ objectFit: 'cover' }}
-                />
-              </button>
-            ))}
+            <Image
+              src={hero}
+              alt={`${vehicleName}, in the studio`}
+              width={780} height={392}
+              sizes={imageSizes.inMeasure}
+              priority
+              style={{ width: '100%', height: 196, objectFit: 'cover', display: 'block' }}
+            />
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg, rgba(8,9,10,0.25), rgba(8,9,10,0.6))',
+              }}
+            />
+            {/* The one live mark in the product: a breathing point of amber
+                and three words. Never a red dot, never the word "LIVE" in a
+                pill — this is a workshop, not a broadcast. */}
+            <span
+              className="am-glass"
+              style={{
+                position: 'absolute', top: 14, left: 14,
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '6px 11px', borderRadius: radius.chip,
+              }}
+            >
+              <Pulse size={6} />
+              <span className="am-label" style={{ fontSize: 9.5, letterSpacing: '0.2em' }}>
+                Live from the bay
+              </span>
+            </span>
+            <span
+              style={{
+                position: 'absolute', bottom: 14, left: 16, right: 16,
+                fontSize: 13, color: color.over,
+              }}
+            >
+              {line}
+            </span>
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <Pane tone="lit" live style={{ padding: `${space.gap}px ${space.gap + 2}px`, display: 'flex', alignItems: 'center', gap: space.line }}>
+            <Pulse />
+            <span style={{ fontSize: 14, color: color.ink }}>{line}</span>
+          </Pane>
+        )}
 
-      {/* ── THE WAY BACK ───────────────────────────────────────────────
-          §13.2 — a takeover has no navigation, so it must carry its own exit. */}
-      <section
-        style={{
-          paddingInline: INSET,
-          maxWidth: MEASURE + INSET * 2,
-          marginInline: 'auto',
-          width: '100%',
-          paddingTop: space.movement,
-        }}
-      >
-        <Button tier="quiet" href={model.backHref}>Back to the car</Button>
-      </section>
+        {/* ── THE ACTS ──────────────────────────────────────────────────
+            In order, with the current one lit and the ones ahead at rest.
+            §19.2 — the timing line hangs off the CURRENT act, because that is
+            the only act a time can honestly be given for. */}
+        <Pane
+          as="section"
+          aria-label="What has been done"
+          style={{
+            padding: space.gap + 4,
+            display: 'flex', flexDirection: 'column', gap: 0,
+          }}
+        >
+          {acts.map((a, i) => {
+            const last = i === acts.length - 1;
+            return (
+              <div
+                key={a.label}
+                style={{ display: 'flex', gap: space.line + 2, alignItems: 'flex-start' }}
+              >
+                {/* The dot, and the hairline to the next one. Not drawn on
+                    the last act: a line running off the bottom of the ledger
+                    would promise a step that does not exist. */}
+                <span
+                  aria-hidden
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    gap: 4, paddingTop: 5, alignSelf: 'stretch',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: a.current ? color.amber : a.done ? color.champagne : 'transparent',
+                      border: a.done || a.current ? 'none' : '1px solid rgba(237,235,231,0.5)',
+                      boxShadow: a.current ? '0 0 14px 3px rgba(224,164,92,0.55)' : undefined,
+                    }}
+                  />
+                  {last ? null : (
+                    <span
+                      style={{
+                        width: 1, flex: 1, minHeight: 26,
+                        background: a.done ? 'rgba(232,217,190,0.4)' : 'rgba(255,255,255,0.12)',
+                      }}
+                    />
+                  )}
+                </span>
 
+                <span
+                  style={{
+                    display: 'flex', flexDirection: 'column', gap: 2,
+                    paddingBottom: last ? 0 : space.gap,
+                    opacity: a.done || a.current ? 1 : 0.45,
+                  }}
+                >
+                  <span style={{ fontSize: 14, color: a.current ? color.amberHot : color.ink }}>
+                    {a.label}
+                  </span>
+                  {a.current && timing ? (
+                    <Label style={{ fontSize: 10, letterSpacing: '0.14em' }} >
+                      Now · {timing}
+                    </Label>
+                  ) : null}
+                </span>
+              </div>
+            );
+          })}
+        </Pane>
+
+        {/* ── TODAY'S PHOTOGRAPHS ───────────────────────────────────────
+            A strip, not a gallery: these arrive during one visit and there
+            are rarely more than a handful. Tapping one opens it whole. */}
+        {frames.length > 0 ? (
+          <section aria-label="Photographs from this visit">
+            <div
+              style={{
+                display: 'flex', gap: space.breath, overflowX: 'auto',
+                marginInline: -INSET, paddingInline: INSET, paddingBottom: space.breath,
+              }}
+            >
+              {frames.map(f => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setViewing(f.id)}
+                  className="am-tap"
+                  style={{
+                    flex: '0 0 auto', padding: 0, border: 'none', background: 'none',
+                    cursor: 'pointer', borderRadius: radius.chip, overflow: 'hidden',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={f.url}
+                    alt={f.caption ?? `${vehicleName} during this visit`}
+                    loading="lazy"
+                    style={{
+                      width: 108, height: 108, objectFit: 'cover', display: 'block',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* ── THE TWO WAYS OUT ──────────────────────────────────────────
+            Neither is a commitment, so neither is filled. §20.1 — a way to
+            reach a human, on the screen where a customer is most likely to
+            want one. */}
+        <div style={{ display: 'flex', gap: space.line, marginTop: space.breath }}>
+          <Action href={backHref} quiet style={{ fontSize: 13.5 }}>Back to the car</Action>
+          {messageHref ? (
+            <Action href={messageHref} quiet style={{ fontSize: 13.5 }}>Message the studio</Action>
+          ) : null}
+        </div>
+      </div>
+
+      {/* One photograph, whole. */}
       <Modal
         open={viewed !== undefined}
         onClose={() => setViewing(null)}
-        label={viewed?.caption ?? 'Photograph'}
+        label="Photograph"
       >
         {viewed ? (
-          <div
-            style={{
-              minHeight: '100svh',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              paddingInline: INSET,
-            }}
-          >
-            <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3' }}>
-              <Image
-                src={viewed.url}
-                alt={viewed.caption ?? `${model.vehicleName}, in the studio`}
-                fill
-                sizes={imageSizes.fullBleed}
-                style={{ objectFit: 'contain' }}
-              />
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: space.gap }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={viewed.url}
+              alt={viewed.caption ?? `${vehicleName} during this visit`}
+              style={{ width: '100%', borderRadius: radius.pane, display: 'block' }}
+            />
             {viewed.caption ? (
-              <Text role="body" tone="ink2" style={{ marginTop: space.gap }}>
-                {viewed.caption}
-              </Text>
+              <p style={{ margin: 0, fontSize: 13.5, color: color.ink2 }}>{viewed.caption}</p>
             ) : null}
-            <div style={{ marginTop: space.gap }}>
-              <Button tier="quiet" onClick={() => setViewing(null)}>Close</Button>
-            </div>
+            <Link
+              href="#"
+              onClick={e => { e.preventDefault(); setViewing(null); }}
+              className="am-tap"
+              style={{ color: color.ink3, fontSize: 14, textDecoration: 'none' }}
+            >
+              Close
+            </Link>
           </div>
         ) : null}
       </Modal>
+
+      {/* `word` is the act in the customer's words and the takeover's
+          accessible title; it is announced rather than drawn, because the
+          Display already says what is being done and repeating it in two
+          sizes is the flattening §3.5 warns about. */}
+      <span className="sr-only" role="status" aria-live="polite">{word}</span>
     </main>
   );
 }

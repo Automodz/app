@@ -40,16 +40,19 @@ const unbounded = Unbounded({
   subsets: ['latin'], weight: ['500', '700', '800'],
   variable: '--font-hero-src', display: 'swap',
 });
+/* 200 and 300 are not decoration. The design sets every headline and every
+   large number in Outfit 200 — a weight the product did not previously carry,
+   so those headlines were silently rendering at 400 and reading as bold. */
 const outfit = Outfit({
-  subsets: ['latin'], weight: ['400', '500', '600', '700', '800'],
+  subsets: ['latin'], weight: ['200', '300', '400', '500', '600', '700', '800'],
   variable: '--font-display-src', display: 'swap',
 });
 const dmSans = DM_Sans({
-  subsets: ['latin'], weight: ['400', '500', '600', '700'],
+  subsets: ['latin'], weight: ['300', '400', '500', '600', '700'],
   variable: '--font-body-src', display: 'swap',
 });
 const dmMono = DM_Mono({
-  subsets: ['latin'], weight: ['400', '500'],
+  subsets: ['latin'], weight: ['300', '400', '500'],
   variable: '--font-mono-src', display: 'swap',
 });
 
@@ -102,7 +105,7 @@ export const viewport: Viewport = {
   interactiveWidget: 'resizes-content',
   /* the customer product is always-dark; a paper theme-colour made Android
      paint light chrome around a black app and flashed white on launch */
-  themeColor: '#0A0B0D',
+  themeColor: '#08090A',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

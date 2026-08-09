@@ -66,9 +66,25 @@ export interface ButtonProps {
 }
 
 const TIER: Record<ButtonTier, CSSProperties> = {
-  /* Inverted: ink becomes the ground so the one primary action is unmistakable. */
-  primary: { background: color.ink, color: color.paper },
-  forward: { background: 'transparent', color: color.ink },
+  /**
+   * FILLED WITH LIGHT, not inverted with ink.
+   *
+   * This was `color.ink` on `color.paper` — a white slab, which is what the
+   * monochrome product had available. The ratified design makes the one
+   * primary action on a screen the only element FILLED with the studio's own
+   * light, which is what lets a customer find it without reading: everything
+   * else in the room is lit BY that light and nothing else carries it.
+   *
+   * `#100C06` rather than `color.paper` for the text: near-black with the
+   * amber's own warmth in it, so the label reads as ink printed on the
+   * control rather than as a hole punched through it. 8.6:1 on the fill.
+   */
+  primary: {
+    background: 'linear-gradient(160deg, rgba(224,164,92,0.92), rgba(224,164,92,0.64))',
+    color: '#100C06',
+    boxShadow: '0 24px 50px -22px rgba(224,164,92,0.8), inset 0 1px 0 rgba(255,255,255,0.4)',
+  },
+  forward: { background: 'transparent', color: color.amber },
   quiet: { background: 'transparent', color: color.ink2 },
 };
 

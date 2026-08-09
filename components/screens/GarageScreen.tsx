@@ -5,42 +5,38 @@
  * Source: docs/AUTOMODZ-OS.md §3.1, §3.2, §3.5, §4.3, §5.2, §7.5, §8.4,
  *         §9.5, §11.2, §11.5, §12.1, §12.2, §12.3, §12.4, §18.1, §18.2,
  *         §18.3, §18.4, §21.1
+ *         design "AutoModz App.dc.html" — screen 1h
  *
  * ── WHAT THIS SCREEN IS ──────────────────────────────────────────────────
  * §12.1 — "The collection. Every car the customer owns, each present as a
- * photograph with its current state."
+ * photograph with its current state." And, since the design, the record
+ * underneath it: what the studio has done, across every car, most recent
+ * first.
  *
- * Not a list of vehicles. The difference is not decorative: a list is a
- * rendering of records, and the feeling it produces is the feeling of
- * browsing stock. What is built here is a continuous vertical strip of
- * full-bleed photographs with no gaps, no containers, and no chrome — closer
- * to turning the pages of a book of one's own things than to reading a table
- * of them. There is nothing on this screen that is not a photograph or a
- * line of type over one.
+ * Those two belong on one screen because they are one question asked in two
+ * tenses — what do I have, and what has been done to it. Splitting them was
+ * what gave History a tab of its own; screen 1h takes the tab back and puts
+ * the answer where the question is (see navigation/routes.ts).
  *
  * ── DOMINANCE BELONGS TO THE POSITION, NOT TO THE CAR ────────────────────
- * §3.2 — "Each surface has exactly one thing it is about, and that thing is
- * unmistakably dominant." §9.5 — one Display per screen. The first frame is
- * therefore the screen's subject and carries the Display; every frame after
- * it carries a Title.
+ * §3.2 — one subject per surface; §9.5 — one Display per screen. The first
+ * car is therefore the screen's subject and carries the photograph at size;
+ * every car after it is a pane.
  *
  * §12.3 — "Cars are equals. No car is 'primary' — that is the studio's
- * convenience, not the owner's feeling about their vehicles."
- *
- * Both hold at once, because the emphasis is attached to the FIRST POSITION
- * IN THE STRIP rather than to whatever car is standing in it. The order is
- * the studio's attention — the car currently with us, or most recently — so
- * a car moves into and out of the lead as its situation changes. Nothing
- * here, and nothing in `GarageModel`, stores a primary flag. There is
- * deliberately no way for this screen to express one.
+ * convenience, not the owner's feeling about their vehicles." Both hold at
+ * once, because the emphasis is attached to the FIRST POSITION IN THE STRIP
+ * rather than to whatever car is standing in it. The order is the studio's
+ * attention — the car currently with us, or most recently — so a car moves
+ * into and out of the lead as its situation changes. Nothing here, and nothing
+ * in `GarageModel`, stores a primary flag.
  *
  * ── WHY EVERY WORD OVER A PHOTOGRAPH IS WHITE ────────────────────────────
  * `scrim.photoFloor` is solved for white on a pure-white image and clears AA
- * by a hair. Neither `over2` nor any of the four state colours survives it —
- * `urgent` measures 1.53:1 against a scrimmed white photograph. So urgency
- * in the collection is carried by WORDS ("Pollution certificate, 6 days"),
- * never by hue, and the strip is monochrome throughout. §21.6 is satisfied
- * the strict way: colour was never a carrier here at all.
+ * by a hair. Neither `over2` nor any state colour survives it. So urgency in
+ * the collection is carried by WORDS, never by hue — with one exception the
+ * design introduces and §21.6 permits: the state line under a lead car is
+ * amber ON GLASS, not on the photograph, where the ground is known.
  *
  * ── DATA ─────────────────────────────────────────────────────────────────
  * This component holds none and fetches none.
@@ -49,16 +45,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { CarForm } from '@/components/garage/CarForm';
+import { color, space, radius, imageSizes, TARGET_MIN } from '@/design';
+import { OfflineNote } from '@/components/system';
 import {
-  color, space, INSET, MEASURE, column, photoSize, stack, imageSizes,
-} from '@/design';
-import { Hero, Heading, Text, Button, OfflineNote } from '@/components/system';
+  Screen, Pane, Label, Statement, Rail, Chevron, Action, Value,
+} from '@/components/os';
 
-/* ── What the collection needs to be true ────────────────────────────────
-   §12.3 names what a car shows here — "its photograph, its name, its plate,
-   and one line of state" — and requirement 12 adds the two facts that make a
-   car feel owned rather than filed. Nothing else is asked for, because
-   nothing else is rendered. */
+/* ── What the collection needs to be true ─────────────────────────────── */
 
 export interface GarageVehicle {
   id: string;
@@ -70,25 +63,13 @@ export interface GarageVehicle {
   photo?: string;
   /** What is happening to it, in the present tense. §12.3, §5.3 #2 */
   state: string;
-  /**
-   * What protects it, in one line: the thing that needs attention soonest,
-   * or the fact that nothing does. §14.4 — a countdown only when the number
-   * is small enough to act on. Never a colour; see the note above.
-   */
+  /** What protects it, in one line: the thing needing attention soonest. */
   protection: string;
-  /**
-   * The relationship with the studio, expressed in time rather than in
-   * counts. "With AutoModz since 2023", not "14 visits" — §2.1, the car is
-   * the subject, and a tally is the transaction talking.
-   */
+  /** The relationship, in time rather than in counts. §2.1 */
   relationship: string;
   /**
    * SOMETHING THE STUDIO SAID ABOUT THIS CAR THAT HAS NOT BEEN SEEN.
-   *
-   * §17.1 — "State changes surface as state. The car is the inbox." A mark on
-   * the car, so the collection is where the customer discovers it; the car's
-   * own room carries the doorway to the object it is about (§17.3). Never a
-   * count, never a body, and never a list.
+   * §17.1 — the car is the inbox. Never a count, never a body, never a list.
    */
   news?: boolean;
   href: string;
@@ -99,288 +80,311 @@ export interface GarageEditable {
   id: string;
   name: string;
   registrationNumber: string;
+  /** Optional facts the car's own room draws (design 1d), so the form
+      re-opens on what is already recorded rather than on a blank field. */
+  odometer?: number;
+  year?: number;
+}
+
+/** One sealed visit, across the whole collection. Design 1h. */
+export interface GarageRecord {
+  id: string;
+  title: string;
+  when: string;
+  vehicle: string;
+  /** What was settled, where a figure exists. Never recomputed here. */
+  settled?: string;
+  href: string;
 }
 
 export interface GarageModel {
-  /**
-   * In the studio's order of attention. See the note above: the first
-   * position is emphasised, the car in it is not.
-   */
   vehicles: GarageVehicle[];
   /** §12.4 — where the invitation leads when there is no car yet. */
   beginHref: string;
-  /**
-   * Where a car is added. The Garage is where cars live and could not add one:
-   * a customer who had just signed in was offered arranging a visit and no way
-   * to say what car it was for.
-   */
   addHref: string;
-  /** The same cars, in the shape the form writes back. */
   editable: GarageEditable[];
-}
-
-/**
- * ONE CAR IN THE COLLECTION.
- *
- * The whole photograph is the link. §4.3 — depth of one; and requirement 13,
- * that selecting a car should feel like opening an album rather than
- * following a control. A chevron, a "View" button or a tap target smaller
- * than the image would all put an interface between the owner and their car.
- *
- * §7.5 — "When a photograph appears on two consecutive surfaces, it moves
- * between them." The `viewTransitionName` is what lets the browser carry
- * this exact photograph into the vehicle's own hero instead of crossfading
- * it. It is declared per car so two frames can never claim the same name.
- */
-function Vehicle(
-  { vehicle, lead, onEdit }:
-  { vehicle: GarageVehicle; lead: boolean; onEdit: () => void },
-) {
-  const { name, plate, photo, state, protection, relationship, news, href } = vehicle;
-
-  /* The frame is the link and the edit control sits ON it, so the control is a
-     sibling of the link rather than a child — a button inside an anchor is
-     invalid markup and, worse, gives a keyboard user one target that does two
-     things. */
-  return (
-    <div style={{ position: 'relative' }}>
-    <Link href={href} style={{ display: 'block', textDecoration: 'none' }}>
-      <Hero
-        state={photo ? 'media' : 'awaiting'}
-        /* The band follows the type, because the type is what the scrim has
-           to hold. The lead speaks at Display and its block measures ~207px
-           when the phrase wraps; every other frame speaks at Title and
-           measures ~110px. Giving the lead `brief` put the top of its Display
-           above the hold band, in the part of the gradient that is already
-           fading — measured, not guessed. */
-        band={lead ? 'full' : 'brief'}
-        /* THE COLLECTION SIZES ONLY ITS PHOTOGRAPHS. A car with no photograph
-           keeps `Hero`'s own awaiting height, which §11.5 makes shorter on
-           purpose — "never a large empty field with a small plate floating in
-           it". Forcing the collection height onto it produced exactly that:
-           473px of near-black with a caption at the foot. The frame is
-           shorter than its neighbours and that is the point; it reads as
-           awaiting rather than as a photograph that failed to load. */
-        style={photo ? { height: lead ? photoSize.lead : photoSize.next } : undefined}
-        overlay={
-          <div style={{ maxWidth: MEASURE }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: space.line }}>
-              <Text role="data" tone="over" as="span">
-                {name} · {plate}
-              </Text>
-              {news ? (
-                /* One mark. It says only that there is something here the
-                   customer has not seen, which is the whole of what §17.1
-                   permits a notification to become. */
-                <span
-                  aria-label="Something new"
-                  role="img"
-                  style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: color.over, flex: '0 0 auto',
-                  }}
-                />
-              ) : null}
-            </div>
-
-            {/* §9.5 — the one Display belongs to the first position. Every
-                other car speaks at Title: still the subject of its own
-                frame, never the subject of the screen. */}
-            <Heading
-              level={lead ? 'display' : 'title'}
-              tone="over"
-              as={lead ? 'h1' : 'h2'}
-              style={{ marginTop: space.hair }}
-            >
-              {state}
-            </Heading>
-
-            {/* The two facts that make a car feel owned: what is holding, and
-                how long it has been ours to look after. One line, quietest
-                role, and no numbers to parse. */}
-            <Text role="whisper" tone="over" style={{ marginTop: space.breath }}>
-              {protection} · {relationship}
-            </Text>
-          </div>
-        }
-      >
-        {photo ? (
-          <Image
-            src={photo}
-            alt={`${name}, photographed at AutoModz`}
-            fill
-            /* Only the first photograph is worth blocking the first paint
-               for; the rest are below the fold by construction. */
-            priority={lead}
-            sizes={imageSizes.fullBleed}
-            style={{
-              objectFit: 'cover',
-              viewTransitionName: `vehicle-${vehicle.id}`,
-            }}
-          />
-        ) : (
-          /* §11.5 — composed, never a grey box or a silhouette. A car with no
-             photograph yet still belongs in the collection at full size; it
-             is awaiting its first visit, not missing. */
-          null
-        )}
-      </Hero>
-    </Link>
-
-      {/* CORRECT THIS CAR. §21.3 — a real 44pt target, and §21.6 names which
-          car it corrects so a screen reader hears "Correct the Defender 110"
-          rather than six identical "Edit"s. */}
-      <div style={{ position: 'absolute', top: space.gap, right: INSET }}>
-        <Button
-          tier="quiet"
-          onClick={onEdit}
-          aria-label={`Correct ${name}`}
-          style={{ color: color.over }}
-        >
-          Edit
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * §12.4 — "An empty garage is the most important screen a new customer will
- * ever see, and it is an invitation, not an error. One sentence, one action.
- * It never apologises, never explains what a garage is, and never shows an
- * empty container."
- *
- * So: no dashed rectangle, no illustration, no plus (§18.2). The screen holds
- * one line and one way to begin, and the line is about the car rather than
- * about the software's emptiness — §18.3, "emptiness is not failure."
- */
-function Invitation({ href, addHref }: { href: string; addHref: string }) {
-  return (
-    <div
-      style={{
-        minHeight: `calc(100svh - ${stack.navHeight}px)`,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        ...column,
-      }}
-    >
-      <Heading level="display">Your car&rsquo;s place is ready.</Heading>
-      <Text role="body" tone="ink2" style={{ marginTop: space.line, maxWidth: MEASURE }}>
-        Add it and everything else follows &mdash; its protection, its visits,
-        its record.
-      </Text>
-      {/* THE GARAGE IS WHERE CARS LIVE, AND IT COULD NOT ADD ONE.
-          A customer who had just signed in was offered exactly one act here —
-          arranging a visit — with no way to tell us what car it was for. §18.4
-          gives an empty room "one line and one action", and the action has to
-          be the one that resolves the emptiness: this room is empty because
-          there is no car in it. Arranging stays, one tier down, because a
-          first visit is still worth offering. */}
-      <div style={{
-        marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap',
-      }}>
-        <Button tier="primary" href={addHref}>Add your car</Button>
-        <Button tier="quiet" href={href}>Arrange its first visit</Button>
-      </div>
-    </div>
-  );
+  record: readonly GarageRecord[];
+  /** The full album for the car the collection leads with. */
+  historyHref: string;
 }
 
 export function GarageScreen({ model }: { model: GarageModel }) {
-  const { vehicles, beginHref, addHref, editable } = model;
+  const { vehicles, beginHref, addHref, editable, record, historyHref } = model;
 
-  /* THE FORM IS ADDRESSABLE (§6.4). `?add=1` opens a new car, `?edit=<id>`
-     corrects one — so both are linkable, restorable on reload, and closed by
-     the back button. The old Garage used `?sheet=car-form&car-id=`; the same
-     idea, in this application's vocabulary. */
+  /* Correcting a car is addressable (§6.4) — `?edit=<id>` and `?add=1`, so the
+     back button closes the sheet and the Vehicle room can link straight into
+     it. Kept exactly as it was; the design changed the collection, not the
+     way a car is corrected. */
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-
-  const adding = params.get('add') === '1';
   const editingId = params.get('edit');
+  const adding = params.get('add') === '1';
   const editing = editable.find(v => v.id === editingId) ?? null;
 
   const close = () => {
     const next = new URLSearchParams(params.toString());
-    next.delete('add');
     next.delete('edit');
+    next.delete('add');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
-
   const openEdit = (id: string) => {
     const next = new URLSearchParams(params.toString());
     next.set('edit', id);
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
   };
 
-  const openAdd = () => {
-    const next = new URLSearchParams(params.toString());
-    next.set('add', '1');
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-  };
+  /* §12.4 — the composed absence. A garage with no car is an invitation, not
+     an empty list, and it is the whole screen rather than a card on one. */
+  if (vehicles.length === 0) {
+    return (
+      <Screen top={space.rest}>
+        <OfflineNote />
+        <Statement eyebrow="Your garage">Nothing here yet</Statement>
+        <p
+          style={{
+            marginTop: space.gap, marginBottom: 0,
+            fontSize: 15, lineHeight: 1.65, color: color.ink2,
+          }}
+        >
+          The place is ready. Add the car you want looked after, and everything
+          the studio does to it will collect here — the work, the papers, the
+          photographs.
+        </p>
+        <div style={{ marginTop: space.rest, display: 'flex', flexDirection: 'column', gap: space.line }}>
+          <Action href={addHref}>Add a car</Action>
+          <Action href={beginHref} quiet>Arrange a visit</Action>
+        </div>
+        <CarForm open={adding} onClose={close} />
+      </Screen>
+    );
+  }
+
+  const [lead, ...rest] = vehicles;
 
   return (
-    <main
-      style={{
-        /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
-           which is fixed behind everything (components/system/Ambient.tsx).
-           Painting `color.paper` here would occlude it completely. The dark
-           ground still exists — it is on `body` — so nothing loses contrast. */
-        background: 'transparent',
-        minHeight: '100svh',
-        /* §8.5 — the stacking contract. Content clears the navigation by
-           arithmetic, never by measuring it. */
-        paddingBottom: stack.contentFloor,
-      }}
-    >
-      {/* §20.3 — the room was rendered on the server and is still true; only
-          what happens NEXT needs a connection. One implementation (§22.2). */}
+    <Screen top={space.gap}>
       <OfflineNote />
-      {vehicles.length === 0 ? (
-        <Invitation href={beginHref} addHref={addHref} />
-      ) : (
-        /* No gaps, no dividers, no padding between frames. The strip is
-           continuous on purpose: each photograph's own scrim darkens toward
-           its foot and the next begins bright, so the seam is made of light
-           rather than of a rule. §3.4 — light is the only ornament.
 
-           §12.2 — "With a single vehicle, the Garage does not exist as a
-           meaningful place." A collection of one therefore renders as that
-           one car and nothing else: no count, no header, no framing that
-           would announce a collection that isn't there. Going straight to
-           the car instead of showing this at all is a routing decision, and
-           it belongs to whoever owns the shell — this screen has no business
-           redirecting anyone. */
-        vehicles.map((vehicle, i) => (
-          <Vehicle
-            key={vehicle.id}
-            vehicle={vehicle}
-            lead={i === 0}
-            onEdit={() => openEdit(vehicle.id)}
+      <Statement eyebrow={`${vehicles.length} car${vehicles.length === 1 ? '' : 's'}`}>
+        Garage
+      </Statement>
+
+      {/* ── THE LEAD ────────────────────────────────────────────────────
+          §11.2 — the photograph at size. The whole frame is the link (§4.3):
+          a chevron or a "View" control would put an interface between an owner
+          and their own car. */}
+      <div style={{ marginTop: space.gap, display: 'flex', flexDirection: 'column', gap: space.line }}>
+        <Link
+          href={lead.href}
+          className="am-tap"
+          style={{
+            position: 'relative', display: 'block', height: 190,
+            borderRadius: radius.sheet, overflow: 'hidden', textDecoration: 'none',
+            border: `1px solid ${lead.news ? 'rgba(224,164,92,0.25)' : 'rgba(255,255,255,0.08)'}`,
+            /* §7.5 — the photograph moves between this frame and the car's own
+               hero rather than crossfading. Declared per car so two frames can
+               never claim the same name. */
+            viewTransitionName: `car-${lead.id}`,
+          }}
+        >
+          {lead.photo ? (
+            <Image
+              src={lead.photo}
+              alt={`${lead.name}, photographed at AutoModz`}
+              fill
+              priority
+              sizes={imageSizes.inMeasure}
+              style={{ objectFit: 'cover' }}
+            />
+          ) : (
+            /* §11.5 — the composed absence. A field lit from above: enough
+               structure to read as awaiting rather than as a failed load. */
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(120% 80% at 50% 30%, #15161A 0%, #08090A 70%)',
+              }}
+            />
+          )}
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(180deg, rgba(8,9,10,0.1), rgba(8,9,10,0.85))',
+            }}
           />
-        ))
-      )}
+          <span
+            style={{
+              position: 'absolute', left: space.gap, right: space.gap, bottom: space.line + 2,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+              gap: space.line,
+            }}
+          >
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span
+                style={{ fontSize: 16, color: color.over, display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                {lead.name}
+                {/* §17.1 — one mark on the car, saying only that there is
+                    something here the customer has not seen. Never a count,
+                    and white rather than amber: nothing coloured survives a
+                    scrim solved for a white photograph. */}
+                {lead.news ? (
+                  <span
+                    aria-label="Something new about this car"
+                    style={{
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: color.over, flexShrink: 0,
+                    }}
+                  />
+                ) : null}
+              </span>
+              <span
+                className="am-label"
+                style={{ fontSize: 10, letterSpacing: '0.14em', color: color.over2 }}
+              >
+                {lead.plate}
+              </span>
+            </span>
+            {/* The state, over the photograph, in WORDS — and white, because
+                nothing coloured survives a scrim solved for a white image. */}
+            <span
+              className="am-label"
+              style={{ fontSize: 10, letterSpacing: '0.16em', color: color.over, textAlign: 'right' }}
+            >
+              {lead.state}
+            </span>
+          </span>
+        </Link>
 
-      {/* ADD A CAR. Present whenever there is already a collection — the empty
-          state has its own invitation and does not need a second control. */}
-      {vehicles.length > 0 ? (
-        <section style={{ ...column, paddingTop: space.movement }}>
-          <Button tier="primary" onClick={openAdd}>Add a car</Button>
+        {/* What protects it, and how long it has been here. On glass, below
+            the photograph, where colour is allowed because the ground is
+            known. §17.1 — the mark for unseen news is on the car itself. */}
+        <Pane
+          style={{
+            padding: `${space.line + 2}px ${space.gap + 2}px`,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            gap: space.line,
+          }}
+        >
+          <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 13.5, color: color.ink }}>{lead.protection}</span>
+            <Label style={{ fontSize: 9.5, letterSpacing: '0.14em' }}>{lead.relationship}</Label>
+          </span>
+          <button
+            type="button"
+            onClick={() => openEdit(lead.id)}
+            className="am-tap am-label"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
+              letterSpacing: '0.16em', minHeight: TARGET_MIN,
+            }}
+          >
+            Correct
+          </button>
+        </Pane>
+
+        {/* ── EVERY OTHER CAR ───────────────────────────────────────────
+            §12.3 — equals. A pane each, the same pane, in the studio's order
+            of attention and in no other order. */}
+        {rest.map(v => (
+          <Pane
+            key={v.id}
+            as={Link}
+            {...{ href: v.href }}
+            style={{
+              padding: `${space.gap}px ${space.gap + 2}px`,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              gap: space.line, textDecoration: 'none',
+            }}
+          >
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: 15.5, color: color.ink }}>
+                {v.name}
+                {v.news ? (
+                  <>
+                    {' '}
+                    <span
+                      aria-label="Something new about this car"
+                      style={{
+                        display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
+                        background: color.amber, verticalAlign: 'middle',
+                      }}
+                    />
+                  </>
+                ) : null}
+              </span>
+              <Label style={{ fontSize: 10, letterSpacing: '0.14em' }}>{v.plate}</Label>
+            </span>
+            <Value>{v.protection}</Value>
+          </Pane>
+        ))}
+
+        {/* §12.2's invitation, as a control rather than a card — dashed, so it
+            reads as a place for something that is not there yet. */}
+        <button
+          type="button"
+          onClick={() => {
+            const next = new URLSearchParams(params.toString());
+            next.set('add', '1');
+            router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+          }}
+          className="am-tap"
+          style={{
+            minHeight: TARGET_MIN, padding: `${space.gap}px ${space.gap + 2}px`,
+            borderRadius: radius.pane, border: '1px dashed rgba(255,255,255,0.13)',
+            background: 'none', cursor: 'pointer',
+            fontSize: 13.5, color: color.ink3, font: 'inherit', textAlign: 'center',
+          }}
+        >
+          Add a car
+        </button>
+      </div>
+
+      {/* ── THE RECORD ──────────────────────────────────────────────────
+          Screen 1h. Rows, not cards: a thing that happened is a line. Each
+          one opens the visit it names — §17.3, a doorway to the object. */}
+      {record.length > 0 ? (
+        <section
+          aria-labelledby="garage-record"
+          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+        >
+          <h2 id="garage-record" style={{ margin: 0 }}><Rail>History</Rail></h2>
+          <div>
+            {record.map((r, i) => (
+              <Link
+                key={r.id}
+                href={r.href}
+                className="am-tap"
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                  gap: space.line, minHeight: TARGET_MIN,
+                  padding: `${space.line + 3}px ${space.hair}px`,
+                  borderBottom: i === record.length - 1
+                    ? undefined
+                    : '1px solid rgba(255,255,255,0.06)',
+                  textDecoration: 'none',
+                }}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <span style={{ fontSize: 14.5, color: color.ink }}>{r.title}</span>
+                  <Label style={{ fontSize: 10, letterSpacing: '0.14em' }}>
+                    {r.when} · {r.vehicle}
+                  </Label>
+                </span>
+                {r.settled ? <Value>{r.settled}</Value> : <Chevron size={16} />}
+              </Link>
+            ))}
+          </div>
+          <Action href={historyHref} quiet>The whole album</Action>
         </section>
       ) : null}
 
-      <CarForm
-        open={adding || editing !== null}
-        onClose={close}
-        editing={editing ? ({
-          id: editing.id,
-          name: editing.name,
-          registrationNumber: editing.registrationNumber,
-        } as never) : null}
-      />
-    </main>
+      {/* Correcting a car, and adding one. One form, two addresses. */}
+      <CarForm open={adding || editing !== null} onClose={close} editing={editing} />
+    </Screen>
   );
 }

@@ -123,8 +123,11 @@ it('Home renders the projected model', () => {
      gives it a place of its own, so it no longer has to pretend to be one. */
   expect(html).toContain('CLUB');
   expect(html).toContain('Gold');
-  /* ONE primary action, never two competing. */
-  expect((html.match(/background:#F4F5F6/g) ?? []).length).toBe(1);
+  /* ONE primary action, never two competing. In the ratified design the
+     filled tier is the WARM pane — the only surface tinted by the studio's
+     own light — so the rule "one thing asks" is asserted on the class rather
+     than on a hex that a restyle would move. */
+  expect((html.match(/am-glass-warm/g) ?? []).length).toBe(1);
 });
 
 it('Garage renders every car', () => {

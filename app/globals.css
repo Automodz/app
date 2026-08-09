@@ -3,61 +3,67 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════
-   AUTOMODZ v9 - STUDIO WHITE DESIGN SYSTEM (light-first, brand monochrome)
-   AutoModz brand = white wordmark on grey. Palette stays in that family:
-   porcelain/white surfaces · graphite ink as the focal accent · brushed-silver
-   metallic ramps · soft neutral shadows · muted status hues. No colour accents.
-   Light is the default/primary; a graphite dark theme is available via toggle.
-   Fonts: Unbounded (hero) · Outfit (display/UI) · DM Sans (body) · DM Mono
+   AUTOMODZ v10 - LIQUID GLASS (always-dark, amber & champagne light)
+   Source: design "AutoModz App.dc.html" — Turn 1.
+   The room is a cool near-black. One warm light falls on it: AMBER, the
+   studio working, and CHAMPAGNE, its cooled reflection — what the studio
+   has already done and that still holds. Surfaces are one glass: a lit top
+   edge, a blurred fill, a shadow beneath. Nothing else is coloured.
+   Fonts: Outfit (display, 200/300) · DM Sans (body) · DM Mono (labels)
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ─── Design Tokens (DARK theme base - light overrides below) ────────── */
 :root {
-  /* ── Accent: brushed chrome on graphite (dark theme) ── */
-  --accent:        #EDEFF1;
-  --accent-2:      #9AA0A6;
-  --accent-grad:   linear-gradient(120deg, #FFFFFF 0%, #D5D9DD 46%, #9AA0A6 100%);
-  --on-accent:     #131417;
-  --on-accent-dim: rgba(19,20,23,0.66);
-  --accent-glow:   rgba(226,230,234,0.26);
-  --accent-haze:   rgba(226,230,234,0.13);
-  --accent-mist:   rgba(226,230,234,0.06);
+  /* ── Accent: the studio's amber, and champagne as its reflection ── */
+  --accent:        #E0A45C;
+  --accent-2:      #E8D9BE;
+  --accent-grad:   linear-gradient(120deg, #F0C48C 0%, #E0A45C 46%, #E8D9BE 100%);
+  --on-accent:     #100C06;
+  --on-accent-dim: rgba(16,12,6,0.66);
+  --accent-glow:   rgba(224,164,92,0.30);
+  --accent-haze:   rgba(224,164,92,0.14);
+  --accent-mist:   rgba(224,164,92,0.06);
+
+  /* The second light. Never asks for anything — see design/colors.ts. */
+  --champagne:     #E8D9BE;
+  --champagne-hi:  #F3EADA;
+  --champagne-haze:rgba(232,217,190,0.12);
 
   /* Legacy accent names (many inline var() references) */
   --ember:         var(--accent);
-  --ember-hot:     #FFFFFF;
+  --ember-hot:     #F0C48C;
   --ember-cool:    var(--accent-2);
   --ember-glow:    var(--accent-glow);
   --ember-haze:    var(--accent-haze);
   --ember-mist:    var(--accent-mist);
-  --ember-trace:   rgba(226,230,234,0.035);
+  --ember-trace:   rgba(224,164,92,0.035);
 
-  /* ── Graphite depth ramp (cool neutral, deepened for Liquid Chrome) ── */
-  --void:          #08090B;
-  --abyss:         #0C0D0F;
+  /* ── Depth ramp (cool near-black, so warm light reads as light) ── */
+  --void:          #08090A;
+  --abyss:         #0A0B0D;
   --deep:          #101114;
-  --cavern:        #17191C;
-  --dark:          #1F2226;
-  --dim:           #282B30;
-  --surface:       #33373D;
-  --lifted:        #40454C;
-  --peak:          #4F555D;
+  --cavern:        #15161A;
+  --dark:          #1E2024;
+  --dim:           #26282D;
+  --surface:       #32353B;
+  --lifted:        #3F434A;
+  --peak:          #4E535B;
 
-  /* ── Chrome spectrum (text hierarchy) ── */
-  --chrome:        #F5F6F7;
-  --silver:        rgba(245,246,247,0.80);
-  --pewter:        rgba(245,246,247,0.55);
-  --steel:         rgba(245,246,247,0.35);
-  --smoke:         rgba(245,246,247,0.16);
-  --ash:           rgba(245,246,247,0.08);
-  --fog:           rgba(245,246,247,0.04);
-  --phantom:       rgba(245,246,247,0.02);
+  /* ── Ink spectrum (text hierarchy) — warm white, per the design ── */
+  --chrome:        #EDEBE7;
+  --silver:        rgba(237,235,231,0.80);
+  --pewter:        rgba(237,235,231,0.55);
+  --steel:         rgba(237,235,231,0.35);
+  --smoke:         rgba(237,235,231,0.16);
+  --ash:           rgba(237,235,231,0.08);
+  --fog:           rgba(237,235,231,0.04);
+  --phantom:       rgba(237,235,231,0.02);
 
-  /* ── Status semantics (muted) ── */
-  --success:       #5FBF8F;
-  --warning:       #D9A94A;
-  --danger:        #E06C75;
-  --info:          #6FA8C9;
+  /* ── Status semantics (one warm family; nothing here is red or green) ── */
+  --success:       #E8D9BE;
+  --warning:       #E0A45C;
+  --danger:        #E2705A;
+  --info:          #E8D9BE;
 
   /* ── System semantics ── */
   --bg:            var(--void);
@@ -73,21 +79,34 @@
   --border-strong: rgba(245,246,247,0.22);
   --orange:        var(--accent);
 
-  /* ── Glass layers (liquid glass: lighter fill, brighter edge) ── */
-  --glass:         rgba(22,24,27,0.55);
-  --glass-2:       rgba(16,18,21,0.85);
-  --glass-border:  rgba(245,246,247,0.12);
-  --glass-sheen:   rgba(245,246,247,0.10);
+  /* ── Glass layers (liquid glass: lighter fill, brighter edge) ──
+     `--glass`/`--glass-2` stay FLAT FILLS: they are used as the background of
+     layers that must stay readable with or without a backdrop filter (the
+     toast, the palette). The design's lit material — a 160° fall of white over
+     a blur — is `--pane`/`--pane-lit` below, and is applied through `.am-glass`
+     so the sheen, the blur and the fallback travel with it. */
+  --glass:         rgba(21,22,26,0.72);
+  --glass-2:       rgba(16,17,20,0.88);
+  --glass-border:  rgba(255,255,255,0.10);
+  --glass-sheen:   rgba(255,255,255,0.13);
+
+  /* The one raised material, per the design. */
+  --pane:          linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.022));
+  --pane-lit:      linear-gradient(160deg, rgba(255,255,255,0.085), rgba(255,255,255,0.030));
+  --pane-warm:     linear-gradient(160deg, rgba(224,164,92,0.14), rgba(255,255,255,0.025));
+  --pane-cool:     linear-gradient(160deg, rgba(232,217,190,0.12), rgba(255,255,255,0.022));
+  --pane-edge:     rgba(255,255,255,0.09);
+  --pane-inset:    inset 0 1px 0 rgba(255,255,255,0.13);
 
   /* ── Shadows & glow ── */
   --shadow-xs:     0 1px 4px rgba(0,0,0,0.5);
   --shadow-sm:     0 2px 12px rgba(0,0,0,0.6);
-  --shadow:        0 8px 32px rgba(0,0,0,0.7);
-  --shadow-lg:     0 16px 56px rgba(0,0,0,0.8);
-  --shadow-xl:     0 24px 80px rgba(0,0,0,0.9);
-  --ember-glow-sm: 0 0 18px rgba(226,230,234,0.16);
-  --ember-glow-md: 0 0 34px rgba(226,230,234,0.20);
-  --ember-glow-lg: 0 0 64px rgba(226,230,234,0.26);
+  --shadow:        0 18px 40px -20px rgba(0,0,0,0.9);
+  --shadow-lg:     0 24px 50px -24px rgba(0,0,0,0.95);
+  --shadow-xl:     0 60px 120px -40px rgba(0,0,0,0.95);
+  --ember-glow-sm: 0 0 18px rgba(224,164,92,0.22);
+  --ember-glow-md: 0 0 34px rgba(224,164,92,0.28);
+  --ember-glow-lg: 0 0 64px rgba(224,164,92,0.34);
 
   /* ── Typography ── */
   /* self-hosted by next/font (app/layout.tsx). The `-src` variables are the
@@ -97,6 +116,15 @@
   --font-display:  var(--font-display-src), sans-serif;
   --font-body:     var(--font-body-src), sans-serif;
   --font-mono:     var(--font-mono-src), monospace;
+
+  /* design/typography.ts asks for `--font-text` and `--font-data` and nothing
+     ever defined them, so every Body and Data line in the customer app fell
+     through to system-ui and the system monospace — the two faces the design
+     is most specific about (DM Sans, DM Mono) were the two not being used.
+     Aliases rather than a rename: the token module names the ROLE, this file
+     names the family, and both spellings now resolve to one face. */
+  --font-text:     var(--font-body);
+  --font-data:     var(--font-mono);
 
   /* ── Legacy aliases ── */
   --plasma:        var(--accent);
@@ -109,18 +137,32 @@
   --glass-bg:      rgba(10,10,11,0.80);
 }
 
-/* ── Light theme (porcelain + graphite accent) ── */
+/* ── Light theme (porcelain + bronze accent) ──
+   The app is always dark; this theme is the public surfaces (landing, legal,
+   invoice on paper). It carries the same one hue as the dark room, dropped
+   down the ramp until it can hold white text: amber cannot (1.9:1), bronze
+   can (6.9:1). Same light, seen in daylight. */
 [data-theme="light"] {
-  /* Graphite ink accent on porcelain - brand grey/white family */
-  --accent:        #23262B;
-  --accent-2:      #565B62;
-  --accent-grad:   linear-gradient(135deg, #3A3E44 0%, #23262B 58%, #15171A 100%);
+  --accent:        #7A521E;
+  --accent-2:      #8A5F26;
+  --accent-grad:   linear-gradient(135deg, #8A5F26 0%, #7A521E 58%, #5E3F16 100%);
   --on-accent:     #FFFFFF;
   --on-accent-dim: rgba(255,255,255,0.74);
-  --accent-glow:   rgba(35,38,43,0.16);
-  --accent-haze:   rgba(35,38,43,0.08);
-  --accent-mist:   rgba(35,38,43,0.045);
-  --ember-trace:   rgba(35,38,43,0.03);
+  --accent-glow:   rgba(122,82,30,0.16);
+  --accent-haze:   rgba(122,82,30,0.08);
+  --accent-mist:   rgba(122,82,30,0.045);
+  --ember-trace:   rgba(122,82,30,0.03);
+  --champagne:     #7A521E;
+  --champagne-hi:  #5E3F16;
+  --champagne-haze:rgba(122,82,30,0.10);
+
+  /* The lit material, in daylight: white over porcelain rather than over black. */
+  --pane:          linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,255,255,0.72));
+  --pane-lit:      linear-gradient(160deg, #FFFFFF, rgba(255,255,255,0.86));
+  --pane-warm:     linear-gradient(160deg, rgba(122,82,30,0.10), rgba(255,255,255,0.6));
+  --pane-cool:     linear-gradient(160deg, rgba(122,82,30,0.06), rgba(255,255,255,0.6));
+  --pane-edge:     rgba(20,21,23,0.09);
+  --pane-inset:    inset 0 1px 0 rgba(255,255,255,0.9);
 
   --bg:            #F7F7F6;
   --bg-2:          #EFEFEE;
@@ -1048,18 +1090,11 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   .studio .st-hotspot-live::after { animation: none; opacity: 1; transform: scale(1); }
 }
 
-/* ── CUSTOMER NAVIGATION · the active room's word ──────────────────────────
-   docs/AUTOMODZ-OS.md §3.5, §6.2. See navigation/BottomNavigation.tsx.
-
-   The bar's widest state is 358px. A 360px viewport offers 344 and a 375px one
-   offers 359; the active room's word is 48px of that, so below 390 the bar was
-   clipped at both ends on real devices. Withholding the word is the only change
-   that recovers enough space without re-spacing the whole control, and it costs
-   nothing: the glyph and the light still show the room, and the accessible name
-   is unaffected at every width. */
-@media (max-width: 389px) {
-  [data-nav-word] { display: none; }
-}
+/* ── CUSTOMER NAVIGATION ──────────────────────────────────────────────────
+   The rule that used to live here withheld the active room's word below 390px,
+   because a horizontal bar of glyph-beside-word did not fit. The design stacks
+   the word UNDER its glyph, so five slots at 9px cost 45px of width in total
+   and the narrowest phone in service has room to spare. Nothing to suppress. */
 
 /* ── THE AMBIENT FIELD ───────────────────────────────────────────────────
    The room's drift and its lean toward the pointer. Both live here rather
@@ -1097,10 +1132,36 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
    than as a grey box with blur behind it. */
 .am-glass {
   position: relative;
-  background: rgba(255, 255, 255, 0.055);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: var(--pane);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid var(--pane-edge);
+  box-shadow: var(--pane-inset);
+}
+
+/* The lit one. Same material, closer to the light — for the layer a screen is
+   actually about (the dock, the card that carries the state). Never two of
+   these in one view: §3.6, and the design only ever shows one. */
+.am-glass-lit {
+  background: var(--pane-lit);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: var(--pane-inset), 0 20px 40px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* Warm glass — the one surface on a screen that is asking for something. */
+.am-glass-warm {
+  background: var(--pane-warm);
+  border-color: rgba(224, 164, 92, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* Cool glass — a thing already in force. Champagne, so it states without asking. */
+.am-glass-cool {
+  background: var(--pane-cool);
+  border-color: rgba(232, 217, 190, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .am-glass::before {
@@ -1108,14 +1169,93 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 32%, rgba(255,255,255,0.14) 68%, transparent);
+  background: linear-gradient(90deg, transparent, var(--glass-sheen) 32%, var(--glass-sheen) 68%, transparent);
   pointer-events: none;
 }
 
 /* A browser without backdrop-filter gets an opaque surface rather than
    unreadable text over a gradient. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .am-glass { background: #15181B; }
+  .am-glass { background: var(--cavern); }
+  .am-glass-lit { background: var(--dark); }
+}
+
+/* ── THE LIGHT MOVING ACROSS GLASS ───────────────────────────────────────
+   A soft band crossing the card that carries live work — the only thing on
+   a still screen that says the studio is working right now. On a `::after`
+   so no element has to exist for it. One surface per screen. */
+.am-sweep { overflow: hidden; }
+
+.am-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+  animation: am-sweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes am-sweep {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+
+/* ── BREATHING ───────────────────────────────────────────────────────────
+   The live dot, and the blooms behind the room. Presence, not a badge. */
+@keyframes am-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.90; transform: scale(1.06); }
+}
+
+.am-breathe { animation: am-breathe 3.2s ease-in-out infinite; }
+
+/* ── THE DIAL ────────────────────────────────────────────────────────────
+   Drawn once on arrival, never looped — a measurement being taken, not a
+   spinner. `--dial-len` is the circumference `Dial` computes, so this file
+   never has to know the radius. */
+@keyframes am-dial { from { stroke-dashoffset: var(--dial-len, 553); } }
+
+/* §7.2 — the product's ease, not the one the design file happened to type
+   (0.2,.8,.2,1). Two curves exist and this is one of them; a third that
+   differs by two hundredths is a third curve nobody can defend. */
+.am-dial-arc {
+  animation: am-dial 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-sweep::after { animation: none; opacity: 0; }
+  .am-breathe { animation: none; }
+  .am-dial-arc { animation: none; }
+}
+
+/* ── THE LABEL ───────────────────────────────────────────────────────────
+   Mono, uppercase, widely tracked — how every piece of metadata in the
+   design is set. A class rather than a component so a span inside a
+   sentence can wear it. */
+.am-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--pewter);
+}
+
+.am-label-lit { color: var(--accent); }
+
+/* ── THE DISPLAY ─────────────────────────────────────────────────────────
+   Outfit at 200: every headline and large number in the design. Thin only
+   works large — this weight is not used below the Title step, where it stops
+   being legible before it stops being beautiful. */
+.am-display {
+  font-family: var(--font-display);
+  font-weight: 200;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  color: var(--chrome);
 }
 
 /* ── THE PRESS ───────────────────────────────────────────────────────────

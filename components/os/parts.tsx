@@ -1,0 +1,260 @@
+'use client';
+/**
+ * THE SMALL PARTS the design repeats on every screen.
+ *
+ * Source: docs/AUTOMODZ-OS.md §3.5, §9.5, §14.4, §17.1, §21.3, §21.6, §22.2
+ *         design "AutoModz App.dc.html"
+ *
+ * Each of these appears five or more times across the twelve screens. §22.2 —
+ * one implementation of anything; the reason they are here rather than copied
+ * into each room is that a whisper that is 10px in one room and 9.5px in the
+ * next is a whisper nobody tuned.
+ */
+import type { CSSProperties, ReactNode } from 'react';
+import Link from 'next/link';
+import { color, space, radius, TARGET_MIN } from '@/design';
+
+/* ── THE LABEL ───────────────────────────────────────────────────────────
+   Mono, uppercase, widely tracked. Every piece of metadata in the design is
+   set this way. `lit` is amber and reserved for the label that names what is
+   happening right now ("IN THE STUDIO", "VISIT 14 · BAY 02"). */
+export function Label(
+  { children, lit = false, style }:
+  { children: ReactNode; lit?: boolean; style?: CSSProperties },
+) {
+  return (
+    <span
+      className={`am-label${lit ? ' am-label-lit' : ''}`}
+      style={{ letterSpacing: '0.3em', ...style }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/* ── THE STATEMENT ───────────────────────────────────────────────────────
+   §9.5 — one Display per screen, and it always arrives the same way: a label
+   above it naming the situation, then the sentence itself in Outfit 200.
+
+   The heading level is a prop rather than fixed, because §21.6's heading order
+   is a property of the PAGE and only the page knows whether this is its h1. */
+export function Statement(
+  { eyebrow, lit = false, children, as: Tag = 'h1', size = 30, style }:
+  {
+    eyebrow?: ReactNode;
+    lit?: boolean;
+    children: ReactNode;
+    as?: 'h1' | 'h2';
+    size?: number;
+    style?: CSSProperties;
+  },
+) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, ...style }}>
+      {eyebrow ? <Label lit={lit}>{eyebrow}</Label> : null}
+      <Tag
+        className="am-display"
+        style={{ fontSize: size, margin: 0, lineHeight: 1.18 }}
+      >
+        {children}
+      </Tag>
+    </div>
+  );
+}
+
+/* ── THE RAIL ────────────────────────────────────────────────────────────
+   A section's name, preceded by a short rule. Used where a screen changes
+   subject mid-scroll — "History" under the collection, "The rest of the
+   rooms" in the design's own canvas. */
+export function Rail({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: space.line }}>
+      <span
+        aria-hidden
+        style={{ width: 44, height: 1, background: 'rgba(232,217,190,0.5)' }}
+      />
+      <Label style={{ letterSpacing: '0.28em' }}>{children}</Label>
+    </div>
+  );
+}
+
+/* ── THE PULSE ───────────────────────────────────────────────────────────
+   §17.1 — "state changes surface as state." One breathing point of amber,
+   which is the entire vocabulary the product has for "this is happening now".
+   It is never a count and never a badge. */
+export function Pulse({ size = 9 }: { size?: number }) {
+  return (
+    <span
+      aria-hidden
+      className="am-breathe"
+      style={{
+        width: size, height: size, borderRadius: '50%',
+        background: color.amber,
+        boxShadow: `0 0 ${size * 1.6}px ${size / 3}px rgba(224,164,92,0.6)`,
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+/* ── THE CHEVRON ─────────────────────────────────────────────────────────
+   The one "there is more this way" mark in the product. */
+export function Chevron({ size = 17, tone = color.ink3 }: { size?: number; tone?: string }) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24" aria-hidden
+      fill="none" stroke={tone} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+/* ── THE METER ───────────────────────────────────────────────────────────
+   §14.2 — protection as a proportion of its term. A 2px bar, because the
+   number beside it is the fact and the bar is only its shape.
+
+   §14.4 — the tone is the term's, not the meter's: champagne for a thing in
+   force, amber for a thing due, neutral for a thing with years left. */
+export function Meter(
+  { label, value, fill, tone = color.champagne }:
+  { label: ReactNode; value: ReactNode; fill: number; tone?: string },
+) {
+  const pct = Math.max(0, Math.min(1, fill)) * 100;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: space.line, fontSize: 13.5 }}>
+        <span style={{ color: color.ink }}>{label}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', color: tone, flexShrink: 0 }}>{value}</span>
+      </div>
+      <div
+        aria-hidden
+        style={{ height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.1)' }}
+      >
+        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2, background: tone }} />
+      </div>
+    </div>
+  );
+}
+
+/* ── THE ROW ─────────────────────────────────────────────────────────────
+   A line in a settings list or a record: a name, an optional value, and a
+   hairline under it. A whole row is the target, never the chevron (§21.3). */
+export function Row(
+  { children, value, href, onClick, last = false, quiet = false }:
+  {
+    children: ReactNode;
+    value?: ReactNode;
+    href?: string;
+    onClick?: () => void;
+    last?: boolean;
+    quiet?: boolean;
+  },
+) {
+  const inner = (
+    <>
+      <span style={{ fontSize: 14.5, color: quiet ? color.ink2 : color.ink }}>{children}</span>
+      {value ?? (href || onClick ? <Chevron size={16} tone="rgba(237,235,231,0.4)" /> : null)}
+    </>
+  );
+
+  const style: CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: space.line,
+    minHeight: TARGET_MIN,
+    padding: `${space.line}px ${space.hair}px`,
+    borderBottom: last ? undefined : '1px solid rgba(255,255,255,0.06)',
+    textDecoration: 'none',
+    color: 'inherit',
+    width: '100%',
+    background: 'none',
+    border: 'none',
+    borderRadius: 0,
+    textAlign: 'left',
+    font: 'inherit',
+    cursor: href || onClick ? 'pointer' : undefined,
+  };
+
+  if (href) return <Link href={href} className="am-tap" style={style}>{inner}</Link>;
+  if (onClick) return <button type="button" onClick={onClick} className="am-tap" style={{ ...style, borderBottom: style.borderBottom }}>{inner}</button>;
+  return <div style={style}>{inner}</div>;
+}
+
+/** The mono value on the right of a Row. Champagne when it is a fact in force. */
+export function Value({ children, tone = color.champagne }: { children: ReactNode; tone?: string }) {
+  return (
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: tone, flexShrink: 0 }}>
+      {children}
+    </span>
+  );
+}
+
+/* ── THE ACTION ──────────────────────────────────────────────────────────
+   §6.3, §3.3 — the one control on a screen that commits to something. It is
+   the only element in the product filled with light rather than lit by it,
+   which is what makes it unmistakable without a second colour existing.
+
+   `quiet` is its opposite number: a real control, glass, no fill. Used where
+   a screen offers two things and neither is the commitment (the visit's "see
+   today's photos" / "message the studio"). */
+export function Action(
+  { children, href, onClick, quiet = false, tone = 'amber', style, ...rest }:
+  {
+    children: ReactNode;
+    href?: string;
+    onClick?: () => void;
+    quiet?: boolean;
+    tone?: 'amber' | 'champagne';
+    style?: CSSProperties;
+    'aria-label'?: string;
+  },
+) {
+  const base: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: TARGET_MIN,
+    padding: `${space.gap}px ${space.gap + space.hair}px`,
+    borderRadius: radius.pane + 2,
+    fontSize: 15.5,
+    letterSpacing: '0.02em',
+    textAlign: 'center',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    border: quiet ? '1px solid rgba(255,255,255,0.08)' : 'none',
+    background: quiet
+      ? 'rgba(255,255,255,0.05)'
+      : tone === 'amber'
+        ? 'linear-gradient(160deg, rgba(224,164,92,0.92), rgba(224,164,92,0.64))'
+        : 'linear-gradient(160deg, rgba(232,217,190,0.92), rgba(224,164,92,0.72))',
+    color: quiet ? color.ink : '#100C06',
+    boxShadow: quiet
+      ? undefined
+      : `0 24px 50px -22px rgba(224,164,92,0.8), inset 0 1px 0 rgba(255,255,255,0.4)`,
+    width: '100%',
+    font: 'inherit',
+    fontWeight: 400,
+    ...style,
+  };
+
+  if (href) return <Link href={href} className="am-tap" style={base} {...rest}>{children}</Link>;
+  return <button type="button" onClick={onClick} className="am-tap" style={base} {...rest}>{children}</button>;
+}
+
+/* ── THE STAT ────────────────────────────────────────────────────────────
+   A small pane holding one number and its name. The design pairs them two to
+   a row; nothing here decides that, so a screen can place three. */
+export function Stat(
+  { label, children, foot }:
+  { label: ReactNode; children: ReactNode; foot?: ReactNode },
+) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: space.breath + 2 }}>
+      <Label style={{ fontSize: 9.5, letterSpacing: '0.2em' }}>{label}</Label>
+      <span className="am-display" style={{ fontSize: 28, lineHeight: 1 }}>{children}</span>
+      {foot}
+    </div>
+  );
+}

@@ -713,7 +713,51 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
       id: car.vehicle.id,
       name: car.vehicle.name,
       registrationNumber: car.vehicle.registrationNumber,
+      odometer: car.vehicle.odometer,
+      year: car.vehicle.year,
     })),
+
+    /**
+     * THE RECORD, UNDER THE COLLECTION — design screen 1h.
+     *
+     * Every sealed visit across every car, newest first, as one list. The
+     * album at `/history` is per car and stays that way; this is the studio's
+     * relationship with the customer rather than with one vehicle, which is
+     * why the car's name is part of each line.
+     *
+     * Money comes from `moneyOfVisits` — the SAME reader the album totals
+     * with — so a figure here can never disagree with the figure on the visit
+     * it links to. That disagreement is a bug this codebase has already had
+     * once (see the note on `moneyOfVisits`) and it is not being reopened for
+     * a summary list.
+     *
+     * Six, because the design shows four and a scroll of thirty visits under
+     * a collection is the album with the photographs taken out.
+     */
+    record: ordered
+      .flatMap(car => {
+        const visits = visitsOf(car);
+        const money = moneyOfVisits(visits, picture.invoices);
+        return visits.map(v => ({
+          id: v.id,
+          at: isoOf(v.createdAt),
+          title: visitTitle(v),
+          when: longDate(isoOf(v.createdAt)),
+          vehicle: car.vehicle.name,
+          settled: (money.get(v.id)?.total ?? 0) > 0
+            ? rupees(money.get(v.id)!.total)
+            : undefined,
+          href: hrefForDestination({ to: 'visit', visitId: v.id }),
+        }));
+      })
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .slice(0, 6)
+      .map(({ at: _at, ...row }) => row),
+
+    /* The full album, for the car the collection leads with. */
+    historyHref: ordered[0]
+      ? hrefForDestination({ to: 'history.car', vehicleId: ordered[0].vehicle.id })
+      : hrefForDestination({ to: 'history' }),
   };
 }
 
@@ -856,6 +900,11 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     region: REGION_OF[p.kind],
     label: PROTECTION_TITLE[p.kind],
     term: termWords(p.term, now),
+    /* §14.2 — the design draws each layer as a proportion of its own term,
+       which is a number this projection was already computing for Home and
+       throwing away here. Undefined for a term that does not deplete, and the
+       room draws no bar rather than a full one. */
+    remaining: remainingOf(p, now),
     tone: TONE[p.health],
     /* §14.6 — the file where one exists. Nothing writes `document` yet, so
        this is undefined throughout; the room draws no control for it. */
@@ -879,9 +928,45 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
   const live = liveOf(car);
   const next = nextVisitOf(car, now);
 
+  /**
+   * THE CAR IN ONE LINE — "Phantom Black · matte wrap · 2023" (design 1d).
+   *
+   * Assembled from what the owner has actually told us and nothing else. Each
+   * part is optional, so this is a line of one, two or three facts, or absent.
+   * `category` and `color` are the legacy descriptors: they were written by
+   * pickers the photograph replaced, and this is the first surface to read
+   * them since — a fact already stored is not a fact worth asking for twice.
+   */
+  const descriptor = [
+    car.vehicle.color,
+    car.vehicle.category,
+    car.vehicle.year ? String(car.vehicle.year) : undefined,
+  ].filter(Boolean).join(' · ') || undefined;
+
+  /**
+   * WHAT THE STUDIO STANDS BEHIND, AND UNTIL WHEN.
+   *
+   * The furthest-out dated term among the car's protections. §14.6 — a
+   * warranty is a promise with an end, so the room says the end rather than
+   * the word "covered". A car whose protections are all perpetual or all
+   * balances has no date to give, and the tile is simply not drawn.
+   */
+  const furthest = protections
+    .filter(p => p.kind !== 'membership' && p.term.kind === 'dated')
+    .map(p => (p.term as Extract<Term, { kind: 'dated' }>).expiresOn)
+    .sort()
+    .pop();
+
   return {
     name: car.vehicle.name,
     plate: car.vehicle.registrationNumber,
+    descriptor,
+    warranty: furthest ? `Active to ${monthYear(furthest)}` : undefined,
+    /* Grouped in the Indian convention, because that is how the number is
+       read aloud here — 41,208 and not 41208. */
+    odometer: typeof car.vehicle.odometer === 'number'
+      ? `${car.vehicle.odometer.toLocaleString('en-IN')} km`
+      : undefined,
     state: stateWordFor(picture, car, now),
     next: next
       ? {
@@ -1131,6 +1216,12 @@ export function toLiveVisit(
     frames,
     hero: stay.latestPhoto ?? car.vehicle.photo,
     backHref: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
+    /* §20.1 — a way to reach a human, on the screen a customer is most likely
+       to want one. The message names the car, so the studio does not have to
+       ask which one it is about. */
+    messageHref: waLink(
+      `Hello AutoModz — about my ${car.vehicle.name} (${car.vehicle.registrationNumber}) in the studio today.`,
+    ),
   };
 }
 
@@ -1230,9 +1321,42 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
    */
   const club = clubOf(picture, now);
 
+  /**
+   * THE ONE QUIET LINE — design screen 1l, "You — and the one quiet line".
+   *
+   * The person's room says one thing about their car and only while something
+   * is actually happening to it. §5.2 bars the car's DETAILS from this room,
+   * not the fact that the studio currently has it: a customer who opens their
+   * own room while their car is on a bay and is told nothing has to go and
+   * look. It is a doorway (§17.3), never a status board — one sentence, and
+   * absent the moment the work ends.
+   */
+  const lead = leadCar(picture);
+  const live = lead ? liveOf(lead) : undefined;
+  const quiet = live && lead
+    ? {
+        line: stateOf(lead, now).line ?? stateOf(lead, now).word,
+        href: hrefForDestination({ to: 'visit', visitId: live.id }),
+      }
+    : undefined;
+
   return {
     name: user.name || 'You',
     reachedAt: [user.email, user.phone].filter(Boolean).join(' · '),
+    /* "Gold · since 2023" — and just "Gold" when no membership carries a
+       start date, rather than the dangling "Gold · since" a template with an
+       empty tail produces. */
+    standing: club.state !== 'none'
+      ? [
+          club.plan,
+          picture.subscriptions
+            .map(s => s.startDate)
+            .filter((d): d is string => typeof d === 'string' && d.length >= 4)
+            .sort()[0]
+            ?.slice(0, 4),
+        ].filter(Boolean).join(' · since ')
+      : undefined,
+    state: quiet,
     garage: {
       line: `${count} live${n === 1 ? 's' : ''} here.`,
       action: { label: 'Your garage', href: hrefForDestination({ to: 'garage' }) },
@@ -1335,6 +1459,27 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
   return {
     held: true,
     tier: `${club.plan} member`,
+    /**
+     * WHOSE CARD IT IS — design screen 1i.
+     *
+     * A membership card with no name on it is a receipt. The holder's name and
+     * the year they joined are what make it theirs, and both were already in
+     * the picture and never asked for. The number is the subscription's own id,
+     * shortened and cased — not a new identifier minted for a screen, which
+     * would be a second identity for one membership.
+     */
+    holder: picture.user.name || undefined,
+    memberNo: sub.id.slice(-4).toUpperCase(),
+    /* The year the relationship started, from the EARLIEST membership held —
+       a customer on their third year should not read "since 2026" because the
+       current subscription began in January. Every date here is optional in
+       practice (a membership created by the studio at the counter may carry
+       none), so the whole line is dropped rather than guessed. */
+    memberSince: [...picture.subscriptions, sub]
+      .map(s => s.startDate)
+      .filter((d): d is string => typeof d === 'string' && d.length >= 4)
+      .sort()[0]
+      ?.slice(0, 4),
     /* §15.3 #2 — the engine's own count, not a second subtraction. */
     remaining: club.washesLeft === 0
       ? 'No washes left this cycle'

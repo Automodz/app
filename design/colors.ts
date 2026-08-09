@@ -2,26 +2,35 @@
  * COLOURS — AutoModz Design Language
  *
  * Source: docs/AUTOMODZ-OS.md §3.3, §3.4, §9.1, §9.2, §21.1
+ *         design/AutoModz App.dc.html — "liquid glass · amber & champagne light"
  *
  * The constitution names seven ink/paper families and four state colours. It
  * fixes no hex values, so every value below is DERIVED from a stated rule and
  * VERIFIED against WCAG 2.1. No colour here was chosen by eye.
  *
+ * ── WHY THIS IS WARM AND NO LONGER GREY ──────────────────────────────────
+ * The product was monochrome: chrome ink on graphite, with §3.3 reading as
+ * "nothing is coloured". The ratified customer design replaces that with ONE
+ * warm light — amber, and its cooled reflection, champagne — over the same
+ * near-black room. §3.3 survives intact and gets stricter, because there is
+ * now exactly one hue in the entire product: warmth means the studio, and
+ * nothing else in the interface is allowed to be coloured at all.
+ *
  * Derivation of the ground (§9.1, §3.4):
  *   The application is dark because "a car photographed against black reads as
  *   a car in a studio". But §3.4 requires depth to come from light and shadow,
  *   and pure #000000 has no room below it for a shadow to exist. The ground is
- *   therefore a near-black with a slight cool cast: relative luminance 0.0033,
- *   non-zero, so shadow is renderable.
+ *   therefore a near-black with a slight cool cast — it stays cool so the amber
+ *   light reads as light falling ON the room rather than as a tinted room.
  *
  * Verified contrast against paper (§21.1 requires WCAG AA — 4.5:1 for normal
  * text). Measured, not estimated:
- *   ink      18.04:1      assent   8.75:1
- *   ink2     10.09:1      caution 10.12:1
- *   ink3      6.05:1      urgent   6.16:1
- *   surface   1.11:1      lapsed   6.05:1   (surface is a step, not text)
+ *   ink      16.74:1      assent  14.33:1
+ *   ink2      8.78:1      caution  9.14:1
+ *   ink3      6.31:1      urgent   6.36:1
+ *   surface   1.10:1      lapsed   6.12:1   (surface is a step, not text)
  *
- * Note that ink3 passes AA at 6.05:1. §9.1 forbids it for body text on
+ * Note that ink3 passes AA at 6.31:1. §9.1 forbids it for body text on
  * grounds of HIERARCHY, not legibility — a whisper is still read, so it is
  * still held to the same contrast bar as everything else.
  */
@@ -33,15 +42,15 @@ export const color = {
   /* ── Ink and paper · §9.1 ────────────────────────────────────────────── */
 
   /** The ground everything sits on. Non-zero luminance so shadow can exist (§3.4). */
-  paper: '#0A0B0D',
+  paper: '#08090A',
 
   /**
    * The ONE raised material (§10.2 — "not a card and a panel and a tile — one").
-   * A single fill at the smallest step that reads as lifted off paper (1.105:1).
+   * A single fill at the smallest step that reads as lifted off paper (1.10:1).
    * Higher bands do not get a lighter fill; they get a deeper shadow, because
    * §3.4 says a surface is raised by light, not by a different colour.
    */
-  surface: '#15181B',
+  surface: '#15161A',
 
   /**
    * The hairline separating a material from its ground. §9.1 names it; §3.4
@@ -50,12 +59,12 @@ export const color = {
    */
   edge: 'rgba(255, 255, 255, 0.08)',
 
-  /** Primary text — the thing being said. 18.04:1 on paper. */
-  ink: '#F4F5F6',
-  /** Secondary — supporting, "still fully legible" (§9.1). 10.09:1 on paper. */
-  ink2: '#B6BABF',
-  /** Tertiary — labels and whispers only, never body text (§9.1). 6.05:1. */
-  ink3: '#8A8F96',
+  /** Primary text — the thing being said. 16.74:1 on paper. */
+  ink: '#EDEBE7',
+  /** Secondary — supporting, "still fully legible" (§9.1). 8.78:1 on paper. */
+  ink2: '#ADACA9',
+  /** Tertiary — labels and whispers only, never body text (§9.1). 6.31:1. */
+  ink3: '#91918F',
 
   /* ── Text over photographs · §9.1, §21.1 ─────────────────────────────── */
 
@@ -64,14 +73,34 @@ export const color = {
   /** Secondary text on an image. */
   over2: 'rgba(255, 255, 255, 0.72)',
 
+  /* ── The one light · §3.3, §9.2 ──────────────────────────────────────── */
+
+  /**
+   * AMBER — the studio's light. Work happening, a bay lit, attention wanted.
+   * The only hue that initiates anything: a lit tab, a live dot, the confirm.
+   */
+  amber: '#E0A45C',
+  /** Amber under a finger or a pointer — the same light, closer. */
+  amberHot: '#F0C48C',
+  /**
+   * CHAMPAGNE — amber's cooled reflection. Everything the studio has already
+   * done and that is still holding: a coat in force, a benefit, a settled sum.
+   * It never asks for anything, which is exactly what separates it from amber.
+   */
+  champagne: '#E8D9BE',
+
   /* ── Meaningful colour · §9.2 ────────────────────────────────────────── */
 
-  /** Fine, active, protected. */
-  assent: '#5FBF8F',
-  /** Attention soon. */
-  caution: '#E3B341',
-  /** Attention now. */
-  urgent: '#E06C75',
+  /** Fine, active, protected. The reflection, not the light. */
+  assent: '#E8D9BE',
+  /** Attention soon. The light itself. */
+  caution: '#E0A45C',
+  /**
+   * Attention now. The one value pushed off the amber ramp toward red — far
+   * enough that it cannot be mistaken for `caution` at a glance, still warm
+   * enough that it belongs to the same room. Nothing in the product is red.
+   */
+  urgent: '#E2705A',
   /** No longer in force. Deliberately neutral — a lapsed thing is not an alarm. */
   lapsed: '#8A8F96',
 } as const;

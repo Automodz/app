@@ -28,7 +28,6 @@ import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/de
    framer-motion behind them, and reaching through it from a server
    component pulls all of that into the page's client bundle. Measured on
    the legal pages: 167 kB → 108 kB from this change alone. */
-import { Heading } from '@/components/system/Heading';
 import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
@@ -46,7 +45,7 @@ export function MarketScreen({ model }: { model: MarketModel }) {
     }}>
       <OfflineNote caption="You’re offline. This is the stock as we last knew it." />
 
-      <Heading level="display">Cars for sale</Heading>
+      <h1 className="am-display" style={{ margin: 0, fontSize: 30 }}>Cars for sale</h1>
       <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
         Every one of these has been through the studio. Come and look at it
         before you decide.
@@ -106,19 +105,32 @@ export function MarketScreen({ model }: { model: MarketModel }) {
         </div>
       )}
 
-      <div style={{
-        marginTop: space.rest,
-        paddingTop: space.rest,
-        borderTop: `${HAIRLINE}px solid ${color.edge}`,
-      }}>
-        <Heading level="title">Selling yours?</Heading>
-        <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
-          Tell us what you have. We will look at it and come back to you.
-        </Text>
-        <div style={{ marginTop: space.gap }}>
-          <Button tier="forward" href={sellHref}>Offer us your car</Button>
-        </div>
-      </div>
+      {/* Design 1k's foot — one row, not a section with a heading over it.
+          A customer who wants to sell knows they want to sell; the row is a
+          door, and a paragraph in front of a door is a queue. */}
+      <Link
+        href={sellHref}
+        className="am-glass am-tap"
+        style={{
+          marginTop: space.rest,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: space.line, minHeight: 56,
+          padding: `${space.gap}px ${space.gap + 2}px`,
+          borderRadius: radius.pane,
+          textDecoration: 'none',
+        }}
+      >
+        <span style={{ fontSize: 13.5, color: color.ink2 }}>
+          List a car from your garage
+        </span>
+        <svg
+          width="17" height="17" viewBox="0 0 24 24" aria-hidden
+          fill="none" stroke={color.ink3} strokeWidth={1.4}
+          strokeLinecap="round" strokeLinejoin="round"
+        >
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </Link>
     </main>
   );
 }
@@ -144,10 +156,15 @@ function Filters({ label, options }: { label: string; options: MarketFilter[] })
               display: 'inline-flex',
               alignItems: 'center',
               paddingInline: space.line,
-              borderRadius: radius.pill,
-              border: `${HAIRLINE}px solid ${o.on ? color.ink : color.edge}`,
-              background: o.on ? color.ink : 'transparent',
-              color: o.on ? color.paper : color.ink2,
+              borderRadius: radius.chip,
+              border: `${HAIRLINE}px solid ${o.on ? 'rgba(224,164,92,0.4)' : color.edge}`,
+              /* The lit one wears the studio's own light, not an inverted
+                 fill — §3.3, colour is information, and "this filter is on"
+                 is information. */
+              background: o.on
+                ? 'linear-gradient(160deg, rgba(224,164,92,0.28), rgba(224,164,92,0.1))'
+                : 'rgba(255,255,255,0.04)',
+              color: o.on ? color.ink : color.ink2,
               textDecoration: 'none',
               fontSize: 14,
               whiteSpace: 'nowrap',
@@ -162,15 +179,24 @@ function Filters({ label, options }: { label: string; options: MarketFilter[] })
 }
 
 function Card({ car }: { car: MarketCard }) {
+  /* Design 1k — the photograph, then a pane of glass carrying the title, the
+     price and the one line that decides a shortlist. The pane is UNDER the
+     image rather than over it, so nothing has to survive a scrim: the price
+     is champagne, which it could not be laid over an unknown photograph. */
   return (
-    <Link href={car.href} style={{ textDecoration: 'none', display: 'block' }}>
-      <div style={{
-        position: 'relative',
-        aspectRatio: '4 / 3',
-        borderRadius: radius.card,
+    <Link
+      href={car.href}
+      className="am-tap"
+      style={{
+        textDecoration: 'none',
+        display: 'block',
+        borderRadius: radius.sheet,
         overflow: 'hidden',
-        background: color.surface,
-      }}>
+        border: `${HAIRLINE}px solid ${color.edge}`,
+        boxShadow: '0 24px 50px -26px rgba(0,0,0,0.9)',
+      }}
+    >
+      <div style={{ position: 'relative', aspectRatio: '16 / 10' }}>
         {car.photo ? (
           <Image
             src={car.photo}
@@ -180,41 +206,66 @@ function Card({ car }: { car: MarketCard }) {
             style={{ objectFit: 'cover' }}
           />
         ) : (
-          /* §15.7 — a car with no photograph is silent, not a broken frame. */
-          <div style={{
-            position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
-          }}>
+          /* §15.7 — a car with no photograph is silent, not a broken frame.
+             §11.5's composed absence: a field lit from above, never a grey box. */
+          <div
+            style={{
+              position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
+              background: 'radial-gradient(120% 80% at 50% 30%, #15161A 0%, #08090A 70%)',
+            }}
+          >
             <Text role="whisper" tone="ink3">No photograph yet</Text>
           </div>
         )}
         {car.badge ? (
-          <span style={{
-            position: 'absolute', top: space.line, right: space.line,
-            paddingInline: space.breath, paddingBlock: space.hair,
-            borderRadius: radius.pill,
-            /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
-           which is fixed behind everything (components/system/Ambient.tsx).
-           Painting `color.paper` here would occlude it completely. The dark
-           ground still exists — it is on `body` — so nothing loses contrast. */
-        background: 'transparent',
-            color: color.ink,
-            fontSize: 12,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}>{car.badge}</span>
+          /* What the studio itself vouches for. Champagne on smoked glass:
+             a fact already in force, never an advertisement. */
+          <span
+            className="am-glass am-label"
+            style={{
+              position: 'absolute', top: space.line, left: space.line,
+              paddingInline: space.breath + 2, paddingBlock: space.hair + 1,
+              borderRadius: radius.chip,
+              borderColor: 'rgba(232,217,190,0.3)',
+              color: color.champagne,
+              fontSize: 9,
+              letterSpacing: '0.18em',
+            }}
+          >
+            {car.badge}
+          </span>
         ) : null}
       </div>
 
-      <div style={{
-        marginTop: space.line, display: 'flex',
-        justifyContent: 'space-between', gap: space.line, alignItems: 'baseline',
-      }}>
-        <Heading level="title" as="h2">{car.title}</Heading>
-        <Text role="body" tone="ink" as="span" style={{ whiteSpace: 'nowrap' }}>
-          {car.price}
-        </Text>
+      <div
+        className="am-glass"
+        style={{
+          borderRadius: 0,
+          border: 'none',
+          padding: `${space.gap}px ${space.gap + 2}px`,
+          display: 'flex', flexDirection: 'column', gap: space.breath,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex', justifyContent: 'space-between',
+            gap: space.line, alignItems: 'baseline',
+          }}
+        >
+          <h2 className="am-display" style={{ margin: 0, fontSize: 16, fontWeight: 300 }}>
+            {car.title}
+          </h2>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)', fontSize: 13,
+              color: color.champagne, whiteSpace: 'nowrap',
+            }}
+          >
+            {car.price}
+          </span>
+        </div>
+        <span style={{ fontSize: 12.5, lineHeight: 1.5, color: color.ink3 }}>{car.line}</span>
       </div>
-      <Text role="data" tone="ink3" style={{ marginTop: space.hair }}>{car.line}</Text>
     </Link>
   );
 }

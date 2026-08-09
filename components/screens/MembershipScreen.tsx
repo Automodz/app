@@ -1,40 +1,48 @@
 'use client';
 /**
- * MEMBERSHIP
+ * THE CLUB
  *
  * Source: docs/AUTOMODZ-OS.md §5.2, §8.6, §9.5, §10.4, §15.1, §15.2, §15.3,
  *         §15.6, §18.1, §21.6
+ *         design "AutoModz App.dc.html" — screen 1i
  *
  * §5.2 — the club: "what it includes, what remains, what it is worth, how to
  * join or leave". §15.3 names the four facts a member must always know, and
  * three of them are here; the fourth is recorded below as absent rather than
  * invented.
  *
+ * ── THE CARD ─────────────────────────────────────────────────────────────
+ * The design gives the membership an object: a card, with the tier, the
+ * holder's name, a number and a renewal date, lit by a slow band of light
+ * moving across it. Everything under the card is a plain row.
+ *
+ * That division is the whole design of this room. §15.1 is that a membership
+ * is a RELATIONSHIP, and a relationship is embodied, not tabulated — so the
+ * one thing that is beautiful here is the card, and the benefits it carries
+ * are stated as flatly as possible underneath. A room of equally decorated
+ * benefit tiles would be a pricing page, which is §15.6's warning.
+ *
  * ── HOW THIS INTEGRATES WITH VEHICLE PROTECTION ──────────────────────────
  * §15.2 — "A membership is a protection. It appears alongside everything else
- * protecting the car." `PROTECTION_CLASS` in lib/types.ts already classifies
- * every kind, and it calls membership `relational` where ppf/ceramic/glass/
- * interior are `physical`.
- *
- * That existing classification settles it without a new concept: §11.4's
- * regions are PARTS OF A CAR, so only a physical protection can answer for one.
- * A membership guards no panel — it guards the relationship — so it is not a
- * region answer on the Vehicle, and the Vehicle needed no change. It appears
- * instead on the surface that shows the car WHOLE: Home's protection list
- * carries it as a living measure beside the coating and the insurance, which is
- * exactly what §15.2 asks for. This room is the detail behind that line.
+ * protecting the car." It guards no panel — it guards the relationship — so it
+ * is not a region answer on the Vehicle. It appears instead on Home, beside
+ * the coating and the insurance. This room is the detail behind that line.
  *
  * No photograph: a membership is a relationship, and §3.1's photograph rule
  * governs vehicle surfaces.
  */
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { MEMBERSHIP_PLANS } from '@/lib/types';
 import type { MembershipPlan } from '@/lib/types';
 import { ClubFlow, LeaveClub } from '@/components/membership/ClubFlow';
 import type { ClubIntent } from '@/components/membership/ClubFlow';
-import { color, space, column, stack, radius, HAIRLINE, MEASURE, INSET } from '@/design';
+import { color, space, radius, TARGET_MIN } from '@/design';
 import type { StateTone } from '@/design';
-import { Heading, Text, Button, toneColor, OfflineNote, Glass } from '@/components/system';
+import { OfflineNote } from '@/components/system';
+import {
+  Screen, Pane, Label, Statement, Rail, Row, Value, Action, Meter,
+} from '@/components/os';
 
 /** One line of the record. */
 export interface MembershipHistoryEntry {
@@ -49,6 +57,12 @@ export interface MembershipModel {
   held: boolean;
   /** §15.3 #1 — that they have one, and which tier. The one Display. */
   tier?: string;
+  /** Whose card it is. Design 1i. */
+  holder?: string;
+  /** The membership's own number — the subscription's id, shortened. */
+  memberNo?: string;
+  /** The year the relationship started. */
+  memberSince?: string;
   /** §15.3 #2 — what remains, from `os/club`. */
   remaining?: string;
   /** How much of the cycle's washes are left, 0–1. Drawn, not described twice. */
@@ -72,9 +86,17 @@ export interface MembershipModel {
   history?: readonly MembershipHistoryEntry[];
 }
 
+const TONE: Record<StateTone, string> = {
+  assent: color.champagne,
+  caution: color.amber,
+  urgent: color.urgent,
+  lapsed: color.ink3,
+};
+
 export function MembershipScreen({ model }: { model: MembershipModel }) {
   const {
-    held, tier, remaining, share, term, countdown, awaitingPayment, tone,
+    held, tier, holder, memberNo, memberSince, remaining, share, term, countdown,
+    awaitingPayment, tone = 'assent',
     benefits = [], bookWashHref, subscriptionId, currentPlan, history = [],
   } = model;
 
@@ -97,182 +119,253 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
     club === 'upgrade' ? 'upgrade' : club === 'renew' ? 'renew' : 'join';
   const flowOpen = club === 'join' || club === 'upgrade' || club === 'renew';
 
-  return (
-    <main
-      style={{
-        /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
-           which is fixed behind everything (components/system/Ambient.tsx).
-           Painting `color.paper` here would occlude it completely. The dark
-           ground still exists — it is on `body` — so nothing loses contrast. */
-        background: 'transparent',
-        minHeight: '100svh',
-        paddingBottom: stack.contentFloor,
-      }}
-    >
-      {/* §20.3 — the room was rendered on the server and is still true; only
-          what happens NEXT needs a connection. One implementation (§22.2). */}
-      <OfflineNote />
-      {!held ? (
-        /* §18.1 — an invitation, one line and one action. §15.1 is what a
-           membership is; this room does not argue for one. */
-        <section
+  /* §18.1 — no membership is silence plus an invitation, never a sales page.
+     §15.1 is what a membership IS; this room does not argue for one. */
+  if (!held) {
+    return (
+      <Screen top={space.rest} style={{ justifyContent: 'center' }}>
+        <OfflineNote />
+        <Statement eyebrow="The AutoModz club">You are not a member</Statement>
+        <p
           style={{
-            ...column,
-            minHeight: `calc(100svh - ${stack.navHeight}px)`,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
+            marginTop: space.gap, marginBottom: 0,
+            fontSize: 15, lineHeight: 1.65, color: color.ink2,
           }}
         >
-          <Heading level="display">You are not a member.</Heading>
-          <Text role="body" tone="ink2" style={{ marginTop: space.line, maxWidth: MEASURE }}>
-            A standing arrangement &mdash; washes kept, and the studio on hand.
-          </Text>
-          <div style={{ marginTop: space.gap }}>
-            <Button tier="primary" onClick={() => go('join')}>What the club includes</Button>
+          A standing arrangement — washes kept, and the studio on hand.
+        </p>
+        <div style={{ marginTop: space.rest }}>
+          <Action onClick={() => go('join')}>What the club includes</Action>
+        </div>
+        <ClubFlow open={flowOpen} onClose={() => go(null)} intent={intent} currentPlan={currentPlan} />
+      </Screen>
+    );
+  }
+
+  /* The tiers other than the one held, in the catalogue's own order. The
+     design shows the tier below and the tier above; this shows whatever the
+     catalogue actually has, so adding a plan never leaves a screen behind. */
+  const others = MEMBERSHIP_PLANS.filter(p => p.id !== currentPlan);
+  const held_i = MEMBERSHIP_PLANS.findIndex(p => p.id === currentPlan);
+
+  return (
+    <Screen top={space.gap}>
+      <OfflineNote />
+
+      <Statement eyebrow={memberSince ? `Member since ${memberSince}` : 'The club'}>
+        The AutoModz Club
+      </Statement>
+
+      {/* ── THE CARD ────────────────────────────────────────────────────
+          The one object in the room. Champagne, because a membership is
+          something already in force — amber would make it ask for something,
+          and it asks for nothing until it lapses. */}
+      <Pane
+        tone="cool"
+        live
+        round={radius.sheet}
+        style={{
+          marginTop: space.gap + space.breath,
+          padding: space.gap + 6,
+          display: 'flex', flexDirection: 'column', gap: space.gap + 6,
+          minHeight: 168, justifyContent: 'space-between',
+          /* Deeper than the standard pane: the card is the one surface in the
+             product that is meant to look like an object you could hold. */
+          background:
+            'linear-gradient(150deg, rgba(232,217,190,0.24), rgba(224,164,92,0.10) 55%, rgba(255,255,255,0.03))',
+          borderColor: 'rgba(232,217,190,0.3)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 28px 56px -24px rgba(0,0,0,0.95)',
+        }}
+      >
+        <div
+          style={{
+            position: 'relative', display: 'flex',
+            justifyContent: 'space-between', alignItems: 'flex-start', gap: space.line,
+          }}
+        >
+          <span
+            className="am-display"
+            style={{ fontWeight: 300, fontSize: 24, letterSpacing: '0.06em', textTransform: 'uppercase' }}
+          >
+            {currentPlan ?? tier}
+          </span>
+          {/* The studio signs its own card. The wordmark, quiet. */}
+          <span className="am-label" style={{ letterSpacing: '0.32em', fontSize: 9 }}>
+            AutoModz
+          </span>
+        </div>
+
+        <div
+          style={{
+            position: 'relative', display: 'flex',
+            justifyContent: 'space-between', alignItems: 'flex-end', gap: space.line,
+          }}
+        >
+          <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {holder ? (
+              <Label style={{ fontSize: 9.5, letterSpacing: '0.2em' }}>{holder}</Label>
+            ) : null}
+            {memberNo ? (
+              <Label style={{ fontSize: 9.5, letterSpacing: '0.2em' }}>№ {memberNo}</Label>
+            ) : null}
+          </span>
+          {term ? (
+            <Label style={{ fontSize: 9.5, letterSpacing: '0.2em', textAlign: 'right' }}>
+              {term}
+            </Label>
+          ) : null}
+        </div>
+      </Pane>
+
+      {/* §16 — pending is not the same promise as confirmed. A membership the
+          studio has not taken payment for says so, in the one place it
+          matters, rather than presenting itself as active. */}
+      {awaitingPayment ? (
+        <Pane
+          tone="warm"
+          style={{ marginTop: space.line, padding: `${space.gap}px ${space.gap + 2}px` }}
+        >
+          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: color.ink }}>
+            The studio has not taken payment for this yet. It starts when they do.
+          </p>
+        </Pane>
+      ) : null}
+
+      {/* ── WHAT REMAINS ────────────────────────────────────────────────
+          §15.3 #2. The cycle drawn as a proportion and said as a sentence —
+          the bar is the shape, the words are the fact, and neither repeats
+          the other's job. */}
+      {remaining ? (
+        <Pane style={{ marginTop: space.line, padding: `${space.gap + 2}px ${space.gap + 4}px` }}>
+          {typeof share === 'number' ? (
+            <Meter
+              label={remaining}
+              value={countdown ?? ''}
+              fill={share}
+              tone={TONE[tone]}
+            />
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: color.ink }}>{remaining}</p>
+          )}
+          {bookWashHref ? (
+            <div style={{ marginTop: space.gap }}>
+              {/* §15.6 — the benefit is used, not admired. */}
+              <Action href={bookWashHref} style={{ fontSize: 14 }}>Book a wash</Action>
+            </div>
+          ) : null}
+        </Pane>
+      ) : null}
+
+      {/* ── WHAT IT INCLUDES ────────────────────────────────────────────
+          Rows. §15.6 — a benefit stated plainly is a benefit; a benefit in a
+          decorated tile is an advertisement for itself. */}
+      {benefits.length > 0 ? (
+        <section
+          aria-labelledby="club-benefits"
+          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+        >
+          <h2 id="club-benefits" style={{ margin: 0 }}><Rail>What it includes</Rail></h2>
+          <div>
+            {benefits.map((b, i) => (
+              <Row key={b} last={i === benefits.length - 1}>{b}</Row>
+            ))}
           </div>
         </section>
-      ) : (
-        <>
-          <section style={{ ...column, paddingTop: `calc(${stack.top} + ${space.movement}px)` }}>
-            {/* §9.5 — the one Display: which tier they hold. */}
-            <Heading level="display">{tier}</Heading>
+      ) : null}
 
-            {awaitingPayment ? (
-              <Text role="body" tone="ink2" aria-live="polite" style={{ marginTop: space.line }}>
-                Waiting on the studio to confirm payment.
-              </Text>
-            ) : null}
-
-            <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
-              {remaining}
-            </Text>
-
-            {/* The washes drawn as well as said — §14.4, a measure is easier to
-                read at a glance than a fraction. The words carry it too, so
-                nothing depends on seeing the bar (§21.6). */}
-            {share !== undefined ? (
-              <div
-                aria-hidden
-                style={{
-                  position: 'relative',
-                  height: HAIRLINE,
-                  marginTop: space.line,
-                  background: color.edge,
-                  borderRadius: radius.pill,
-                  overflow: 'hidden',
-                }}
-              >
-                <div
+      {/* ── THE OTHER TIERS ─────────────────────────────────────────────
+          Named, not sold. A tier above says what it costs; a tier below says
+          it is below. Neither carries a control — changing tier is one
+          deliberate act, and it lives under them. */}
+      {others.length > 0 ? (
+        <section
+          aria-labelledby="club-tiers"
+          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+        >
+          <h2 id="club-tiers" style={{ margin: 0 }}><Rail>The other tiers</Rail></h2>
+          <div style={{ display: 'flex', gap: space.line }}>
+            {others.map(p => {
+              const above = MEMBERSHIP_PLANS.findIndex(x => x.id === p.id) > held_i;
+              return (
+                <Pane
+                  key={p.id}
                   style={{
-                    position: 'absolute',
-                    insetBlock: 0,
-                    left: 0,
-                    width: `${share * 100}%`,
-                    background: color.ink2,
-                    borderRadius: radius.pill,
+                    flex: 1, padding: `${space.gap}px ${space.line + 2}px`,
+                    display: 'flex', flexDirection: 'column', gap: 5,
+                    opacity: above ? 1 : 0.6,
                   }}
-                />
-              </div>
-            ) : null}
-
-            <Text
-              role="body"
-              style={{
-                marginTop: space.line,
-                color: tone && tone !== 'assent' ? toneColor(tone) : color.ink2,
-              }}
-            >
-              {term}
-            </Text>
-
-            {countdown ? (
-              <Text role="data" tone="ink3" style={{ marginTop: space.breath }}>
-                {countdown}
-              </Text>
-            ) : null}
-
-            {/* Booking a wash that is already paid for — the whole point of
-                holding one. §15.5: the benefit is used, not admired. */}
-            {bookWashHref ? (
-              <div style={{ marginTop: space.rest }}>
-                <Button tier="primary" href={bookWashHref}>Book an included wash</Button>
-              </div>
-            ) : null}
-          </section>
-
-          {/* WHAT IT INCLUDES — the plan's own perks. */}
-          {benefits.length > 0 ? (
-            <section style={{ ...column, paddingTop: space.movement }}>
-              {/* The membership's perks are one object — what you get — so
-                  they sit on one card rather than as a bare list on the
-                  ground. It also gives the plan somewhere to feel like a
-                  card the customer holds. */}
-              <Glass pad="gap">
-                <Text role="whisper" tone="ink3">What it includes</Text>
-                <ul style={{ margin: 0, marginTop: space.gap, paddingLeft: INSET }}>
-                  {benefits.map(b => (
-                    <li key={b} style={{ marginTop: space.breath }}>
-                      <Text role="body" tone="ink2" as="span">{b}</Text>
-                    </li>
-                  ))}
-                </ul>
-              </Glass>
-            </section>
-          ) : null}
-
-          {/* CHANGING IT. Upgrade and renew are the same write as joining —
-              a new pending subscription — because the rules permit nothing
-              else from a customer. */}
-          <section style={{ ...column, paddingTop: space.movement, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
-            <Button tier="forward" onClick={() => go('upgrade')}>Change plan</Button>
-            <Button tier="forward" onClick={() => go('renew')}>Renew</Button>
-          </section>
-
-          {/* THE RECORD. §18.1 — a first membership has no history and shows
-              none, rather than a heading over an empty list. */}
-          {history.length > 1 ? (
-            <section style={{ ...column, paddingTop: space.movement }}>
-              <Text role="data" tone="ink3">Your memberships</Text>
-              <div style={{ marginTop: space.gap }}>
-                {history.map((h, i) => (
-                  <div
-                    key={h.id}
-                    style={{
-                      paddingBlock: space.line,
-                      borderTop: i === 0 ? undefined : `${HAIRLINE}px solid ${color.edge}`,
-                    }}
+                >
+                  <span
+                    className="am-display"
+                    style={{ fontSize: 15, letterSpacing: '0.05em', textTransform: 'uppercase' }}
                   >
-                    <Text role="body" tone="ink">{h.plan}</Text>
-                    <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
-                      {h.period} · {h.status}
-                    </Text>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ) : null}
+                    {p.label}
+                  </span>
+                  <Label style={{ fontSize: 10, letterSpacing: '0.14em' }}>
+                    {above ? `₹${p.price.toLocaleString('en-IN')} a month` : 'Below your tier'}
+                  </Label>
+                </Pane>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
-          {/* §15.6 — "cancelling is available, plainly worded, and not defended
-              by a maze." §10.4 gives `quiet` to a secondary path; a filled
-              control here would be the room urging them out of it. */}
-          <section style={{ ...column, paddingTop: space.movement }}>
-            <Button tier="quiet" onClick={() => go('leave')}>Leave the club</Button>
-          </section>
-        </>
-      )}
+      {/* ── EVERY MEMBERSHIP HELD ───────────────────────────────────────
+          §16 — the record. Rows, newest first, and no control on any of them:
+          a past membership is a fact, not an offer. */}
+      {history.length > 0 ? (
+        <section
+          aria-labelledby="club-history"
+          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+        >
+          <h2 id="club-history" style={{ margin: 0 }}><Rail>Your memberships</Rail></h2>
+          <div>
+            {history.map((h, i) => (
+              <Row
+                key={h.id}
+                last={i === history.length - 1}
+                value={<Value tone={color.ink3}>{h.status}</Value>}
+              >
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <span>{h.plan}</span>
+                  <Label style={{ fontSize: 10, letterSpacing: '0.14em' }}>{h.period}</Label>
+                </span>
+              </Row>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-      <ClubFlow
-        open={flowOpen}
-        onClose={() => go(null)}
-        intent={intent}
-        currentPlan={currentPlan}
-      />
+      {/* ── CHANGING IT ─────────────────────────────────────────────────
+          §10.4 — one primary act. Leaving is a real control and is not hidden,
+          but it is not dressed as an equal to renewing. */}
+      <div
+        style={{
+          marginTop: space.rest / 2, display: 'flex',
+          flexDirection: 'column', gap: space.line,
+        }}
+      >
+        <Action onClick={() => go('upgrade')}>Change your tier</Action>
+        <button
+          type="button"
+          onClick={() => go('leave')}
+          className="am-tap"
+          style={{
+            minHeight: TARGET_MIN, background: 'none', border: 'none',
+            cursor: 'pointer', color: color.ink3, fontSize: 14, font: 'inherit',
+          }}
+        >
+          Leave the club
+        </button>
+      </div>
+
+      <ClubFlow open={flowOpen} onClose={() => go(null)} intent={intent} currentPlan={currentPlan} />
       <LeaveClub
         open={club === 'leave'}
         onClose={() => go(null)}
         subscriptionId={subscriptionId ?? null}
       />
-    </main>
+    </Screen>
   );
 }

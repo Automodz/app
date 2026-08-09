@@ -31,11 +31,23 @@ import {
 /** One plate, one shape — so two spellings of the same car cannot both exist. */
 const normPlate = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim();
 
+/**
+ * WHAT THE FORM NEEDS OF A CAR — not a whole `Vehicle`.
+ *
+ * The Garage projects a small editable shape and this reads exactly five
+ * fields of it. Asking for a full `Vehicle` forced every caller to cast a
+ * projection back into a domain object, which is the projection boundary being
+ * crossed in the wrong direction (ARCHITECTURE §1).
+ */
+export type EditableCar =
+  Pick<Vehicle, 'id' | 'name' | 'registrationNumber'>
+  & Partial<Pick<Vehicle, 'odometer' | 'year'>>;
+
 export interface CarFormProps {
   open: boolean;
   onClose: () => void;
   /** The car being corrected, or null when this is a new one. */
-  editing?: Vehicle | null;
+  editing?: EditableCar | null;
 }
 
 export function CarForm({ open, onClose, editing = null }: CarFormProps) {
@@ -44,6 +56,12 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
 
   const [name, setName] = useState('');
   const [plate, setPlate] = useState('');
+  /* The car's own room draws these (design 1d) and nothing could set them, so
+     the tiles were dead the day they were designed. Both optional: an owner
+     who does not want to keep their odometer here simply leaves it, and the
+     room draws one tile or none instead of a zero. */
+  const [odometer, setOdometer] = useState('');
+  const [year, setYear] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nameErr, setNameErr] = useState<string | null>(null);
@@ -54,6 +72,8 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
     if (!open) return;
     setName(editing?.name ?? '');
     setPlate(editing?.registrationNumber ?? '');
+    setOdometer(editing?.odometer ? String(editing.odometer) : '');
+    setYear(editing?.year ? String(editing.year) : '');
     setError(null);
     setNameErr(null);
     setPlateErr(null);
@@ -91,7 +111,20 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
         setError('Your session has expired. Sign in again and we’ll keep this.');
         return;
       }
-      const data = { name: name.trim(), registrationNumber: p };
+      /* An emptied field must REMOVE the number, not leave the old one
+         standing — so the key is written as `undefined` rather than omitted,
+         and `updateVehicle` deletes it. Anything unparseable is treated as
+         empty: a car whose odometer reads "about 40k" has no odometer. */
+      const digits = (s: string) => {
+        const n = Number(s.replace(/[^\d]/g, ''));
+        return Number.isFinite(n) && n > 0 ? n : undefined;
+      };
+      const data = {
+        name: name.trim(),
+        registrationNumber: p,
+        odometer: digits(odometer),
+        year: digits(year),
+      };
       if (editing) {
         await updateVehicle(uid, editing.id, data);
         updateVehicleInStore(editing.id, data);
@@ -138,6 +171,23 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
             error={plateErr}
             autoComplete="off"
           />
+          {/* Both optional, and said so — an unlabelled optional field reads
+              as a requirement nobody explained. `inputMode` gives a phone the
+              number pad without forbidding "41,208". */}
+          <Field
+            label="Year (optional)"
+            value={year}
+            onChange={setYear}
+            autoComplete="off"
+            inputMode="numeric"
+          />
+          <Field
+            label="Odometer, in kilometres (optional)"
+            value={odometer}
+            onChange={setOdometer}
+            autoComplete="off"
+            inputMode="numeric"
+          />
         </div>
 
         {error ? (
@@ -159,13 +209,14 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
 
 /** One field. The label sits above — a placeholder is not a label (§21.6). */
 function Field({
-  label, value, onChange, error, autoComplete,
+  label, value, onChange, error, autoComplete, inputMode,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   error?: string | null;
   autoComplete?: string;
+  inputMode?: 'numeric';
 }) {
   return (
     <label style={{ display: 'block' }}>
@@ -174,6 +225,7 @@ function Field({
         value={value}
         onChange={e => onChange(e.target.value)}
         autoComplete={autoComplete}
+        inputMode={inputMode}
         aria-invalid={error ? true : undefined}
         style={{
           display: 'block',

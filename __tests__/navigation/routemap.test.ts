@@ -3,10 +3,10 @@ import { roomFor, activeSlotFor, chromeFor, slots, primaryAction, STUDIO } from 
 const CASES: [string, string | undefined][] = [
   ['/', '/'],
   ['/garage', '/garage'],
-  ['/vehicle', '/garage'],
-  ['/vehicle/anything', '/garage'],
-  ['/history', '/history'],
-  ['/history/ceramic-2026-07', '/history'],
+  ['/vehicle', '/vehicle'],
+  ['/vehicle/anything', '/vehicle'],
+  ['/history', '/garage'],
+  ['/history/ceramic-2026-07', '/garage'],
   ['/studio', STUDIO],
   ['/studio/arrange', STUDIO],
   ['/studio/arrange/step-2', STUDIO],
@@ -36,9 +36,24 @@ describe('route mapping', () => {
     }
   });
 
-  it('the Studio is reached by the primary action, never by a slot', () => {
-    expect(slots).not.toContain(STUDIO);
+  /* The design draws the dock on all twelve screens and it is five equal
+     slots every time, the Studio among them — see the header of routes.ts for
+     why that honours §6.3 rather than dropping it. What the clause actually
+     protects is that arranging a visit is never buried, so THAT is what is
+     asserted here: the studio is permanently reachable in one tap, and the
+     primary action still points at it. */
+  it('the Studio is a permanent slot, and the primary action still names it', () => {
+    expect(slots).toContain(STUDIO);
     expect(primaryAction.path).toBe(STUDIO);
+  });
+
+  it('the dock is five slots, in the design\'s order', () => {
+    expect(slots).toEqual(['/', '/vehicle', '/studio', '/garage', '/you']);
+  });
+
+  it('the record is reached from the collection, not from a slot of its own', () => {
+    expect(slots).not.toContain('/history');
+    expect(activeSlotFor('/history')).toBe('/garage');
   });
 
   it('every slot maps to itself', () => {

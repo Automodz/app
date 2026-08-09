@@ -3,8 +3,8 @@
  *
  * A DELIBERATE AMENDMENT to §3.3 and §3.4. The constitution says "colour is
  * information, never decoration" and "depth comes from light and shadow, not
- * from decorative gradients". The owner has directed a magenta ambient
- * environment, and this is how it is reconciled rather than simply ignored:
+ * from decorative gradients". The product has an ambient environment anyway,
+ * and this is how it is reconciled rather than simply ignored:
  *
  *   THE FIELD IS LIGHT, NOT A SURFACE. It is the far wall of the room — the
  *   thing glass has to have something to refract. Apple's glass sits on a
@@ -13,10 +13,18 @@
  *   literally true, and it never becomes a card, a panel, or a border.
  *
  *   IT NEVER CARRIES MEANING. §3.3's real purpose is that a customer can trust
- *   colour when they see it — that amber means attention and red means urgent.
- *   The field is the same magenta in every state the product can be in, so it
- *   can never be mistaken for information. `assent`/`caution`/`urgent` keep
- *   their jobs untouched.
+ *   colour when they see it. The field is the same in every state the product
+ *   can be in, so it can never be mistaken for information.
+ *
+ *   ── IT WAS MAGENTA, AND THE DESIGN MAKES IT AMBER ──
+ *   Three magenta and violet lights, which is a nightclub's palette and not a
+ *   detailing studio's. The ratified design ("AutoModz App.dc.html") lights
+ *   the room with the same warmth the interface uses — amber, and champagne
+ *   as its cooled reflection — so the glass now refracts the studio's own
+ *   light rather than a second, unrelated one. The lights are DIMMER than the
+ *   magenta ones were: this hue is the product's information colour, and a
+ *   field bright enough to be noticed would be the one thing §3.3 cannot
+ *   allow. It sits under everything, seen only through glass.
  *
  *   IT STAYS UNDER THE CONTENT. Ink, photographs and state colour all sit on
  *   the near side of the glass. The field is only ever seen THROUGH something.
@@ -49,32 +57,34 @@ export interface AmbientLight {
  * 320px to a desktop without art direction at each size.
  */
 export const ambient = {
-  /** The dominant magenta. Largest, weakest, sets the overall cast. */
+  /** The studio's amber, high and to the left. Largest, weakest, sets the cast. */
   key: {
-    hue: '#C4318A',
+    hue: '#E0A45C',
     x: 18,
-    y: 12,
+    y: 8,
     size: 92,
-    opacity: 0.30,
+    opacity: 0.16,
   },
-  /** A warmer secondary, low and to the right — keeps the field from reading flat. */
+  /** Champagne, low and to the right — keeps the field from reading flat. */
   warm: {
-    hue: '#E0459B',
+    hue: '#E8D9BE',
     x: 86,
-    y: 70,
+    y: 74,
     size: 68,
-    opacity: 0.20,
+    opacity: 0.10,
   },
   /**
-   * A cool violet counterweight. Without it the field is one hue and reads as
-   * a tint over the whole screen rather than as light in a space.
+   * A cool counterweight. Without it the field is one hue and reads as a tint
+   * over the whole screen rather than as light in a space — but it is a cool
+   * GREY rather than a second colour, because two hues in the room is the
+   * thing that made the old field read as decoration.
    */
   cool: {
-    hue: '#6C2BD9',
+    hue: '#2A2E36',
     x: 62,
     y: 108,
     size: 78,
-    opacity: 0.22,
+    opacity: 0.35,
   },
 
   /**

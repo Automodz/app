@@ -161,11 +161,14 @@ describe('the stylesheet carries nothing dead', () => {
     /* 60,071 chars before the dead-CSS pass, 41,632 after — a third of the
        stylesheet was rules for three retired eras, shipping on every page.
 
-       The ceiling has since moved to 48,000 to admit the ambient field, the
-       glass material, the press feedback and the focus ring — all live rules
-       with call sites, all asserted above by "every class it defines is used
-       somewhere". The guard's job is to catch DEAD weight creeping back, and
-       that assertion is the one doing it; this is the coarse backstop. */
-    expect(css.length).toBeLessThan(48_000);
+       The ceiling moved to 48,000 to admit the ambient field, the glass
+       material, the press feedback and the focus ring, and to 54,000 for the
+       ratified customer design: the four glass tones, the sweep, the breath,
+       the dial and the two type classes, plus the warm token set they read.
+       Every one has a call site, which the assertion above proves — and that
+       assertion, not this one, is what catches dead weight creeping back.
+       This is the coarse backstop, and it is only ever raised alongside a
+       named set of live rules. */
+    expect(css.length).toBeLessThan(54_000);
   });
 });

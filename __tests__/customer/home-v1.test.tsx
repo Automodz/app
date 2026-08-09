@@ -32,8 +32,14 @@ const base: HomeModel = {
 const html = (m: Partial<HomeModel> = {}) =>
   renderToStaticMarkup(<HomeScreen model={{ ...base, ...m }} />);
 
-/** The filled tier — §10.4 gives it to exactly one control per screen. */
-const primaries = (h: string) => (h.match(/background:#F4F5F6/g) ?? []).length;
+/**
+ * §10.4 gives the filled tier to exactly one control per screen, and in the
+ * ratified design that control is the WARM pane — the only surface in the
+ * product tinted by the studio's own light. Counting the class is what makes
+ * this assertion survive a restyle: the rule is "one thing asks", not "one
+ * element is this hex".
+ */
+const primaries = (h: string) => (h.match(/am-glass-warm/g) ?? []).length;
 
 describe('Home V1 — one composition', () => {
   it('offers exactly one primary action, whatever the state', () => {
@@ -63,10 +69,10 @@ describe('Home V1 — one composition', () => {
 
   describe('nothing is drawn for nothing (§18.1)', () => {
     it('no protection, no protection region', () => {
-      expect(html()).not.toContain('<details');
+      expect(html()).not.toContain('Protection<');
     });
-    it('no booking, no NEXT VISIT frame', () => {
-      expect(html()).not.toContain('NEXT VISIT');
+    it('no booking, no Concierge pane', () => {
+      expect(html()).not.toContain('Concierge');
     });
     it('no record, no life section', () => {
       expect(html()).not.toContain('Its life at');
@@ -88,7 +94,7 @@ describe('Home V1 — one composition', () => {
       const h = html({
         next: { service: 'Ceramic maintenance', when: 'Saturday · 10:30', vehicleName: 'BMW M4', href: '/history/b1' },
       });
-      expect(h).toContain('NEXT VISIT');
+      expect(h).toContain('Concierge');
       expect(h).toContain('Ceramic maintenance');
       expect(h).toContain('Saturday · 10:30');
     });
@@ -111,7 +117,12 @@ describe('Home V1 — one composition', () => {
       expect(live).not.toContain('In the studio -');
     });
 
-    it('protection is a state, disclosed — not a wall of countdowns', () => {
+    it('protection is a state, summarised — not a wall of countdowns', () => {
+      /* It used to sit behind a `<details>`, so that a glance was not a
+         reading exercise. The design answers the same worry with the DIAL:
+         the number is the glance, so the layers under it are already
+         supporting detail and are simply left open. A disclosure control on
+         two rows is more interface than the rows it hides. */
       const h = html({
         protection: {
           headline: 'Protected',
@@ -120,12 +131,14 @@ describe('Home V1 — one composition', () => {
           tone: 'assent',
           items: [{ id: 'p1', label: 'Ceramic', term: 'Through March 2027', tone: 'assent' }],
         },
+        protections: [
+          { id: 'p1', label: 'Ceramic', term: 'Through March 2027', remaining: 0.8, tone: 'assent' },
+        ],
       });
       expect(h).toContain('Protected');
       expect(h).toContain('PPF · Ceramic · Glass');
-      /* Behind a tap, so a glance is not a reading exercise. */
-      expect(h).toContain('<details');
       expect(h).toContain('Through March 2027');
+      expect(h).not.toContain('<details');
     });
 
     it('while the car is here, Home becomes the visit', () => {
@@ -163,7 +176,7 @@ describe('Home V1 — one composition', () => {
           href: '/studio?arrange=1&cat=Ceramic',
         },
       });
-      expect(h).toContain('WORTH CONSIDERING');
+      expect(h).toContain('Advisor');
       expect(h).toContain('Your ceramic is due');
       expect(h).toContain('six weeks from its end');
     });
@@ -253,9 +266,9 @@ describe('the i20 attention state — one fact, one presentation', () => {
     expect(h).not.toContain('Ceramic coating - 23 days');
   });
 
-  it('and no second WORTH CONSIDERING section appears', () => {
+  it('and no second Advisor pane appears', () => {
     const h = html(attention);
-    expect(h).not.toContain('WORTH CONSIDERING');
+    expect(h).not.toContain('Advisor');
   });
 
   it('protection stays supporting detail, not a third repetition', () => {
@@ -266,9 +279,12 @@ describe('the i20 attention state — one fact, one presentation', () => {
         said: 'Everything’s holding', tone: 'assent',
         items: [{ id: 'p1', label: 'Ceramic coating', term: 'Through March 2027', tone: 'caution' }],
       },
+      protections: [
+        { id: 'p1', label: 'Ceramic coating', term: 'Through March 2027', remaining: 0.2, tone: 'caution' },
+      ],
     });
-    /* Behind a tap, and it does not restate the countdown. */
-    expect(h).toContain('<details');
+    /* Below the dial, and it does not restate the countdown. */
+    expect(h).toContain('Through March 2027');
     expect((h.match(/23 days of protection left/g) ?? []).length).toBe(1);
   });
 

@@ -2,31 +2,36 @@
  * ROUTE CONFIGURATION
  *
  * Source: docs/AUTOMODZ-OS.md §5.1, §5.2, §5.4, §6.2, §6.3, §12.2, §15.2
+ *         design "AutoModz App.dc.html" — the dock, drawn on all twelve screens
  *
- * All seven rooms are configured here. Only four of them are slots in the
- * navigation, and that is a decision the constitution makes, not a compromise:
+ * ── THE DOCK IS FIVE, AND §6.3 IS SUPERSEDED ────────────────────────────
+ * This table used to hold four slots plus a distinct Studio control, because
+ * §6.3 read "arranging a visit … earns a permanent, distinct control — NOT A
+ * SLOT AMONG EQUALS." The ratified design draws the dock twelve times and it
+ * is five equal slots every time: Now · Car · Studio · Garage · You.
  *
- * §6.3 — "Arranging a visit is the single most frequent deliberate act. It
- * earns a permanent, distinct control — NOT A SLOT AMONG EQUALS." §5.2 places
- * arranging inside Studio, so Studio is reached by the primary action rather
- * than by a tab. Giving it both would be two controls for one room.
+ * The clause is honoured rather than dropped. What §6.3 protects is that
+ * arranging a visit is never buried — and a permanent slot of its own, lit in
+ * amber when you are standing in it, is the strongest form of that promise.
+ * What it argued against was a floating-action button, which this is not.
  *
- * §12.2 — "With a single vehicle, the Garage does not exist as a meaningful
- * place — the customer goes straight to their car." A car is therefore
- * something you walk toward from the Garage, not something you tab to. Putting
- * Vehicle in the bar would mean choosing *which* car in the navigation, which
- * is the collection's job.
+ * Two consequences, both from the design rather than from taste:
  *
- * §15.2 — "A membership is a protection. It appears alongside everything else
- * protecting the car." It is reached from the thing it protects.
+ * 1. THE CAR IS A SLOT. §12.2 said a car is walked toward from the Garage, so
+ *    Vehicle had no slot. But the design opens on the car and returns to it
+ *    from every room — it is the subject of the product (§2.1), and the
+ *    subject does not live one level down. Which car remains the Garage's
+ *    job: the slot goes to the car you are currently about (`?car=`).
  *
- * Seven equal slots would also be a dashboard, and §5.1's own model is three
- * concepts rather than seven peers.
+ * 2. HISTORY IS NOT A SLOT. Screen 1h puts the record directly under the
+ *    collection, on one scroll. A tab for it was a tab for a list that is
+ *    already visible where it belongs, and the fifth slot was needed for the
+ *    Studio.
  *
  * ── EVERY ROUTE STILL MAPS TO EXACTLY ONE NAVIGATION ELEMENT ──
  * `activates` is what keeps §6.2 true — "always shows where the customer is" —
- * even in the two rooms that have no slot of their own. Standing in a Vehicle
- * lights the Garage, because you are still inside THE CAR (§5.1).
+ * even in the rooms that have no slot of their own. Standing in History lights
+ * the Garage, because the record is part of the collection (§5.1).
  */
 
 /** §5.1 — the three concepts. The rooms may evolve; these may not. */
@@ -54,17 +59,15 @@ export interface Room {
   activates: string;
 }
 
-/** The four rooms that are slots, in bar order. */
+/** The five rooms that are slots, in dock order. */
 export const HOME = '/';
+export const VEHICLE = '/vehicle';
+export const STUDIO = '/studio';
 export const GARAGE = '/garage';
-export const HISTORY = '/history';
 export const PROFILE = '/you';
 
-/** The room the primary action leads to. §6.3 */
-export const STUDIO = '/studio';
-
 /** Rooms reached by going deeper, never by tabbing. */
-export const VEHICLE = '/vehicle';
+export const HISTORY = '/history';
 export const MEMBERSHIP = '/membership';
 
 /**
@@ -94,19 +97,21 @@ export const rooms: Record<string, Room> = {
   },
   [VEHICLE]: {
     path: VEHICLE,
-    name: 'The car',
+    /* The dock's word, and the customer's (§21.8). "The car" was the room's
+       full name in prose; on a 62px slot it is one word or it is nothing. */
+    name: 'Car',
     concept: 'car',
     chrome: 'nav',
-    // §12.2 — a car is walked toward from the collection; standing in one
-    // still lights the Garage, because you have not left THE CAR.
-    activates: GARAGE,
+    activates: VEHICLE,
   },
   [HISTORY]: {
     path: HISTORY,
     name: 'History',
     concept: 'car',
     chrome: 'nav',
-    activates: HISTORY,
+    // Screen 1h — the record sits under the collection. Standing in it lights
+    // the Garage, because you have not left the collection.
+    activates: GARAGE,
   },
   [STUDIO]: {
     path: STUDIO,
@@ -132,25 +137,23 @@ export const rooms: Record<string, Room> = {
   },
 };
 
-/** §6.2 — the bar, in order. Four, not seven. */
-export const slots: readonly string[] = [HOME, GARAGE, HISTORY, PROFILE];
+/** §6.2 — the dock, in order. Five, as the design draws it on every screen. */
+export const slots: readonly string[] = [HOME, VEHICLE, STUDIO, GARAGE, PROFILE];
 
 /**
- * §6.3 — the one permanent, distinct control. It is not in `slots` because it
- * is not a slot among equals.
+ * §6.3 — arranging a visit is the most frequent deliberate act, so it keeps a
+ * permanent control. That control is now the Studio slot itself rather than a
+ * separate mark beside the dock; this record is what other code still reads to
+ * ask "where does arranging live", and the answer has not changed.
+ *
+ * §21.6 — the accessible name; §21.8 — the customer's word. It names a PLACE,
+ * not an act: tapping it is arrival, not creation, and §5.2 puts "arranging a
+ * visit" inside the Studio. A label of "Add" or "New" would describe a
+ * transaction, and §2.1 is that the car is the subject, never the transaction.
  */
 export const primaryAction = {
   path: STUDIO,
-  /**
-   * §21.6 — the accessible name; §21.8 — the customer's word.
-   *
-   * It names a PLACE, not an act. The control is the studio's own mark and
-   * tapping it is arrival, not creation — and §5.2 puts "arranging a visit"
-   * inside the Studio, so entering the studio is how a visit gets arranged.
-   * A label of "Add" or "New" would describe a transaction, and §2.1 is that
-   * the car is the subject, never the transaction.
-   */
-  label: 'The studio',
+  label: 'Studio',
 } as const;
 
 /**

@@ -50,6 +50,19 @@ export interface Vehicle {
   category?: 'Hatchback' | 'Sedan' | 'Compact SUV' | 'Full SUV' | 'Luxury';
   color?: string;
   notes?: string;
+  /**
+   * THE ODOMETER, IN KILOMETRES.
+   *
+   * The car's own room shows it (design screen 1d) and nothing in the product
+   * held it — a customer could see their coating's life and their warranty and
+   * not the one number every owner knows by heart. Optional and owner-entered:
+   * the studio reads it at every visit but does not publish it, so a value
+   * here is the owner's, and a car without one simply does not show the tile
+   * rather than showing a zero.
+   */
+  odometer?: number;
+  /** The model year, as the owner gives it. Part of the car's one-line descriptor. */
+  year?: number;
   createdAt: Timestamp;
 }
 
