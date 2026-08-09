@@ -224,11 +224,16 @@ export function Action(
     textDecoration: 'none',
     cursor: 'pointer',
     border: quiet ? '1px solid rgba(255,255,255,0.08)' : 'none',
+    /* OPAQUE STOPS, NOT ALPHA. The design draws these as amber and champagne
+       at 92%→64% alpha over the room, and at the weak end that composites to
+       #926C3E — 4.12:1 against the label, under §21.1's floor. Solid stops
+       down the same ramps look the same and hold their contrast wherever the
+       control lands: amber 10.10:1 → 7.21:1, champagne 14.02:1 → 8.94:1. */
     background: quiet
       ? 'rgba(255,255,255,0.05)'
       : tone === 'amber'
-        ? 'linear-gradient(160deg, rgba(224,164,92,0.92), rgba(224,164,92,0.64))'
-        : 'linear-gradient(160deg, rgba(232,217,190,0.92), rgba(224,164,92,0.72))',
+        ? 'linear-gradient(160deg, #E8B072, #D0904A)'
+        : 'linear-gradient(160deg, #E8D9BE, #E0A45C)',
     color: quiet ? color.ink : '#100C06',
     boxShadow: quiet
       ? undefined

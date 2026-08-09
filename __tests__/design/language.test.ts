@@ -6,6 +6,7 @@
  * and until this file existed, nothing did. They were dead exports describing
  * rules nobody checked. This is the check.
  */
+import { readFileSync } from 'fs';
 import {
   color, scrim, contrastFloor, reducedMotion, type as typeScale, space, TARGET_MIN,
 } from '@/design';
@@ -79,6 +80,38 @@ describe('§21.3 — the target floor', () => {
   it('the rhythm scale never offers a gap larger than the step above it', () => {
     const steps = [space.hair, space.breath, space.line, space.gap, space.rest, space.movement];
     expect([...steps].sort((a, b) => a - b)).toEqual(steps);
+  });
+});
+
+describe('§21.1 — a filled control holds its contrast at every point', () => {
+  /* THE BUG THIS EXISTS FOR. The ratified design draws the one primary action
+     as amber at 92%→64% ALPHA over the near-black room. Composited, the weak
+     end of that gradient is #926C3E, where the label (#100C06) reads at
+     4.12:1 — under the floor, on the single most important control in the
+     product. A translucent fill has no fixed contrast, so it may carry
+     decoration but never text; the shipped control uses two SOLID stops down
+     the same ramp instead.
+
+     Read out of the component rather than restated here, so the assertion
+     cannot drift away from what actually renders. */
+  const button = readFileSync('components/system/Button.tsx', 'utf8');
+  /* The DECLARATION only — the prose above it names the rejected values, and
+     matching those would assert the bug rather than the fix. */
+  const primary = button.slice(button.indexOf('primary: {'), button.indexOf('forward:'));
+
+  it('the primary fill is opaque, not an alpha wash over the room', () => {
+    expect(primary).toContain('linear-gradient');
+    expect(primary).not.toMatch(/background:[^,]*rgba\(/);
+  });
+
+  it('its label clears AA against both ends of the gradient', () => {
+    const stops = [...primary.matchAll(/#([0-9A-Fa-f]{6})/g)].map(m => `#${m[1]}`);
+    /* Two gradient stops, then the label colour. */
+    expect(stops.length).toBeGreaterThanOrEqual(3);
+    const [hi, lo, label] = stops;
+    for (const fill of [hi, lo]) {
+      expect(ratio(hex(label), hex(fill))).toBeGreaterThanOrEqual(contrastFloor.normalText);
+    }
   });
 });
 

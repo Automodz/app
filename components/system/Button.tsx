@@ -77,10 +77,22 @@ const TIER: Record<ButtonTier, CSSProperties> = {
    *
    * `#100C06` rather than `color.paper` for the text: near-black with the
    * amber's own warmth in it, so the label reads as ink printed on the
-   * control rather than as a hole punched through it. 8.6:1 on the fill.
+   * control rather than as a hole punched through it.
+   *
+   * ── THE FILL IS OPAQUE, AND THAT IS A CONTRAST FIX ──
+   * The design draws this as amber at 92%→64% ALPHA over the near-black room.
+   * Measured, the weak end of that gradient composites to #926C3E, where
+   * #100C06 reads at 4.12:1 — under §21.1's 4.5 floor, on the single most
+   * important control in the product. Two SOLID stops down the same amber
+   * ramp look identical and cannot composite toward the paper:
+   *
+   *     #E8B072  10.10:1        #D0904A  7.21:1
+   *
+   * The lesson generalises: a translucent fill over a dark room has no fixed
+   * contrast, so it may carry decoration but never text.
    */
   primary: {
-    background: 'linear-gradient(160deg, rgba(224,164,92,0.92), rgba(224,164,92,0.64))',
+    background: 'linear-gradient(160deg, #E8B072, #D0904A)',
     color: '#100C06',
     boxShadow: '0 24px 50px -22px rgba(224,164,92,0.8), inset 0 1px 0 rgba(255,255,255,0.4)',
   },
