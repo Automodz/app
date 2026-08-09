@@ -33,7 +33,6 @@
 import Image from 'next/image';
 import {
   color, space, INSET, MEASURE, column, stack, imageSizes,
-  HAIRLINE, TARGET_MIN, type as typeScale,
 } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
@@ -187,56 +186,77 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
         </section>
       ) : null}
 
+      {/* ── WHAT IT COST — design screen 1j ─────────────────────────────
+          THE BREAKDOWN IS NO LONGER BEHIND A TAP. It sat inside a `<details>`
+          summarised by the invoice number, so the one question a receipt
+          exists to answer — what am I being charged for — took a tap, and the
+          control that revealed it was labelled with a reference code. The
+          design states the whole account on one pane and puts the total at
+          the foot of it, which is what a receipt is.
+
+          Every figure is carried verbatim from the invoice. Nothing here
+          computes, and nothing re-derives a total (§22.1, §16.2). */}
       {receipt ? (
         <section style={{ ...column, paddingTop: space.rest }}>
-          <div style={{
-            display: 'flex', alignItems: 'baseline',
-            justifyContent: 'space-between', gap: space.line,
-          }}>
-            <span style={{
-              fontFamily: typeScale.display.family, fontSize: 24, fontWeight: 700,
-              letterSpacing: '-0.01em', color: color.ink,
+          <div
+            className="am-glass"
+            style={{
+              padding: space.gap + 6,
+              borderRadius: 24,
+              display: 'grid',
+              gap: space.line + 2,
+            }}
+          >
+            {receipt.lineItems.map(li => (
+              <div key={li.name} style={{
+                display: 'flex', alignItems: 'baseline',
+                justifyContent: 'space-between', gap: space.line,
+              }}>
+                <Text role="body" tone="ink2">
+                  {li.name}{li.qty > 1 ? ` × ${li.qty}` : ''}
+                </Text>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13.5, color: color.ink }}>
+                  {li.amount}
+                </span>
+              </div>
+            ))}
+
+            <Row label="Subtotal" value={receipt.subtotal} />
+            {receipt.discount ? (
+              <Row label={receipt.discount.label} value={`− ${receipt.discount.amount}`} tone="assent" />
+            ) : null}
+            {receipt.gst ? (
+              <Row label={`GST ${receipt.gst.rate}`} value={receipt.gst.amount} />
+            ) : null}
+
+            <span aria-hidden style={{ height: 1, background: color.edge }} />
+
+            <div style={{
+              display: 'flex', alignItems: 'baseline',
+              justifyContent: 'space-between', gap: space.line,
             }}>
-              {receipt.total}
-            </span>
-            <Text role="whisper" tone={receipt.paid ? 'assent' : 'caution'}>
-              {receipt.paid
-                ? `Paid${receipt.method ? ` · ${receipt.method.toUpperCase()}` : ''}`
-                : 'Payable at the studio'}
-            </Text>
-          </div>
-
-          <details style={{
-            marginTop: space.gap,
-            borderTop: `${HAIRLINE}px solid ${color.edge}`,
-            paddingTop: space.gap,
-          }}>
-            <summary style={{ listStyle: 'none', cursor: 'pointer', minHeight: TARGET_MIN }}>
-              <Text role="whisper" tone="ink3">{receipt.number}</Text>
-            </summary>
-
-            <div style={{ display: 'grid', gap: space.line, paddingTop: space.gap }}>
-              {receipt.lineItems.map(li => (
-                <div key={li.name} style={{
-                  display: 'flex', alignItems: 'baseline',
-                  justifyContent: 'space-between', gap: space.line,
-                }}>
-                  <Text role="body" tone="ink2">
-                    {li.name}{li.qty > 1 ? ` × ${li.qty}` : ''}
-                  </Text>
-                  <Text role="body" tone="ink2">{li.amount}</Text>
-                </div>
-              ))}
-
-              <Row label="Subtotal" value={receipt.subtotal} />
-              {receipt.discount ? (
-                <Row label={receipt.discount.label} value={`− ${receipt.discount.amount}`} tone="assent" />
-              ) : null}
-              {receipt.gst ? (
-                <Row label={`GST ${receipt.gst.rate}`} value={receipt.gst.amount} />
-              ) : null}
+              <Text role="body" tone="ink">
+                {receipt.gst ? 'Total incl. GST' : 'Total'}
+              </Text>
+              <span className="am-display" style={{ fontSize: 26, fontWeight: 300 }}>
+                {receipt.total}
+              </span>
             </div>
-          </details>
+
+            <div style={{
+              display: 'flex', alignItems: 'baseline',
+              justifyContent: 'space-between', gap: space.line,
+            }}>
+              <span className="am-label" style={{ letterSpacing: '0.2em', fontSize: 9.5 }}>
+                {receipt.number}
+              </span>
+              <Text role="whisper" tone={receipt.paid ? 'assent' : 'caution'}>
+                {receipt.paid
+                  ? `Paid${receipt.method ? ` · ${receipt.method.toUpperCase()}` : ''}`
+                  : 'Payable at the studio'}
+              </Text>
+            </div>
+          </div>
         </section>
       ) : null}
 
@@ -246,8 +266,16 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
       {documents.length > 0 ? (
         <section style={{ ...column, paddingTop: space.rest }}>
           {documents.map((d, i) => (
-            <div key={d.href} style={{ marginTop: i === 0 ? 0 : space.hair }}>
-              <Button tier="forward" href={d.href}>{d.label}</Button>
+            <div key={d.href} style={{ marginTop: i === 0 ? 0 : space.line }}>
+              {/* Design 1j gives the paper the screen's filled control. The
+                  design's own label is "Pay & download invoice"; ours says
+                  only what the control actually does, because nothing in this
+                  product takes a payment — the studio settles at the counter,
+                  which the line above has just said. A button that promises
+                  to take money and then opens a PDF is a lie in a control. */}
+              <Button tier={i === 0 ? 'primary' : 'forward'} href={d.href} full={i === 0}>
+                {d.label}
+              </Button>
             </div>
           ))}
         </section>

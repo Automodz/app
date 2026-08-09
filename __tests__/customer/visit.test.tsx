@@ -105,9 +105,13 @@ describe('the visit record', () => {
       expect(h).toContain('UPI');
     });
 
-    it('the breakdown is behind a tap, and it is complete', () => {
+    it('the breakdown is stated, and it is complete', () => {
+      /* IT USED TO BE BEHIND A TAP, summarised by the invoice number — so the
+         one question a receipt exists to answer took a tap, and the control
+         that revealed it was labelled with a reference code. Design 1j states
+         the whole account on one pane, which is what a receipt is. */
       const h = html({ receipt });
-      expect(h).toContain('<details');
+      expect(h).not.toContain('<details');
       expect(h).toContain('AMZ-2026-0184');
       expect(h).toContain('Glass coating');
       expect(h).toContain('Maintenance wash');
@@ -172,8 +176,14 @@ describe('the visit record', () => {
 
   it('no card-stack — the record is photography and type', () => {
     /* `am-glass` is the one raised material. A record made of eight of them
-       is the dashboard this screen exists not to be. */
+       is the dashboard this screen exists not to be.
+
+       ONE is now permitted, and only one: design 1j puts the account on a
+       pane, because a column of figures needs an edge to be read as a
+       document rather than as more prose. The invariant being protected was
+       never "zero glass" — it was that the record is photography and type
+       with at most a single raised surface in it. */
     const h = html({ receipt, comparison: { before: 'https://x.test/b.jpg', after: 'https://x.test/a.jpg' } });
-    expect((h.match(/am-glass/g) ?? []).length).toBe(0);
+    expect((h.match(/class="am-glass"/g) ?? []).length).toBeLessThanOrEqual(1);
   });
 });
