@@ -1,30 +1,33 @@
 /**
  * A CUSTOMER SIGNS IN ONCE.
  *
- * Two bugs, one symptom: sign in, come back, and the app says "We could not
- * open your studio. Please sign in again." — then signs you out.
+ * ── WHAT IS PROVEN, AND WHAT IS NOT ─────────────────────────────────────────
+ * I first wrote this file asserting a root cause: that `createSessionCookie`
+ * refuses an ID token older than five minutes, so every return visit handed
+ * over a stale cached token and was refused. THAT IS WRONG. Measured against
+ * production afterwards: a token 377 seconds old was accepted with a 200. The
+ * five-minute rule in Firebase's documentation concerns `auth_time` and
+ * re-authentication for sensitive operations, not minting a session cookie.
  *
- * ── THE ROOT CAUSE ──────────────────────────────────────────────────────────
- * `createSessionCookie` will only accept an ID token MINTED IN THE LAST FIVE
- * MINUTES. `getIdToken()` without the force flag returns the cached token,
- * which the SDK refreshes only as it nears its hour-long expiry — so it is
- * routinely fifty minutes old.
+ * The reported failure — sign in, come back, "We could not open your studio.
+ * Please sign in again." — is therefore STILL UNDIAGNOSED. These assertions
+ * cover three things that are correct on their own merits and that make the
+ * failure survivable and diagnosable, and they claim nothing about its cause.
  *
- * On a fresh sign-in the token is seconds old and everything worked, which is
- * exactly why this survived: the happy path is the one path that cannot fail.
- * Every RETURN VISIT handed over a stale token, the server refused it with 401,
- * and the door reported it as the customer's problem.
+ *   1  THE TOKEN IS ALWAYS FRESH. A cached ID token lives an hour and refreshes
+ *      only near expiry, so a device that slept through that boundary offers an
+ *      expired one. Forcing removes a whole class of failure for one round trip.
  *
- * ── AND THEN IT MADE THINGS WORSE ───────────────────────────────────────────
- * Every failure ended in `signOut`. A dropped connection, a studio with no
- * Admin credentials, or that stale token all destroyed a Firebase session that
- * was on disk and perfectly valid, so the customer had to go through Google
- * again to get back what they already had.
+ *   2  A FAILURE DOES NOT DESTROY THE SESSION. Every failure used to end in
+ *      `signOut`, so a dropped connection or a studio with no Admin credentials
+ *      threw away a Firebase session that was on disk and perfectly valid — the
+ *      customer had to go through Google again to recover what they already had.
+ *      Whatever the true cause turns out to be, this is what made it hurt.
  *
- * ── AND THE COOKIE COULD ONLY EVER BE MINTED AT THE DOOR ────────────────────
- * The Firebase session outlives the server's fourteen-day cookie. When the
- * cookie lapsed, a signed-in customer was served the public landing page and
- * had to find the sign-in themselves. `SessionKeeper` closes that.
+ *   3  THE COOKIE CAN BE REOPENED WITHOUT THE DOOR. The Firebase session on a
+ *      device outlives the server's fourteen-day cookie, and only the cookie is
+ *      readable by a room, so a signed-in customer was served the public landing
+ *      page and had to find the sign-in themselves.
  */
 import { readFileSync } from 'fs';
 
@@ -40,7 +43,8 @@ const you = liveCodeOf('components/screens/YouRoom.tsx');
 
 describe('the ID token handed to the server is always fresh', () => {
   it('the door forces a refresh before minting a cookie', () => {
-    /* `getIdToken()` — the cached one — is what broke every return visit. */
+    /* Not a proven fix for the reported bug — see the header. It removes the
+       expired-cached-token failure, which is real but is not that bug. */
     expect(login).toMatch(/getIdToken\(true\)/);
     expect(login).not.toMatch(/getIdToken\(\s*\)/);
   });
@@ -57,6 +61,7 @@ describe('the ID token handed to the server is always fresh', () => {
   });
 });
 
+/* THIS is the part that made the reported failure hurt, whatever causes it. */
 describe('a failure to open the session does not destroy the session', () => {
   it('only an outright refusal signs the customer out', () => {
     const guard = login.slice(login.indexOf('const result = await openServerSession()'));

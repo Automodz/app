@@ -92,22 +92,23 @@ async function openServerSession(): Promise<SessionResult> {
   let idToken: string;
   try {
     /**
-     * FORCED, AND THIS IS THE WHOLE BUG.
+     * FORCED, AS A GUARANTEE RATHER THAN AS A FIX.
      *
-     * `createSessionCookie` will only accept an ID token MINTED IN THE LAST
-     * FIVE MINUTES. `getIdToken()` without the flag returns the cached one,
-     * which the SDK refreshes only as it nears its hour-long expiry — so it is
-     * routinely fifty minutes old.
+     * I first shipped this claiming `createSessionCookie` refuses an ID token
+     * older than five minutes. That is WRONG, and measured against production:
+     * a token 377 seconds old was accepted with a 200. The five-minute rule in
+     * Firebase's documentation is about `auth_time` and re-authentication for
+     * sensitive operations, not about minting a session cookie.
      *
-     * On a fresh sign-in the token is seconds old and everything worked. On
-     * every RETURN VISIT the effect below handed over a stale one, the server
-     * refused it, and the customer was told "We could not open your studio.
-     * Please sign in again." and then SIGNED OUT — losing a perfectly good
-     * session because of a cache. Sign in, wait five minutes, reload: broken,
-     * every time, for everyone.
+     * The flag stays because it is still the right call, for a smaller reason:
+     * a cached ID token lives an hour, and `getIdToken()` refreshes it only as
+     * it nears expiry. A device that was asleep, offline or backgrounded across
+     * that boundary hands over an expired token and the server correctly
+     * refuses it. Forcing costs one round trip on the one action that decides
+     * whether somebody is signed in.
      *
-     * One network round trip, once per session open. That is the correct price
-     * for the thing that decides whether somebody is signed in.
+     * It is NOT the explanation for the reported failure. That is still open —
+     * see the note in `SessionKeeper`.
      */
     idToken = await current.getIdToken(true);
   } catch {

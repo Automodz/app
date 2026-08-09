@@ -88,8 +88,10 @@ export function SessionKeeper({ signedIn }: { signedIn: boolean }) {
         return;
       }
 
-      /* FORCED. `createSessionCookie` refuses an ID token older than five
-         minutes, and the cached one is routinely an hour old. */
+      /* FORCED. A cached ID token lives an hour and refreshes only near its
+         expiry, so a device that slept through that boundary offers an expired
+         one. (It is NOT true that a cookie mint refuses anything older than
+         five minutes — measured, 377 seconds old, accepted.) */
       const token = await idToken(true);
       if (cancelled || !token) return;
 
