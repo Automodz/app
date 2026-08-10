@@ -1,7 +1,10 @@
 'use client';
 /**
- * Vehicle 360 - the operational history of one car, keyed by registration
- * number. Every booking, every walk-in, every invoice, every technician,
+ * Vehicle 360 - the operational history of one car, found by registration.
+ *
+ * The plate is a SEARCH here, not an ownership claim (§P1.8): a walk-in job has
+ * no vehicleId because the car was never in anyone's garage, and the studio
+ * still needs to find it. Nothing on this page asserts whose car it is. Every booking, every walk-in, every invoice, every technician,
  * every photo - one chronological stream. Reached from any workspace or
  * customer page by tapping the reg no.
  */
@@ -9,7 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Car, Wrench, FileText, CalendarClock, ChevronRight, MessageCircle } from 'lucide-react';
 import {
-  getJobsForVehicle, getBookingsForVehicle, getInvoicesForVehicle,
+  findJobsByPlate, findBookingsByPlate, findInvoicesByPlate,
   isWashJob, jobTimeline, fmtMin,
   invoicePublicUrl, buildInvoiceWhatsAppLink,
 } from '@/lib/firebaseService';
@@ -29,7 +32,7 @@ export default function VehicleHistoryPage() {
 
   const load = useCallback(() => {
     setLoading(true); setError(false);
-    Promise.all([getJobsForVehicle(regNo), getBookingsForVehicle(regNo), getInvoicesForVehicle(regNo)])
+    Promise.all([findJobsByPlate(regNo), findBookingsByPlate(regNo), findInvoicesByPlate(regNo)])
       .then(([j, b, i]) => { setJobs(j); setBookings(b); setInvoices(i); })
       .catch(e => { console.error('vehicle history load failed', e); setError(true); })
       .finally(() => setLoading(false));

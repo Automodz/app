@@ -25,7 +25,6 @@ import type {
 } from '@/lib/types';
 import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
 
-const normReg = (reg: string) => reg.replace(/\s+/g, '').toUpperCase();
 
 const millis = (t?: { toMillis?: () => number }) => t?.toMillis?.() ?? 0;
 
@@ -110,14 +109,31 @@ async function _loadCustomerPicture(session: {
   /* A handful of cars, so a handful of parallel queries. Every one is scoped by
      the session's uid or by a vehicle id read from under that uid. */
   const cars: CarPicture[] = await Promise.all(vehicles.map(async vehicle => {
-    const reg = normReg(vehicle.registrationNumber ?? '');
+    /**
+     * EVERY EDGE IS AN ID. THE PLATE JOINS NOTHING.
+     *
+     * Bookings and jobs were attached to a car by `vehicleRegNo`, and that
+     * query — not the stored data — produced the corruption in production: a
+     * booking labelled "Honda City" carrying the BMW's plate appeared in the
+     * BMW's room, while its own `vehicleId` named the i20 all along. Three
+     * bookings were mis-parented by a string comparison.
+     *
+     * A registration is a display snapshot. It is edited, mistyped, reissued
+     * and transferred between cars; it has never been an identity. §P1.6 — it
+     * may never establish ownership, and §P1.7 — a record with no `vehicleId`
+     * is a record whose vehicle is UNKNOWN. There is deliberately no fallback:
+     * finding "another vehicle with this plate" is precisely the bug.
+     *
+     * A job with no `vehicleId` therefore attaches to no car until the value
+     * is backfilled from its booking, which is the authoritative parent.
+     */
     const [prot, vis, bk, jb] = await Promise.all([
       db.collection('protections').where('vehicleId', '==', vehicle.id).get(),
       db.collection('visits').where('vehicleId', '==', vehicle.id).get(),
       db.collection('bookings')
-        .where('userId', '==', uid).where('vehicleRegNo', '==', reg).get(),
+        .where('userId', '==', uid).where('vehicleId', '==', vehicle.id).get(),
       db.collection('jobs')
-        .where('customerId', '==', uid).where('vehicleRegNo', '==', reg).get(),
+        .where('customerId', '==', uid).where('vehicleId', '==', vehicle.id).get(),
     ]);
 
     const byNewest = <T extends { createdAt?: { toMillis?: () => number } }>(a: T, b: T) =>

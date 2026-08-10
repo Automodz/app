@@ -59,12 +59,12 @@ it('loads one picture covering every car', async () => {
   expect(getUserNotifications).toHaveBeenCalledWith('u1');
 });
 
-it('reads protections and visits by vehicle id, and jobs and bookings by plate', async () => {
+it('reads EVERY collection by vehicle id — never by plate', async () => {
   await loadPicture(USER);
   expect(getProtections.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
   expect(getVisitsForVehicle.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
-  expect(getBookingsForVehicle.mock.calls.map(c => c[0])).toEqual(['GJ 01 AA 1111', 'GJ 01 BB 2222']);
-  expect(getJobsForVehicle.mock.calls.map(c => c[0])).toEqual(['GJ 01 AA 1111', 'GJ 01 BB 2222']);
+  expect(getBookingsForVehicle.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
+  expect(getJobsForVehicle.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
 });
 
 it('does one query per car per collection — no N+1 walk', async () => {
@@ -86,7 +86,7 @@ it('rejects when a read is refused, so the room shows its recoverable state', as
 });
 
 it('rejects rather than rendering half a garage when one car fails', async () => {
-  getBookingsForVehicle.mockImplementation((reg: string) =>
-    reg.includes('BB') ? Promise.reject(new Error('nope')) : Promise.resolve([]));
+  getBookingsForVehicle.mockImplementation((vehicleId: string) =>
+    vehicleId === 'v2' ? Promise.reject(new Error('nope')) : Promise.resolve([]));
   await expect(loadPicture(USER)).rejects.toThrow('nope');
 });

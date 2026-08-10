@@ -90,8 +90,9 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
     const [protections, visits, bookings, jobs] = await Promise.all([
       getProtections(vehicle.id),
       getVisitsForVehicle(vehicle.id),
-      getBookingsForVehicle(vehicle.registrationNumber, user.uid),
-      getJobsForVehicle(vehicle.registrationNumber, user.uid),
+      /* §P1.6 — the ID, never the plate. See lib/server/customerPicture.ts. */
+      getBookingsForVehicle(vehicle.id, user.uid),
+      getJobsForVehicle(vehicle.id, user.uid),
     ]);
     return { vehicle, protections, visits, bookings, jobs };
   }));

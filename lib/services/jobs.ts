@@ -98,6 +98,18 @@ export const createJobFromBooking = async (
   const job: Record<string, unknown> = {
     source: 'booking',
     bookingId: booking.id,
+    /**
+     * THE TWO IDS THIS FUNCTION ALREADY HELD AND THREW AWAY.
+     *
+     * It copied `vehicleName` and `vehicleRegNo` — display snapshots — and not
+     * `vehicleId` or `customerId`, both of which are right there on the
+     * booking. That omission is why 15 of 18 production jobs carry no
+     * customer, and why the customer picture had to fall back to joining on a
+     * plate string. Written at creation, from the authoritative parent, never
+     * derived from a name or a registration.
+     */
+    vehicleId: booking.vehicleId,
+    customerId: booking.userId,
     customerName: booking.userName,
     customerPhone: booking.userPhone.replace(/\D/g, '').slice(-10),
     vehicleName: booking.vehicleName,

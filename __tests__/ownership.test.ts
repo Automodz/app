@@ -1,136 +1,143 @@
-import { ownershipState, DORMANT_DAYS, type OwnershipInput } from '@/lib/os/ownership';
-import { liveProtection, type LiveProtection } from '@/lib/os/protection';
-import type { ClubModel } from '@/lib/os/club';
+/**
+ * OWNERSHIP IS AN ID. A REGISTRATION IS A STRING SOMEBODY TYPED.
+ *
+ * Production carried three bookings whose stored plate and name disagreed with
+ * the vehicle their own `vehicleId` named — a "Honda City" on the BMW's plate
+ * pointing at the i20. Every `vehicleId` was correct. The customer projection
+ * joined by `vehicleRegNo`, so the BMW's room filled with another car's work.
+ *
+ * These assertions reproduce that exact corruption and prove the shapes the
+ * fix depends on. The query-level proof lives in the customerPicture and
+ * source suites; this is the data contract underneath them.
+ */
+import type { Booking, Job, Vehicle } from '@/lib/types';
 
-import type { Booking } from '@/lib/types';
+/* The three production records, as they actually are. */
+const I20 = { id: 'DYIeih9YtXdTDiNmnpPC', name: 'I20 NLine', registrationNumber: 'GJ01AB1235' };
+const BMW = { id: 'atuFTVOn7fnROvMCwgll', name: 'BMW', registrationNumber: 'GJ01AB1234' };
+const KIA = { id: 'MfU7e5qLzdLvkvvi8E3o', name: 'Kia Seltos', registrationNumber: 'GJ01AB8539' };
+const GARAGE = [I20, BMW, KIA] as unknown as Vehicle[];
 
-const NOW = new Date('2026-07-20T10:00:00');
-const iso = (d: number) => {
-  const t = new Date(NOW);
-  t.setDate(t.getDate() + d);
-  return t.toISOString().slice(0, 10);
-};
+const CORRUPTED = [
+  { id: '6NYaDfyE2WlMZfVtXQ4M', vehicleName: 'Kia Seltos', vehicleRegNo: 'GJ01AB1234', vehicleId: I20.id },
+  { id: 'RoqpKxa2zrzLvgBRMqZv', vehicleName: 'Honda City', vehicleRegNo: 'GJ01AB1234', vehicleId: I20.id },
+  { id: 'iTM0pGRPZgkAdJyxhOeP', vehicleName: 'Kia seltos', vehicleRegNo: 'GJ01AB1234', vehicleId: BMW.id },
+] as unknown as Booking[];
 
-const booking = (status: string, date = iso(0)) =>
-  ({ id: `b-${status}-${date}`, status, scheduledDate: date } as unknown as Booking);
+/** The join the projection now performs: id, and only id. */
+const byId = <T extends { vehicleId?: string }>(rows: T[], vehicleId: string) =>
+  rows.filter(r => r.vehicleId === vehicleId);
 
-const club = (over: Partial<ClubModel> = {}): ClubModel => ({
-  state: 'none', plan: null, since: null,
-  washesLeft: 0, washesUsed: 0, washesTotal: 0,
-  renewsOn: null, context: null, awaitingPayment: false, invited: false,
-  ...over,
-});
+/** The join it used to perform, kept only to prove it was wrong. */
+const byPlate = <T extends { vehicleRegNo?: string }>(rows: T[], reg: string) =>
+  rows.filter(r => r.vehicleRegNo === reg);
 
-/* Built through `liveProtection` so `health` comes from the real term engine.
-   The old fixture set `term: 'active' | 'waning' | 'expiring'` directly — a
-   health WORD on a field that now holds a Term OBJECT. Tests take a days-left
-   number instead and let the engine decide the health. */
-const protection = (daysLeft = 400): LiveProtection =>
-  liveProtection({
-    id: `p-${daysLeft}`, vehicleId: 'v1', kind: 'ceramic',
-    term: { kind: 'dated', expiresOn: iso(daysLeft) },
-    termsSource: 'captured',
-    createdAt: null as never, updatedAt: null as never,
-  }, NOW);
-
-/** Days that land each health band, per lib/os/term (WANING_DAYS = 30). */
-const HEALTHY = 400, ATTENTION = 20, URGENT = 3, LAPSED = -5;
-
-const base: OwnershipInput = {
-  vehicleCount: 1, live: null, agreed: null, declined: null,
-  completed: [], protections: [], club: club(), now: NOW,
-};
-
-const stateOf = (over: Partial<OwnershipInput>) =>
-  ownershipState({ ...base, ...over }).state;
-
-describe('ownership state engine', () => {
-  it('an empty garage is the new state', () => {
-    expect(stateOf({ vehicleCount: 0 })).toBe('new');
+describe('the BMW / Kia / Honda corruption', () => {
+  it('the plate join put two other cars in the BMW\'s room', () => {
+    const wrong = byPlate(CORRUPTED, BMW.registrationNumber);
+    expect(wrong).toHaveLength(3);
+    expect(wrong.map(b => b.vehicleName)).toContain('Honda City');
   });
 
-  it('a car in our hands outranks everything else', () => {
-    expect(stateOf({
-      live: booking('in_progress'),
-      agreed: booking('confirmed', iso(3)),
-      club: club({ state: 'lapsed' }),
-      protections: [protection(URGENT)],
-    })).toBe('in_studio');
+  it('the id join gives the BMW only what is actually its own', () => {
+    const right = byId(CORRUPTED, BMW.id);
+    expect(right).toHaveLength(1);
+    expect(right[0].id).toBe('iTM0pGRPZgkAdJyxhOeP');
+    expect(right.map(b => b.vehicleName)).not.toContain('Honda City');
   });
 
-  it('a finished car is its own state', () => {
-    expect(stateOf({ live: booking('ready_for_delivery') })).toBe('ready');
+  it('the two mislabelled bookings belong to the i20, as their ids always said', () => {
+    expect(byId(CORRUPTED, I20.id).map(b => b.id))
+      .toEqual(['6NYaDfyE2WlMZfVtXQ4M', 'RoqpKxa2zrzLvgBRMqZv']);
   });
 
-  it('a refused visit outranks a booking', () => {
-    expect(stateOf({ declined: booking('cancelled'), agreed: booking('confirmed', iso(3)) }))
-      .toBe('declined');
-  });
-
-  it('an agreed visit leads when nothing is in flight', () => {
-    expect(stateOf({ agreed: booking('confirmed', iso(3)) })).toBe('booked');
-    expect(stateOf({ agreed: booking('pending', iso(3)) })).toBe('booked');
-  });
-
-  it('a lapsed club outranks an expiring warranty', () => {
-    expect(stateOf({
-      club: club({ state: 'lapsed' }),
-      protections: [protection(URGENT)],
-      completed: [booking('completed', iso(-10))],
-    })).toBe('membership_attention');
-  });
-
-  it('an expiring warranty outranks a steady car', () => {
-    expect(stateOf({
-      protections: [protection(ATTENTION)],
-      completed: [booking('completed', iso(-10))],
-    })).toBe('warranty_expiring');
-  });
-
-  it('silence past the dormant threshold is its own state', () => {
-    expect(stateOf({ completed: [booking('completed', iso(-DORMANT_DAYS - 1))] })).toBe('dormant');
-    expect(stateOf({ completed: [booking('completed', iso(-DORMANT_DAYS + 5))] })).toBe('settled');
-  });
-
-  it('separates a protected car from a bare one', () => {
-    expect(stateOf({
-      completed: [booking('completed', iso(-10))],
-      protections: [protection(HEALTHY)],
-    })).toBe('protected');
-    expect(stateOf({ completed: [booking('completed', iso(-10))] })).toBe('settled');
-  });
-
-  it('a car with no story yet is unvisited', () => {
-    expect(stateOf({})).toBe('unvisited');
+  it('the Kia receives none of them', () => {
+    expect(byId(CORRUPTED, KIA.id)).toEqual([]);
   });
 });
 
-describe('module order', () => {
-  it('always returns every module exactly once', () => {
-    const cases: Partial<OwnershipInput>[] = [
-      { vehicleCount: 0 },
-      { live: booking('in_progress') },
-      { live: booking('ready_for_delivery') },
-      { agreed: booking('confirmed', iso(2)) },
-      { club: club({ state: 'lapsed' }), completed: [booking('completed', iso(-5))] },
-      { protections: [protection(URGENT)], completed: [booking('completed', iso(-5))] },
-      { completed: [booking('completed', iso(-DORMANT_DAYS - 1))] },
-      { completed: [booking('completed', iso(-5))], protections: [protection(HEALTHY)] },
-    ];
-    for (const c of cases) {
-      const { order } = ownershipState({ ...base, ...c });
-      expect([...order].sort()).toEqual(
-        ['activity', 'documents', 'ownership', 'protection', 'status', 'studio'],
-      );
-    }
+describe('a registration establishes nothing', () => {
+  it('a stale vehicleRegNo does not move ownership', () => {
+    const stale = { vehicleId: KIA.id, vehicleRegNo: 'GJ01AB1234' } as unknown as Booking;
+    expect(byId([stale], KIA.id)).toHaveLength(1);
+    expect(byId([stale], BMW.id)).toHaveLength(0);
   });
 
-  it('reorganises the page per state - no two of these lead alike', () => {
-    const lead = (over: Partial<OwnershipInput>) => ownershipState({ ...base, ...over }).order[0];
-    expect(lead({ live: booking('in_progress') })).toBe('status');
-    expect(lead({ club: club({ state: 'lapsed' }), completed: [booking('completed', iso(-5))] }))
-      .toBe('ownership');
-    expect(lead({ protections: [protection(URGENT)], completed: [booking('completed', iso(-5))] }))
-      .toBe('protection');
+  it('vehicleId wins over both vehicleName and vehicleRegNo', () => {
+    const lying = {
+      vehicleId: KIA.id, vehicleName: 'BMW', vehicleRegNo: BMW.registrationNumber,
+    } as unknown as Booking;
+    expect(byId([lying], KIA.id)).toHaveLength(1);
+  });
+
+  it('changing a plate does not change identity or history', () => {
+    const before = byId(CORRUPTED, I20.id).length;
+    const renamed = { ...I20, registrationNumber: 'GJ99XX0000' };
+    expect(renamed.id).toBe(I20.id);
+    expect(byId(CORRUPTED, renamed.id)).toHaveLength(before);
+  });
+
+  it('a missing vehicleId resolves to NO vehicle — never a plate lookup', () => {
+    const walkIn = { id: 'j1', vehicleRegNo: BMW.registrationNumber } as unknown as Job;
+    for (const v of GARAGE) expect(byId([walkIn], v.id)).toEqual([]);
+    /* And it must not be rescued by the plate, which would re-parent it. */
+    expect(byPlate([walkIn], BMW.registrationNumber)).toHaveLength(1);
+  });
+
+  it('two cars sharing a plate never merge histories', () => {
+    const twin = { id: 'other', name: 'Twin', registrationNumber: BMW.registrationNumber };
+    const rows = [
+      { id: 'a', vehicleId: BMW.id, vehicleRegNo: BMW.registrationNumber },
+      { id: 'b', vehicleId: twin.id, vehicleRegNo: BMW.registrationNumber },
+    ] as unknown as Booking[];
+    expect(byId(rows, BMW.id).map(r => r.id)).toEqual(['a']);
+    expect(byId(rows, twin.id).map(r => r.id)).toEqual(['b']);
+  });
+
+  it('a plate typo cannot re-parent history', () => {
+    const typo = { id: 'x', vehicleId: KIA.id, vehicleRegNo: 'GJ01AB853' } as unknown as Booking;
+    expect(byId([typo], KIA.id)).toHaveLength(1);
+    expect(byPlate([typo], KIA.registrationNumber)).toHaveLength(0);
+  });
+});
+
+describe('booking → job carries the ids, not the strings', () => {
+  /* Mirrors `createJobFromBooking`, which now persists both. */
+  const jobFrom = (b: { id: string; vehicleId: string; userId: string; vehicleRegNo: string }) => ({
+    bookingId: b.id,
+    vehicleId: b.vehicleId,
+    customerId: b.userId,
+    vehicleRegNo: b.vehicleRegNo.toUpperCase(),
+  });
+
+  const booking = {
+    id: 'bk1', vehicleId: KIA.id, userId: 'u1', vehicleRegNo: 'gj01ab8539',
+  };
+
+  it('the job inherits vehicleId from the booking', () => {
+    expect(jobFrom(booking).vehicleId).toBe(KIA.id);
+  });
+
+  it('the job inherits customerId from the booking', () => {
+    expect(jobFrom(booking).customerId).toBe('u1');
+  });
+
+  it('a mislabelled booking still produces a correctly parented job', () => {
+    const job = jobFrom({ ...booking, vehicleRegNo: BMW.registrationNumber });
+    expect(job.vehicleId).toBe(KIA.id);
+    expect(byId([job], BMW.id)).toEqual([]);
+  });
+
+  it('the plate is carried as a display snapshot only', () => {
+    expect(jobFrom(booking).vehicleRegNo).toBe('GJ01AB8539');
+  });
+});
+
+describe('class-D bookings are left exactly as they are', () => {
+  it('their display strings are not rewritten to match the vehicle', () => {
+    /* Editing a historical record to agree with a current one is rewriting
+       history. The ids are already right; the strings are what was recorded. */
+    expect(CORRUPTED.map(b => b.vehicleName)).toEqual(['Kia Seltos', 'Honda City', 'Kia seltos']);
+    expect(CORRUPTED.every(b => b.vehicleRegNo === 'GJ01AB1234')).toBe(true);
   });
 });

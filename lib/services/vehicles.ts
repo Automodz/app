@@ -40,8 +40,15 @@ export const updateVehicle = (uid: string, vid: string, data: Partial<Vehicle>) 
 
 export const deleteVehicle = (uid: string, vid: string) =>
   deleteDoc(doc(db, 'users', uid, 'vehicles', vid));
-/* ── Vehicle 360 - everything ever done to one car, keyed by reg no ──
-   Single-equality queries only (no composite indexes needed); sorted client-side. */
+/* ── Vehicle 360 — everything ever done to one car, keyed by VEHICLE ID ──
+   These read by `vehicleId`, never by registration. A plate is a display
+   snapshot: mistyped, reissued, transferred between cars. Joining on one put a
+   "Honda City" booking in the BMW's room in production. §P1.6 — a registration
+   may never establish ownership, and §P1.10 applies the same rule to the
+   studio's own Vehicle-360 as to the customer's garage.
+
+   `normReg` remains below for DISPLAY and duplicate-registration diagnostics
+   only (§P1.8). Single-equality queries, sorted client-side. */
 
 import type { Booking, Invoice, Job } from '../types';
 
@@ -66,11 +73,11 @@ const normReg = (reg: string) => reg.replace(/\s+/g, '').toUpperCase();
  * every job on a plate, including walk-ins that belong to no account. A customer
  * surface must always pass it.
  */
-export const getJobsForVehicle = async (regNo: string, uid?: string): Promise<Job[]> => {
+export const getJobsForVehicle = async (vehicleId: string, uid?: string): Promise<Job[]> => {
   const snap = await getDocs(query(
     collection(db, 'jobs'),
     ...(uid ? [where('customerId', '==', uid)] : []),
-    where('vehicleRegNo', '==', normReg(regNo)),
+    where('vehicleId', '==', vehicleId),
   ));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Job))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
@@ -80,22 +87,22 @@ export const getJobsForVehicle = async (regNo: string, uid?: string): Promise<Jo
  *  grants read on `userId == uid`, so the query must not be able to match a
  *  document belonging to anyone else - a plate that passes between two
  *  customers is exactly the case that would otherwise deny the whole read. */
-export const getBookingsForVehicle = async (regNo: string, uid?: string): Promise<Booking[]> => {
+export const getBookingsForVehicle = async (vehicleId: string, uid?: string): Promise<Booking[]> => {
   const snap = await getDocs(query(
     collection(db, 'bookings'),
     ...(uid ? [where('userId', '==', uid)] : []),
-    where('vehicleRegNo', '==', normReg(regNo)),
+    where('vehicleId', '==', vehicleId),
   ));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 };
 
 /** Same scoping; the invoices rule grants read on `customerId == uid`. */
-export const getInvoicesForVehicle = async (regNo: string, uid?: string): Promise<Invoice[]> => {
+export const getInvoicesForVehicle = async (vehicleId: string, uid?: string): Promise<Invoice[]> => {
   const snap = await getDocs(query(
     collection(db, 'invoices'),
     ...(uid ? [where('customerId', '==', uid)] : []),
-    where('vehicleRegNo', '==', normReg(regNo)),
+    where('vehicleId', '==', vehicleId),
   ));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
@@ -134,4 +141,51 @@ export const setPublicHistoryConsent = async (
     at: serverTimestamp(),
   });
   await batch.commit();
+};
+
+/* ── THE PLATE SEARCH — a diagnostic, never an ownership claim ──────────── */
+
+/**
+ * Everything the studio has ever done under one registration.
+ *
+ * This DOES read by plate, and that is correct here for a reason the
+ * ownership readers above do not share: a walk-in job has no `vehicleId`,
+ * because the car was never in anyone's garage. The studio still worked on it,
+ * still holds photographs of it, and still needs to find that record when the
+ * same car returns. Fifteen of eighteen production jobs are exactly this.
+ *
+ * §P1.8 — a registration may be used for SEARCH and DIAGNOSIS. What it may
+ * never do is establish ownership, which is why this function is named for
+ * what it is and returns records without asserting whose they are. A caller
+ * that wants "this customer's car" must use `getJobsForVehicle(vehicleId)`.
+ *
+ * Staff only: it deliberately crosses customer boundaries, which is the whole
+ * point of a plate search at the counter, and is why no customer surface may
+ * call it.
+ */
+export const findJobsByPlate = async (regNo: string): Promise<Job[]> => {
+  const snap = await getDocs(query(
+    collection(db, 'jobs'),
+    where('vehicleRegNo', '==', normReg(regNo)),
+  ));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Job))
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+};
+
+export const findBookingsByPlate = async (regNo: string): Promise<Booking[]> => {
+  const snap = await getDocs(query(
+    collection(db, 'bookings'),
+    where('vehicleRegNo', '==', normReg(regNo)),
+  ));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking))
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+};
+
+export const findInvoicesByPlate = async (regNo: string): Promise<Invoice[]> => {
+  const snap = await getDocs(query(
+    collection(db, 'invoices'),
+    where('vehicleRegNo', '==', normReg(regNo)),
+  ));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice))
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 };

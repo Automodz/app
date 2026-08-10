@@ -451,7 +451,15 @@ export interface Job {
   id: string;
   source: 'walk_in' | 'booking';
   bookingId?: string;
-  customerId?: string;        // users uid when phone-matched
+  /**
+   * THE AUTHORITATIVE CAR. Inherited from the booking at creation, never
+   * derived from `vehicleRegNo` — a registration is a display snapshot, and
+   * joining on one put a "Honda City" booking in the BMW's room. Absent for a
+   * walk-in whose car was never in anyone's garage, and absent then means
+   * UNKNOWN: nothing may look up another vehicle by matching the plate.
+   */
+  vehicleId?: string;
+  customerId?: string;        // the booking's owner, or a phone match for a walk-in
   customerName: string;
   customerPhone: string;
   vehicleName: string;

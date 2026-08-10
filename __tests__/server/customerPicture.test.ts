@@ -90,12 +90,17 @@ it('never issues an unscoped query against an owned collection', async () => {
   }
 });
 
-it('normalises the plate the way the stored documents are keyed', async () => {
+it('NEVER joins a record to a car by its registration', async () => {
+  /* The production defect: a booking labelled "Honda City" carrying the BMW's
+     plate appeared in the BMW's room, while its own `vehicleId` named the i20.
+     The query — not the data — mis-parented it. §P1.6, §P1.9. */
   await loadCustomerPicture({ uid: 'u1' });
-  const regs = calls.flatMap(c => c.wheres)
-    .filter(([f]) => f === 'vehicleRegNo').map(([, , v]) => v);
-  expect(regs).toEqual(expect.arrayContaining(['GJ01KP4471', 'GJ01ZZ9999']));
-  for (const r of regs) expect(String(r)).not.toMatch(/\s/);
+  const fields = calls.flatMap(c => c.wheres).map(([f]) => f);
+  expect(fields).not.toContain('vehicleRegNo');
+
+  for (const c of calls.filter(x => x.path === 'bookings' || x.path === 'jobs')) {
+    expect(c.wheres.some(([f, op]) => f === 'vehicleId' && op === '==')).toBe(true);
+  }
 });
 
 it('does one query per car per collection — no N+1 walk', async () => {
