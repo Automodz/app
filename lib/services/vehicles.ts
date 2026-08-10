@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, updateDoc, deleteDoc, deleteField,
-  getDocs, serverTimestamp, query, where,
+  getDocs, serverTimestamp, query, where, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Vehicle } from '../types';
@@ -99,4 +99,39 @@ export const getInvoicesForVehicle = async (regNo: string, uid?: string): Promis
   ));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice))
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
+};
+
+/* ── PUBLIC HISTORY CONSENT ─────────────────────────────────────────────── */
+
+/**
+ * Grant or revoke permission to show this car's service history publicly.
+ *
+ * Two writes in one batch: the flag the projection reads, and a permanent log
+ * entry. The log is what answers "was this public on the day that buyer saw
+ * it" — a boolean cannot, because it only knows the present.
+ *
+ * ONLY THE OWNER. `uid` scopes the path, so a caller cannot consent on behalf
+ * of anyone else; the rules enforce the same thing server-side. The studio has
+ * no way in here at all, which is deliberate — see lib/os/consent.ts.
+ */
+export const setPublicHistoryConsent = async (
+  uid: string, vid: string, granted: boolean,
+) => {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'users', uid, 'vehicles', vid), {
+    publicHistoryConsent: {
+      granted,
+      /* Both stamps are kept. Clearing the other one on each change would
+         destroy the history the log exists to preserve. */
+      ...(granted ? { grantedAt: serverTimestamp() } : { revokedAt: serverTimestamp() }),
+    },
+    updatedAt: serverTimestamp(),
+  });
+  batch.set(doc(collection(db, 'users', uid, 'vehicles', vid, 'consentLog')), {
+    kind: 'publicHistory',
+    action: granted ? 'granted' : 'revoked',
+    byUid: uid,
+    at: serverTimestamp(),
+  });
+  await batch.commit();
 };

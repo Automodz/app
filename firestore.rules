@@ -73,6 +73,21 @@ service cloud.firestore {
           allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
           allow create, update, delete: if request.auth != null && isAdmin();
         }
+
+        // ── CONSENT LOG ──────────────────────────────────────────────────
+        //    Permission to publish this car's service record (screen 17) is
+        //    the owner's alone, and every change is kept forever so the
+        //    question "was this public on the day that buyer saw it" has an
+        //    answer. APPEND-ONLY: not even the owner may edit or delete an
+        //    entry, because a consent trail that can be rewritten is not a
+        //    trail. The studio cannot write here at all — an admin who could
+        //    grant consent on a customer's behalf would defeat the point of
+        //    asking. See lib/os/consent.ts.
+        match /consentLog/{eventId} {
+          allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+          allow create: if request.auth != null && request.auth.uid == userId;
+          allow update, delete: if false;
+        }
       }
     }
 

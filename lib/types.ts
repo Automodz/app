@@ -63,6 +63,34 @@ export interface Vehicle {
   odometer?: number;
   /** The model year, as the owner gives it. Part of the car's one-line descriptor. */
   year?: number;
+  /**
+   * MAY THIS CAR'S SERVICE HISTORY BE SHOWN PUBLICLY?
+   *
+   * Design screen 17 puts "detailed here since 2021 · 11 visits · 340 photos ·
+   * original paint" on a listing anyone can open. That is one customer's
+   * record shown to strangers, so it is consent, and consent has rules:
+   *
+   *   ABSENT MEANS NO. Not "not asked yet", not "probably fine" — no. Every
+   *   existing car is therefore private until its owner says otherwise, and
+   *   nobody is grandfathered in.
+   *
+   *   IT BELONGS TO THE CAR, NOT THE LISTING. A listing is created, edited and
+   *   deleted by the studio; consent must outlive that and cannot be acquired
+   *   by making a listing.
+   *
+   *   IT IS NEVER INFERRED. Not from owning the car, not from completing a
+   *   visit, not from uploading photographs, not from listing it for sale.
+   *   Only an explicit act by the owner grants it, and any act revokes it
+   *   immediately.
+   *
+   * `revokedAt` is kept rather than the record being deleted, so the audit
+   * trail can answer "was this public on the day that buyer saw it".
+   */
+  publicHistoryConsent?: {
+    granted: boolean;
+    grantedAt?: Timestamp;
+    revokedAt?: Timestamp;
+  };
   createdAt: Timestamp;
 }
 
@@ -658,6 +686,15 @@ export interface CarListing {
   ownership: number;          // 1st/2nd/3rd owner
   color: string;
   regNo?: string;             // admin-only, masked publicly
+  /**
+   * The car in someone's garage this listing is for, when it is one of ours.
+   * Without it a listing has no service record to show and screen 17's
+   * "Its record with us" cannot be produced at all — which is the correct
+   * behaviour for a trade-in the studio has never touched.
+   */
+  vehicleId?: string;
+  /** Whose garage `vehicleId` lives in. Needed to read the consent flag. */
+  vehicleOwnerId?: string;
   description: string;
   photos: CarPhoto[];
   status: CarListingStatus;

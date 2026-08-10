@@ -13,7 +13,8 @@
  * Money is `formatCurrency` from `lib/utils` — the one money helper in the
  * product. There is no second price format here.
  */
-import type { CarListing, SellRequest } from '@/lib/types';
+import type { CarListing, SellRequest, Vehicle, Visit } from '@/lib/types';
+import { publicHistoryOf, type PublicHistory } from '@/lib/os/consent';
 import { formatCurrency } from '@/lib/utils';
 import {
   search, statusWord, isBuyable, kmWord, ownerWord, BUDGETS, FUELS,
@@ -110,6 +111,13 @@ export function toMarket(
 export interface ListingFact { label: string; value: string }
 
 export interface ListingModel {
+  /**
+   * THE CAR'S RECORD WITH US — screen 17, and the one place a private record
+   * crosses into public. `null` unless the OWNER has explicitly consented; see
+   * lib/os/consent.ts for why the decision lives there and not here. A screen
+   * holding `null` cannot leak a count, because it has no count.
+   */
+  history: PublicHistory | null;
   id: string;
   title: string;
   price: string;
@@ -130,11 +138,26 @@ export interface ListingModel {
 
 export function toListing(
   c: CarListing, all: CarListing[] = [], savedIds: string[] = [],
+  /**
+   * The car in the owner's garage, when this listing is for one of ours, plus
+   * what the studio has done to it. Absent for a trade-in the studio never
+   * touched — and absent is the safe default, because `publicHistoryOf`
+   * answers `null` for anything it is not explicitly permitted to publish.
+   */
+  record?: {
+    vehicle: Pick<Vehicle, 'publicHistoryConsent'>;
+    visits: Pick<Visit, 'servicedOn' | 'stages'>[];
+    protections: { label: string; detail: string }[];
+    photographs: number;
+    since?: string;
+  },
 ): ListingModel {
   const saved = new Set(savedIds);
   const buyable = isBuyable(c);
 
   return {
+    /* THE GATE. One call, one answer, and no screen may reach past it. */
+    history: record ? publicHistoryOf(record) : null,
     id: c.id,
     title: c.title,
     price: formatCurrency(c.price),
