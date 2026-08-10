@@ -3,14 +3,14 @@ import { roomFor, activeSlotFor, chromeFor, slots, primaryAction, STUDIO } from 
 const CASES: [string, string | undefined][] = [
   ['/', '/'],
   ['/garage', '/garage'],
-  ['/vehicle', '/vehicle'],
-  ['/vehicle/anything', '/vehicle'],
+  ['/vehicle', '/garage'],
+  ['/vehicle/anything', '/garage'],
   ['/history', '/garage'],
   ['/history/ceramic-2026-07', '/garage'],
   ['/studio', STUDIO],
   ['/studio/arrange', STUDIO],
   ['/studio/arrange/step-2', STUDIO],
-  ['/membership', STUDIO],
+  ['/membership', '/membership'],
   ['/you', '/you'],
   ['/admin', undefined],
   ['/admin/bookings', undefined],
@@ -48,7 +48,20 @@ describe('route mapping', () => {
   });
 
   it('the dock is five slots, in the design\'s order', () => {
-    expect(slots).toEqual(['/', '/vehicle', '/studio', '/garage', '/you']);
+    expect(slots).toEqual(['/', '/studio', '/garage', '/membership', '/you']);
+  });
+
+  it('the car is reached through the Garage, not a slot of its own', () => {
+    /* A dock slot for "the car" has to answer WHICH car in the navigation,
+       and choosing between cars is the collection's question. */
+    expect(slots).not.toContain('/vehicle');
+    expect(activeSlotFor('/vehicle')).toBe('/garage');
+    expect(activeSlotFor('/vehicle?car=abc'.split('?')[0])).toBe('/garage');
+  });
+
+  it('the Club is its own slot and lights itself', () => {
+    expect(slots).toContain('/membership');
+    expect(activeSlotFor('/membership')).toBe('/membership');
   });
 
   it('the record is reached from the collection, not from a slot of its own', () => {

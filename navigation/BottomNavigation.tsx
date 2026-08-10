@@ -40,7 +40,7 @@ import {
   color, elevation, radius, space, duration, easing, curve, TARGET_MIN, NAV_GAP,
 } from '@/design';
 import { useNavigation } from './NavigationProvider';
-import { slots, rooms, HOME, VEHICLE, STUDIO, GARAGE, PROFILE } from './routes';
+import { slots, rooms, HOME, STUDIO, GARAGE, MEMBERSHIP, PROFILE } from './routes';
 
 /**
  * THE GLYPHS.
@@ -57,17 +57,24 @@ import { slots, rooms, HOME, VEHICLE, STUDIO, GARAGE, PROFILE } from './routes';
 const GLYPH: Record<string, React.ReactNode> = {
   /* Now — a clock, because Home is a moment, not a house. */
   [HOME]: <><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></>,
-  /* The car — the subject of the product (§2.1, §11.1). */
-  [VEHICLE]: (
+  /* The Club — a card, held. Not a crown, not a star, not a badge: those are
+     loyalty-scheme marks and §15.1 makes a membership a relationship. */
+  [MEMBERSHIP]: (
+    <>
+      <rect x="3" y="6" width="18" height="12" rx="2.2" />
+      <path d="M3 10.5h18" />
+    </>
+  ),
+  /* The studio — a roof. The place, never a tool or a spanner. */
+  [STUDIO]: <path d="M4 9l8-5 8 5v10a1 1 0 01-1 1H5a1 1 0 01-1-1z" />,
+  /* The garage — the car itself, because §11.1 makes the vehicle the spine of
+     the product and the collection is where a customer goes to find one. */
+  [GARAGE]: (
     <>
       <path d="M4 15l1.6-5A2 2 0 017.5 8.6h9A2 2 0 0118.4 10L20 15" />
       <rect x="3" y="15" width="18" height="4" rx="1.6" />
     </>
   ),
-  /* The studio — a roof. The place, never a tool or a spanner. */
-  [STUDIO]: <path d="M4 9l8-5 8 5v10a1 1 0 01-1 1H5a1 1 0 01-1-1z" />,
-  /* The garage — a shuttered bay, seen head-on. */
-  [GARAGE]: <><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M4 10h16" /></>,
   /* You. */
   [PROFILE]: <><circle cx="12" cy="9" r="3.4" /><path d="M5.5 19a6.5 6.5 0 0113 0" /></>,
 };

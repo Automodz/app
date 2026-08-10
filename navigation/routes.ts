@@ -17,11 +17,13 @@
  *
  * Two consequences, both from the design rather than from taste:
  *
- * 1. THE CAR IS A SLOT. §12.2 said a car is walked toward from the Garage, so
- *    Vehicle had no slot. But the design opens on the car and returns to it
- *    from every room — it is the subject of the product (§2.1), and the
- *    subject does not live one level down. Which car remains the Garage's
- *    job: the slot goes to the car you are currently about (`?car=`).
+ * 1. THE CLUB IS A SLOT, AND THE CAR IS NOT. An earlier cut of the design gave
+ *    the car its own slot; the ratified one gives that place to the Club and
+ *    reaches a car through the Garage. Both readings of §12.2 were defensible,
+ *    and this is the one that settles it: a dock slot for "the car" must
+ *    answer "which car" in the navigation, and choosing between cars is the
+ *    collection's question. The Club, by contrast, is singular — a customer
+ *    has one relationship with the studio — so it costs the dock nothing.
  *
  * 2. HISTORY IS NOT A SLOT. Screen 1h puts the record directly under the
  *    collection, on one scroll. A tab for it was a tab for a list that is
@@ -61,14 +63,14 @@ export interface Room {
 
 /** The five rooms that are slots, in dock order. */
 export const HOME = '/';
-export const VEHICLE = '/vehicle';
 export const STUDIO = '/studio';
 export const GARAGE = '/garage';
+export const MEMBERSHIP = '/membership';
 export const PROFILE = '/you';
 
 /** Rooms reached by going deeper, never by tabbing. */
 export const HISTORY = '/history';
-export const MEMBERSHIP = '/membership';
+export const VEHICLE = '/vehicle';
 
 /**
  * THE MARKETPLACE. Public, unlike every other address above it — `/cars` is
@@ -97,12 +99,15 @@ export const rooms: Record<string, Room> = {
   },
   [VEHICLE]: {
     path: VEHICLE,
-    /* The dock's word, and the customer's (§21.8). "The car" was the room's
-       full name in prose; on a 62px slot it is one word or it is nothing. */
-    name: 'Car',
+    name: 'The car',
     concept: 'car',
     chrome: 'nav',
-    activates: VEHICLE,
+    /* §12.2 — the car is walked toward from the collection. It held a slot
+       briefly and the ratified design took it back: the Garage IS the way to
+       a car, and a dock slot for "the car" has to answer "which one" in the
+       navigation, which is the collection's question to ask. Standing in a
+       car therefore lights the Garage. */
+    activates: GARAGE,
   },
   [HISTORY]: {
     path: HISTORY,
@@ -122,11 +127,12 @@ export const rooms: Record<string, Room> = {
   },
   [MEMBERSHIP]: {
     path: MEMBERSHIP,
-    name: 'Membership',
+    /* The customer's word (§21.8). "Membership" is the contract; "Club" is
+       what they belong to, and it is what the design puts on the slot. */
+    name: 'Club',
     concept: 'studio',
     chrome: 'nav',
-    // §15.2 — a membership belongs to the relationship with the studio.
-    activates: STUDIO,
+    activates: MEMBERSHIP,
   },
   [PROFILE]: {
     path: PROFILE,
@@ -138,7 +144,7 @@ export const rooms: Record<string, Room> = {
 };
 
 /** §6.2 — the dock, in order. Five, as the design draws it on every screen. */
-export const slots: readonly string[] = [HOME, VEHICLE, STUDIO, GARAGE, PROFILE];
+export const slots: readonly string[] = [HOME, STUDIO, GARAGE, MEMBERSHIP, PROFILE];
 
 /**
  * §6.3 — arranging a visit is the most frequent deliberate act, so it keeps a
