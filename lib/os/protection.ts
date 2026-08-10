@@ -63,20 +63,63 @@ export function termFromWarranty(warranty: string | null | undefined, appliedOn:
  * `services` is read HERE and only here - the resulting terms are then stored
  * and the catalogue is never consulted about this car again.
  */
+/**
+ * SERVICE IDENTITY IS NOT A DISPLAY NAME.
+ *
+ * This resolution used to be `new Map(catalogue.map(s => [s.name, s]))` and a
+ * plain `.get(serviceName)` — an exact, case-sensitive match on a string a
+ * human types into an admin form. In production that silently cost a real
+ * customer a real warranty: a job recorded `"Glass Coating"`, the catalogue
+ * holds `"Glass coating"`, and one capital letter meant no match, no warranty,
+ * no protection. The car has a two-year glass coating and the product believed
+ * it had nothing.
+ *
+ * The lesson is not the capital letter. It is that a display name is not an
+ * identifier: it is edited for presentation, translated, corrected for typos,
+ * and none of those should touch what a customer was promised.
+ *
+ * So, in order:
+ *
+ *   1. `serviceId` — a real key, when it resolves. New work always carries one.
+ *   2. NORMALISED NAME — lowercased, whitespace collapsed. This is the legacy
+ *      path, and it exists because historical jobs carry ids from a catalogue
+ *      that has since been replaced (`s7`, `s14` against today's `svc-*`), so
+ *      their id resolves to nothing and the name is the only key left.
+ *   3. Nothing. An unresolved service creates NO protection.
+ *
+ * Normalisation is deliberately narrow — case and whitespace only. There is no
+ * fuzzy matching, no prefix matching, no edit distance: "Ceramic coating" and
+ * "Ceramic maintenance" are different promises with different terms, and a
+ * matcher loose enough to bridge a typo is loose enough to bridge those two.
+ * Art. 1.6 — a wrong promise is worse than no promise.
+ */
+const normalise = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+
+export function resolveService(
+  catalogue: Service[],
+  ref: { serviceId?: string; serviceName: string },
+): Service | undefined {
+  if (ref.serviceId) {
+    const byId = catalogue.find(s => s.id === ref.serviceId);
+    if (byId) return byId;
+  }
+  const wanted = normalise(ref.serviceName);
+  return catalogue.find(s => normalise(s.name) === wanted);
+}
+
 export function captureTerms(args: {
   /** what was actually done, with the date it was done */
-  work: { serviceName: string; category: string; appliedOn: string }[];
+  work: { serviceName: string; serviceId?: string; category: string; appliedOn: string }[];
   /** the catalogue, as it stands at the moment of capture */
   catalogue: Service[];
   source: TermsSource;
 }): CapturedTerm[] {
-  const byName = new Map(args.catalogue.map(s => [s.name, s]));
   const out: CapturedTerm[] = [];
 
   for (const w of args.work) {
     const kind = CATEGORY_TO_KIND[w.category];
     if (!kind) continue;                       // this category sells no promise
-    const service = byName.get(w.serviceName);
+    const service = resolveService(args.catalogue, w);
     const term = termFromWarranty(service?.warranty, w.appliedOn);
     if (!term) continue;                       // no warranty, no promise
     out.push({
@@ -172,7 +215,14 @@ export const isStudioApplied = (kind: ProtectionKind): boolean =>
 export function projectProtections(args: {
   vehicleId: string;
   /** this vehicle's completed work, newest first */
-  completed: { serviceName: string; serviceCategory: string; scheduledDate: string; id: string }[];
+  completed: {
+    serviceName: string;
+    /** The booking's own service key, so resolution matches the seal's. */
+    serviceId?: string;
+    serviceCategory: string;
+    scheduledDate: string;
+    id: string;
+  }[];
   catalogue: Service[];
   now?: Date;
 }): LiveProtection[] {
@@ -184,7 +234,15 @@ export function projectProtections(args: {
     work: ordered.map(b => {
       const kind = CATEGORY_TO_KIND[b.serviceCategory];
       if (kind) bySource.set(kind, b.id);
-      return { serviceName: b.serviceName, category: b.serviceCategory, appliedOn: b.scheduledDate };
+      /* The booking's own service id, so the reconstructed read path resolves
+         by key exactly as the seal does, and falls back to the normalised name
+         only when the id belongs to a retired catalogue. */
+      return {
+        serviceName: b.serviceName,
+        serviceId: b.serviceId,
+        category: b.serviceCategory,
+        appliedOn: b.scheduledDate,
+      };
     }),
     catalogue: args.catalogue,
     source: 'reconstructed',

@@ -151,13 +151,35 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
 
     /* ── SNAPSHOT: warranty, as the catalogue reads it AT THIS MOMENT ──
        `source: 'captured'` is the whole point — this is what was sold, frozen. */
-    const appliedOn = (job.completedAt ?? job.updatedAt ?? Timestamp.now())
-      .toDate().toISOString().slice(0, 10);
-    const termsCaptured: CapturedTerm[] = captureTerms({
-      work: services.map(s => ({ serviceName: s.name, category: s.category, appliedOn })),
+    /**
+     * WHEN THE WORK WAS DONE — and `updatedAt` is not that date.
+     *
+     * This read `completedAt ?? updatedAt ?? now`. `updatedAt` moves whenever
+     * ANY field on the job is touched — a note corrected a fortnight later, a
+     * photo added, a backfill — so using it as the application date silently
+     * dates a warranty from an edit. A protection's whole life is measured
+     * from this day; it must be a fact about the CAR, never about the record.
+     *
+     * So: the completion, then the day the work was booked for, and nothing
+     * else. A job with neither is not datable and captures no term rather than
+     * inheriting today's date, which would hand the customer a warranty that
+     * starts whenever the seal happened to run.
+     */
+    const appliedOn = job.completedAt
+      ? job.completedAt.toDate().toISOString().slice(0, 10)
+      : booking?.scheduledDate ?? null;
+
+    const termsCaptured: CapturedTerm[] = (appliedOn ? captureTerms({
+      work: services.map(s => ({
+        serviceName: s.name,
+        /* The key first — see `resolveService`. A display name is not identity. */
+        serviceId: s.serviceId,
+        category: s.category,
+        appliedOn,
+      })),
       catalogue,
       source: 'captured',
-    }).map(t2 => Object.fromEntries(
+    }) : []).map(t2 => Object.fromEntries(
       Object.entries(t2).filter(([, v]) => v !== undefined),
     ) as CapturedTerm);
 
@@ -194,7 +216,11 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
     }, { merge: true });
 
     /* ── PROTECTIONS, in the same commit ─────────────────────────────── */
-    const rows = protectionsFromVisit({ ...visit, id: visitId } as Visit, appliedOn);
+    /* No datable day, no protection — `termsCaptured` is already empty in that
+       case, so this is belt and braces rather than a second rule. */
+    const rows = appliedOn
+      ? protectionsFromVisit({ ...visit, id: visitId } as Visit, appliedOn)
+      : [];
     for (const p of rows) {
       /* Same rule: an absent optional field is omitted, never written as
          `undefined`, which Firestore refuses outright. */
@@ -240,4 +266,102 @@ export async function backfillSealedVisits(limit = 500): Promise<{
     else skipped++;
   }
   return { scanned: snap.size, sealed, alreadySealed, skipped };
+}
+
+/**
+ * REMEDIATE A VISIT SEALED WITH A DEFECT — not a rewrite of history.
+ *
+ * Two visits sealed on 2026-08-10 captured NO terms, because service
+ * resolution matched the catalogue on an exact, case-sensitive display name
+ * (`"Glass Coating"` vs `"Glass coating"`). The seal recorded what it computed;
+ * what it computed was wrong. The car has a two-year glass coating and the
+ * record says it has nothing.
+ *
+ * §16.2 makes a sealed visit permanent, and this does not weaken that. It
+ * re-derives the snapshot the seal was SUPPOSED to take, and it refuses unless
+ * it can prove that snapshot would be identical:
+ *
+ *   1. Only when `termsCaptured` is EMPTY. A visit that captured something has
+ *      a real snapshot and is never touched.
+ *   2. Only when NO service has been edited since `sealedAt`. This is the §14.5
+ *      guarantee, checked rather than assumed: if the catalogue moved after the
+ *      seal, re-deriving would apply today's warranty to yesterday's work,
+ *      which is precisely the rewrite the anchor exists to prevent. It refuses.
+ *   3. `appliedOn` comes from the visit's own dates, never from `now`.
+ *
+ * Idempotent: once terms exist, rule 1 makes a second run a no-op.
+ */
+export async function resealVisitTerms(visitId: string): Promise<
+  | { status: 'repaired'; visitId: string; terms: number; protections: number }
+  | { status: 'has-terms' | 'not-found' | 'no-job' | 'not-datable'; visitId: string }
+  | { status: 'catalogue-moved'; visitId: string; movedAt: string }
+> {
+  if (!adminDb) throw new Error('Firebase Admin is not configured.');
+  const db = adminDb;
+
+  const catalogueSnap = await db.collection('services').get();
+  const catalogue: Service[] = catalogueSnap.docs.map(d => ({ id: d.id, ...d.data() } as Service));
+  /* The newest catalogue edit, for guard 2. */
+  const newestEdit = catalogueSnap.docs.reduce<number>((n, d) => {
+    const u = d.data().updatedAt;
+    return Math.max(n, typeof u?.toMillis === 'function' ? u.toMillis() : 0);
+  }, 0);
+
+  return db.runTransaction(async t => {
+    const ref = db.doc(`visits/${visitId}`);
+    const snap = await t.get(ref);
+    if (!snap.exists) return { status: 'not-found', visitId } as const;
+    const visit = { id: snap.id, ...snap.data() } as Visit;
+
+    if ((visit.termsCaptured ?? []).length > 0) return { status: 'has-terms', visitId } as const;
+    if (!visit.jobId) return { status: 'no-job', visitId } as const;
+
+    const sealedAt = (visit.sealedAt as unknown as Timestamp | undefined)?.toMillis?.() ?? 0;
+    if (sealedAt && newestEdit > sealedAt) {
+      return {
+        status: 'catalogue-moved', visitId,
+        movedAt: new Date(newestEdit).toISOString(),
+      } as const;
+    }
+
+    const jobSnap = await t.get(db.doc(`jobs/${visit.jobId}`));
+    if (!jobSnap.exists) return { status: 'no-job', visitId } as const;
+    const job = { id: jobSnap.id, ...jobSnap.data() } as Job;
+
+    const appliedOn = job.completedAt
+      ? job.completedAt.toDate().toISOString().slice(0, 10)
+      : visit.requestedFor?.date ?? null;
+    if (!appliedOn) return { status: 'not-datable', visitId } as const;
+
+    const termsCaptured: CapturedTerm[] = captureTerms({
+      work: (visit.services ?? []).map(s => ({
+        serviceName: s.name, serviceId: s.serviceId, category: s.category, appliedOn,
+      })),
+      catalogue,
+      source: 'captured',
+    }).map(term => Object.fromEntries(
+      Object.entries(term).filter(([, v]) => v !== undefined),
+    ) as CapturedTerm);
+
+    if (termsCaptured.length === 0) {
+      /* Resolution still finds nothing. Correct outcome, not a failure: the
+         work genuinely carries no promise we can evidence. Nothing written. */
+      return { status: 'has-terms', visitId } as const;
+    }
+
+    t.update(ref, { termsCaptured, updatedAt: FieldValue.serverTimestamp() });
+
+    const rows = protectionsFromVisit({ ...visit, termsCaptured }, appliedOn);
+    for (const p of rows) {
+      const clean = Object.fromEntries(Object.entries(p).filter(([, v]) => v !== undefined));
+      t.set(db.doc(`protections/${protectionIdFor(p.vehicleId, p.kind)}`), {
+        ...clean,
+        ownerUid: job.customerId ?? null,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+
+    return { status: 'repaired', visitId, terms: termsCaptured.length, protections: rows.length } as const;
+  }, { maxAttempts: 12 });
 }
