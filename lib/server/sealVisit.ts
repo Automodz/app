@@ -196,6 +196,10 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
       authoredBy: 'studio',
       ...(booking ? { requestedFor: { date: booking.scheduledDate, time: booking.scheduledTime } } : {}),
       services,
+      /* The day the work happened, frozen with everything else. Taken from the
+         SAME value the protections' `since` uses, so a visit and the promise it
+         created can never disagree about their day. */
+      ...(appliedOn ? { servicedOn: appliedOn } : {}),
       ...(booking?.discount ? { discount: booking.discount } : {}),
       amounts,
       stages: stagesFromJob(job),

@@ -13,8 +13,12 @@ import type { Booking, Invoice, Notification, Protection, ProtectionKind, Servic
 import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
-import { liveProtection, projectProtections, sortByUrgency } from '@/lib/os/protection';
-import { visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE } from '@/lib/os/visit';
+import {
+  liveProtection, projectProtections, sortByUrgency, oneProtectionPerKind,
+} from '@/lib/os/protection';
+import {
+  visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE, visitDateOf,
+} from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
 import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst, isUpcoming } from './ownership';
 import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
@@ -142,7 +146,12 @@ export function protectionsOf(car: CarPicture, catalogue: Service[], now = new D
  */
 function computeProtections(car: CarPicture, catalogue: Service[], now = new Date()) {
   if (car.protections.length > 0) {
-    return sortByUrgency(car.protections.map(p => liveProtection(p, now)));
+    /* §14.2 — a car has ONE answer per kind. Enforced in the engine rather than
+       by an id convention any writer can route around; production carries two
+       glass protections for one car because a seed chose its own id. */
+    return sortByUrgency(
+      oneProtectionPerKind(car.protections).map(p => liveProtection(p, now)),
+    );
   }
   const completed = car.bookings
     .filter(b => b.status === 'completed')
@@ -470,7 +479,7 @@ export function toHome(
     nextAction: resolveAction(read.nextAction),
     liveActivity: latest ? {
       title: visitTitle(latest),
-      when: longDate(isoOf(latest.createdAt)),
+      when: longDate(visitDateOf(latest)),
       note: visitLine(latest),
       photo: latestFrames[0]?.url,
       href: hrefForDestination({ to: 'visit', visitId: latest.id }),
@@ -740,9 +749,9 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
         const money = moneyOfVisits(visits, picture.invoices);
         return visits.map(v => ({
           id: v.id,
-          at: isoOf(v.createdAt),
+          at: visitDateOf(v),
           title: visitTitle(v),
-          when: longDate(isoOf(v.createdAt)),
+          when: longDate(visitDateOf(v)),
           vehicle: car.vehicle.name,
           settled: (money.get(v.id)?.total ?? 0) > 0
             ? rupees(money.get(v.id)!.total)
@@ -1065,7 +1074,7 @@ export function toHistory(car: CarPicture, invoices: Invoice[] = []): HistoryMod
   return {
     vehicle: car.vehicle.name,
     count: visits.length,
-    since: oldest ? longDate(isoOf(oldest.createdAt)) : undefined,
+    since: oldest ? longDate(visitDateOf(oldest)) : undefined,
     settledTotal: settledTotal > 0 ? rupees(settledTotal) : undefined,
     visits: visits.map(v => toVisit(v, car, invoices)),
   };
@@ -1089,10 +1098,10 @@ export function toVisit(
 
   return {
     id: visit.id,
-    when: longDate(isoOf(visit.createdAt)),
+    when: longDate(visitDateOf(visit)),
     /* The year alone, so the album can put a divider between one year and the
        next without re-parsing a formatted date on the client. */
-    year: isoOf(visit.createdAt).slice(0, 4),
+    year: visitDateOf(visit).slice(0, 4),
     title: visitTitle(visit),
     line: visitLine(visit),
     photo: cover ? { url: cover.url, description: `${car.vehicle.name}, finished at AutoModz` } : undefined,

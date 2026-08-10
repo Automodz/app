@@ -759,6 +759,14 @@ export interface Visit {
   /** what this visit promised, frozen at seal */
   termsCaptured: CapturedTerm[];
 
+  /**
+   * THE DAY THE WORK WAS DONE — snapshotted at seal, never the record's own
+   * date. `createdAt` is when the document was written, which for a backfill
+   * is years after the fact. See `os/visit.visitDateOf`, which reads this
+   * first and derives it for visits sealed before the field existed.
+   */
+  servicedOn?: string;
+
   status: VisitStatus;
   /** once set, the record is permanent */
   sealedAt?: Timestamp;

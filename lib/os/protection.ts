@@ -267,3 +267,79 @@ export function projectProtections(args: {
     termsSource: t.source,
   } as Protection, args.now)));
 }
+
+/* ── ONE PROMISE PER KIND, ENFORCED ─────────────────────────────────────── */
+
+/**
+ * A vehicle exposes AT MOST ONE active protection of a given kind.
+ *
+ * This was previously guaranteed only by an id convention —
+ * `${vehicleId}_${kind}` — which is a naming habit, not an invariant. Any
+ * writer that chose its own id broke it, and one did: production carries both
+ * `MfU7e5qLzdLvkvvi8E3o_glass` (sealed, expires 2028-07-16) and the seeded
+ * `prot-seltos-glass` (expires 2027-09-21). The customer's Home listed "Glass
+ * coating" twice, ten months apart. A car cannot have two answers to "how long
+ * is my coating good for".
+ *
+ * So the rule moves into the engine, where no writer can route around it.
+ *
+ * ── WHY THIS ORDER ──────────────────────────────────────────────────────
+ * 1. `captured` — the term as SOLD, snapshotted at seal from the catalogue of
+ *    that moment. It is the only source with a provenance chain back to work
+ *    that actually happened.
+ * 2. LINKED TO A SEALED VISIT — a protection that can name the visit that
+ *    created it outranks one that cannot, because the visit is the evidence.
+ * 3. HAS A `since` — a protection whose life can be measured outranks one that
+ *    can only be estimated.
+ * 4. NEWEST `since` — a re-coat replaces its ancestor, which is the same rule
+ *    `captureTerms` already applies within a single visit.
+ *
+ * NOTHING IS MERGED. The winner is returned whole. Taking `since` from one
+ * document and `term` from another would manufacture a promise that no visit
+ * ever made — the precise failure this file exists to prevent.
+ *
+ * Deterministic by construction: every tie-break is a total order on values,
+ * and the final fallback is the document id, so Firestore's arrival order
+ * cannot change the answer.
+ */
+const rank = (p: Protection): [number, number, number, string] => [
+  p.termsSource === 'captured' ? 1 : 0,
+  p.visitId ? 1 : 0,
+  p.since ? 1 : 0,
+  p.since ?? '',
+];
+
+export function oneProtectionPerKind<T extends Protection>(list: T[]): T[] {
+  const best = new Map<ProtectionKind, T>();
+  for (const p of list) {
+    const held = best.get(p.kind);
+    if (!held) { best.set(p.kind, p); continue; }
+    const [a, b] = [rank(p), rank(held)];
+    for (let i = 0; i < 4; i++) {
+      if (a[i] === b[i]) continue;
+      if (a[i] > b[i]) best.set(p.kind, p);
+      break;
+    }
+    /* Every field equal — including `since`. Fall back to the id so the answer
+       is still the same on every read. */
+    if (a.every((x, i) => x === b[i]) && p.id < held.id) best.set(p.kind, p);
+  }
+  return [...best.values()];
+}
+
+/**
+ * IS THIS PERCENTAGE A MEASUREMENT OR A GUESS?
+ *
+ * A protection with a `since` and a dated term has a real proportion between
+ * two real dates. One without `since` falls back to a health bucket — 0.8,
+ * 0.2, 0.05 — which is a CATEGORY wearing a number. Eight legacy protections
+ * are in that state and no date may be invented for them.
+ *
+ * The distinction is exposed rather than hidden, so no surface can imply that
+ * a bucketed 0.8 was measured. What each surface does with it is a design
+ * decision; this only makes the difference knowable.
+ */
+export type Measurement = 'measured' | 'estimated';
+
+export const measurementOf = (p: Pick<Protection, 'since' | 'term'>): Measurement =>
+  p.since && p.term.kind === 'dated' ? 'measured' : 'estimated';
