@@ -7,6 +7,7 @@
  * counts belong to the subscription document - nothing is recomputed here.
  */
 import type { Booking, Subscription } from '@/lib/types';
+import { MEMBERSHIP_PLANS } from '@/lib/types';
 import { termState, daysLeft } from './term';
 
 export type ClubState = 'none' | 'pending' | 'active' | 'grace' | 'lapsed';
@@ -41,8 +42,38 @@ export const INVITE_AFTER_VISITS = 2;
  * callers only have a `Subscription` in hand and were each subtracting it
  * themselves. One subtraction, one place — §22.2.
  */
-export const washesLeftOf = (sub: { washesTotal?: number; washesUsed?: number } | null): number =>
-  Math.max(0, (sub?.washesTotal ?? 0) - (sub?.washesUsed ?? 0));
+export const washesLeftOf = (
+  sub: { plan?: string; washesTotal?: number; washesIncluded?: number; washesUsed?: number } | null,
+): number => Math.max(0, washesGrantedBy(sub) - (sub?.washesUsed ?? 0));
+
+/**
+ * WHAT THE PLAN GRANTS — and why this is not simply `sub.washesTotal`.
+ *
+ * A production Gold subscription carried BOTH `washesIncluded: 8` and
+ * `washesTotal: 16`, while `MEMBERSHIP_PLANS.Gold.washesPerMonth` is 8 and the
+ * plan's own perk line reads "8 Premium Washes / month". Reading `washesTotal`
+ * made every customer surface say "10 of 16 washes left" over a benefits list
+ * that said 8 — the product overstating what the customer was owed, by eight
+ * washes, in its own words, on one screen.
+ *
+ * THE PLAN THE CUSTOMER BOUGHT IS THE AUTHORITY. A count copied onto the
+ * subscription document is a cache, and this one had drifted; the catalogue is
+ * the thing the customer actually agreed to and the thing the benefits list is
+ * rendered from, so the two can no longer disagree.
+ *
+ * The document is still read, in order, for the cases the catalogue cannot
+ * answer: a legacy plan name no longer in the catalogue, or a bespoke
+ * arrangement the studio wrote by hand. `washesIncluded` is preferred over
+ * `washesTotal` because where both exist, `washesIncluded` is the one that has
+ * always agreed with the plan.
+ */
+export function washesGrantedBy(
+  sub: { plan?: string; washesTotal?: number; washesIncluded?: number } | null,
+): number {
+  if (!sub) return 0;
+  const configured = MEMBERSHIP_PLANS.find(p => p.id === sub.plan)?.washesPerMonth;
+  return configured ?? sub.washesIncluded ?? sub.washesTotal ?? 0;
+}
 
 /**
  * Has this membership run out?
@@ -94,9 +125,10 @@ export function clubModel(args: {
 
   if (!m || m.status === 'cancelled') return none;
 
-  const washesTotal = m.washesTotal ?? 0;
+  /* The catalogue, not the document — see `washesGrantedBy`. */
+  const washesTotal = washesGrantedBy(m);
   const washesUsed = m.washesUsed ?? 0;
-  const washesLeft = washesLeftOf({ washesTotal, washesUsed });
+  const washesLeft = Math.max(0, washesTotal - washesUsed);
 
   // one lifecycle, from the one term engine (membership gets grace)
   const term = termState(m.endDate, { grace: true, now });

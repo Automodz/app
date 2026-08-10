@@ -189,7 +189,18 @@ export interface Subscription {
   status: MembershipStatus;
   startDate: string;        // YYYY-MM-DD
   endDate: string;          // YYYY-MM-DD (startDate + 30 days)
+  /**
+   * TWO COUNTS THAT DISAGREED, BOTH KEPT BECAUSE BOTH ARE IN PRODUCTION.
+   *
+   * A live Gold subscription carries `washesTotal: 16` and
+   * `washesIncluded: 8`, against a plan that grants 8. Neither field is the
+   * authority any more — `os/club.washesGrantedBy` reads the catalogue and
+   * falls back to these only for a plan the catalogue no longer has. They are
+   * typed so the drift is visible rather than arriving as `any`.
+   */
   washesTotal: number;
+  /** What the plan granted at purchase. Agrees with the catalogue where set. */
+  washesIncluded?: number;
   washesUsed: number;
   paymentMethod: 'upi' | 'cash';
   transactionId?: string;

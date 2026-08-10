@@ -108,10 +108,15 @@ describe('applyDiscount', () => {
    what a customer is charged. Every case here was previously decided in a
    browser. */
 
+/* `washesTotal` MATCHES THE PLAN. It read 4 against a Gold plan the catalogue
+   grants 8 — the same drift a production subscription turned out to carry, and
+   the reason `os/club.washesGrantedBy` now reads the catalogue rather than the
+   document. A fixture that disagrees with the plan it names is a fixture
+   asserting the bug. */
 const sub = (over: Partial<Subscription> = {}): Subscription & { id: string } => ({
   id: 'sub1', userId: 'u1', plan: 'Gold', status: 'active',
   startDate: '2026-01-01', endDate: '2026-12-31',
-  washesTotal: 4, washesUsed: 0, paymentMethod: 'upi',
+  washesTotal: 8, washesUsed: 0, paymentMethod: 'upi',
   createdAt: null as never, updatedAt: null as never,
   ...over,
 } as Subscription & { id: string });
@@ -147,10 +152,25 @@ describe('decidePrice · membership wash', () => {
   });
 
   it('refuses when the allowance is spent', () => {
+    /* Spent means "used everything the PLAN grants" — Gold's eight — not
+       "used everything a field on the document happens to say". */
     const d = decidePrice(input({
-      membership: sub({ washesUsed: 4, washesTotal: 4 }), wantsWash: true,
+      membership: sub({ washesUsed: 8 }), wantsWash: true,
     }));
     expect(d.washCovered).toBe(false);
+  });
+
+  it('the plan outranks a drifted count on the document', () => {
+    /* The production defect, pinned: a Gold subscription claiming sixteen
+       washes grants eight, so six used leaves two — never ten. */
+    const d = decidePrice(input({
+      membership: sub({ washesTotal: 16, washesUsed: 6 }), wantsWash: true,
+    }));
+    expect(d.washCovered).toBe(true);
+    const spent = decidePrice(input({
+      membership: sub({ washesTotal: 16, washesUsed: 8 }), wantsWash: true,
+    }));
+    expect(spent.washCovered).toBe(false);
   });
 
   it('refuses on an EXPIRED membership', () => {
