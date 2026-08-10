@@ -14,7 +14,7 @@ import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
 import {
-  liveProtection, projectProtections, sortByUrgency, oneProtectionPerKind,
+  liveProtection, projectProtections, sortByUrgency, oneProtectionPerKind, measurementOf,
 } from '@/lib/os/protection';
 import {
   visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE, visitDateOf,
@@ -472,6 +472,7 @@ export function toHome(
         label: PROTECTION_TITLE[p.kind],
         term: termWords(p.term, now),
         remaining: remainingOf(p, now),
+        measurement: measurementOf(p),
         tone: TONE[p.health],
       })),
       ...membershipAsProtection(picture.subscription, read.club, now),
@@ -914,6 +915,8 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
        throwing away here. Undefined for a term that does not deplete, and the
        room draws no bar rather than a full one. */
     remaining: remainingOf(p, now),
+    /* One definition, from the engine — never re-derived per screen. */
+    measurement: measurementOf(p),
     tone: TONE[p.health],
     /* §14.6 — the file where one exists. Nothing writes `document` yet, so
        this is undefined throughout; the room draws no control for it. */

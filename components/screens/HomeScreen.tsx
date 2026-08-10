@@ -87,6 +87,9 @@ export interface HomeProtection {
   term: string;
   /** 0–1 of the term still to run, or absent when it does not run out. */
   remaining?: number;
+  /** Whether `remaining` was measured between two dates or bucketed from a
+   *  health state. See `VehicleProtection.measurement`. */
+  measurement?: 'measured' | 'estimated';
   /* The state's own tone, not an arbitrary one — §3.3 keeps colour to
      information, and `StateTone` is the vocabulary of states. */
   tone: StateTone;

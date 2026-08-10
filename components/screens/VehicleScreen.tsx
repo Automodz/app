@@ -58,6 +58,18 @@ export interface VehicleProtection {
    * recorded start) carries no bar and states its term alone.
    */
   remaining?: number;
+  /**
+   * IS `remaining` A MEASUREMENT OR A CATEGORY?
+   *
+   * `measured` — a real fraction between a recorded `since` and a dated term.
+   * `estimated` — no trustworthy start date, so the engine falls back to a
+   * health bucket (0.8 / 0.2 / 0.05 / 0). Eight legacy protections are in that
+   * state and no date may be invented for them.
+   *
+   * Carried so no surface can imply a bucketed 0.8 was measured. What each
+   * screen does with it is a design decision this model does not make.
+   */
+  measurement?: 'measured' | 'estimated';
   /** §14.6 — the file, where one exists. */
   documentHref?: string;
 }
