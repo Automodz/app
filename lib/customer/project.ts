@@ -9,7 +9,7 @@
  * fallback — comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
-import type { Booking, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
+import type { Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
 import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
@@ -61,9 +61,6 @@ function monthYear(iso: string): string {
 }
 
 const millis = (t?: { toMillis?: () => number }) => t?.toMillis?.() ?? 0;
-const isoOf = (t?: { toDate?: () => Date }) =>
-  t?.toDate?.().toISOString().slice(0, 10) ?? '';
-
 /** §9.2's four states, from the engine's four healths. */
 const TONE: Record<Health, HomeProtection['tone']> = {
   healthy: 'assent', attention: 'caution', urgent: 'urgent', lapsed: 'lapsed',

@@ -159,3 +159,125 @@ export const decidePrice = (i: PricingInput): PricingDecision => {
       ? eligible.find(p => p.id === discount.promoId) : undefined,
   };
 };
+
+/* ── THE CANONICAL ENGINE ───────────────────────────────────────────────── */
+
+/**
+ * WHAT A VISIT COSTS — services, discount, fees, tax, total. One calculation.
+ *
+ * `decidePrice` decided the SERVICE line and stopped there, so every caller
+ * assembled the rest itself: the booking service added pickup fees, the invoice
+ * added GST and summed a different set of line items, and the seal INFERRED the
+ * discount by subtracting one total from another. Four places, two meanings of
+ * "subtotal", and a discount that was reconstructed rather than recorded.
+ *
+ * ── THE ORDER IS FIXED, AND IT MATTERS ──────────────────────────────────
+ *   services → discount → fees → tax → total
+ *
+ * Discount applies to the WORK, never to the fees: a member's 15% is a
+ * benefit on craft, not on a van's diesel. Tax then applies to everything
+ * chargeable, because a service fee is taxable in its own right.
+ *
+ * ── `subtotal` HAS ONE MEANING ──────────────────────────────────────────
+ * The services, before fees and before discount. The invoice previously called
+ * the fee-inclusive figure "subtotal" while the sealed visit called the
+ * services-only figure the same word; for AMZ-2026-0001 that is 1250 against
+ * 1200. Both are now named, separately, and neither is called the other.
+ *
+ * ── THE DISCOUNT IS CARRIED, NEVER DERIVED ──────────────────────────────
+ * `sealVisit` computed `discount = max(0, subtotal - total)`. With a discount
+ * AND a fee that is provably wrong: services 1200, discount 200, fees 100 gives
+ * total 1100, and the subtraction reports 100. The customer's permanent record
+ * would understate what they were given by half. The breakdown carries the real
+ * figure so nothing has to guess.
+ */
+export interface FeeLine {
+  /** The customer's word for it, stored verbatim on the record. */
+  label: string;
+  amount: number;
+}
+
+export interface TaxPolicy {
+  /** Off while the studio has no GSTIN — see lib/config/storeConfig.ts. */
+  enabled: boolean;
+  rate: number;
+  gstin?: string;
+}
+
+export interface PriceBreakdown {
+  /** The work, before fees and before any benefit. ONE meaning. */
+  subtotal: number;
+  /** What was actually given. Explicit, never inferred from two totals. */
+  discount?: BookingDiscount;
+  discountAmount: number;
+  /** Each leg, each extra — never folded into the subtotal. */
+  fees: FeeLine[];
+  feesTotal: number;
+  /** Everything chargeable, after the benefit. The base tax is taken on. */
+  taxable: number;
+  /**
+   * ABSENT when tax was not charged, never zero. A zero implies the studio
+   * charged nothing on a taxable sale; absent says no tax applied at all,
+   * which is what an unregistered studio means.
+   */
+  tax?: { rate: number; amount: number; gstin?: string };
+  total: number;
+  /** A covered wash zero-prices the work and stands alone (no stacking). */
+  washCovered: boolean;
+  membershipId?: string;
+  promo?: Promo;
+}
+
+/** Per leg. Two legs is two lines, so a customer can see what they paid for. */
+export const PICKUP_LEG_FEE = 50;
+
+export function priceVisit(args: {
+  /** The work, at catalogue price before anything. */
+  services: { name: string; price: number }[];
+  /** Named lines. The booking service builds these from the legs requested. */
+  fees?: FeeLine[];
+  tax?: TaxPolicy;
+  /** Everything `decidePrice` needs to choose the one benefit that applies. */
+  benefit: PricingInput;
+}): PriceBreakdown {
+  const subtotal = args.services.reduce((n, s) => n + s.price, 0);
+  const fees = args.fees ?? [];
+  const feesTotal = fees.reduce((n, f) => n + f.amount, 0);
+
+  /* The benefit is decided by the existing engine, unchanged — best-of
+     membership vs promo, a covered wash standing alone. Priced against the
+     WORK, which is why `base` is the services subtotal and not the total. */
+  const decided = decidePrice({ ...args.benefit, base: subtotal });
+
+  const afterDiscount = decided.washCovered ? 0 : applyDiscount(subtotal, decided.discount);
+  const taxable = afterDiscount + feesTotal;
+
+  /* Rounded ONCE, here, to the rupee. Nothing downstream rounds again. */
+  const tax = args.tax?.enabled && args.tax.rate > 0
+    ? {
+        rate: args.tax.rate,
+        amount: Math.round(taxable * args.tax.rate / 100),
+        ...(args.tax.gstin ? { gstin: args.tax.gstin } : {}),
+      }
+    : undefined;
+
+  return {
+    subtotal,
+    ...(decided.discount && !decided.washCovered ? { discount: decided.discount } : {}),
+    discountAmount: decided.washCovered ? 0 : decided.discountAmount,
+    fees,
+    feesTotal,
+    taxable,
+    ...(tax ? { tax } : {}),
+    total: taxable + (tax?.amount ?? 0),
+    washCovered: decided.washCovered,
+    ...(decided.membershipId ? { membershipId: decided.membershipId } : {}),
+    ...(decided.promo ? { promo: decided.promo } : {}),
+  };
+}
+
+/** The legs a booking asked for, as the fee lines a customer can read. */
+export const pickupFees = (legs: { pickup?: boolean; drop?: boolean }): FeeLine[] => [
+  ...(legs.pickup ? [{ label: 'Pickup', amount: PICKUP_LEG_FEE }] : []),
+  ...(legs.drop ? [{ label: 'Drop', amount: PICKUP_LEG_FEE }] : []),
+];

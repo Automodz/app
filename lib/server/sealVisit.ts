@@ -144,10 +144,21 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
       price: i.price ?? 0,
     }));
 
-    /* ── SNAPSHOT: pricing. The job's own numbers, not the catalogue's. ── */
+    /* ── SNAPSHOT: pricing. The job's own numbers, not the catalogue's. ──
+       THE DISCOUNT IS CARRIED, NOT DERIVED. This read
+       `discount: Math.max(0, subtotal - total)`, which is only ever right when
+       nothing but a discount separates the two. With a discount AND a fee it
+       understates: services 1200, discount 200, fees 100 gives total 1100, and
+       the subtraction reports 100 — half of what the customer was actually
+       given, written permanently into a sealed record.
+
+       The booking already stores what was decided at the counter, so the
+       figure is read rather than reconstructed. A booking with no discount
+       records none, which is the honest encoding of "nothing was given". */
     const subtotal = services.reduce((n, s) => n + (s.price ?? 0), 0);
     const total = job.totalAmount ?? booking?.totalAmount ?? subtotal;
-    const amounts = { subtotal, discount: Math.max(0, subtotal - total), total };
+    const discountAmount = booking?.discount?.amount ?? 0;
+    const amounts = { subtotal, discount: discountAmount, total };
 
     /* ── SNAPSHOT: warranty, as the catalogue reads it AT THIS MOMENT ──
        `source: 'captured'` is the whole point — this is what was sold, frozen. */

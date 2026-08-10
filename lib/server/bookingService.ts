@@ -3,7 +3,7 @@ import { adminDb } from './firebaseAdmin';
 import { loadOccupancy, occupancyRange, type Reader } from './occupancy';
 import { decidePrice, applyDiscount } from '@/lib/services/pricing';
 import { computeAvailability, candidateSlots } from '@/lib/availability';
-import { PICKUP_FEE } from '@/lib/utils';
+import { pickupFees } from '@/lib/services/pricing';
 import type {
   Booking, BookingDiscount, BookingStatus, Job, JobServiceItem, JobStatus, Promo, Subscription,
 } from '@/lib/types';
@@ -293,7 +293,11 @@ const createAppointment = async (
     });
 
     const pickup = !!intent.pickup, drop = !!intent.drop;
-    const pickupDropFee = (pickup ? PICKUP_FEE : 0) + (drop ? PICKUP_FEE : 0);
+    /* One arithmetic path: the fee lines the canonical engine names, summed
+       here only to keep the legacy `pickupDropFee` field the admin still
+       reads. `PICKUP_LEG_FEE` and `PICKUP_FEE` are the same ₹50 per leg. */
+    const feeLines = pickupFees({ pickup, drop });
+    const pickupDropFee = feeLines.reduce((n, f) => n + f.amount, 0);
     if (pickupDropFee > 0 && !intent.pickupAddress?.trim()) {
       throw new BookingError('pickup-address-required', 400);
     }
