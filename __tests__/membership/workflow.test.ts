@@ -238,13 +238,30 @@ describe('membership revenue is its own line, on the payment date', () => {
     expect(reports).toMatch(/typeof sub\.amountPaid === 'number'/);
   });
 
-  it('the index the query needs exists', () => {
+  it('the query needs no declared index, and must not declare one', () => {
+    /* THIS ASSERTED THE OPPOSITE, AND THE FILE COULD NEVER BE DEPLOYED.
+       The revenue query is a range on ONE field —
+       `where('paidAt','>=').where('paidAt','<=')` — which Firestore serves
+       from the automatic single-field index every field already has. Declaring
+       it as a composite is not merely redundant: the API refuses it, with
+       "this index is not necessary, configure using single field index
+       controls", and the refusal aborted the deploy of ALL twenty real
+       indexes alongside it.
+
+       So the guarantee is the inverse of what was written here: the query is
+       single-field, and the file declares no single-field index. */
+    const reportsSrc = readFileSync('app/admin/reports/page.tsx', 'utf8');
+    const q = reportsSrc.slice(reportsSrc.indexOf("where('paidAt'"));
+    expect(q.slice(0, 300)).toMatch(/where\('paidAt', '>='/);
+    expect(q.slice(0, 300)).toMatch(/where\('paidAt', '<='/);
+    /* No second field joins it — that is what would need a composite. */
+    expect(q.slice(0, 300)).not.toMatch(/where\('(?!paidAt)/);
+
     const idx = JSON.parse(readFileSync('firestore.indexes.json', 'utf8')) as {
       indexes: { collectionGroup: string; fields: { fieldPath: string }[] }[];
     };
-    expect(idx.indexes.some(i =>
-      i.collectionGroup === 'subscriptions'
-      && i.fields.some(f => f.fieldPath === 'paidAt'))).toBe(true);
+    const singleField = idx.indexes.filter(i => i.fields.length === 1);
+    expect(singleField).toEqual([]);
   });
 });
 
