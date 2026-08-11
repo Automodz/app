@@ -363,3 +363,46 @@ describe('a document that gets sent to people can be left', () => {
     expect(publicParent(null).href).toBe('/');
   });
 });
+
+describe('a value never crushes the label beside it', () => {
+  /**
+   * The booking's "Work" row at 390px with a real service name:
+   *
+   *     Work        Full-body paint protection film
+   *     BMW
+   *     M340i
+   *     xDrive
+   *     Sport
+   *
+   * The value was `flexShrink: 0`, so it took the whole row; the label had
+   * `minWidth: 0` — which it needs, or the row can never wrap at all — so it
+   * collapsed to nothing and broke one word per line. Both halves of that are
+   * required for the defect, which is why neither looked wrong on its own.
+   */
+  it('the shared value yields, and takes its own line when it must', () => {
+    const parts = codeOf('components/os/parts.tsx');
+    const value = parts.slice(parts.indexOf('export function Value'));
+    expect(value.slice(0, 700)).not.toMatch(/flexShrink: 0/);
+    expect(value.slice(0, 700)).toMatch(/marginLeft: 'auto'/);
+    expect(value.slice(0, 700)).toMatch(/overflowWrap: 'anywhere'/);
+  });
+
+  it('and the row it sits in can wrap', () => {
+    const parts = codeOf('components/os/parts.tsx');
+    const row = parts.slice(parts.indexOf('const style: CSSProperties'));
+    expect(row.slice(0, 500)).toMatch(/flexWrap: 'wrap'/);
+  });
+
+  it('no label/value row anywhere pins its value against shrinking', () => {
+    /* The booking held a local copy of the same pattern; a fourth copy is how
+       this comes back. */
+    for (const file of CUSTOMER_FILES) {
+      const src = codeOf(file);
+      /* Within ONE style object — no `}` between the two — so a fixed-size
+         decorative element that happens to sit near a value is not counted. */
+      const before = src.match(/font-mono[^}]{0,200}?flexShrink: 0/g)?.length ?? 0;
+      const after = src.match(/flexShrink: 0[^}]{0,200}?font-mono/g)?.length ?? 0;
+      expect({ file, pinned: before + after }).toEqual({ file, pinned: 0 });
+    }
+  });
+});

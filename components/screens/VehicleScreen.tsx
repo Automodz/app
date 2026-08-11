@@ -345,6 +345,7 @@ export function VehicleScreen(
                   <div
                     key={p.id}
                     style={{
+                      flexWrap: 'wrap',
                       display: 'flex', justifyContent: 'space-between',
                       gap: space.line, fontSize: 13.5,
                     }}
@@ -352,7 +353,8 @@ export function VehicleScreen(
                     <span style={{ color: color.ink }}>{p.label}</span>
                     <span
                       style={{
-                        fontFamily: 'var(--font-mono)', color: TONE[p.tone], flexShrink: 0,
+                        fontFamily: 'var(--font-mono)', color: TONE[p.tone],
+                        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
                       }}
                     >
                       {value}

@@ -224,7 +224,7 @@ function ChangeRow(
         fontFamily: 'var(--font-mono)',
         fontSize: strong ? 15 : 12.5,
         color: quiet ? color.ink3 : color.champagne,
-        flexShrink: 0,
+        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
       }}>
         {value}
       </span>

@@ -596,6 +596,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                 key={p.id}
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  flexWrap: 'wrap',
                   gap: space.line, padding: `${space.line + 3}px ${space.gap + 2}px`,
                 }}
               >
@@ -603,7 +604,12 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                 <span
                   style={{
                     fontFamily: 'var(--font-mono)', fontSize: 11,
-                    color: TONE[p.tone], flexShrink: 0,
+                    color: TONE[p.tone],
+                    /* Yields rather than crushing the layer's name beside it —
+                       see `Value` in components/os/parts. "Paint protection
+                       film" against "Through November 2027" is the same
+                       collision the booking had. */
+                    marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
                   }}
                 >
                   {p.term}

@@ -150,9 +150,21 @@ export function Meter(
   const pct = Math.max(0, Math.min(1, fill)) * 100;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: space.line, fontSize: 13.5 }}>
+      <div
+        style={{
+          display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap',
+          gap: space.line, fontSize: 13.5,
+        }}
+      >
         <span style={{ color: color.ink }}>{label}</span>
-        <span style={{ fontFamily: 'var(--font-mono)', color: tone, flexShrink: 0 }}>{value}</span>
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)', color: tone,
+            marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+          }}
+        >
+          {value}
+        </span>
       </div>
       <div
         aria-hidden
@@ -189,6 +201,9 @@ export function Row(
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    /* So a value too long to sit beside its label drops below it instead of
+       crushing it. See `Value`. */
+    flexWrap: 'wrap',
     gap: space.line,
     minHeight: TARGET_MIN,
     padding: `${space.line}px ${space.hair}px`,
@@ -212,7 +227,26 @@ export function Row(
 /** The mono value on the right of a Row. Champagne when it is a fact in force. */
 export function Value({ children, tone = color.champagne }: { children: ReactNode; tone?: string }) {
   return (
-    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: tone, flexShrink: 0 }}>
+    <span
+      style={{
+        fontFamily: 'var(--font-mono)', fontSize: 12, color: tone,
+        /* NOT `flexShrink: 0`. A value that refuses to yield takes the whole
+           row, and the label beside it — which has `minWidth: 0` so the row can
+           ever wrap at all — collapses to nothing and breaks ONE WORD PER LINE:
+
+               Work        Full-body paint protection film
+               BMW
+               M340i
+               xDrive
+               Sport
+
+           seen on the booking at 390px with a real service name. The value now
+           yields and, when it cannot fit beside the label, takes its own line
+           under it — which is the same shape the row already has for a wrapped
+           label, and preserves the hierarchy rather than shrinking the type. */
+        textAlign: 'right', marginLeft: 'auto', overflowWrap: 'anywhere',
+      }}
+    >
       {children}
     </span>
   );

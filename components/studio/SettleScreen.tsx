@@ -211,7 +211,8 @@ export function SettleScreen({ model }: { model: SettleModel }) {
               </span>
               <span style={{
                 fontFamily: 'var(--font-mono)', fontSize: 12.5,
-                color: color.ink2, flexShrink: 0,
+                color: color.ink2,
+                marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
               }}>
                 {l.value}
               </span>

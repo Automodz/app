@@ -269,12 +269,16 @@ export function StudioScreen({ model }: { model: StudioModel }) {
                     style={{
                       display: 'flex', justifyContent: 'space-between',
                       alignItems: 'baseline', gap: space.line,
+                      /* A service name long enough to wrap must not be squeezed
+                         by the price beside it — see `Value` in os/parts. */
+                      flexWrap: 'wrap',
                     }}
                   >
                     <span style={{ fontSize: 16, color: color.ink }}>{s.name}</span>
                     <span
                       style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 12, flexShrink: 0,
+                        fontFamily: 'var(--font-mono)', fontSize: 12,
+                        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
                         color: s.id === featured?.id ? color.champagne : 'rgba(232,217,190,0.8)',
                       }}
                     >

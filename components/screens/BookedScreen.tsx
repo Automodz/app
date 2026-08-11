@@ -111,6 +111,9 @@ export function BookedScreen({ model }: { model: BookedModel }) {
               key={r.label}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                /* See `Value` in components/os/parts — a value that will not
+                   yield breaks the car's name one word per line. */
+                flexWrap: 'wrap',
                 gap: space.line, paddingBlock: space.line,
                 borderBottom: i === rows.length - 1
                   ? undefined : '1px solid rgba(255,255,255,0.06)',
@@ -125,7 +128,8 @@ export function BookedScreen({ model }: { model: BookedModel }) {
               <span
                 style={{
                   fontFamily: 'var(--font-mono)', fontSize: 12.5,
-                  color: color.champagne, flexShrink: 0, textAlign: 'right',
+                  color: color.champagne, textAlign: 'right',
+                  marginLeft: 'auto', overflowWrap: 'anywhere',
                 }}
               >
                 {r.value}

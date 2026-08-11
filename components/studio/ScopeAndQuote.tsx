@@ -245,7 +245,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
               }}>
                 <span style={{ fontSize: 16, color: color.ink }}>{s.label}</span>
                 <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 12, flexShrink: 0,
+                  fontFamily: 'var(--font-mono)', fontSize: 12, marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
                   color: scopeId === s.id ? color.champagne : 'rgba(232,217,190,0.8)',
                 }}>
                   {s.price}
@@ -314,7 +314,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
                   }}>
                     <span style={{ fontSize: 15, color: color.ink }}>{a.label}</span>
                     <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 12, flexShrink: 0,
+                      fontFamily: 'var(--font-mono)', fontSize: 12, marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
                       color: on ? color.champagne : 'rgba(232,217,190,0.8)',
                     }}>
                       +{a.price}

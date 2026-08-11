@@ -292,7 +292,10 @@ export function YouScreen({
               </span>
               {/* §21.6 — the word carries the state, not only the shape. */}
               <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: 12, flexShrink: 0,
+                /* Yields rather than crushing the label beside it — see
+                   `Value` in components/os/parts. */
+                fontFamily: 'var(--font-mono)', fontSize: 12,
+                marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
                 color: quietOn ? color.champagne : color.ink3,
               }}>
                 {quietOn ? 'ON' : 'OFF'}
