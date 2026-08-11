@@ -1276,3 +1276,64 @@ export const MEMBERSHIP_PLANS: MembershipPlanConfig[] = [
     ],
   },
 ];
+
+// ─── MID-VISIT APPROVAL (design screen 12) ───────────────────────────────────
+
+/**
+ * THE STUDIO FOUND SOMETHING, AND IT COSTS MORE.
+ *
+ * Design screen 12: "We found something under the film · Extra stage +₹6,000 ·
+ * Extra time +2 hours · same day", with Approve and "Skip it · film as
+ * planned". It is the only place in the product where a customer agrees to
+ * spend more money after the work has started, which makes it the one object
+ * where every guarantee has to hold at once:
+ *
+ *   · Only the OWNER may approve or decline. The studio may withdraw its own
+ *     request and the clock may retire it, but neither can produce an approval
+ *     — see `APPROVAL_ACTORS` in lib/os/lifecycle.ts.
+ *   · The customer approves A FIGURE, not a percentage or a promise. Both the
+ *     state before and the state after are frozen at the moment of asking, so
+ *     the total they tapped is the total that is applied.
+ *   · Once responded it is immutable. A resolved request cannot be resolved
+ *     again, which is what makes a double tap cost nothing.
+ *   · `requestedByEmployeeId` is recorded for the studio and NEVER rendered
+ *     customer-side (Art. 8 — no individual is ever named).
+ */
+export type ApprovalStatus = 'requested' | 'approved' | 'declined' | 'expired' | 'cancelled';
+
+export interface ApprovalEvidence {
+  url: string;
+  /** "Rear quarter", "Under light" — where the photograph was taken. */
+  caption: string;
+}
+
+export interface Approval {
+  id: string;
+  jobId: string;
+  bookingId?: string;
+  visitId?: string;
+  customerId: string;
+  vehicleId: string;
+  vehicleName: string;
+  /** "We found something under the film" — the studio's own sentence. */
+  reason: string;
+  /** Why it matters, and what happens if it is left. */
+  detail?: string;
+  photos: ApprovalEvidence[];
+  /** The work proposed, as a priced line. Never a free-text charge. */
+  proposed: { label: string; price: number; minutes: number };
+  /** Both are ≥ 0 and both are frozen at the moment of asking. */
+  priceDelta: number;
+  timeDeltaMinutes: number;
+  /** What the visit stood at when the studio asked. */
+  before: StoredBreakdown;
+  /** What it becomes if approved. The figure the customer actually taps. */
+  after: StoredBreakdown;
+  status: ApprovalStatus;
+  /** Recorded for the studio. NEVER rendered on a customer surface. */
+  requestedByEmployeeId?: string;
+  requestedAt: Timestamp;
+  respondedAt?: Timestamp;
+  /** After this the request retires itself — a bay cannot wait for ever. */
+  expiresAt?: Timestamp;
+}

@@ -64,12 +64,23 @@ export interface LiveVisitModel {
   backHref: string;
   /** The studio, reachable. §20.1 */
   messageHref?: string;
+  /**
+   * A QUESTION THE STUDIO IS WAITING ON — design screen 12.
+   *
+   * Surfaced HERE as well as in a push, because a notification that was missed
+   * is a car held on a bay for a day over a question nobody asked out loud.
+   * §17.1 — state changes surface as state, on the surface that owns the fact.
+   */
+  approval?: { line: string; href: string };
 }
 
 export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
   const [viewing, setViewing] = useState<string | null>(null);
   const viewed = model.frames.find(f => f.id === viewing);
-  const { vehicleName, word, line, timing, service, acts, frames, hero, backHref, messageHref } = model;
+  const {
+    vehicleName, word, line, timing, service, acts, frames, hero,
+    backHref, messageHref, approval,
+  } = model;
 
   return (
     <main
@@ -105,6 +116,28 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         <Statement eyebrow={`${vehicleName} · in the studio`} lit size={29}>
           {service}
         </Statement>
+
+        {/* ── A QUESTION WAITING ON YOU ─────────────────────────────────
+            Directly under the Display, because it is the one thing on this
+            screen that stops the work. Everything below it is an account of
+            what has happened; this is what has to happen next. */}
+        {approval ? (
+          <Pane
+            tone="warm"
+            live
+            as={Link}
+            {...{ href: approval.href }}
+            style={{
+              padding: `${space.gap}px ${space.gap + 2}px`,
+              display: 'flex', alignItems: 'center', gap: space.line,
+              textDecoration: 'none',
+            }}
+          >
+            <Pulse />
+            <span style={{ fontSize: 14, color: color.ink, flex: 1 }}>{approval.line}</span>
+            <Label style={{ fontSize: 9, letterSpacing: '0.16em' }}>Open</Label>
+          </Pane>
+        ) : null}
 
         {/* ── THE BAY ───────────────────────────────────────────────────
             The newest photograph of any kind, with the studio's own sentence

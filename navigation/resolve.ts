@@ -14,7 +14,7 @@
 import type { NextAction, ActionIntent } from '@/lib/os/action';
 import {
   STUDIO, GARAGE, MEMBERSHIP, HOME, HISTORY, PROFILE, VEHICLE, CARS, SELL, WELCOME,
-  BOOKING,
+  BOOKING, APPROVAL,
 } from './routes';
 
 /** Where a visit is watched or read. */
@@ -31,6 +31,8 @@ const booking = (id: string) => `${BOOKING}/${encodeURIComponent(id)}`;
 const bookingManage = (id: string) => `${booking(id)}/manage`;
 /** The calendar file for a booking. A FILE, not a room. */
 const bookingCalendar = (id: string) => `/api/booking/${encodeURIComponent(id)}/calendar`;
+/** A mid-visit approval, addressed so a notification can open it (§17.3). */
+const approval = (id: string) => `${APPROVAL}/${encodeURIComponent(id)}`;
 
 /**
  * The marketplace, with a search already applied.
@@ -151,6 +153,7 @@ export type Destination =
   | { to: 'booking'; bookingId: string }
   | { to: 'booking.manage'; bookingId: string }
   | { to: 'booking.calendar'; bookingId: string }
+  | { to: 'approval'; approvalId: string }
   | { to: 'privacy' }
   | { to: 'terms' }
   | { to: 'cars' }
@@ -194,6 +197,7 @@ export const hrefForDestination = (d: Destination): string => {
     case 'booking':          return booking(d.bookingId);
     case 'booking.manage':   return bookingManage(d.bookingId);
     case 'booking.calendar': return bookingCalendar(d.bookingId);
+    case 'approval':         return approval(d.approvalId);
     case 'privacy':          return '/privacy';
     case 'terms':            return '/terms';
     case 'cars':             return CARS;
@@ -241,7 +245,7 @@ export const eventHref = (
     case 'approval_requested':
     case 'approval_approved':
     case 'approval_declined':
-      return source.kind === 'approval' ? `/approval/${encodeURIComponent(source.id)}` : visit(source.id);
+      return source.kind === 'approval' ? approval(source.id) : visit(source.id);
     case 'vehicle_ready':
     case 'payment_required':
     case 'payment_settled':

@@ -25,7 +25,7 @@ const car = (id: string, bookings: Booking[]): CarPicture => ({
 
 const picture = (cars: CarPicture[]): CustomerPicture => ({
   user: { uid: 'u1', name: 'A', email: 'a@b.c', role: 'customer' } as User,
-  cars, subscription: null, subscriptions: [], invoices: [], notifications: [], catalogue: [] as Service[], addresses: [],
+  cars, subscription: null, subscriptions: [], invoices: [], notifications: [], catalogue: [] as Service[], addresses: [], approvals: [],
 });
 
 it('stateOf is computed once per car, however often it is asked', () => {

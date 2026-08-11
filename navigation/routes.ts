@@ -81,6 +81,15 @@ export const VEHICLE = '/vehicle';
  * every surface is addressable.
  */
 export const BOOKING = '/booking';
+/**
+ * A MID-VISIT APPROVAL — design screen 12.
+ *
+ * Its own address, because it is reached from a notification and nothing else:
+ * the studio finds something, the customer's phone lights up, and the tap has
+ * to land on the request itself rather than on a room with a request somewhere
+ * inside it (§17.3 — a notification is a doorway).
+ */
+export const APPROVAL = '/approval';
 
 /**
  * THE MARKETPLACE. Public, unlike every other address above it — `/cars` is
@@ -144,6 +153,15 @@ export const rooms: Record<string, Room> = {
        produced — so standing in one lights the Studio rather than adding a
        sixth slot for a screen a customer visits twice per visit. */
     activates: STUDIO,
+  },
+  [APPROVAL]: {
+    path: APPROVAL,
+    name: 'Approval',
+    concept: 'car',
+    chrome: 'nav',
+    /* It is about the car on the bay, and the car is reached through the
+       Garage — the same place the visit it belongs to lights up. */
+    activates: GARAGE,
   },
   [MEMBERSHIP]: {
     path: MEMBERSHIP,

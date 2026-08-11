@@ -26,8 +26,8 @@ import { getUserSubscription } from '@/lib/services/subscriptions';
 import { getServices } from '@/lib/services/services';
 import { getUserNotifications } from '@/lib/services/notifications';
 import type {
-  Booking, Invoice, Job, Notification, Protection, SavedAddress, Service,
-  Subscription, User, Vehicle, Visit,
+  Approval, Booking, Invoice, Job, Notification, Protection, SavedAddress,
+  Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 
 /** Everything known about one car. */
@@ -70,6 +70,14 @@ export interface CustomerPicture {
    * about which address is the default.
    */
   addresses: SavedAddress[];
+  /**
+   * MID-VISIT REQUESTS WAITING ON THIS CUSTOMER — design screen 12.
+   *
+   * Read with the picture so a car on a bay can WEAR the question rather than
+   * relying on a push having been seen. A notification the customer missed is
+   * a car held for a day on a question nobody asked out loud.
+   */
+  approvals: Approval[];
 }
 
 export type CustomerState =
@@ -115,6 +123,7 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
        still calls this. Addresses are deliberately not fetched here rather
        than half-fetched: a surface that needs them is a server-rendered one. */
     addresses: [],
+    approvals: [],
   };
 }
 

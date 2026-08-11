@@ -21,8 +21,8 @@ import 'server-only';
 import { cache } from 'react';
 import { adminDb } from './firebaseAdmin';
 import type {
-  Booking, Invoice, Job, Notification, Protection, SavedAddress, Service,
-  Subscription, User, Vehicle, Visit,
+  Approval, Booking, Invoice, Job, Notification, Protection, SavedAddress,
+  Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
 
@@ -61,7 +61,8 @@ async function _loadCustomerPicture(session: {
   const { uid } = session;
 
   const [
-    profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap, notifSnap, addressSnap,
+    profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap, notifSnap,
+    addressSnap, approvalSnap,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.collection(`users/${uid}/vehicles`).get(),
@@ -82,6 +83,10 @@ async function _loadCustomerPicture(session: {
        disagree about which address is the default, and the default is what the
        sheet pre-selects. */
     db.collection(`users/${uid}/addresses`).get(),
+    /* WHAT THE STUDIO IS ASKING. Scoped by the session uid like every other
+       query here, and read with the picture so a car on a bay wears the
+       question — a push the customer missed is a car held for a day. */
+    db.collection('approvals').where('customerId', '==', uid).limit(20).get(),
   ]);
 
   const subscriptions = rows<Subscription>(subSnap).sort(
@@ -174,5 +179,7 @@ async function _loadCustomerPicture(session: {
     addresses: rows<SavedAddress>(addressSnap).sort((a, b) =>
       Number(b.isDefault) - Number(a.isDefault)
       || String(a.label).localeCompare(String(b.label))),
+    approvals: rows<Approval>(approvalSnap)
+      .sort((a, b) => millis(b.requestedAt) - millis(a.requestedAt)),
   };
 }

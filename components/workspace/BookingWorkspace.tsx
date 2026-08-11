@@ -29,6 +29,7 @@ import {
 } from '@/lib/firebaseService';
 import { formatCurrency, formatDate, formatTime, getStatusLabel } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
+import { ApprovalSection } from './ApprovalSection';
 import type { Booking, BookingStatus, Job, JobStatus } from '@/lib/types';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 import ErrorState from '@/components/ui/ErrorState';
@@ -278,6 +279,11 @@ export default function BookingWorkspace({ id, onBack, backLabel }: {
               <OperationalStage job={job} busy={busy} onAdvance={advanceJob} />
               <AssigneesSection job={job} actor={actor} record={record} onChange={() => refreshJob(job.id)} />
               <PhotosSection job={job} record={record} onChange={() => refreshJob(job.id)} />
+              {/* DESIGN 12's STUDIO SIDE. A customer cannot approve extra work
+                  the studio never asked for, so this is what makes that screen
+                  more than a page. Nothing here can ANSWER — the transition
+                  table refuses `approved` to the studio. */}
+              <ApprovalSection job={job} onAsked={() => refreshJob(job.id)} />
               <PaymentsSection job={job} actor={actor} record={record} onChange={() => refreshJob(job.id)} />
             </>
           ) : (

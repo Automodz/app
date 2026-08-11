@@ -9,7 +9,7 @@
  * fallback — comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
-import type { Booking, Estimate, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
+import type { Approval, Booking, Estimate, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
 import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
@@ -23,7 +23,7 @@ import type { CarPicture, CustomerPicture } from './source';
 import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst, isUpcoming } from './ownership';
 import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
 import {
-  changeWindowOf, bookingTransition, scheduledEpochMs,
+  changeWindowOf, bookingTransition, scheduledEpochMs, approvalHasExpired,
   CHANGE_WINDOW_HOURS, STUDIO_UTC_OFFSET_MIN,
 } from '@/lib/os/lifecycle';
 import { spanDays, DAY_OPEN_MIN, WORK_DAY_MIN } from '@/lib/availability';
@@ -50,6 +50,7 @@ import type { StudioModel } from '@/components/screens/StudioScreen';
 import type { BookedModel, BookedRow } from '@/components/screens/BookedScreen';
 import type { ManageBookingModel } from '@/components/studio/ManageBooking';
 import type { ScopeQuoteModel } from '@/components/studio/ScopeAndQuote';
+import type { ApprovalModel } from '@/components/studio/ApprovalScreen';
 import type { CarriedEstimate } from '@/components/studio/BookingFlow';
 import type { YouModel } from '@/components/screens/YouScreen';
 import type { MembershipModel } from '@/components/screens/MembershipScreen';
@@ -1249,6 +1250,19 @@ export function toLiveVisit(
     messageHref: waLink(
       `Hello AutoModz — about my ${car.vehicle.name} (${car.vehicle.registrationNumber}) in the studio today.`,
     ),
+    /* THE QUESTION THE STUDIO IS WAITING ON, on the surface that owns it.
+       Matched by VEHICLE rather than by job, because an approval belongs to
+       the car on the bay and the customer is standing in that car's visit. */
+    approval: (() => {
+      const waiting = pendingApprovals(picture.approvals, now)
+        .find(a => a.vehicleId === car.vehicle.id);
+      return waiting
+        ? {
+            line: waiting.reason,
+            href: hrefForDestination({ to: 'approval', approvalId: waiting.id }),
+          }
+        : undefined;
+    })(),
   };
 }
 
@@ -1428,6 +1442,83 @@ export function toScopeQuote(
     nextHrefBase: hrefForDestination({ to: 'studio.arrange' }),
     backHref: hrefForDestination({ to: 'studio' }),
   };
+}
+
+/* ── MID-VISIT APPROVAL ──────────────────────────────────────────────────── */
+
+/**
+ * SCREEN 12 — what the studio found, and what it changes.
+ *
+ * Every figure is read from the STORED approval, which the server froze when
+ * it asked. Nothing is recomputed: the customer taps a total, and the total
+ * they tapped is the total that is applied.
+ *
+ * `requestedByEmployeeId` is on the record and is deliberately absent from
+ * this model. §2.2 — no individual is ever named on a customer surface, and
+ * the design's own "requester identity" line is answered by the studio, not by
+ * a person.
+ */
+export function toApproval(
+  approval: Approval,
+  now = new Date(),
+): ApprovalModel {
+  const expired = approvalHasExpired(
+    { status: approval.status, requestedAtMs: approval.requestedAt?.toMillis?.() ?? 0 },
+    now,
+  );
+
+  /* "Same day" is a claim about the studio's evening, and it is only true when
+     the extra time still fits inside one. Above that it says so. */
+  const hours = Math.round(approval.timeDeltaMinutes / 60);
+  const timeDelta = approval.timeDeltaMinutes <= 0
+    ? 'No extra time'
+    : approval.timeDeltaMinutes < WORK_DAY_MIN
+      ? `+${hours === 0 ? `${approval.timeDeltaMinutes} min` : `${hours} hour${hours === 1 ? '' : 's'}`} · same day`
+      : `+${bayWords(approval.timeDeltaMinutes)} in the bay`;
+
+  const settled =
+    approval.status === 'approved'
+      ? 'You approved this. The studio is going ahead.'
+      : approval.status === 'declined'
+        ? 'You skipped this. The visit carries on as booked.'
+        : approval.status === 'cancelled'
+          ? 'The studio withdrew this — it turned out not to be needed.'
+          : approval.status === 'expired' || expired
+            ? 'This request has run out. Call the studio and we will pick it up.'
+            : undefined;
+
+  const until = approval.expiresAt?.toDate?.();
+
+  return {
+    id: approval.id,
+    eyebrow: ['In the studio', approval.vehicleName].filter(Boolean).join(' · '),
+    headline: approval.reason,
+    detail: approval.detail,
+    photos: approval.photos ?? [],
+    proposedLabel: approval.proposed.label,
+    priceDelta: `+${rupees(approval.priceDelta)}`,
+    timeDelta,
+    newTotal: rupees(approval.after.total),
+    currentTotal: rupees(approval.before.total),
+    settled,
+    standsUntil: !settled && until
+      ? `Stands until ${spokenHour(hourInStudio(until)) ?? 'the end of the day'}`
+      : undefined,
+    /* The visit it belongs to. A booking id is what the customer's own history
+       is addressed by while the car is here. */
+    visitHref: approval.bookingId
+      ? hrefForDestination({ to: 'visit', visitId: approval.bookingId })
+      : hrefForDestination({ to: 'home' }),
+  };
+}
+
+/** Approvals still waiting on this customer, newest first. */
+export function pendingApprovals(approvals: Approval[], now = new Date()): Approval[] {
+  return approvals
+    .filter(a => a.status === 'requested' && !approvalHasExpired(
+      { status: a.status, requestedAtMs: a.requestedAt?.toMillis?.() ?? 0 }, now,
+    ))
+    .sort((a, b) => (b.requestedAt?.toMillis?.() ?? 0) - (a.requestedAt?.toMillis?.() ?? 0));
 }
 
 /* ── THE BOOKING ─────────────────────────────────────────────────────────── */

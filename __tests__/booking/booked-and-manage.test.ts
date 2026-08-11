@@ -44,7 +44,7 @@ const picture = (bookings: Booking[]): CustomerPicture => ({
   cars: [{ vehicle, protections: [], visits: [], bookings, jobs: [] } as CarPicture],
   subscription: null, subscriptions: [], invoices: [], notifications: [],
   catalogue: [] as Service[],
-  addresses: [],
+  addresses: [], approvals: [],
 });
 
 /* ── finding it at all ───────────────────────────────────────────────────── */

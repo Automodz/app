@@ -54,7 +54,7 @@ const sub = (over: Partial<Subscription> = {}): Subscription => ({
 const picture = (subscription: Subscription | null): CustomerPicture => ({
   user: { uid: 'u1', name: 'Nikhil Patel', email: 'n@example.com', role: 'customer' } as User,
   cars: [car], subscription, subscriptions: subscription ? [subscription] : [],
-  invoices: [], notifications: [], catalogue: [] as Service[], addresses: [],
+  invoices: [], notifications: [], catalogue: [] as Service[], addresses: [], approvals: [],
 });
 
 /** What every surface says about the membership, for one subscription. */

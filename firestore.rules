@@ -155,6 +155,30 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdmin();
     }
 
+    // ── Approvals - the studio asks, the CUSTOMER answers (screen 12) ───
+    //    The only place a customer agrees to spend more after the work has
+    //    started, so every door here is deliberately narrow.
+    //
+    //    NOBODY WRITES FROM A CLIENT. Not the customer, and not the studio:
+    //      · A customer answering directly would set `status` and skip the
+    //        propagation entirely — the job's total, the booking's total and
+    //        the breakdown behind them all move in the SAME commit as the
+    //        answer, and rules cannot do that. The job would keep the old
+    //        figure and the approval would claim the new one.
+    //      · The studio writing directly could set `status: 'approved'`, which
+    //        is the studio answering for the customer. `APPROVAL_ACTORS` in
+    //        lib/os/lifecycle.ts refuses that, and the refusal is only worth
+    //        anything if there is no way around it.
+    //
+    //    /api/approval is the one door: POST to ask (staff), PATCH to answer
+    //    (owner). Reading is the owner's and the studio's — the customer must
+    //    see what they are being asked, and the bay must see the answer.
+    match /approvals/{id} {
+      allow read: if request.auth != null &&
+        (isStaff() || resource.data.customerId == request.auth.uid);
+      allow write: if false;
+    }
+
     // ── Estimates - what a customer was quoted (design screen 07) ───────
     //    OWNER-READ, SERVER-WRITE. An estimate is a PRICE, and the whole
     //    reason it is a stored object rather than a number in a query string
