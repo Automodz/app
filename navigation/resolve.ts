@@ -254,9 +254,13 @@ export const eventHref = (
     case 'approval_approved':
     case 'approval_declined':
       return source.kind === 'approval' ? approval(source.id) : visit(source.id);
-    case 'vehicle_ready':
+    /* Money to settle opens the place it is settled. "Ready" does not: the
+       two are separate events precisely so that a car with nothing outstanding
+       opens the visit rather than a payment screen that can only say there is
+       nothing to pay. */
     case 'payment_required':
       return settle(source.id);
+    case 'vehicle_ready':
     case 'payment_settled':
     case 'visit_completed':
       return visit(source.id);
