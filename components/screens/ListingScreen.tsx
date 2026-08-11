@@ -97,6 +97,7 @@ export function ListingScreen(
                 alt={p.alt}
                 fill
                 sizes={imageSizes.inMeasure}
+            className="am-photo"
                 style={{ objectFit: 'cover' }}
               />
             </div>
@@ -255,7 +256,7 @@ export function ListingScreen(
                     background: color.surface,
                   }}>
                     {c.photo ? (
-                      <Image src={c.photo} alt="" fill sizes="88px"
+                      <Image src={c.photo} alt="" fill sizes="88px" className="am-photo"
                         style={{ objectFit: 'cover' }} />
                     ) : null}
                   </div>

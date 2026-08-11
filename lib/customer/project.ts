@@ -369,8 +369,17 @@ function shotsOfVisit(visit: Visit, car: CarPicture) {
 
 /** The photographs a visit produced, in the order they were taken. */
 function framesOfVisit(visit: Visit, car: CarPicture) {
-  const fromStages = visit.stages.flatMap(s =>
-    s.media.filter(m => m.kind === 'photo').map(m => ({ url: m.url, caption: undefined as string | undefined })));
+  /* `stages` and `stage.media` are REQUIRED by the type and not by Firestore.
+     A sealed visit is an immutable historical record, so a document written
+     before either field existed is still exactly as it was — and reading one
+     unguarded threw, which took down the whole History room rather than
+     costing that visit its photographs. §19.1: an absence is a state, never a
+     crash. Nothing here invents a photograph; it just survives not finding
+     one. */
+  const fromStages = (visit.stages ?? []).flatMap(s =>
+    (s.media ?? [])
+      .filter(m => m.kind === 'photo')
+      .map(m => ({ url: m.url, caption: undefined as string | undefined })));
   if (fromStages.length > 0) return fromStages;
 
   const job = car.jobs.find(j => j.bookingId === visit.bookingId || j.id === visit.jobId);
@@ -382,14 +391,14 @@ function framesOfVisit(visit: Visit, car: CarPicture) {
 
 /** One sentence about the visit, in the studio's own words where it left any. */
 function visitLine(visit: Visit): string {
-  const note = visit.stages.map(s => s.note).filter(Boolean).pop();
+  const note = (visit.stages ?? []).map(s => s.note).filter(Boolean).pop();
   if (note) return note;
-  const names = visit.services.map(s => s.name);
+  const names = (visit.services ?? []).map(s => s.name);
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}.` : `${names[0] ?? 'A visit'}.`;
 }
 
 function visitTitle(visit: Visit): string {
-  const names = visit.services.map(s => s.name);
+  const names = (visit.services ?? []).map(s => s.name);
   return names[0] ?? 'A visit';
 }
 
@@ -1150,15 +1159,21 @@ export function toVisit(
     title: visitTitle(visit),
     line: visitLine(visit),
     photo: cover ? { url: cover.url, description: `${car.vehicle.name}, finished at AutoModz` } : undefined,
-    did: visit.stages.map(s => s.note).filter(Boolean).join(' ')
-      || visit.services.map(s => s.name).join(', '),
+    /* GUARDED, LIKE `framesOfVisit` ABOVE, AND FOR THE SAME REASON. A sealed
+       visit is immutable, so a record written before one of these fields
+       existed still has no value for it — and an unguarded read here does not
+       lose one visit's detail, it throws inside a `.map` over EVERY visit and
+       takes the whole History room down to the error boundary. Found by
+       rendering a record with a stage from an older schema. */
+    did: (visit.stages ?? []).map(s => s.note).filter(Boolean).join(' ')
+      || (visit.services ?? []).map(s => s.name).join(', '),
     photos: rest.map(f => ({
       url: f.url,
       description: `${car.vehicle.name} at AutoModz`,
       caption: f.caption,
     })),
     /* §16.2 — what it promised, as captured at seal. Never recomputed. */
-    promised: visit.termsCaptured.map(t => ({
+    promised: (visit.termsCaptured ?? []).map(t => ({
       label: PROTECTION_TITLE[t.kind],
       term: termWords(t.term).toLowerCase(),
     })),

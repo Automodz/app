@@ -696,6 +696,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                     alt={`${vehicle.name} at ${studio.name}`}
                     fill
                     sizes={imageSizes.half}
+            className="am-photo"
                     style={{ objectFit: 'cover' }}
                   />
                   {/* §21.1 — the scrim is solved for the worst image, and the
@@ -843,7 +844,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                 {c.photo ? (
                   <span style={{ position: 'relative', display: 'block', height: 126 }}>
                     <Image
-                      src={c.photo} alt={c.title} fill sizes="232px"
+                      src={c.photo} alt={c.title} fill sizes="232px" className="am-photo"
                       style={{ objectFit: 'cover' }}
                     />
                   </span>

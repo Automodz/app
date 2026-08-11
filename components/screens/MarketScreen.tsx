@@ -216,6 +216,7 @@ function Card({ car }: { car: MarketCard }) {
             alt={car.title}
             fill
             sizes={imageSizes.inMeasure}
+            className="am-photo"
             style={{ objectFit: 'cover' }}
           />
         ) : (

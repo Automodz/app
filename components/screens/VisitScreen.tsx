@@ -122,6 +122,7 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
             fill
             priority
             sizes={imageSizes.fullBleed}
+            className="am-photo"
             style={{ objectFit: 'cover' }}
           />
         ) : null}
@@ -155,6 +156,7 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
               alt={p.description}
               fill
               sizes={imageSizes.fullBleed}
+            className="am-photo"
               style={{ objectFit: 'cover' }}
             />
           </div>

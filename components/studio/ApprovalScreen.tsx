@@ -137,7 +137,8 @@ export function ApprovalScreen({ model }: { model: ApprovalModel }) {
                   fill
                   sizes={model.photos.length === 1 ? imageSizes.inMeasure : imageSizes.half}
                   style={{ objectFit: 'cover' }}
-                />
+                className="am-photo"
+          />
               </div>
               <figcaption style={{ marginTop: space.breath }}>
                 <Label style={{ fontSize: 9, letterSpacing: '0.16em' }}>{p.caption}</Label>

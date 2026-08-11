@@ -173,6 +173,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
               alt={`${vehicleName}, in the studio`}
               width={780} height={392}
               sizes={imageSizes.inMeasure}
+            className="am-photo"
               priority
               style={{ width: '100%', height: 196, objectFit: 'cover', display: 'block' }}
             />

@@ -167,6 +167,7 @@ function Visit({ visit, newest, vehicle }: {
             fill
             priority={newest}
             sizes={imageSizes.fullBleed}
+            className="am-photo"
             style={{ objectFit: 'cover' }}
           />
         ) : null}

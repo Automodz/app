@@ -88,7 +88,14 @@ export function Back(
          context tells a screen-reader user nothing about where they land. */
       aria-label={`Back to ${to.name}`}
       style={{
-        display: 'inline-flex',
+        /* BLOCK-LEVEL, NOT INLINE. `inline-flex` + `alignSelf` assumed a flex
+           column parent; inside the album's plain `<header>` the control sat
+           on the SAME LINE as the vehicle name that follows it, reading as one
+           run — "‹ Now BMW M340i xDrive Sport". `fit-content` keeps the target
+           the size of its content while the box still owns its line, and in a
+           flex column nothing changes at all. */
+        display: 'flex',
+        width: 'fit-content',
         alignItems: 'center',
         gap: space.breath,
         minHeight: TARGET_MIN,

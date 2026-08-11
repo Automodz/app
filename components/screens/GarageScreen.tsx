@@ -196,6 +196,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
               fill
               priority
               sizes={imageSizes.inMeasure}
+            className="am-photo"
               style={{ objectFit: 'cover' }}
             />
           ) : (

@@ -406,3 +406,64 @@ describe('a value never crushes the label beside it', () => {
     }
   });
 });
+
+describe('a sealed record from an older schema does not take the room down', () => {
+  /**
+   * A sealed visit is immutable, so a record written before a field existed
+   * still has no value for it — and `stages`, `stage.media`, `services` and
+   * `termsCaptured` were all read unguarded inside a `.map` over EVERY visit.
+   * One legacy document did not cost that visit its photographs; it threw, and
+   * the whole History room fell to the error boundary. Found by rendering a
+   * record with a stage from an older shape.
+   */
+  it('every array the projection reads off a visit is guarded', () => {
+    const src = codeOf('lib/customer/project.ts');
+    const unguarded = [
+      /visit\.stages\.(map|flatMap|filter)/,
+      /visit\.services\.(map|flatMap|filter)/,
+      /visit\.termsCaptured\.(map|flatMap|filter)/,
+      /s\.media\.(map|flatMap|filter)/,
+    ].filter(r => r.test(src)).map(String);
+    expect(unguarded).toEqual([]);
+  });
+});
+
+describe('a photograph that does not arrive composes rather than reports', () => {
+  /**
+   * §11.5. A failed `next/image` puts its ALT TEXT on screen at body size; on
+   * a full-bleed hero that is a sentence sprawled across the composition —
+   * "BMW M340i xDrive Sport, finished at AutoModz" — beside a browser glyph.
+   * The attribute stays, because that is what a screen reader reads.
+   */
+  it('the rule exists and hides only the rendered text', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+    const rule = css.slice(css.indexOf('.am-photo'), css.indexOf('.am-photo') + 120);
+    expect(rule).toMatch(/color: transparent/);
+    expect(rule).toMatch(/font-size: 0/);
+  });
+
+  it('and every customer photograph wears it', () => {
+    const withImages = CUSTOMER_FILES.filter(f => /<Image\b/.test(codeOf(f)));
+    for (const file of withImages) {
+      const src = codeOf(file);
+      const images = (src.match(/<Image\b/g) ?? []).length;
+      const marked = (src.match(/className="am-photo"/g) ?? []).length;
+      expect({ file, images, marked }).toEqual({ file, images, marked: images });
+    }
+  });
+});
+
+describe('the way back never shares a line with what follows it', () => {
+  /**
+   * `inline-flex` + `alignSelf` assumed a flex-column parent. In the album's
+   * plain `<header>` the control sat on the same line as the vehicle name and
+   * read as one run: "‹ Now BMW M340i xDrive Sport".
+   */
+  it('it is a block that sizes to its content', () => {
+    const src = codeOf('components/os/RoomHeader.tsx');
+    const back = src.slice(src.indexOf('export function Back'), src.indexOf('export interface RoomHeaderProps'));
+    expect(back).toMatch(/display: 'flex'/);
+    expect(back).toMatch(/width: 'fit-content'/);
+    expect(back).not.toMatch(/display: 'inline-flex'/);
+  });
+});

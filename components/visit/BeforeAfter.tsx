@@ -81,7 +81,8 @@ export function BeforeAfter({ before, after, subject }: BeforeAfterProps) {
           fill
           sizes={imageSizes.fullBleed}
           style={{ objectFit: 'cover' }}
-        />
+        className="am-photo"
+          />
 
         {/* BEFORE on top, clipped to the seam. `inset` rather than width, so
             the image inside never reflows — it is revealed, not resized, and
@@ -93,6 +94,7 @@ export function BeforeAfter({ before, after, subject }: BeforeAfterProps) {
             fill
             sizes={imageSizes.fullBleed}
             style={{ objectFit: 'cover' }}
+          className="am-photo"
           />
         </div>
 

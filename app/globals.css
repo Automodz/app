@@ -1269,6 +1269,24 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   .am-dial-value { font-size: calc(var(--dial-scale, 0.25) * 100cqw); }
 }
 
+/* ── A PHOTOGRAPH THAT DOES NOT ARRIVE ───────────────────────────────────
+   §11.5 — an absence is composed, never reported. A failed `next/image` puts
+   its ALT TEXT on screen at body size, and on a full-bleed hero that is a
+   sentence sprawled across the composition beside a browser glyph:
+
+       [x] BMW M340i xDrive Sport, finished at AutoModz
+
+   The alt attribute stays — it is what a screen reader reads, and hiding the
+   RENDERED text does not touch the accessible name. What is left is the
+   frame's own ground, which every one of these surfaces already paints.
+
+   A class rather than an inline style because the surfaces that need it are
+   server components, and `onError` is not available to them. */
+.am-photo {
+  color: transparent;
+  font-size: 0;
+}
+
 /* ── THE PRESS ───────────────────────────────────────────────────────────
    §7.3 `tick` (120ms) is "acknowledgement — a press, a toggle", and until
    now nothing in the product used it. Every control rendered through

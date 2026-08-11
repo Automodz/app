@@ -372,6 +372,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
             fill
             sizes={imageSizes.fullBleed}
             style={{ objectFit: 'cover' }}
+          className="am-photo"
           />
         </div>
       ) : null}
@@ -436,6 +437,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
             fill
             sizes={imageSizes.fullBleed}
             style={{ objectFit: 'cover' }}
+          className="am-photo"
           />
           <span
             aria-hidden
