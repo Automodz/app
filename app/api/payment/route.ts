@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { adminAuth, adminDb, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
+import { callerOf as sessionCaller } from '@/lib/server/session';
 import {
   createPaymentIntent, submitPaymentReference, settlePayment, PaymentError,
 } from '@/lib/server/paymentService';
@@ -21,15 +22,15 @@ export const dynamic = 'force-dynamic';
  * changes what they pay, so there is nothing to validate and nothing to forget
  * to validate.
  */
-async function callerOf(req: NextRequest): Promise<string | null> {
-  const header = req.headers.get('authorization');
-  if (!header?.startsWith('Bearer ')) return null;
-  try {
-    return (await adminAuth!.verifyIdToken(header.slice(7))).uid;
-  } catch {
-    return null;
-  }
-}
+/**
+ * THE CALLER — a bearer token, or the session cookie the rooms already use.
+ *
+ * The two sessions lapse independently, so a customer can reach a room that
+ * renders perfectly and find its one control claiming they are signed out.
+ * The cookie fallback is same-origin only; see `lib/server/session.ts`.
+ */
+const callerOf = (req: NextRequest) =>
+  sessionCaller(req, t => adminAuth!.verifyIdToken(t));
 
 const configured = () => {
   try {

@@ -4,6 +4,7 @@ import {
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth, googleProvider } from '../firebase';
 import type { User } from '../types';
+import { authedFetch } from '../clientSession';
 
 const getAdminEmail = () =>
   process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase() || 'hello.automodz@gmail.com';
@@ -76,10 +77,8 @@ export const signInWithGoogle = async () => {
 export const linkEmployeeRole = async (profile: User): Promise<User> => {
   if (profile.role === 'admin' || !auth.currentUser) return profile;
   try {
-    const token = await auth.currentUser.getIdToken();
-    const res = await fetch('/api/employee/link', {
+    const res = await authedFetch('/api/employee/link', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return profile;
     const data = await res.json() as { role?: User['role']; employeeId?: string };

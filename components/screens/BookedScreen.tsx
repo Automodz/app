@@ -40,6 +40,15 @@ export interface BookedModel {
   standing: string;
   /** True while the studio has not yet accepted. Nothing is promised then. */
   awaiting: boolean;
+  /**
+   * IS THE STUDIO STILL HOLDING A BAY FOR THIS?
+   *
+   * The pane is lit and breathing ONLY then. A cancelled or expired visit that
+   * pulses is the screen saying something is happening while its own headline
+   * says it is not — and the pulse is the product's entire vocabulary for
+   * "this is happening now" (§17.1).
+   */
+  holds: boolean;
   /** "Wednesday 12 February", or "Wed 12 – Thu 13 February" across days. */
   when: string;
   /** How the car gets there, in a sentence. */
@@ -57,17 +66,17 @@ export interface BookedModel {
 
 export function BookedScreen({ model }: { model: BookedModel }) {
   const {
-    headline, standing, awaiting, when, collection, rows,
+    headline, standing, awaiting, holds, when, collection, rows,
     calendarHref, manageHref, lockedBecause, visitHref, homeHref,
   } = model;
 
   return (
     <Screen top={space.gap}>
       <OfflineNote />
-      <Statement eyebrow={standing} lit={!awaiting} size={30}>{headline}</Statement>
+      <Statement eyebrow={standing} lit={holds && !awaiting} size={30}>{headline}</Statement>
 
       <Pane
-        tone={awaiting ? 'plain' : 'lit'}
+        tone={holds && !awaiting ? 'lit' : 'plain'}
         style={{
           marginTop: space.gap,
           padding: `${space.gap + 2}px ${space.gap + 4}px`,
@@ -75,7 +84,7 @@ export function BookedScreen({ model }: { model: BookedModel }) {
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: space.line }}>
-          {awaiting ? null : <Pulse />}
+          {holds && !awaiting ? <Pulse /> : null}
           <span className="am-display" style={{ fontSize: 22, lineHeight: 1.2 }}>{when}</span>
         </span>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: color.ink2 }}>

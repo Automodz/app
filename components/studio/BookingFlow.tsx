@@ -29,7 +29,7 @@ import { useRouter } from 'next/navigation';
 /* WAITED FOR, NOT GUESSED AT — `auth.currentUser` is null until the SDK has
    restored the persisted session, and no customer room subscribes to make that
    happen. See lib/clientSession.ts. */
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import { washesLeftOf } from '@/lib/os/club';
 import { generateTimeSlots } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils';
@@ -260,12 +260,10 @@ export function BookingFlow({
        as "that slot has just gone". A silent failure that reads as an answer
        is worse than an error. */
     void (async () => {
-      const token = await idToken();
-      if (!token || cancelled) return;
+      if (cancelled) return;
       try {
-        const r = await fetch('/api/availability', {
+        const r = await authedFetch('/api/availability', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             dates: nextDays(),
             category: service.category,
@@ -317,12 +315,9 @@ export function BookingFlow({
     let live = true;
 
     void (async () => {
-      const token = await idToken();
-      if (!token || !live) return;
-      try {
-        const res = await fetch('/api/estimate', {
+            try {
+        const res = await authedFetch('/api/estimate', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             vehicleId, serviceId: service.id, preview: true,
             pickup, drop, useMembershipWash: washCovered,
@@ -394,15 +389,9 @@ export function BookingFlow({
          anybody. Every other client caller already did this; this one did not.
          The token is the same one `/api/session` was given — minted by the
          client SDK, refreshed by it, and verified server-side. */
-      const token = await idToken();
-      if (!token) {
-        setError('Your session has expired. Sign in again and we’ll hold the slot.');
-        return;
-      }
-
-      const res = await fetch('/api/booking/create', {
+      
+      const res = await authedFetch('/api/booking/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           vehicleId,
           serviceId: service!.id,

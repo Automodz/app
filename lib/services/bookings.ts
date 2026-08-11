@@ -13,7 +13,7 @@ import {
   setDoc,
   } from 'firebase/firestore';
 import { db } from '../firebase';
-import { idToken } from '../clientSession';
+import { authedFetch } from '../clientSession';
 import type { Booking, Notification } from '../types';
 import { notificationHref } from '@/navigation/resolve';
 
@@ -91,11 +91,8 @@ export const cancelBooking = async (
 ): Promise<void> => {
   /* Waited for — `/studio` is a customer room and mounts no AuthProvider, so
      `currentUser` can still be null when a customer presses cancel. */
-  const token = await idToken();
-  if (!token) throw new Error('not-signed-in');
-  const res = await fetch('/api/booking/cancel', {
+    const res = await authedFetch('/api/booking/cancel', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ bookingId, ...opts }),
   });
   if (!res.ok) {
@@ -155,11 +152,8 @@ export const markNoShow = async (
 export const rescheduleBooking = async (
   id: string, scheduledDate: string, scheduledTime: string,
 ): Promise<void> => {
-  const token = await idToken();
-  if (!token) throw new Error('not-signed-in');
-  const res = await fetch('/api/booking/reschedule', {
+    const res = await authedFetch('/api/booking/reschedule', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ bookingId: id, scheduledDate, scheduledTime }),
   });
   if (!res.ok) {
@@ -230,14 +224,10 @@ export const updateBookingStatusWithNotification = async (
      Best-effort, and deliberately so: a customer told late is a problem, a
      status update that fails because the telling failed is a worse one. */
   try {
-    const token = await idToken();
-    if (token) {
-      await fetch('/api/notify/stage', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId: booking.id, status }),
-      });
-    }
+    await authedFetch('/api/notify/stage', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId: booking.id, status }),
+    });
   } catch { /* the studio's record is written either way */ }
 
   if (status === 'completed') {

@@ -29,7 +29,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import { color, space, HAIRLINE, TARGET_MIN, radius, type as typeScale } from '@/design';
 import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
@@ -116,12 +116,9 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
     body: Record<string, unknown>, preview: boolean,
   ): Promise<{ id: string } | null> => {
     const mine = ++seq.current;
-    const token = await idToken();
-    if (!token) { setError(REFUSAL['not-signed-in']); return null; }
-
-    const res = await fetch('/api/estimate', {
+    
+    const res = await authedFetch('/api/estimate', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         vehicleId: model.vehicleId,
         serviceId: model.serviceId,

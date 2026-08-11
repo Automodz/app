@@ -21,7 +21,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link2, Link2Off, Loader2 } from 'lucide-react';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import type { CarListing } from '@/lib/types';
 
 const FAULT: Record<string, string> = {
@@ -41,11 +41,8 @@ export function ListingVehicleLink(
   const send = async (clear: boolean) => {
     setBusy(true);
     try {
-      const token = await idToken();
-      if (!token) throw new Error('not-signed-in');
-      const res = await fetch('/api/cars/link', {
+            const res = await authedFetch('/api/cars/link', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           listingId: listing.id,
           vehicleId: clear ? '' : vehicleId.trim(),

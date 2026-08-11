@@ -3,7 +3,7 @@ import {
   query, where, limit,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { idToken } from '../clientSession';
+import { authedFetch } from '../clientSession';
 import type { Notification } from '../types';
 
 export const getUserNotifications = async (uid: string): Promise<Notification[]> => {
@@ -32,11 +32,8 @@ export const markAllNotificationsRead = async (uid: string) => {
 /** Fire-and-forget ops event → owner gets notified (server-verified ownership). */
 export const fireOpsEvent = async (event: 'booking_created' | 'booking_cancelled' | 'membership_pending' | 'quote_requested', id: string) => {
   try {
-    const token = await idToken();
-    if (!token) return;
-    await fetch('/api/notify/event', {
+        await authedFetch('/api/notify/event', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ event, id }),
     });
   } catch { /* never blocks the user flow */ }

@@ -24,6 +24,7 @@
  */
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import { isSameOrigin } from '@/lib/os/origin';
 
 const codeOf = (p: string) =>
   readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -248,5 +249,69 @@ describe('nothing soft-navigates across a change the server must see', () => {
   it('the door itself never soft-navigates at all', () => {
     /* Every path out of `/auth/login` crosses the cookie. */
     expect(login).not.toMatch(/router\./);
+  });
+});
+
+/**
+ * TWO SESSIONS, AND A CUSTOMER WHO IS SIGNED IN TO BOTH.
+ *
+ * The rooms authenticate with the httpOnly cookie; the API routes
+ * authenticated with a Bearer token from the Firebase client SDK. They lapse
+ * independently — the token after an hour, the cookie after fourteen days — so
+ * a customer could reach a room that rendered perfectly and find its one
+ * control saying "your session has expired". Observed on the scope screen: the
+ * coverages drew and the estimate beside them refused to price.
+ *
+ * A route may now accept either. The cookie path is same-origin only, because
+ * a cookie travels on a cross-site request and a bearer token does not.
+ */
+describe('a route accepts a token OR the session the rooms already trust', () => {
+  const request = (headers: Record<string, string>) =>
+    ({ headers: { get: (k: string) => headers[k.toLowerCase()] ?? null } }) as unknown as Request;
+
+  it('a same-origin request may fall back to the cookie', () => {
+    expect(isSameOrigin(request({ 'sec-fetch-site': 'same-origin' }))).toBe(true);
+  });
+
+  it('A CROSS-SITE REQUEST MAY NOT — that is the CSRF door', () => {
+    /* Without this, another origin could post a form that books, cancels or
+       pays as the customer, because their cookie would ride along. */
+    expect(isSameOrigin(request({ 'sec-fetch-site': 'cross-site' }))).toBe(false);
+    expect(isSameOrigin(request({ 'sec-fetch-site': 'same-site' }))).toBe(false);
+    expect(isSameOrigin(request({ 'sec-fetch-site': 'none' }))).toBe(false);
+  });
+
+  it('an older browser is judged on Origin against the host we were reached on', () => {
+    expect(isSameOrigin(request({ origin: 'https://automodz.app', host: 'automodz.app' }))).toBe(true);
+    expect(isSameOrigin(request({ origin: 'https://evil.test', host: 'automodz.app' }))).toBe(false);
+  });
+
+  it('and NO Origin is not treated as same-origin — that is what a form post sends', () => {
+    expect(isSameOrigin(request({ host: 'automodz.app' }))).toBe(false);
+    expect(isSameOrigin(request({}))).toBe(false);
+  });
+
+  it('the token is tried FIRST, and the cookie only behind the guard', () => {
+    /* Asserted on the source because `callerOf` composes the Admin SDK, which
+       cannot load in this environment — and what matters is the ORDER: a
+       token, then a same-origin check, then the cookie. */
+    const session = readFileSync('lib/server/session.ts', 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    const fn = session.slice(session.indexOf('export async function callerOf'));
+    expect(fn.indexOf('verifyBearer')).toBeLessThan(fn.indexOf('isSameOrigin'));
+    expect(fn.indexOf('isSameOrigin')).toBeLessThan(fn.indexOf('currentSession'));
+    expect(fn).toMatch(/if \(!isSameOrigin\(req\)\) return null;/);
+  });
+
+  it('every route that takes the cookie takes it through that one helper', () => {
+    /* A route that read the cookie itself would be a route with no CSRF
+       guard, and it would look exactly like the others. */
+    const routes = walk('app/api').filter(f => /route\.tsx?$/.test(f));
+    const offenders = routes.filter(f => {
+      const src = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      return /currentSession\(\)/.test(src) && /POST|PATCH|PUT|DELETE/.test(src)
+        && !/callerOf/.test(src);
+    });
+    expect(offenders).toEqual([]);
   });
 });

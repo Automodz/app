@@ -26,7 +26,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import { color, space, radius, imageSizes } from '@/design';
 import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
@@ -77,11 +77,8 @@ export function ApprovalScreen({ model }: { model: ApprovalModel }) {
     setBusy(choice);
     setError(null);
     try {
-      const token = await idToken();
-      if (!token) { setError(REFUSAL['not-signed-in']); return; }
-      const res = await fetch('/api/approval', {
+            const res = await authedFetch('/api/approval', {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalId: model.id, answer: choice }),
       });
       if (!res.ok) {

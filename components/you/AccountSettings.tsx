@@ -21,7 +21,7 @@
  * browser session, so only these carry one.
  */
 import { useEffect, useState } from 'react';
-import { currentUid, idToken } from '@/lib/clientSession';
+import { currentUid, authedFetch } from '@/lib/clientSession';
 import { getUserProfile } from '@/lib/firebaseService';
 import type { User } from '@/lib/types';
 import { useAppStore } from '@/lib/store';
@@ -171,9 +171,7 @@ export function AccountSettings({
     if (panel !== 'addresses' || addresses) return;
     let live = true;
     void (async () => {
-      const token = await idToken();
-      if (!token || !live) return;
-      const res = await fetch('/api/addresses', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await authedFetch('/api/addresses');
       if (!res.ok || !live) { if (live) setAddresses([]); return; }
       const b = await res.json() as { addresses: SavedAddress[] };
       if (live) setAddresses(b.addresses ?? []);
@@ -274,13 +272,9 @@ export function AccountSettings({
     setError(null);
     try {
       const [{ auth }] = await Promise.all([import('@/lib/firebase')]);
-      const token = await idToken(true);
-      if (!token) throw new Error('not-signed-in');
-
-      const res = await fetch('/api/account/delete', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      /* FORCED. Deleting an account is the one act that should be refused on a
+         token minted before the customer last proved who they were. */
+      const res = await authedFetch('/api/account/delete', { method: 'POST' }, true);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setError((body as { error?: string })?.error === 'staff-account'
@@ -293,7 +287,7 @@ export function AccountSettings({
          keeps rendering a customer who no longer exists. */
       const { signOut } = await import('firebase/auth');
       await signOut(auth).catch(() => {});
-      await fetch('/api/session', { method: 'DELETE' }).catch(() => {});
+      await authedFetch('/api/session', { method: 'DELETE' }).catch(() => {});
       /* A document load, for the same reason as signing out — and more so:
          every cached payload here belongs to an account that no longer
          exists. */
@@ -315,11 +309,8 @@ export function AccountSettings({
     setAddrBusy(true);
     setError(null);
     try {
-      const token = await idToken();
-      if (!token) throw new Error('not-signed-in');
-      const res = await fetch('/api/addresses', {
+            const res = await authedFetch('/api/addresses', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(editing),
       });
       if (!res.ok) {
@@ -340,11 +331,8 @@ export function AccountSettings({
     setAddrBusy(true);
     setError(null);
     try {
-      const token = await idToken();
-      if (!token) throw new Error('not-signed-in');
-      const res = await fetch(`/api/addresses?id=${encodeURIComponent(id)}`, {
+            const res = await authedFetch(`/api/addresses?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
@@ -366,11 +354,8 @@ export function AccountSettings({
     setVpaBusy(true);
     setError(null);
     try {
-      const token = await idToken();
-      if (!token) throw new Error('not-signed-in');
-      const res = await fetch('/api/profile/preferences', {
+            const res = await authedFetch('/api/profile/preferences', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ upiVpa: vpa }),
       });
       if (!res.ok) {

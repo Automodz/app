@@ -1,16 +1,24 @@
 /**
- * ARRANGING A VISIT HAS TO SAY WHO IS ARRANGING IT.
+ * A REQUEST FROM THE BROWSER HAS TO SAY WHO IS MAKING IT.
  *
- * `/api/booking/create` authenticates with a Bearer ID token and reads no
- * cookie — the session cookie exists for SERVER RENDERING and that route never
- * looks at it. `BookingFlow` sent no Authorization header at all, so every
- * booking in the product came back 401 and the customer was told "we couldn't
- * arrange that": indistinguishable from the studio being full, for a request
- * that had simply never identified anybody. It is the one revenue action in
- * the customer application.
+ * `BookingFlow` once sent no Authorization header at all, so every booking in
+ * the product came back 401 and the customer was told "we couldn't arrange
+ * that" — indistinguishable from the studio being full, for a request that had
+ * simply never identified anybody. It is the one revenue action in the
+ * customer application.
  *
- * Written as a sweep over the routes rather than a single assertion, so the
- * next client caller of a Bearer-authenticated route cannot repeat it.
+ * ── AND THEN THE OPPOSITE FAILURE ────────────────────────────────────────
+ * Every caller was then written as `const token = await idToken(); if (!token)
+ * return 'session expired'`. The rooms authenticate with the httpOnly cookie
+ * and the routes with a token, and those lapse independently — so a customer
+ * reached a room that had just rendered their car, their visit and their
+ * price, tapped its one control, and was told they were signed out. They were
+ * not.
+ *
+ * `authedFetch` is the one answer to both: it carries the token when there IS
+ * one, and otherwise lets the same-origin cookie identify the caller. The
+ * sweep below is over that helper rather than over the header, because the
+ * helper is now the thing that can be forgotten.
  */
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
@@ -30,29 +38,28 @@ const bearerRoutes = walk('app/api')
   .map(f => f.replace(/^app/, '').replace(/\/route\.tsx?$/, ''));
 
 describe('the booking request identifies the customer', () => {
-  it('sends a Bearer token, not just a body', () => {
-    const flow = codeOf('components/studio/BookingFlow.tsx');
-    const call = flow.slice(flow.indexOf("fetch('/api/booking/create'"));
-    expect(call).toMatch(/Authorization: `Bearer \$\{token\}`/);
+  const flow = codeOf('components/studio/BookingFlow.tsx');
+
+  it('goes through the helper that identifies it', () => {
+    expect(flow).toMatch(/authedFetch\('\/api\/booking\/create'/);
   });
 
-  it('gets that token from the signed-in Firebase session, WAITING for it', () => {
+  it('and the helper waits for the SDK rather than reading it too early', () => {
     /* `auth.currentUser` is null until the SDK restores the persisted session,
        and a customer room mounts no AuthProvider to make that happen — so
-       reading it directly returned "not yet", not "signed out". One helper
-       waits; see lib/clientSession.ts. */
-    const flow = codeOf('components/studio/BookingFlow.tsx');
-    expect(flow).toMatch(/const token = await idToken\(\)/);
+       reading it directly returns "not yet", not "signed out". */
+    const session = codeOf('lib/clientSession.ts');
+    expect(session).toMatch(/await idToken\(forceFresh\)/);
+    expect(session).toMatch(/waitForUser/);
     expect(flow).not.toMatch(/auth\??\.currentUser/);
   });
 
-  it('says so plainly when there is no session, rather than blaming the studio', () => {
-    /* "We couldn't arrange that" for an unauthenticated request reads as the
-       studio being unable to take the booking. It was ours, and it was fixable
-       by the customer. */
-    const flow = codeOf('components/studio/BookingFlow.tsx');
-    const guard = flow.slice(flow.indexOf('if (!token)'), flow.indexOf("fetch('/api/booking/create'"));
-    expect(guard).toMatch(/session has expired/i);
+  it('and it no longer stands down because the SDK is asleep', () => {
+    /* THE SECOND FAILURE. A customer signed in enough to SEE the sheet is
+       signed in enough to book from it; only a 401 from the server means
+       otherwise. */
+    expect(flow).not.toMatch(/if \(!token\)/);
+    expect(codeOf('lib/clientSession.ts')).toMatch(/credentials: 'same-origin'/);
   });
 });
 
@@ -63,20 +70,27 @@ describe('no client caller of a Bearer route forgets the header', () => {
     expect(bearerRoutes.length).toBeGreaterThan(3);
   });
 
-  it('every client fetch of one carries an Authorization header', () => {
+  it('every client call of one goes through authedFetch', () => {
+    /* The assertion moved from the HEADER to the HELPER, because the header is
+       no longer the whole answer: a token when there is one, the same-origin
+       cookie when there is not. A bare `fetch` to one of these routes has
+       neither guarantee. */
     const clients = [...walk('components'), ...walk('lib')]
-      .filter(f => !f.includes('/server/'));
+      .filter(f => !f.includes('/server/') && !f.includes('clientSession'));
 
     const offenders: string[] = [];
     for (const file of clients) {
       const src = codeOf(file);
       for (const route of bearerRoutes) {
-        const at = src.indexOf(`'${route}'`);
-        if (at === -1) continue;
-        /* The options object of that call — generous enough to span a
-           multi-line fetch, tight enough not to reach the next one. */
-        const call = src.slice(at, at + 400);
-        if (!/Authorization/.test(call)) offenders.push(`${file} → ${route}`);
+        let at = src.indexOf(`'${route}'`);
+        while (at !== -1) {
+          /* Look BACKWARDS from the address to the call that names it. */
+          const opener = src.slice(Math.max(0, at - 60), at);
+          if (/\bfetch\($/.test(opener.trimEnd()) && !/authedFetch\($/.test(opener.trimEnd())) {
+            offenders.push(`${file} → ${route}`);
+          }
+          at = src.indexOf(`'${route}'`, at + 1);
+        }
       }
     }
     expect(offenders).toEqual([]);

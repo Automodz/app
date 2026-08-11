@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { adminAuth, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
+import { callerOf as sessionCaller } from '@/lib/server/session';
 import {
   listAddresses, saveAddress, deleteAddress, AddressError,
 } from '@/lib/server/addressService';
@@ -18,15 +19,15 @@ export const dynamic = 'force-dynamic';
  * Ownership is the verified uid and nothing else — no body field names a user,
  * so there is no `userId` to forge.
  */
-async function callerOf(req: NextRequest): Promise<string | null> {
-  const header = req.headers.get('authorization');
-  if (!header?.startsWith('Bearer ')) return null;
-  try {
-    return (await adminAuth!.verifyIdToken(header.slice(7))).uid;
-  } catch {
-    return null;
-  }
-}
+/**
+ * THE CALLER — a bearer token, or the session cookie the rooms already use.
+ *
+ * The two sessions lapse independently, so a customer can reach a room that
+ * renders perfectly and find its one control claiming they are signed out.
+ * The cookie fallback is same-origin only; see `lib/server/session.ts`.
+ */
+const callerOf = (req: NextRequest) =>
+  sessionCaller(req, t => adminAuth!.verifyIdToken(t));
 
 const configured = () => {
   try {

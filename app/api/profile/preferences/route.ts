@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { adminAuth, adminDb, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
+import { callerOf as sessionCaller } from '@/lib/server/session';
 import { isVpa, normaliseVpa } from '@/lib/os/upi';
 import { reportError } from '@/lib/server/report';
 
@@ -29,16 +30,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  const header = req.headers.get('authorization');
-  if (!header?.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  let uid: string;
-  try {
-    uid = (await adminAuth!.verifyIdToken(header.slice(7))).uid;
-  } catch {
-    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-  }
+  /* A bearer token, or the session cookie the rooms already use — the two
+     lapse independently, and a customer signed in enough to SEE a screen is
+     signed in enough to use it. Same-origin only; see lib/server/session.ts. */
+  const uid = await sessionCaller(req, t => adminAuth!.verifyIdToken(t));
+  if (!uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => null) as
     { quietMode?: unknown; upiVpa?: unknown } | null;

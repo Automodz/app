@@ -22,6 +22,7 @@ import { MotionConfig, motion, AnimatePresence, useReducedMotion } from 'framer-
 import { color, space, INSET, MEASURE, duration, curve, HAIRLINE } from '@/design';
 import { Heading, Text, Button } from '@/components/system';
 import type { WelcomeModel } from '@/lib/customer/welcome';
+import { authedFetch } from '@/lib/clientSession';
 
 /** Said the same way whichever path declined — one sentence, one place. */
 const NOT_NOW = 'Not this time. You can turn it on later in You.';
@@ -73,19 +74,17 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
     setBusy(true);
     setNote(null);
     try {
-      /* WAITED FOR, NOT GUESSED AT. This read `auth.currentUser` immediately
-         after importing the SDK — and on a customer room nothing has ever
-         subscribed to auth state, so the persisted session had not been
-         restored yet and it was reliably null. Every customer saw "that
-         didn't save", `welcomedAt` was never written, and the arrival greeted
-         them again on every sign-in for ever. See lib/clientSession.ts. */
-      const { idToken } = await import('@/lib/clientSession');
-      const token = await idToken();
-      if (!token) throw new Error('signed-out');
-
-      const res = await fetch('/api/welcome/complete', {
+      /* WAITED FOR, NOT GUESSED AT — and no longer refused when the wait
+         comes back empty. This read `auth.currentUser` immediately after
+         importing the SDK, and on a customer room nothing subscribes to auth
+         state, so the persisted session had not been restored and it was
+         reliably null: every customer saw "that didn't save", `welcomedAt` was
+         never written, and the arrival greeted them again on every sign-in for
+         ever. `authedFetch` carries the token when the SDK has one and lets
+         the same-origin session cookie identify the customer when it does not
+         — and the cookie is the very thing that rendered this screen. */
+      const res = await authedFetch('/api/welcome/complete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({}),
       });
       if (!res.ok) throw new Error('mark-failed');

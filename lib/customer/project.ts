@@ -1797,6 +1797,9 @@ export function toBooked(
       : 'This visit was cancelled.',
     standing: standingWord(b),
     awaiting,
+    /* A bay is only HELD while the booking is still standing. A cancelled or
+       expired visit that breathes amber contradicts its own headline. */
+    holds: !settled,
     when: whenWords(b),
     collection,
     rows,

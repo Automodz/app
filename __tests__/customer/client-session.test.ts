@@ -83,12 +83,20 @@ describe('nothing in the browser reads currentUser without waiting', () => {
   });
 
   it('the arrival records itself through the helper', () => {
-    /* The reported bug, pinned: the write that ends the welcome must not be
-       able to ask before the SDK knows who is asking. */
+    /* The reported bug, pinned: the write that ends the welcome must not ask
+       before the SDK knows who is asking — and must not REFUSE when the SDK
+       still does not know. `authedFetch` waits for the token, carries it when
+       there is one, and otherwise lets the same-origin session cookie identify
+       the customer. That cookie is the very thing that rendered this screen,
+       so a customer who can see the welcome can always finish it. */
     const src = codeOf('components/screens/WelcomeScreen.tsx');
     const finish = src.slice(src.indexOf('const finish'), src.indexOf('welcome/complete') + 200);
-    expect(finish).toMatch(/await idToken\(\)/);
-    expect(finish).toMatch(/Authorization: `Bearer \$\{token\}`/);
+    expect(finish).toMatch(/authedFetch\('\/api\/welcome\/complete'/);
+    expect(finish).not.toMatch(/if \(!token\)/);
+
+    const helper = codeOf('lib/clientSession.ts');
+    expect(helper).toMatch(/const token = await idToken\(forceFresh\)/);
+    expect(helper).toMatch(/if \(token\) headers\.set\('Authorization'/);
   });
 });
 

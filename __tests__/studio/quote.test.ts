@@ -51,18 +51,19 @@ describe('a member is quoted the member rate', () => {
     expect(flow).not.toMatch(/from '@\/lib\/services\/pricing'/);
     expect(flow).not.toMatch(/computeBestDiscount|applyDiscount/);
     expect(flow).toMatch(/preview: true/);
-    expect(flow).toMatch(/fetch\('\/api\/estimate'/);
+    expect(flow).toMatch(/authedFetch\('\/api\/estimate'/);
   });
 
   it('and it needs no client-side session to get the member rate', () => {
-    /* No Zustand user, no uid lookup, nothing optional between a member and
-       their rate — the request carries a bearer token and the server reads the
-       membership itself. */
+    /* No Zustand user, no uid lookup, and no standing down because the
+       Firebase SDK has not woken up — nothing optional stands between a member
+       and their rate. `authedFetch` identifies the caller by token or by the
+       cookie the room was already rendered from, and the SERVER reads the
+       membership. */
     expect(flow).not.toMatch(/from '@\/lib\/store'/);
     expect(flow).not.toMatch(/currentUid\(\)/);
-    const quote = flow.slice(flow.indexOf("fetch('/api/estimate'"),
-      flow.indexOf("fetch('/api/estimate'") + 400);
-    expect(quote).toMatch(/Authorization: `Bearer \$\{token\}`/);
+    expect(flow).not.toMatch(/if \(!token\)/);
+    expect(codeOf('lib/clientSession.ts')).toMatch(/if \(token\) headers\.set\('Authorization'/);
   });
 
   it('and shows nothing rather than a guess when the studio is unreachable', () => {

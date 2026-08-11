@@ -12,6 +12,7 @@ import 'server-only';
  * client-side sign-in flow; this is the copy the server can read.
  */
 import { cache } from 'react';
+import { isSameOrigin } from '@/lib/os/origin';
 import { cookies } from 'next/headers';
 import { adminAuth } from './firebaseAdmin';
 
@@ -84,4 +85,57 @@ async function _currentSession(): Promise<ServerSession | null> {
     // expired, revoked or forged — all indistinguishable to the customer
     return null;
   }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   WHO IS CALLING AN API ROUTE.
+
+   Every customer-facing route authenticated with a Bearer ID token, minted by
+   the Firebase client SDK. The ROOMS, meanwhile, authenticate with the
+   httpOnly session cookie. Two sessions, and they can lapse independently: the
+   client SDK's token expires after an hour and is refreshed only while a page
+   with the SDK loaded is alive, while the cookie stands for fourteen days.
+
+   A customer therefore reaches a room that renders perfectly and then finds
+   its one control saying "your session has expired" — which is both true and
+   useless, because they ARE signed in. Observed on the scope screen: the room
+   drew the coverages and the estimate beside them refused to price.
+
+   So a route may accept either. The bearer token is preferred where it exists,
+   because it is the stronger proof; the cookie is the fallback, and it is
+   verified with `checkRevoked` exactly as the rooms verify it.
+
+   ── AND THE COOKIE FALLBACK IS CSRF-GUARDED ──────────────────────────────
+   A cookie travels on a cross-site request; a bearer token does not. Accepting
+   the cookie on a state-changing route without a check would let another
+   origin post a form that books, cancels or pays as the customer. So the
+   fallback is allowed ONLY for a same-origin request, proven by the browser's
+   own `Sec-Fetch-Site` and by `Origin` matching the host. A request that
+   carries neither — a curl, a server-to-server call — is refused the cookie
+   path and must bring a token.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The verified uid behind a request, or null.
+ *
+ * `verifyBearer` is injected because `lib/server/session.ts` must stay free of
+ * the Admin Auth import cycle the routes already carry; every caller passes
+ * `adminAuth!.verifyIdToken`.
+ */
+export async function callerOf(
+  req: Request,
+  verifyBearer: (token: string) => Promise<{ uid: string }>,
+): Promise<string | null> {
+  const header = req.headers.get('authorization');
+  if (header?.startsWith('Bearer ')) {
+    try {
+      return (await verifyBearer(header.slice(7))).uid;
+    } catch {
+      /* An expired token is not a refusal on its own — the cookie may still
+         stand, and the customer is still signed in. Fall through. */
+    }
+  }
+
+  if (!isSameOrigin(req)) return null;
+  return (await currentSession())?.uid ?? null;
 }

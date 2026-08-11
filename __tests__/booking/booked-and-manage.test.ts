@@ -120,6 +120,16 @@ describe('screen 09 — the bay is yours', () => {
     }
   });
 
+  it('and it does NOT breathe — the studio is holding nothing', () => {
+    /* The pulse is the product's whole vocabulary for "this is happening now".
+       A cancelled visit that pulses contradicts its own headline. */
+    for (const status of ['cancelled', 'expired', 'completed'] as const) {
+      expect(toBooked(picture([booking({ status })]), 'bk1', NOW_FAR)!.holds).toBe(false);
+    }
+    expect(toBooked(picture([booking()]), 'bk1', NOW_FAR)!.holds).toBe(true);
+    expect(toBooked(picture([booking({ status: 'in_progress' })]), 'bk1', NOW_FAR)!.holds).toBe(true);
+  });
+
   it('the collection sentence follows the legs actually booked', () => {
     const plain = toBooked(picture([booking()]), 'bk1', NOW_FAR)!;
     expect(plain.collection).toMatch(/Bring it to the studio/);

@@ -12,7 +12,7 @@
  * and the customer are the same person.
  */
 import { useState } from 'react';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch, idToken } from '@/lib/clientSession';
 import { color, space, radius, HAIRLINE } from '@/design';
 import { Modal, Heading, Text, Button } from '@/components/system';
 
@@ -58,7 +58,7 @@ export function AskAboutCar(
          throwing, so the anonymous case needs no try/catch of its own. */
       const token = (await idToken()) ?? undefined;
 
-      const res = await fetch('/api/cars/lead', {
+      const res = await authedFetch('/api/cars/lead', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

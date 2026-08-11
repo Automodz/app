@@ -4,7 +4,7 @@ import {
   serverTimestamp, Timestamp, arrayUnion,
 } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { idToken, idToken as token } from '../clientSession';
+import { authedFetch, idToken as token } from '../clientSession';
 import { db } from '../firebase';
 import { uploadImage } from './storage';
 import type { Job, JobStatus, JobServiceItem, JobPhoto, JobAssignment, PaymentRecord, User, Booking } from '../types';
@@ -51,11 +51,8 @@ export const createWalkInJob = async (data: {
      `assignments` too. Handing that back typed as `Job` would be a trap for the
      next caller. The live job-board listener supplies the real document. */
 }): Promise<{ id: string }> => {
-  const token = await idToken();
-  if (!token) throw new Error('not-signed-in');
-  const res = await fetch('/api/booking/create', {
+    const res = await authedFetch('/api/booking/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       kind: 'walkin',
       customerId: data.customerId,
@@ -224,7 +221,7 @@ export const updateJobStatus = async (
     try {
       const idToken = await token();
       if (idToken) {
-        await fetch('/api/visit/seal', {
+        await authedFetch('/api/visit/seal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
           body: JSON.stringify({ jobId }),

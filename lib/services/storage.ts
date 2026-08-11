@@ -10,6 +10,7 @@
 // Firebase Storage was removed on purpose: new Firebase projects require a
 // billing card for Storage, and Cloudinary's CDN serves images faster anyway.
 
+import { authedFetch } from '../clientSession';
 const idToken = async (): Promise<string> => {
   /* Waited for, not guessed at — see lib/clientSession.ts. */
   const { idToken: token } = await import('../clientSession');
@@ -27,7 +28,7 @@ export const uploadImage = async (
   const blob = await resizeImage(file, maxWidth, quality);
 
   // one signature, bound to this exact public_id, valid for this upload only
-  const signRes = await fetch('/api/media/sign', {
+  const signRes = await authedFetch('/api/media/sign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await idToken()}` },
     body: JSON.stringify({ path }),
@@ -60,7 +61,7 @@ export const uploadImage = async (
 /** Actually deletes. Throws if the studio refuses - callers should surface that. */
 export const deleteImage = async (path: string): Promise<void> => {
   if (!path) return;
-  const res = await fetch('/api/media/delete', {
+  const res = await authedFetch('/api/media/delete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await idToken()}` },
     body: JSON.stringify({ path }),

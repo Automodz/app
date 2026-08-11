@@ -59,9 +59,9 @@ export async function waitForUser(): Promise<User | null> {
 /**
  * A fresh ID token for the signed-in customer, or null.
  *
- * This is what every authenticated `fetch` in the browser should carry: the
- * server routes verify a Bearer token and read no cookie, because the session
- * cookie exists for SERVER RENDERING and those routes never see it.
+ * Carried by every authenticated `fetch` in the browser. It is the STRONGER
+ * proof and is preferred wherever it exists — but its absence no longer means
+ * signed out: see `authedFetch`.
  */
 export async function idToken(force = false): Promise<string | null> {
   const user = await waitForUser();
@@ -76,4 +76,43 @@ export async function idToken(force = false): Promise<string | null> {
 /** The signed-in customer's uid once known, or null. */
 export async function currentUid(): Promise<string | null> {
   return (await waitForUser())?.uid ?? null;
+}
+
+/**
+ * AN AUTHENTICATED REQUEST, WITHOUT DEMANDING THE CLIENT SDK BE AWAKE.
+ *
+ * ── THE FAILURE THIS EXISTS FOR ──────────────────────────────────────────
+ * The rooms authenticate with the httpOnly session cookie; the routes
+ * authenticated with a Bearer token from the Firebase client SDK. Those two
+ * lapse independently — the token after an hour, refreshed only while a page
+ * holding the SDK is alive, the cookie after fourteen days — and every caller
+ * did this:
+ *
+ *     const token = await idToken();
+ *     if (!token) { setError('Your session has expired.'); return; }
+ *
+ * So a customer reached a room that had just rendered their car, their visit
+ * and their price, tapped its one control, and was told they were signed out.
+ * They were not. Observed on the scope screen, where the coverages drew and
+ * the estimate beside them refused to price.
+ *
+ * ── WHAT THIS DOES INSTEAD ───────────────────────────────────────────────
+ * Attaches the token when there IS one, and otherwise sends the request
+ * anyway: it is same-origin, so the cookie rides along and the route accepts
+ * it (`lib/server/session.callerOf`, guarded against cross-site by
+ * `lib/os/origin`). Only a 401 from the server means signed out — which is the
+ * only thing that ever actually did.
+ */
+export async function authedFetch(
+  input: string, init: RequestInit = {}, forceFresh = false,
+): Promise<Response> {
+  const token = await idToken(forceFresh);
+  const headers = new Headers(init.headers);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (init.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  /* `same-origin` is the default, and stated so the cookie's presence is a
+     decision rather than an accident of the fetch spec. */
+  return fetch(input, { ...init, headers, credentials: 'same-origin' });
 }

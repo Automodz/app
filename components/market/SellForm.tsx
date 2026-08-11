@@ -12,7 +12,7 @@
  * write cannot guarantee that.
  */
 import { useState } from 'react';
-import { idToken, currentUid } from '@/lib/clientSession';
+import { authedFetch, currentUid } from '@/lib/clientSession';
 import { useRouter } from 'next/navigation';
 import { color, space, radius, HAIRLINE } from '@/design';
 import { Heading, Text, Button } from '@/components/system';
@@ -81,12 +81,9 @@ export function SellForm({ garage }: { garage: { id: string; name: string }[] })
 
     setSending(true);
     try {
-      const token = await idToken();
-      if (!token) throw new Error('signed-out');
-
-      const res = await fetch('/api/cars/sell', {
+      
+      const res = await authedFetch('/api/cars/sell', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           make, model,
           year: Number(year),

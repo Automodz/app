@@ -27,7 +27,7 @@ import toast from 'react-hot-toast';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { CheckCircle2, Loader2, Smartphone } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import { formatCurrency } from '@/lib/utils';
 import type { Job, Payment } from '@/lib/types';
 import { Section } from './parts';
@@ -63,11 +63,8 @@ export function UpiSettlement({ job, onChange }: { job: Job; onChange?: () => vo
   const settle = useCallback(async (payment: Payment) => {
     setBusy(payment.id);
     try {
-      const token = await idToken();
-      if (!token) throw new Error('not-signed-in');
-      const res = await fetch('/api/payment', {
+            const res = await authedFetch('/api/payment', {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentId: payment.id,
           /* WHAT WE BELIEVE WE RECEIVED, sent back to be checked against the

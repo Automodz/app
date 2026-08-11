@@ -23,7 +23,7 @@
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import { color, space, HAIRLINE, TARGET_MIN, radius, type as typeScale } from '@/design';
 import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
@@ -99,11 +99,8 @@ export function SettleScreen({ model }: { model: SettleModel }) {
     setBusy(true);
     setError(null);
     try {
-      const token = await idToken();
-      if (!token) { setError(say('not-signed-in')); return; }
-      const res = await fetch('/api/payment', {
+            const res = await authedFetch('/api/payment', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         /* THE BOOKING, AND NOTHING ELSE. No amount travels from here. */
         body: JSON.stringify({ bookingId: model.bookingId }),
       });
@@ -130,11 +127,8 @@ export function SettleScreen({ model }: { model: SettleModel }) {
     setBusy(true);
     setError(null);
     try {
-      const token = await idToken();
-      if (!token) { setError(say('not-signed-in')); return; }
-      const res = await fetch('/api/payment', {
+            const res = await authedFetch('/api/payment', {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentId, reference }),
       });
       if (!res.ok) {
@@ -155,11 +149,8 @@ export function SettleScreen({ model }: { model: SettleModel }) {
     setBusy(true);
     setError(null);
     try {
-      const token = await idToken();
-      if (!token) { setError(say('not-signed-in')); return; }
-      const res = await fetch('/api/rating', {
+            const res = await authedFetch('/api/rating', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ visitId: model.visitId, rating: stars, comment }),
       });
       if (!res.ok) {

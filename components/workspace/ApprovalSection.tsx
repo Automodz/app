@@ -22,7 +22,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Loader2, MessageSquareWarning } from 'lucide-react';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import { formatCurrency } from '@/lib/utils';
 import type { Job, JobPhoto } from '@/lib/types';
 import { Section } from './parts';
@@ -58,11 +58,8 @@ export function ApprovalSection(
   const ask = async () => {
     setBusy(true);
     try {
-      const token = await idToken();
-      if (!token) throw new Error('not-signed-in');
-      const res = await fetch('/api/approval', {
+            const res = await authedFetch('/api/approval', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jobId: job.id,
           reason, detail, label,

@@ -2,7 +2,7 @@ import {
   doc, getDoc, updateDoc, getDocs, collection, query, where, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { idToken as token } from '../clientSession';
+import { authedFetch, idToken as token } from '../clientSession';
 import { REFERRAL } from '../config/storeConfig';
 import type { User } from '../types';
 
@@ -60,7 +60,7 @@ export const claimReferral = async () => {
   if (!code) return;
   const idToken = await token();
   if (!idToken) return;
-  const res = await fetch('/api/referral/claim', {
+  const res = await authedFetch('/api/referral/claim', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
     body: JSON.stringify({ code }),

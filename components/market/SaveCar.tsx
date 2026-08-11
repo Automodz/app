@@ -11,7 +11,7 @@
  * goes back to what it was and says so, rather than lying quietly.
  */
 import { useState, useTransition } from 'react';
-import { idToken } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import { useRouter } from 'next/navigation';
 import { space } from '@/design';
 import { Button, Text } from '@/components/system';
@@ -43,11 +43,8 @@ export function SaveCar(
     setFailed(false);
     start(async () => {
       try {
-        const token = await idToken();
-        if (!token) throw new Error('no-token');
-        const res = await fetch('/api/cars/save', {
+                const res = await authedFetch('/api/cars/save', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ listingId, saved: want }),
         });
         if (!res.ok) throw new Error('save-failed');
