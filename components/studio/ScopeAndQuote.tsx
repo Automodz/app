@@ -31,7 +31,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authedFetch } from '@/lib/clientSession';
 import { color, space, HAIRLINE, TARGET_MIN, radius, type as typeScale } from '@/design';
-import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
+import { Screen, Pane, Label, Rail, Action, RoomHeader } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
 
 export interface ScopeOption {
@@ -194,7 +194,20 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
     <Screen top={space.gap}>
       <OfflineNote />
 
-      <Statement eyebrow={model.forCar} size={29}>{model.serviceName}</Statement>
+      {/* MOVED UP FROM THE FOOT OF THE PAGE. It was a `quiet` Action after
+          everything else, which is a footer link and not an escape route — a
+          way out you reach by scrolling past the whole screen is one the
+          customer has already given up looking for. One idiom, at the top,
+          in every room. */}
+      {/* One header: the way back, the eyebrow and the Display, at one
+          scale. These five drew the same three elements by hand and disagreed
+          on the size — 28, 29 and 30 — which nobody chose. */}
+      <RoomHeader
+        parent={{ href: model.backHref, name: 'The studio' }}
+        eyebrow={model.forCar}
+      >
+        {model.serviceName}
+      </RoomHeader>
       {model.brandLine ? (
         <Label style={{ marginTop: space.breath, fontSize: 9.5, letterSpacing: '0.18em' }}>
           {model.brandLine}
@@ -364,7 +377,6 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
         <Action onClick={proceed} disabled={!complete || !quoted || committing || !online}>
           {committing ? 'One moment…' : 'Choose a date'}
         </Action>
-        <Action href={model.backHref} quiet>Back to the studio</Action>
       </div>
     </Screen>
   );

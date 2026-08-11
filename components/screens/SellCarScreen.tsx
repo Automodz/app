@@ -26,8 +26,8 @@ import { space, INSET, MEASURE, color, HAIRLINE } from '@/design';
    the legal pages: 167 kB → 108 kB from this change alone. */
 import { Heading } from '@/components/system/Heading';
 import { Text } from '@/components/system/Text';
-import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
+import { Back } from '@/components/os/RoomHeader';
 import type { SellModel } from '@/lib/customer/market';
 import { SellForm } from '@/components/market/SellForm';
 
@@ -35,15 +35,17 @@ export function SellCarScreen({ model }: { model: SellModel }) {
   return (
     <main style={{
       paddingInline: INSET,
-      paddingBlock: space.rest,
+      paddingTop: `calc(${space.rest}px + env(safe-area-inset-top, 0px))`,
+      paddingBottom: space.rest,
       maxWidth: MEASURE + INSET * 2,
       marginInline: 'auto',
     }}>
       <OfflineNote caption="You’re offline. Your car won’t send until you’re back." />
 
-      <Button tier="quiet" href={model.carsHref} style={{ paddingInline: 0 }}>
-        All cars
-      </Button>
+      {/* Public, so no dock — this was the second room with no exit of any
+          kind. The `quiet` Button it used to be is the caption-shaped
+          affordance the marketplace had; one idiom now. */}
+      <Back parent={{ href: model.carsHref, name: 'Cars for sale' }} />
 
       <Heading level="display" style={{ marginTop: space.gap }}>
         Sell us your car

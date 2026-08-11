@@ -212,6 +212,38 @@ export const roomFor = (pathname: string): Room | undefined => {
   return match ? rooms[match] : undefined;
 };
 
+/**
+ * IS THIS THE CUSTOMER PRODUCT?
+ *
+ * A broader question than `roomFor`, and asked for one reason: the ROOM
+ * THEME. Every surface below is drawn from `design/colors.ts`, which is a
+ * single dark palette — `#EDEBE7` primary ink is 16.74:1 on the room's paper
+ * and about 1.1:1 on a white pane — so any of them rendered in the light
+ * theme is not "a bit low contrast", it is text that is not there.
+ *
+ * Some of them get away with it today because they paint their own ground
+ * (the landing, the welcome, the door, a chapter). The ones that DON'T — the
+ * marketplace, a listing, the sell form, and every room, which leave the
+ * ground to the body so the ambient field can show through — went white.
+ * Measured on `/cars/<id>` with `theme: 'light'` stored: the title, the
+ * price, and every value in the specification list were invisible.
+ *
+ * NOT the same set as `rooms`. `/cars` and `/dashboard/sell-car` are public
+ * and deliberately carry no navigation (see the note above `CARS`) — but they
+ * are still the customer's product and still drawn in its palette. One
+ * predicate for the light, another for the dock.
+ *
+ * Deliberately EXCLUDED, and each for its own reason:
+ *   `/privacy` `/terms`  the legal pages, which paint their own ground
+ *   `/invoice/<id>`      a document made to be printed on paper
+ *   `/admin` `/store`    operations, which has its own shell and its own theme
+ */
+const CUSTOMER_PREFIXES: readonly string[] = [CARS, SELL, WELCOME, '/chapter', '/offline'];
+
+export const isCustomerSurface = (pathname: string): boolean =>
+  Boolean(roomFor(pathname))
+  || CUSTOMER_PREFIXES.some(p => pathname === p || pathname.startsWith(`${p}/`));
+
 /** §6.2 — is the navigation shown at this address? */
 export const chromeFor = (pathname: string): Chrome =>
   roomFor(pathname)?.chrome ?? 'nav';

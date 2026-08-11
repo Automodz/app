@@ -32,22 +32,30 @@ import { PaletteProvider } from './Palette';
 import { RoomTransition } from './RoomTransition';
 import { RoomTheme } from './RoomTheme';
 import { StudioBoot, Ambient } from '@/components/system';
-import { roomFor, HOME } from './routes';
+import { roomFor, isCustomerSurface, HOME } from './routes';
 
 export function CustomerChrome(
   { children, signedIn = true }: { children: ReactNode; signedIn?: boolean },
 ) {
   const pathname = usePathname() ?? '/';
 
-  /* Not a room — not the customer application. Hand the page straight through
-     with no provider, no bar and no customer state of any kind. */
-  if (!roomFor(pathname)) return <>{children}</>;
+  /* Not a room — no provider, no bar and no customer state of any kind.
+     It may still be the customer's PRODUCT, though: the marketplace and the
+     sell form are public and carry no navigation on purpose, and they are
+     drawn in the room's palette like everything else. So they get the room's
+     light and nothing more. See `isCustomerSurface`. */
+  if (!roomFor(pathname)) {
+    return isCustomerSurface(pathname)
+      ? <><RoomTheme />{children}</>
+      : <>{children}</>;
+  }
 
   /* `/` without a session is the public landing, not a room. It is the one
      address the product serves to people who have no car here yet, and a bar
      whose four slots all lead to a sign-in wall is four dead ends. Same
-     reasoning as above: nothing is mounted, not hidden. */
-  if (!signedIn && pathname === HOME) return <>{children}</>;
+     reasoning as above: nothing is mounted, not hidden — except the light,
+     because the landing is the customer's product too. */
+  if (!signedIn && pathname === HOME) return <><RoomTheme />{children}</>;
 
   return (
     <NavigationProvider>

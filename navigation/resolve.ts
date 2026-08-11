@@ -294,3 +294,75 @@ export const resolveAction = (action: NextAction): ResolvedAction => ({
   href: hrefFor(action),
   intent: action.intent,
 });
+
+/**
+ * ── THE WAY BACK ─────────────────────────────────────────────────────────
+ *
+ * Every child room's parent, decided from the address alone.
+ *
+ * ── WHY NOT `history.back()` ────────────────────────────────────────────
+ * Because it is not a way back, it is a way to WHEREVER YOU CAME FROM, and
+ * those are only the same thing when the customer walked in through the front
+ * door. §17.3 makes a notification a doorway: a mid-visit approval, a booking
+ * confirmation and an invoice are all opened cold from a phone's lock screen,
+ * and `back()` there either leaves the app or does nothing at all. A shared
+ * link has the same shape. So the parent is a PROPERTY OF THE ADDRESS, and
+ * this is the one place it is written — for the same reason every other
+ * address in the product is written here and nowhere else.
+ *
+ * The five dock slots have no parent and must not grow one: they are where
+ * back GOES, and a back control on a root room is a control that either does
+ * nothing or leaves the product (§6.2).
+ *
+ * A screen may override the href when it holds a truer answer than the path
+ * does — an approval knows its own visit; nothing in `/approval/<id>` does.
+ */
+export interface Parent {
+  href: string;
+  /** The customer's word for where this goes (§21.8). Never "Back". */
+  name: string;
+}
+
+const ROOT = new Set<string>([HOME, STUDIO, GARAGE, MEMBERSHIP, PROFILE]);
+
+export const parentOf = (pathname: string): Parent | null => {
+  /* A root room is where back leads, so it has none. */
+  if (ROOT.has(pathname)) return null;
+
+  const seg = pathname.split('?')[0].split('/').filter(Boolean);
+
+  /* /history/<id>/settle → the visit · /history/<id> → the record · /history → Now */
+  if (seg[0] === 'history') {
+    if (seg[2] === 'settle') return { href: visit(seg[1]), name: 'The visit' };
+    if (seg[1]) return { href: HISTORY, name: 'Your visits' };
+    return { href: HOME, name: 'Now' };
+  }
+
+  /* /booking/<id>/manage → the booking · /booking/<id> → where it was arranged */
+  if (seg[0] === 'booking' && seg[1]) {
+    return seg[2] === 'manage'
+      ? { href: booking(seg[1]), name: 'Your booking' }
+      : { href: STUDIO, name: 'The studio' };
+  }
+
+  /* An approval is opened from a notification and knows its own visit; this is
+     the answer when the screen has nothing truer to give. */
+  if (seg[0] === 'approval' && seg[1]) return { href: HOME, name: 'Now' };
+
+  if (pathname.startsWith(`${STUDIO}/`)) return { href: STUDIO, name: 'The studio' };
+  if (pathname === VEHICLE || pathname.startsWith(`${VEHICLE}?`)) {
+    return { href: GARAGE, name: 'Your garage' };
+  }
+
+  /* The marketplace is public, so its root goes to whatever `/` is for whoever
+     is standing there — the landing to a visitor, Now to an owner. Named for
+     the studio rather than for either, because it is the one word that is true
+     in both cases. */
+  if (seg[0] === 'cars') {
+    return seg[1] ? { href: CARS, name: 'All cars' } : { href: HOME, name: 'AutoModz' };
+  }
+  if (pathname === SELL) return { href: CARS, name: 'Cars for sale' };
+  if (pathname === WELCOME) return null;
+
+  return null;
+};

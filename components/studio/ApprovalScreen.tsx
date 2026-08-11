@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { authedFetch } from '@/lib/clientSession';
 import { color, space, radius, imageSizes } from '@/design';
-import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
+import { Screen, Pane, Label, Rail, Action, RoomHeader } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
 
 export interface ApprovalModel {
@@ -99,7 +99,21 @@ export function ApprovalScreen({ model }: { model: ApprovalModel }) {
     <Screen top={space.gap}>
       <OfflineNote />
 
-      <Statement eyebrow={model.eyebrow} lit size={29}>{model.headline}</Statement>
+      {/* MOVED UP FROM THE FOOT OF THE PAGE. It was a `quiet` Action after
+          everything else, which is a footer link and not an escape route — a
+          way out you reach by scrolling past the whole screen is one the
+          customer has already given up looking for. One idiom, at the top,
+          in every room. */}
+      {/* One header: the way back, the eyebrow and the Display, at one
+          scale. These five drew the same three elements by hand and disagreed
+          on the size — 28, 29 and 30 — which nobody chose. */}
+      <RoomHeader
+        parent={{ href: model.visitHref, name: 'The visit' }}
+        eyebrow={model.eyebrow}
+        lit
+      >
+        {model.headline}
+      </RoomHeader>
 
       {/* ── THE EVIDENCE ────────────────────────────────────────────────
           Shown before the price, because the question is "is this real"
@@ -190,7 +204,6 @@ export function ApprovalScreen({ model }: { model: ApprovalModel }) {
       ) : null}
 
       <div style={{ marginTop: space.rest / 2 }}>
-        <Action href={model.visitHref} quiet>Back to the visit</Action>
       </div>
     </Screen>
   );

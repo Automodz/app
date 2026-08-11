@@ -34,7 +34,7 @@ import { rescheduleBooking, cancelBooking } from '@/lib/services/bookings';
 import {
   color, space, HAIRLINE, TARGET_MIN, radius, type as typeScale,
 } from '@/design';
-import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
+import { Screen, Pane, Label, Rail, Action, RoomHeader } from '@/components/os';
 import { OfflineNote } from '@/components/system';
 
 export interface ManageOpening {
@@ -137,7 +137,20 @@ export function ManageBooking({ model }: { model: ManageBookingModel }) {
       {/* Moving or cancelling needs a connection, and a control that silently
           fails is worse than one that says why it cannot act. */}
       <OfflineNote />
-      <Statement eyebrow={model.standing} size={28}>{model.headline}</Statement>
+      {/* MOVED UP FROM THE FOOT OF THE PAGE. It was a `quiet` Action after
+          everything else, which is a footer link and not an escape route — a
+          way out you reach by scrolling past the whole screen is one the
+          customer has already given up looking for. One idiom, at the top,
+          in every room. */}
+      {/* One header: the way back, the eyebrow and the Display, at one
+          scale. These five drew the same three elements by hand and disagreed
+          on the size — 28, 29 and 30 — which nobody chose. */}
+      <RoomHeader
+        parent={{ href: model.backHref, name: 'Your booking' }}
+        eyebrow={model.standing}
+      >
+        {model.headline}
+      </RoomHeader>
 
       <Pane style={{
         marginTop: space.gap,
@@ -280,7 +293,6 @@ export function ManageBooking({ model }: { model: ManageBookingModel }) {
       ) : null}
 
       <div style={{ marginTop: space.rest / 2 }}>
-        <Action href={model.backHref} quiet>Back to the booking</Action>
       </div>
     </Screen>
   );

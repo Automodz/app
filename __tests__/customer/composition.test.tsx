@@ -26,6 +26,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'fs';
 import { HomeScreen, type HomeModel } from '@/components/screens/HomeScreen';
 import { Dial } from '@/components/os';
+import { isCustomerSurface } from '@/navigation/routes';
 
 const codeOf = (p: string) =>
   readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -228,10 +229,42 @@ describe('the light theme cannot reach inside a room', () => {
        whose words were simply not there. */
     const chrome = codeOf('navigation/CustomerChrome.tsx');
     expect(chrome).toMatch(/<RoomTheme \/>/);
-    /* Inside the room branch — after both early returns, so a public address
-       is untouched. */
-    expect(chrome.indexOf('<RoomTheme />')).toBeGreaterThan(chrome.indexOf('if (!roomFor(pathname))'));
-    expect(chrome.indexOf('<RoomTheme />')).toBeGreaterThan(chrome.indexOf("pathname === HOME"));
+  });
+
+  /**
+   * WIDENED, DELIBERATELY. This block first asserted that the theme was
+   * applied only inside the ROOM branch. That was the smallest correct fix
+   * for the reported screenshot and it was too small: `/cars`,
+   * `/cars/<id>` and `/dashboard/sell-car` are drawn from the same one dark
+   * palette and carry no dock on purpose, so they were left in daylight —
+   * measured on `/cars/<id>`, the title, the price and every value in the
+   * specification list were white on white.
+   *
+   * Two questions now, from one route table: `roomFor` decides the DOCK,
+   * `isCustomerSurface` decides the LIGHT.
+   */
+  it('and it reaches every customer surface, dock or no dock', () => {
+    const chrome = codeOf('navigation/CustomerChrome.tsx');
+    expect(chrome).toMatch(/isCustomerSurface\(pathname\)\s*\?\s*<><RoomTheme \/>\{children\}<\/>/);
+
+    /* The predicate itself, on the addresses that were broken. */
+    expect(isCustomerSurface('/cars')).toBe(true);
+    expect(isCustomerSurface('/cars/abc123')).toBe(true);
+    expect(isCustomerSurface('/dashboard/sell-car')).toBe(true);
+    expect(isCustomerSurface('/welcome')).toBe(true);
+    /* And every room, so the two answers can never disagree. */
+    for (const r of ['/', '/studio', '/garage', '/membership', '/you', '/history', '/vehicle']) {
+      expect({ r, customer: isCustomerSurface(r) }).toEqual({ r, customer: true });
+    }
+  });
+
+  it('but never onto a surface that is not the customer product', () => {
+    /* The legal pages and a printable invoice paint their own ground and are
+       not drawn from this palette; operations has its own shell entirely.
+       Forcing the room's light onto them would be inventing a rule. */
+    for (const r of ['/privacy', '/terms', '/invoice/abc', '/admin', '/admin/schedule', '/store']) {
+      expect({ r, customer: isCustomerSurface(r) }).toEqual({ r, customer: false });
+    }
   });
 
   it('before the first paint, not after it', () => {

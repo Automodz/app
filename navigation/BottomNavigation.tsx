@@ -138,6 +138,17 @@ export function BottomNavigation() {
           padding: `${space.line}px ${space.gap}px`,
           borderRadius: radius.pill,
           boxShadow: elevation.nav.shadow,
+          /* THE DOCK CARRIES ITS OWN GROUND.
+             `--pane-lit` is white at 3–8% — the material is essentially the
+             blur of whatever is behind it, which is right for a card resting
+             in a dark room and wrong for the one element that is ALWAYS on
+             screen. The Garage, the record and the car are full-bleed
+             photographs, and a white car scrolling under the dock turned it
+             pale and took its four quiet names with it. §21.1 solves for the
+             worst image; this is that floor. The gradient and the sheen still
+             sit on top, so the material is unchanged — it simply has
+             something dark to be glass against. */
+          backgroundColor: 'rgba(8,9,10,0.78)',
         }}
       >
         {slots.map(path => {

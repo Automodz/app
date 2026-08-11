@@ -34,7 +34,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { color, space, INSET, MEASURE, radius, stack, imageSizes } from '@/design';
 import { Modal, OfflineNote, LiveRefresh } from '@/components/system';
-import { Pane, Label, Statement, Pulse, Action } from '@/components/os';
+import { Pane, Label, Statement, Pulse, Action, Back } from '@/components/os';
 
 export interface LiveVisitFrame {
   id: string;
@@ -106,6 +106,14 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
       {/* The page re-reads itself while the customer is actually looking, and
           stops the moment they are not. See LiveRefresh. */}
       <LiveRefresh />
+
+      {/* THE ONLY EXIT, AND NOW AT THE TOP. A takeover carries no dock, so
+          this control was the whole of the way out — and it sat at the foot
+          of a long page, below the photographs and the settle. One idiom, in
+          the same place in every room. */}
+      <div style={{ paddingInline: INSET, maxWidth: MEASURE + INSET * 2, marginInline: 'auto', width: '100%' }}>
+        <Back parent={{ href: backHref, name: 'The car' }} />
+      </div>
 
       <div
         style={{
@@ -326,7 +334,6 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         ) : null}
 
         <div style={{ display: 'flex', gap: space.line, marginTop: space.breath }}>
-          <Action href={backHref} quiet style={{ fontSize: 13.5 }}>Back to the car</Action>
           {messageHref ? (
             <Action href={messageHref} quiet style={{ fontSize: 13.5 }}>Message the studio</Action>
           ) : null}

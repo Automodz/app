@@ -44,6 +44,7 @@ import { Heading } from '@/components/system/Heading';
 import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
+import { Back } from '@/components/os/RoomHeader';
 import { BeforeAfter } from '@/components/visit/BeforeAfter';
 import type { HistoryVisit } from './HistoryScreen';
 /* Deep import — this is a SERVER component and the barrel pulls a dozen
@@ -77,6 +78,7 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
            Painting `color.paper` here would occlude it completely. The dark
            ground still exists — it is on `body` — so nothing loses contrast. */
         background: 'transparent',
+        position: 'relative',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
       }}
@@ -84,6 +86,22 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
       {/* §20.3 — the room was rendered on the server and is still true; only
           what happens NEXT needs a connection. One implementation (§22.2). */}
       <OfflineNote />
+
+      {/* THE WAY BACK, ON THE PHOTOGRAPH.
+          A sealed record is reached from the album, from Now's "recently", and
+          from a notification — and it had no exit of its own at all. It sits
+          OVER the hero rather than above it because §11.2 makes the photograph
+          the largest element on the screen, and a control is not allowed to
+          push it down the page to earn its own row. */}
+      <div
+        style={{
+          position: 'absolute', zIndex: 2,
+          top: `calc(${stack.top} + ${space.line}px)`, left: INSET,
+        }}
+      >
+        <Back over />
+      </div>
+
       {/* §16.3 — the car as it was finished. */}
       <Hero
         state={photo ? 'media' : 'awaiting'}

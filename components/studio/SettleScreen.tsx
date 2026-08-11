@@ -25,7 +25,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authedFetch } from '@/lib/clientSession';
 import { color, space, HAIRLINE, TARGET_MIN, radius, type as typeScale } from '@/design';
-import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
+import { Screen, Pane, Label, Rail, Action, RoomHeader } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
 
 export interface SettleLine {
@@ -170,8 +170,17 @@ export function SettleScreen({ model }: { model: SettleModel }) {
   return (
     <Screen top={space.gap}>
       <OfflineNote />
-
-      <Statement eyebrow={model.eyebrow} size={30}>{model.headline}</Statement>
+      {/* Settling is something done TO a visit, so the visit is where
+          this goes — `recordHref` is that address. */}
+      {/* One header: the way back, the eyebrow and the Display, at one
+          scale. These five drew the same three elements by hand and disagreed
+          on the size — 28, 29 and 30 — which nobody chose. */}
+      <RoomHeader
+        parent={{ href: model.recordHref, name: 'The visit' }}
+        eyebrow={model.eyebrow}
+      >
+        {model.headline}
+      </RoomHeader>
       <p style={{ margin: `${space.line}px 0 0`, fontSize: 14.5, lineHeight: 1.6, color: color.ink2 }}>
         {model.handover}
       </p>

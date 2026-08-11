@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/design';
 import { Heading, Text, Button, OfflineNote } from '@/components/system';
+import { Back } from '@/components/os/RoomHeader';
 import type { ListingModel } from '@/lib/customer/market';
 import { SaveCar } from '@/components/market/SaveCar';
 import { AskAboutCar } from '@/components/market/AskAboutCar';
@@ -52,10 +53,17 @@ export function ListingScreen(
       {/* The car can still be read offline; asking about it cannot be sent. */}
       <OfflineNote caption="You’re offline. You can look, but nothing will send." />
 
-      <div style={{ paddingInline: INSET, paddingTop: space.gap }}>
-        <Button tier="quiet" href={model.backHref} style={{ paddingInline: 0 }}>
-          All cars
-        </Button>
+      {/* REPORTED AS "no obvious way back". It was a `quiet` Button set flush
+          with no glyph, which reads as a caption and not as a control — and
+          this screen has no dock behind it either. Same shape as every other
+          room's now: a chevron, the parent's name, its own 44px target. The
+          model still decides WHERE, since a listing knows which filter the
+          customer arrived through. */}
+      <div style={{
+        paddingInline: INSET,
+        paddingTop: `calc(${space.gap}px + env(safe-area-inset-top, 0px))`,
+      }}>
+        <Back parent={{ href: model.backHref, name: 'All cars' }} />
       </div>
 
       {/* THE PHOTOGRAPHS. A horizontal strip that snaps, rather than a carousel

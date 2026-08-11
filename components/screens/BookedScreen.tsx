@@ -21,7 +21,7 @@
  * absent while a figure is on show.
  */
 import { color, space } from '@/design';
-import { Screen, Pane, Label, Statement, Rail, Action, Pulse } from '@/components/os';
+import { Screen, Pane, Label, Rail, Action, Pulse, RoomHeader } from '@/components/os';
 /* Deep import, not the `components/system` barrel: reaching through the barrel
    from a server component pulls a dozen client primitives into the page's
    bundle (see the note in ServerRoom.tsx). */
@@ -73,7 +73,12 @@ export function BookedScreen({ model }: { model: BookedModel }) {
   return (
     <Screen top={space.gap}>
       <OfflineNote />
-      <Statement eyebrow={standing} lit={holds && !awaiting} size={30}>{headline}</Statement>
+      {/* Arranged in the Studio, opened again from a notification — so the
+          way out is the Studio, not whatever was on screen a moment ago. */}
+      {/* One header: the way back, the eyebrow and the Display, at one
+          scale. These five drew the same three elements by hand and disagreed
+          on the size — 28, 29 and 30 — which nobody chose. */}
+      <RoomHeader eyebrow={standing} lit={holds && !awaiting}>{headline}</RoomHeader>
 
       <Pane
         tone={holds && !awaiting ? 'lit' : 'plain'}

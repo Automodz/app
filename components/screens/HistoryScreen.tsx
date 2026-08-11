@@ -36,6 +36,7 @@ import { space, MEASURE, photoSize, stack, imageSizes } from '@/design';
    the legal pages: 167 kB → 108 kB from this change alone. */
 import { Hero } from '@/components/system/Hero';
 import { Heading } from '@/components/system/Heading';
+import { Back } from '@/components/os/RoomHeader';
 import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
@@ -224,6 +225,11 @@ function Standing({ vehicle, count, since, settledTotal }: {
         width: '100%',
       }}
     >
+      {/* The record is reached from Now and from the car; the dock does not
+          hold a slot for it, so without this the only way out was a slot that
+          is not where you came from. */}
+      <Back style={{ marginBottom: space.line }} />
+
       {/* NOT A HEADING. §9.5 gives the room exactly one Display and the album
           has already spent it on the newest photograph — which is right, because
           the photographs are the content and this is only context for them.
@@ -266,6 +272,7 @@ function NoRecord({ vehicle }: { vehicle: string }) {
         justifyContent: 'center',
       }}
     >
+      <Back style={{ marginBottom: space.line }} />
       <Text role="data" tone="ink3" as="span">{vehicle}</Text>
       <Heading level="display" as="h1" style={{ marginTop: space.hair }}>
         Nothing written yet.

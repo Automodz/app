@@ -31,6 +31,7 @@ import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/de
 import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
+import { Back } from '@/components/os/RoomHeader';
 import type { MarketModel, MarketCard, MarketFilter } from '@/lib/customer/market';
 
 export function MarketScreen({ model }: { model: MarketModel }) {
@@ -39,11 +40,23 @@ export function MarketScreen({ model }: { model: MarketModel }) {
   return (
     <main style={{
       paddingInline: INSET,
-      paddingBlock: space.rest,
+      /* THE TOP SAFE AREA. `Screen` reserves it for every room; these three
+         hand-rolled `<main>`s never did, and the product is installable — on
+         a notched phone in standalone the first control sat under the status
+         bar. §8.5 puts the inset in the token, not at the call site. */
+      paddingTop: `calc(${space.rest}px + env(safe-area-inset-top, 0px))`,
+      paddingBottom: space.rest,
       maxWidth: MEASURE + INSET * 2,
       marginInline: 'auto',
     }}>
       <OfflineNote caption="You’re offline. This is the stock as we last knew it." />
+
+      {/* THE MARKETPLACE CARRIES NO DOCK — it is public, and four slots that
+          all lead to a sign-in wall are four dead ends (see routes.ts). That
+          made it a room with no exit for a signed-in customer who arrived
+          from Home. The parent is the address itself: `/` is the landing to a
+          visitor and Now to an owner, and one control is right for both. */}
+      <Back style={{ marginBottom: space.line }} />
 
       <h1 className="am-display" style={{ margin: 0, fontSize: 30 }}>Cars for sale</h1>
       <Text role="body" tone="ink2" style={{ marginTop: space.line }}>

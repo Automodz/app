@@ -38,6 +38,7 @@ import type { StateTone } from '@/design';
 import type { RegionId, VehicleRendering } from '@/components/vehicle';
 import { REGION_NAME } from '@/components/vehicle';
 import { OfflineNote } from '@/components/system';
+import { Back } from '@/components/os/RoomHeader';
 import {
   Pane, Label, Rail, Pulse, Chevron, Meter, Action, Stat,
 } from '@/components/os';
@@ -146,6 +147,19 @@ export function VehicleScreen(
       }}
     >
       <OfflineNote />
+
+      {/* The car is walked toward FROM the collection (§12.2), so the
+          collection is where back leads. Over the photograph, because §11.2
+          makes the photograph the largest element and a control does not get
+          to push it down the screen. */}
+      <div
+        style={{
+          position: 'absolute', zIndex: 2,
+          top: `calc(${stack.top} + ${space.line}px)`, left: INSET,
+        }}
+      >
+        <Back over />
+      </div>
 
       {/* ── THE PHOTOGRAPH ──────────────────────────────────────────────
           §11.2 — the largest element on the screen, and the design fixes it
