@@ -30,6 +30,7 @@ import {
 import { formatCurrency, formatDate, formatTime, getStatusLabel } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { ApprovalSection } from './ApprovalSection';
+import { UpiSettlement } from './UpiSettlement';
 import type { Booking, BookingStatus, Job, JobStatus } from '@/lib/types';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 import ErrorState from '@/components/ui/ErrorState';
@@ -285,6 +286,11 @@ export default function BookingWorkspace({ id, onBack, backLabel }: {
                   table refuses `approved` to the studio. */}
               <ApprovalSection job={job} onAsked={() => refreshJob(job.id)} />
               <PaymentsSection job={job} actor={actor} record={record} onChange={() => refreshJob(job.id)} />
+              {/* Payments the CUSTOMER started in the app, which the counter
+                  never watched arrive. Settling one writes into the ledger
+                  above, keyed by the payment id, so neither can count the same
+                  rupee twice. */}
+              <UpiSettlement job={job} onChange={() => refreshJob(job.id)} />
             </>
           ) : (
             <Section title="Operational workspace" delay={0.1}>

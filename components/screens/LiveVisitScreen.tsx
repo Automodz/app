@@ -72,6 +72,14 @@ export interface LiveVisitModel {
    * §17.1 — state changes surface as state, on the surface that owns the fact.
    */
   approval?: { line: string; href: string };
+  /**
+   * WHERE THE VISIT IS SETTLED — design screen 13.
+   *
+   * Present only once the car is ready AND something is outstanding. A "Pay"
+   * control on a car still being worked on asks for money against unfinished
+   * work; one on a settled visit is a control that can only refuse itself.
+   */
+  settleHref?: string;
 }
 
 export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
@@ -79,7 +87,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
   const viewed = model.frames.find(f => f.id === viewing);
   const {
     vehicleName, word, line, timing, service, acts, frames, hero,
-    backHref, messageHref, approval,
+    backHref, messageHref, approval, settleHref,
   } = model;
 
   return (
@@ -308,6 +316,15 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
             Neither is a commitment, so neither is filled. §20.1 — a way to
             reach a human, on the screen where a customer is most likely to
             want one. */}
+        {/* SETTLING, once the car is actually ready and something is owed.
+            The one filled control on the screen at that moment, because it is
+            the one thing standing between the customer and their car. */}
+        {settleHref ? (
+          <div style={{ marginTop: space.line }}>
+            <Action href={settleHref}>Settle and collect</Action>
+          </div>
+        ) : null}
+
         <div style={{ display: 'flex', gap: space.line, marginTop: space.breath }}>
           <Action href={backHref} quiet style={{ fontSize: 13.5 }}>Back to the car</Action>
           {messageHref ? (

@@ -31,6 +31,12 @@ const booking = (id: string) => `${BOOKING}/${encodeURIComponent(id)}`;
 const bookingManage = (id: string) => `${booking(id)}/manage`;
 /** The calendar file for a booking. A FILE, not a room. */
 const bookingCalendar = (id: string) => `/api/booking/${encodeURIComponent(id)}/calendar`;
+/**
+ * Settling a visit — design screen 13. UNDER the visit, because settling is
+ * something you do TO one: the address reads as what it is and the back button
+ * lands on the record.
+ */
+const settle = (bookingId: string) => `${visit(bookingId)}/settle`;
 /** A mid-visit approval, addressed so a notification can open it (§17.3). */
 const approval = (id: string) => `${APPROVAL}/${encodeURIComponent(id)}`;
 
@@ -154,6 +160,7 @@ export type Destination =
   | { to: 'booking.manage'; bookingId: string }
   | { to: 'booking.calendar'; bookingId: string }
   | { to: 'approval'; approvalId: string }
+  | { to: 'settle'; bookingId: string }
   | { to: 'privacy' }
   | { to: 'terms' }
   | { to: 'cars' }
@@ -198,6 +205,7 @@ export const hrefForDestination = (d: Destination): string => {
     case 'booking.manage':   return bookingManage(d.bookingId);
     case 'booking.calendar': return bookingCalendar(d.bookingId);
     case 'approval':         return approval(d.approvalId);
+    case 'settle':           return settle(d.bookingId);
     case 'privacy':          return '/privacy';
     case 'terms':            return '/terms';
     case 'cars':             return CARS;
@@ -248,6 +256,7 @@ export const eventHref = (
       return source.kind === 'approval' ? approval(source.id) : visit(source.id);
     case 'vehicle_ready':
     case 'payment_required':
+      return settle(source.id);
     case 'payment_settled':
     case 'visit_completed':
       return visit(source.id);

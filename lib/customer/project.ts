@@ -9,7 +9,7 @@
  * fallback — comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
-import type { Approval, Booking, Estimate, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
+import type { Approval, Booking, Estimate, Invoice, PaymentStatus, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
 import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
@@ -51,6 +51,8 @@ import type { BookedModel, BookedRow } from '@/components/screens/BookedScreen';
 import type { ManageBookingModel } from '@/components/studio/ManageBooking';
 import type { ScopeQuoteModel } from '@/components/studio/ScopeAndQuote';
 import type { ApprovalModel } from '@/components/studio/ApprovalScreen';
+import type { SettleModel, SettleLine } from '@/components/studio/SettleScreen';
+import { PAYMENT_WORD, PAYMENT_LINE, settlementOf } from '@/lib/os/settlement';
 import type { CarriedEstimate } from '@/components/studio/BookingFlow';
 import type { YouModel } from '@/components/screens/YouScreen';
 import type { MembershipModel } from '@/components/screens/MembershipScreen';
@@ -1250,6 +1252,22 @@ export function toLiveVisit(
     messageHref: waLink(
       `Hello AutoModz — about my ${car.vehicle.name} (${car.vehicle.registrationNumber}) in the studio today.`,
     ),
+    /* SETTLING, once the car is actually ready. Offered only then and only
+       when something is outstanding: a "Pay" control on a car that is still
+       being worked on asks for money against work that is not finished, and
+       one on a settled visit is a control that can only refuse itself. */
+    settleHref: (() => {
+      if (stay.act !== 'ready') return undefined;
+      const job = car.jobs.find(j => j.bookingId === bookingId);
+      const owed = settlementOf({
+        jobTotal: job?.totalAmount,
+        bookingTotal: read.live.totalAmount,
+        received: job?.amountPaid ?? 0,
+      });
+      return owed.settled
+        ? undefined
+        : hrefForDestination({ to: 'settle', bookingId });
+    })(),
     /* THE QUESTION THE STUDIO IS WAITING ON, on the surface that owns it.
        Matched by VEHICLE rather than by job, because an approval belongs to
        the car on the bay and the customer is standing in that car's visit. */
@@ -1441,6 +1459,88 @@ export function toScopeQuote(
        resolver — a screen that assembled this would be a second route table. */
     nextHrefBase: hrefForDestination({ to: 'studio.arrange' }),
     backHref: hrefForDestination({ to: 'studio' }),
+  };
+}
+
+/* ── READY · PAY · RATE ──────────────────────────────────────────────────── */
+
+/**
+ * SCREEN 13 — what the visit came to, and how to settle it.
+ *
+ * NOTHING IS ADDED UP HERE. The lines come from the booking's stored
+ * breakdown, which `priceVisit` produced and a mid-visit approval updated; the
+ * payable figure comes from `settlementOf`, which states its order of
+ * authority once rather than letting each surface pick a document. A
+ * projection that summed line items would be a fifth opinion about one visit's
+ * money, and the audit found four already disagreeing.
+ */
+export function toSettle(args: {
+  picture: CustomerPicture;
+  bookingId: string;
+  /** The sealed record, when the visit has produced one. */
+  visit?: Visit | null;
+  /** What the studio has received, and against which record. */
+  money: { total: number; received: number; payable: number };
+  /** The live payment, if one has been started. */
+  payment?: { status: PaymentStatus } | null;
+  rated?: boolean;
+  /** False when the studio has no collecting address configured. */
+  upiAvailable: boolean;
+}): SettleModel | null {
+  const found = findBooking(args.picture, args.bookingId);
+  if (!found) return null;
+  const { booking: b, car } = found;
+
+  const status: PaymentStatus = args.money.payable === 0
+    ? 'paid'
+    : args.payment?.status ?? 'unpaid';
+
+  /* THE LINES ARE THE STORED WORKING. A booking made before breakdowns existed
+     falls back to the one thing it does carry — the service and its total —
+     rather than inventing a decomposition of a figure nobody itemised. */
+  const bd = b.breakdown;
+  const lines: SettleLine[] = bd
+    ? [
+        { label: b.serviceName, value: rupees(bd.subtotal), detail: b.scope?.label },
+        ...(bd.discount
+          ? [{ label: bd.discount.label, value: `−${rupees(bd.discountAmount)}` }] : []),
+        ...bd.fees.map(f => ({ label: f.label, value: rupees(f.amount) })),
+        ...(bd.tax
+          ? [{ label: `GST ${bd.tax.rate}%`, value: rupees(bd.tax.amount) }] : []),
+      ]
+    : [{ label: b.serviceName, value: rupees(args.money.total), detail: b.scope?.label }];
+
+  const collected = b.dropRequired
+    ? 'We are bringing it back to you.'
+    : 'Ready to collect from the studio — Maninagar, Ahmedabad.';
+
+  return {
+    bookingId: b.id,
+    eyebrow: [car.vehicle.name, 'closed'].filter(Boolean).join(' · '),
+    headline: args.money.payable === 0 ? 'All settled.' : 'Back with you.',
+    handover: collected,
+    lines,
+    total: rupees(args.money.total),
+    payable: args.money.payable > 0 ? rupees(args.money.payable) : undefined,
+    paymentWord: PAYMENT_WORD[status],
+    paymentLine: PAYMENT_LINE[status],
+    /* Offered only when there is something to pay AND nothing already with the
+       studio to confirm — a second link against a credit they are checking is
+       how one visit ends up with two payments to reconcile. */
+    payable_now: args.money.payable > 0 && status !== 'submitted',
+    awaitingConfirmation: status === 'submitted',
+    method: args.picture.user.upiVpa
+      ? `UPI · ${maskVpa(args.picture.user.upiVpa)}`
+      : 'No payment address saved',
+    methodHref: hrefForDestination({ to: 'profile.panel', panel: 'payment' }),
+    visitId: args.visit?.id,
+    rated: args.rated ? 'Thank you — the studio has read it.' : undefined,
+    recordHref: args.visit
+      ? hrefForDestination({ to: 'visit', visitId: args.visit.id })
+      : hrefForDestination({ to: 'booking', bookingId: b.id }),
+    upiUnavailable: args.upiAvailable
+      ? undefined
+      : 'The studio is not taking UPI in the app just now — settle at the counter and we will mark it.',
   };
 }
 

@@ -216,25 +216,29 @@ export const updateBookingStatusWithNotification = async (
   if (notes) data.adminNotes = notes;
   await updateDoc(doc(db, 'bookings', booking.id), data);
 
-  const MESSAGES: Partial<Record<Booking['status'], { title: string; body: string }>> = {
-    confirmed:          { title: 'Booking Confirmed',     body: `Your ${booking.serviceName} for ${booking.vehicleName} on ${booking.scheduledDate} is confirmed.` },
-    vehicle_received:   { title: 'Vehicle Received',      body: `We have received your ${booking.vehicleName}. Work will begin shortly.` },
-    in_progress:        { title: 'Service In Progress',   body: `Our team is now working on your ${booking.vehicleName} - ${booking.serviceName}.` },
-    quality_check:      { title: 'Quality Check',         body: `Your ${booking.vehicleName} is in final quality inspection. Almost done!` },
-    ready_for_delivery: { title: 'Ready for Pickup',      body: `Your ${booking.vehicleName} is ready! Come collect it at AutoModz, Maninagar.` },
-    completed:          { title: 'Service Completed',     body: `${booking.serviceName} on your ${booking.vehicleName} is complete. Thank you for choosing AutoModz!` },
-    cancelled:          { title: 'Booking Cancelled',     body: `Your booking for ${booking.serviceName} (${booking.vehicleName}) has been cancelled.` },
-  };
+  /* ── TELLING THE CUSTOMER IS THE SERVER'S ──
+     This wrote the notification document and fired the push from the BROWSER,
+     which meant quiet mode — decided server-side, in `recordEvent` — was
+     bypassed entirely: a customer who had asked for quiet received every stage
+     ping regardless. Nothing de-duplicated either, so advancing, undoing and
+     re-advancing a stage sent the same message three times.
 
-  const msg = MESSAGES[status];
-  if (msg) {
-    await writeNotification(booking.userId, msg.title, msg.body, 'booking_update', booking.id);
-    // Web push to the customer's devices - fire-and-forget, never blocks the update
-    try {
-      const { sendPushToUser } = await import('./push');
-      sendPushToUser({ userId: booking.userId, title: msg.title, body: msg.body, url: notificationHref({ type: 'booking_update', bookingId: booking.id }) });
-    } catch { /* push is best-effort */ }
-  }
+     The status write above stays here; it is a fact about the studio's own
+     work and rules permit it. The telling moves to `/api/notify/stage`, where
+     the event id is derived from the fact and quiet mode is honoured once.
+
+     Best-effort, and deliberately so: a customer told late is a problem, a
+     status update that fails because the telling failed is a worse one. */
+  try {
+    const token = await idToken();
+    if (token) {
+      await fetch('/api/notify/stage', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: booking.id, status }),
+      });
+    }
+  } catch { /* the studio's record is written either way */ }
 
   if (status === 'completed') {
     const recordRef = doc(db, 'users', booking.userId, 'vehicles', booking.vehicleId, 'serviceHistory', booking.id);

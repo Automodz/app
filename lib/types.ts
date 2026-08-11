@@ -1337,3 +1337,74 @@ export interface Approval {
   /** After this the request retires itself — a bay cannot wait for ever. */
   expiresAt?: Timestamp;
 }
+
+// ─── PAYMENT (design screen 13) ──────────────────────────────────────────────
+
+/**
+ * WHAT WAS ASKED FOR, AND WHAT WAS SEEN.
+ *
+ * The studio takes UPI at handover. There is no payment gateway in this
+ * product and none is being added, so nothing here can confirm a payment by
+ * itself — which is exactly why the record separates the two facts:
+ *
+ *   `initiated` the studio generated an intent for ITS OWN figure
+ *   `submitted` the customer says they have paid, and gave a reference.
+ *               A CLAIM. It releases nothing.
+ *   `paid`      the studio has seen the money. Studio-only, always.
+ *
+ * Collapsing the last two would let a customer release their own car by
+ * tapping a button, which is the one thing a payment record exists to prevent.
+ */
+export type PaymentStatus =
+  | 'unpaid' | 'initiated' | 'submitted' | 'paid' | 'failed' | 'expired';
+
+export interface Payment {
+  id: string;
+  customerId: string;
+  jobId?: string;
+  bookingId?: string;
+  visitId?: string;
+  invoiceId?: string;
+  /** In rupees. SERVER-DERIVED, always — never read off a request. */
+  amount: number;
+  method: 'upi' | 'cash';
+  status: PaymentStatus;
+  /** The customer's own address at the moment the intent was built. */
+  vpa?: string;
+  /** What the customer read off their bank. A claim until the studio agrees. */
+  reference?: string;
+  /** Who saw the money, and when. Only the studio may write these. */
+  settledAt?: Timestamp;
+  settledById?: string;
+  settledByName?: string;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+  /** A UPI intent goes stale; the amount behind it may not stay right. */
+  expiresAt?: Timestamp;
+}
+
+// ─── RATING (design screen 13) ───────────────────────────────────────────────
+
+/**
+ * HOW THE VISIT WENT — attached to the SEALED VISIT, and to nothing else.
+ *
+ * The old rating hung off the public invoice, which meant anybody holding a
+ * shared invoice link could rate somebody else's work, and a visit with no
+ * invoice — most of them — could not be rated at all.
+ *
+ * The document id IS the visit id, so rating twice is not something the
+ * product has to detect: it is not representable. And a rating never touches
+ * the visit itself, because a sealed visit is permanent (§16.2) — the opinion
+ * lives beside the record, not inside it.
+ */
+export interface Rating {
+  /** Equal to `visitId`. Once-only is structural, not a check. */
+  id: string;
+  visitId: string;
+  customerId: string;
+  vehicleId: string;
+  /** 1–5. */
+  rating: number;
+  comment?: string;
+  createdAt: Timestamp;
+}
