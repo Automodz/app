@@ -1258,6 +1258,22 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   color: var(--chrome);
 }
 
+/* ── THE DIAL'S NUMBER ───────────────────────────────────────────────────
+   The ring is `min(size, 100%)`, so on a narrow phone it is NOT the size its
+   caller asked for — and a number sized from that prop is then too large for
+   the ring it is actually sitting in. Measured against the element instead,
+   so the two can never disagree.
+
+   `--dial-scale` is set by the component and is the same fraction the inline
+   `font-size` uses; this only changes what it is a fraction OF. Everything is
+   inside `@supports`, so a browser without container queries keeps the inline
+   px value — which is exactly the arithmetic that shipped before, and is
+   correct at every width where the ring got the size it asked for. */
+@supports (container-type: inline-size) and (width: 1cqw) {
+  .am-dial { container-type: inline-size; }
+  .am-dial-value { font-size: calc(var(--dial-scale, 0.25) * 100cqw); }
+}
+
 /* ── THE PRESS ───────────────────────────────────────────────────────────
    §7.3 `tick` (120ms) is "acknowledgement — a press, a toggle", and until
    now nothing in the product used it. Every control rendered through

@@ -42,7 +42,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useOpenPalette } from '@/navigation/Palette';
 import {
-  color, space, MEASURE, INSET, TARGET_MIN, radius, imageSizes,
+  color, space, MEASURE, INSET, TARGET_MIN, radius, imageSizes, ground,
 } from '@/design';
 import type { StateTone } from '@/design';
 import { OfflineNote } from '@/components/system';
@@ -275,16 +275,42 @@ export function HomeScreen({ model }: { model: HomeModel }) {
       {/* ── THE DIAL ────────────────────────────────────────────────────
           1a and 1c are the same object holding a different number. Centred,
           alone, with nothing beside it — §3.5, and the reason the number can
-          be read from across a room. */}
+          be read from across a room.
+
+          ── WHAT THE LIVE DIAL HOLDS, AND WHY IT CHANGED ─────────────────
+          It held `state.timing`, and `state.timing` is a SENTENCE: the
+          projection words it as "Planned finish around 5:40 pm." while a
+          visit is on plan and "Running longer than planned — the work sets
+          the pace." once it is not. A sentence in a number slot is 62px type
+          wrapped over six lines, and on a phone it covered the car's own name
+          above it and the pane below it. That was the production bug.
+
+          The number is now the one the ring is ALREADY drawing: how far
+          through the visit the floor has got. Nothing about the screen's
+          composition changes — the same ring, the same fill — and three
+          things become true that were not:
+
+            · it is a measure, so it fits the slot the design drew for it
+            · it is honest, because the acts are published by the studio and
+              are what the floor actually does (the same denominator `fill`
+              has always used), rather than a clock guessing
+            · it is said exactly once. The TIMING sentence keeps its existing
+              home in the pane below, where it has always been — so the fix
+              adds no words to the screen and repeats none.
+
+          §5.3 — the caption names what the number belongs to. */}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: space.rest / 2 }}>
         {working ? (
           <Dial
             fill={throughVisit}
-            caption={state.timing ? 'remaining' : 'in progress'}
-            label={`${state.word}. ${state.timing ?? live?.timing ?? 'In progress'}`}
+            caption="through the visit"
+            label={
+              `${state.word}. ${Math.round(throughVisit * 100)} percent through the visit`
+              + `${state.timing ?? live?.timing ? `. ${state.timing ?? live?.timing}` : ''}`
+            }
             size={250}
           >
-            {state.timing ?? live?.timing ?? '—'}
+            {Math.round(throughVisit * 100)}<Unit>%</Unit>
           </Dial>
         ) : (
           <Dial
@@ -362,7 +388,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               <span
                 key={a.label}
                 style={{
-                  flex: 1, height: 3, borderRadius: 2,
+                  flex: 1, minWidth: 0, height: 3, borderRadius: 2,
                   background: a.done
                     ? `linear-gradient(90deg, ${color.champagne}, ${color.amber})`
                     : a.current
@@ -376,17 +402,23 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               />
             ))}
           </div>
-          <div
-            style={{
-              display: 'flex', justifyContent: 'space-between', gap: space.breath,
-            }}
-          >
+          {/* EACH NAME UNDER ITS OWN SEGMENT.
+              This was `space-between` on five content-width spans, so a long
+              act ("Looked over") took width from its neighbours and the names
+              stopped lining up with the bars they name — the strip read as
+              compressed on a phone because it WAS. They now share the bars'
+              grid exactly: `flex: 1` and `minWidth: 0`, so a name that needs
+              two lines wraps within its own column instead of pushing the
+              others out of position. */}
+          <div style={{ display: 'flex', gap: 6 }}>
             {live.acts.map(a => (
               <span
                 key={a.label}
                 className="am-label"
                 style={{
-                  fontSize: 9, letterSpacing: '0.14em',
+                  flex: 1, minWidth: 0, textAlign: 'center',
+                  fontSize: 9, letterSpacing: '0.12em', lineHeight: 1.35,
+                  overflowWrap: 'break-word', hyphens: 'none',
                   color: a.done || a.current ? color.amber : color.ink3,
                 }}
               >
@@ -412,13 +444,24 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           }}
         >
           {live.frames.map(f => (
+            /* THE FRAME IS THE FRAME, WHETHER OR NOT THE PHOTOGRAPH ARRIVES.
+               A photograph that 404s used to collapse the `<img>` to its alt
+               text, so the strip became three broken-image glyphs with the
+               words "On arrival" and "In care" spilling out beside them at
+               body size — visible on the production screenshot this was
+               reported from. The size now belongs to the FRAME rather than to
+               the image inside it, and the frame carries §11.5's composed
+               absence, so a missing photograph is a quiet empty plate and
+               never rearranges anything around it. */
             <Link
               key={f.id}
               href={live.href}
               className="am-tap"
               style={{
-                flex: '0 0 auto', borderRadius: radius.chip, overflow: 'hidden',
-                textDecoration: 'none',
+                flex: '0 0 auto', width: 104, height: 104,
+                borderRadius: radius.chip, overflow: 'hidden',
+                textDecoration: 'none', background: ground.awaiting,
+                border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -426,9 +469,19 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                 src={f.url}
                 alt={f.caption ?? `${vehicle.name} in the studio`}
                 loading="lazy"
+                width={104}
+                height={104}
+                /* The browser's own broken-image glyph is the last thing left
+                   of a photograph that did not arrive, and §11.5 is explicit
+                   that an absence is composed rather than reported. Hidden,
+                   not removed: the request still fails in the network log,
+                   where the studio can see it. */
+                onError={e => { e.currentTarget.style.visibility = 'hidden'; }}
                 style={{
-                  width: 104, height: 104, objectFit: 'cover', display: 'block',
-                  border: '1px solid rgba(255,255,255,0.07)',
+                  width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                  /* The alt text is kept — it is what a screen reader reads —
+                     but it is never allowed to lay the strip out. */
+                  fontSize: 0, color: 'transparent',
                 }}
               />
             </Link>

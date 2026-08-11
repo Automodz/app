@@ -165,8 +165,17 @@ export function BottomNavigation() {
                 flex: 1,
                 textDecoration: 'none',
                 /* §3.3 — the studio's light falls on where you are standing,
-                   and on nothing else in this control. */
-                color: active ? color.amber : 'rgba(237,235,231,0.42)',
+                   and on nothing else in this control.
+
+                   THE QUIET FOUR ARE `ink3`, NOT A LITERAL. This was
+                   `rgba(237,235,231,0.42)` — primary ink at 42%, which is a
+                   number nobody had measured: it composites to roughly 2.6:1
+                   on the dock's own glass, under the 4.5:1 §21.1 requires of
+                   the names it is setting. `ink3` is the token the palette
+                   publishes for exactly this — "labels and whispers" — and it
+                   is 6.31:1 with the contrast recorded beside it. §22.4: no
+                   component writes its own colour value. */
+                color: active ? color.amber : color.ink3,
                 transition: `color ${duration.move}ms ${easing.ease}`,
               }}
             >

@@ -30,6 +30,7 @@ import { NavigationProvider } from './NavigationProvider';
 import { BottomNavigation } from './BottomNavigation';
 import { PaletteProvider } from './Palette';
 import { RoomTransition } from './RoomTransition';
+import { RoomTheme } from './RoomTheme';
 import { StudioBoot, Ambient } from '@/components/system';
 import { roomFor, HOME } from './routes';
 
@@ -50,6 +51,10 @@ export function CustomerChrome(
 
   return (
     <NavigationProvider>
+      {/* FIRST, BEFORE ANYTHING IS DRAWN. A room is always dark, and this is
+          the only place that knows an address is a room — see RoomTheme for
+          what a light-themed room did to a customer on production. */}
+      <RoomTheme />
       {/* THE ROOM. Mounted once, behind everything, for the life of the
           session — not per screen, or each navigation would restart its drift
           and the field would visibly jump between rooms. */}

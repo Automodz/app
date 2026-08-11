@@ -21,6 +21,31 @@
  * §3.5. The unfilled part of a dial is the part that carries no information.
  * At 7% white it is enough for the arc to be read as a proportion and not
  * enough to be read as a second ring.
+ *
+ * ── WHY IT NOW BOUNDS ITSELF ─────────────────────────────────────────────
+ * `size` was a fixed width AND a fixed height, and the number inside it was
+ * sized at a quarter of that with nothing clipping it. Both assumptions held
+ * only for the content the design drew — "3h 40m", "82%" — and a caller who
+ * put a SENTENCE in the slot got 62px type wrapped over six lines, spilling
+ * out of a 250px box in every direction and over the screen's own header and
+ * the pane below it. That is exactly what happened in production.
+ *
+ * A primitive whose layout depends on its caller behaving is not bounded, so
+ * three things changed, and none of them is an offset:
+ *
+ *   · `size` is a MAXIMUM. The ring is `min(size, 100%)` on a square aspect,
+ *     so a 262px dial in a 327px column stays 262, and the same dial in a
+ *     narrower one shrinks instead of overflowing.
+ *   · The number is measured against THE RING, not against the prop — in
+ *     container units, so it is right at whatever width the ring actually
+ *     took. `size * 0.25` is kept as the fallback for a browser without
+ *     container queries, where it was already correct.
+ *   · The number's box is clipped to the ring's inner square. Nothing put in
+ *     this slot can reach anything outside the dial, whatever it is.
+ *
+ * And it says so out loud in development: prose in a number slot is a caller
+ * bug, and a clipped sentence is a symptom that should not have to be noticed
+ * on a phone in production before anybody hears about it.
  */
 import type { ReactNode } from 'react';
 import { color } from '@/design';
@@ -39,11 +64,18 @@ export interface DialProps {
    * wrapping around and drawing a short one.
    */
   fill: number;
-  /** The number itself, already worded — "3h 40m", "82%". */
+  /**
+   * The number itself, already worded — "3h 40m", "82%".
+   *
+   * A MEASURE, NOT A SENTENCE. The slot is a quarter of the ring high; nothing
+   * longer than a short reading belongs in it, and the component clips rather
+   * than lets it out. See `MEASURE_MAX`.
+   */
   children: ReactNode;
   /** The line under it. Mono, tracked, quiet — never a sentence. */
   caption?: string;
-  /** Diameter in px. 250 in the design; 262 for the resting state. */
+  /** Diameter in px, and a CEILING rather than a fixed width — see the note
+   *  at the top. 250 in the design; 262 for the resting state. */
   size?: number;
   /**
    * The arc's colour. Amber when the number is counting toward something the
@@ -58,6 +90,48 @@ export interface DialProps {
   label: string;
 }
 
+/**
+ * The longest reading the slot is designed for.
+ *
+ * Not just a measure: screen 1c puts the STATE in the ring when a car has no
+ * term to count down — "Cared for", "Final checks" — and those are what set
+ * this bound, at twelve characters plus room. Past it the content is prose,
+ * it belongs in a line of body text, and it is clipped rather than allowed
+ * out.
+ */
+const MEASURE_MAX = 14;
+
+/**
+ * The number's size, as a fraction of the ring, stepped by how much there is
+ * to read. The design's quarter holds a four-character measure — "3h 40m",
+ * "82%" — and anything longer gets SMALLER rather than wider, because the
+ * ring's inner square is the bound and the type has to live inside it.
+ *
+ * Each step was chosen so the reading still fills the ring at two lines:
+ * "Cared for" at 0.165 and "Final checks" at 0.125 both wrap once and sit
+ * comfortably within the 74% of the box the arc encloses.
+ */
+function scaleFor(length: number): number {
+  if (length <= 4) return 0.25;
+  if (length <= 6) return 0.20;
+  if (length <= 9) return 0.165;
+  if (length <= MEASURE_MAX) return 0.125;
+  return 0.11;
+}
+
+/** The plain length of whatever was handed to the slot, when it is readable. */
+function readingLength(children: ReactNode): number {
+  if (typeof children === 'string') return children.length;
+  if (typeof children === 'number') return String(children).length;
+  if (Array.isArray(children)) {
+    return children.reduce<number>((n, c) => n + readingLength(c as ReactNode), 0);
+  }
+  /* An element — a `<Unit>` beside a number, which is what this slot is for.
+     Counted as its own small contribution rather than measured, since reading
+     into an element's children is guessing at a render. */
+  return children ? 2 : 0;
+}
+
 export function Dial({
   fill, children, caption, size = 250, stroke = 'gradient', ticks = false, label,
 }: DialProps) {
@@ -65,9 +139,30 @@ export function Dial({
   const offset = LEN * (1 - bounded);
   const id = `dial-${stroke}`;
 
+  const reading = readingLength(children);
+  const scale = scaleFor(reading);
+
+  /* SAID OUT LOUD, IN DEVELOPMENT ONLY. The production symptom of prose in
+     this slot is a clipped word, which is quiet enough to ship — and did. */
+  if (process.env.NODE_ENV !== 'production' && reading > MEASURE_MAX) {
+    console.error(
+      `[Dial] the number slot was given ${reading} characters. It holds a `
+      + `measure ("3h 40m", "82%"), not a sentence — the sentence belongs in a `
+      + `line of body text. It will be clipped to the ring.`,
+    );
+  }
+
   return (
     <div
-      style={{ position: 'relative', width: size, height: size }}
+      className="am-dial"
+      style={{
+        position: 'relative',
+        /* §8.1 — the column is one column at every width, so the ring takes
+           the width it is given and never more. `size` is the ceiling. */
+        width: `min(${size}px, 100%)`,
+        maxWidth: size,
+        aspectRatio: '1 / 1',
+      }}
       role="img"
       aria-label={label}
     >
@@ -111,27 +206,57 @@ export function Dial({
         </defs>
       </svg>
 
-      {/* The number, centred in the ring rather than under it. */}
+      {/* The number, centred in the ring rather than under it.
+          `inset: 13%` is the ring's inner square: r=88 on a 200 viewBox with a
+          3px stroke leaves ~86% of the box inside the arc, and the content is
+          held there rather than at `inset: 0` — so the bound is the RING, not
+          the element, and nothing can be drawn over the arc it belongs to. */}
       <div
         style={{
-          position: 'absolute', inset: 0,
+          position: 'absolute', inset: '13%',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 4,
           textAlign: 'center',
+          overflow: 'hidden',
         }}
       >
         <span
-          className="am-display"
+          className="am-display am-dial-value"
           style={{
-            fontSize: Math.round(size * 0.25),
-            lineHeight: 1,
+            /* The fallback, and what every browser without container queries
+               gets: exactly the arithmetic this component has always used.
+               `--dial-value` is the same number for the class to pick up in
+               container units, where it is measured against the ring's REAL
+               width rather than against the prop. */
+            ['--dial-scale' as string]: scale,
+            fontSize: Math.round(size * scale),
+            lineHeight: 1.05,
             letterSpacing: '-0.03em',
+            /* Two lines at most, and clipped — a caller cannot push anything
+               out of the ring, whatever they put in it. */
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: 2,
+            overflow: 'hidden',
+            overflowWrap: 'anywhere',
+            maxWidth: '100%',
           }}
         >
           {children}
         </span>
         {caption ? (
-          <span className="am-label" style={{ letterSpacing: '0.28em' }}>{caption}</span>
+          <span
+            className="am-label"
+            style={{
+              letterSpacing: '0.28em',
+              /* The caption is one short word; it wraps inside the ring rather
+                 than widening it. */
+              maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {caption}
+          </span>
         ) : null}
       </div>
 
