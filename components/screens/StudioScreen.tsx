@@ -43,10 +43,12 @@
  */
 import { useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { color, space, INSET, imageSizes } from '@/design';
 import type { Service, Subscription, Vehicle } from '@/lib/types';
 import { BookingFlow } from '@/components/studio/BookingFlow';
+import type { CarriedEstimate } from '@/components/studio/BookingFlow';
 import { OfflineNote } from '@/components/system';
 import {
   Screen, Pane, Label, Statement, Rail, Action, Pulse, Chevron,
@@ -83,6 +85,14 @@ export interface StudioModel {
   /** The place itself. No people (see above). */
   photo?: StudioPhoto;
   arrangeHref?: string;
+  /**
+   * WHERE CHOOSING A SERVICE GOES — design 06 → 07, keyed by service id.
+   *
+   * A scope screen has to know which service AND which car, and a renderer may
+   * not build an address (ARCHITECTURE §1). The projection resolves one per
+   * service so the pane is a plain link.
+   */
+  serviceHref: Record<string, string>;
   /** The menu, the cars and the standing — everything arranging a visit needs. */
   booking: {
     services: Service[];
@@ -98,6 +108,14 @@ export interface StudioModel {
    * than a second implementation of them.
    */
   manageable: StudioVisitRow[];
+  /**
+   * WHAT THE CUSTOMER WAS QUOTED, when they arrived from the scope screen.
+   *
+   * Read on the server from the estimate's own document — never rebuilt from a
+   * query string, which would make the figure on the sheet a client value and
+   * therefore not a price at all.
+   */
+  estimate?: CarriedEstimate | null;
 }
 
 export interface StudioVisitRow {
@@ -137,6 +155,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
   const {
     place, presence, visitHref, voice, work, does,
     credentials = [], hours, address, directionsHref, photo, booking, manageable,
+    serviceHref, estimate = null,
   } = model;
 
   /* ARRANGING IS ADDRESSABLE (§6.4). `?arrange=1`, and `?cat=` carries the
@@ -156,10 +175,13 @@ export function StudioScreen({ model }: { model: StudioModel }) {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
+  /* ARRIVING WITH AN ESTIMATE IS ARRIVING TO CHOOSE A DAY. The scope screen's
+     "Choose a date" lands here; the sheet must already be open, or the
+     customer is returned to the catalogue they have just come from. */
   useEffect(() => {
-    if (prefillCategory && !arranging) setArranging(true);
+    if ((prefillCategory || estimate) && !arranging) setArranging(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefillCategory]);
+  }, [prefillCategory, estimate?.id]);
 
   /* §5.2 — the catalogue, in the studio's own order. The one marked `popular`
      is the warm pane: at most one thing on a screen is asking (§3.2), and this
@@ -217,16 +239,23 @@ export function StudioScreen({ model }: { model: StudioModel }) {
             {services.map(s => {
               const away = inTheStudio(s.duration);
               return (
+                /* CHOOSING A SERVICE OPENS ITS COVERAGES (design 06 → 07).
+                   It used to open the booking sheet directly, which asked a
+                   customer to pick a day before they had been told how much of
+                   their car was being treated or what it cost. */
                 <Pane
                   key={s.id}
                   tone={s.id === featured?.id ? 'warm' : 'plain'}
-                  as="button"
-                  onClick={() => setArranging(true)}
+                  as={serviceHref[s.id] ? Link : 'button'}
+                  {...(serviceHref[s.id]
+                    ? { href: serviceHref[s.id] }
+                    : { onClick: () => setArranging(true) })}
                   className="am-tap"
                   style={{
                     padding: `${space.gap + 1}px ${space.gap + 3}px`,
                     display: 'flex', flexDirection: 'column', gap: space.breath,
                     textAlign: 'left', cursor: 'pointer', font: 'inherit', width: '100%',
+                    textDecoration: 'none',
                   }}
                 >
                   <span
@@ -415,6 +444,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
         vehicles={booking.vehicles}
         membership={booking.membership}
         prefillCategory={prefillCategory}
+        estimate={estimate}
       />
     </Screen>
   );

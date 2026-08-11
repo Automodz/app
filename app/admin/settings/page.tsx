@@ -8,6 +8,7 @@ import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatCurrency } from '@/lib/utils';
 import ServiceIcon from '@/components/ui/ServiceIcon';
+import { ScopeEditor } from '@/components/workspace/ScopeEditor';
 import type { Service } from '@/lib/types';
 import ErrorState from '@/components/ui/ErrorState';
 
@@ -147,7 +148,7 @@ export default function AdminSettingsPage() {
               </div>
               <div className="space-y-3">
                 {services.filter(s => s.category === cat).map(svc => (
-                  <motion.div key={svc.id} className="flex items-center gap-3 p-3 rounded-xl"
+                  <motion.div key={svc.id} className="flex items-center gap-3 p-3 rounded-xl flex-wrap"
                     style={{ background: 'var(--background-2)' }}>
                     <div className="flex-1 min-w-0">
                       <div className="font-body text-sm text-foreground font-500 truncate">{svc.name}</div>
@@ -171,6 +172,15 @@ export default function AdminSettingsPage() {
                           : <Save size={12} className="text-foreground" />}
                       </button>
                     </div>
+                    {/* WHAT THE CUSTOMER CHOOSES ON THE QUOTE SCREEN (design
+                        07). A coverage nobody has described cannot be picked,
+                        so this is the admin counterpart that makes that screen
+                        more than a single-option chooser. */}
+                    <ScopeEditor
+                      service={svc}
+                      onSaved={patch => setServices(list =>
+                        list.map(s => (s.id === svc.id ? { ...s, ...patch } : s)))}
+                    />
                   </motion.div>
                 ))}
               </div>

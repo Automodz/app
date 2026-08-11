@@ -79,6 +79,16 @@ const studio = (category?: string) =>
   category ? `${STUDIO}?cat=${encodeURIComponent(category)}` : STUDIO;
 
 /**
+ * Design 06 → 07 → 08. Choosing a service opens its coverages; choosing a
+ * coverage carries the estimate to the date screen.
+ */
+const studioScope = (serviceId: string, vehicleId?: string) => {
+  const p = new URLSearchParams({ service: serviceId });
+  if (vehicleId) p.set('car', vehicleId);
+  return `${STUDIO}/scope?${p.toString()}`;
+};
+
+/**
  * Every intent, resolved. Exhaustive by construction: `ActionIntent` is a union
  * and this record must cover it, so adding an intent without an address is a
  * compile error rather than a dead button (§10.5 — nothing is inert).
@@ -128,6 +138,8 @@ export type Destination =
   | { to: 'history' }
   | { to: 'studio' }
   | { to: 'studio.category'; category: string }
+  | { to: 'studio.scope'; serviceId: string; vehicleId?: string }
+  | { to: 'studio.arrange' }
   | { to: 'membership' }
   | { to: 'membership.join' }
   | { to: 'profile' }
@@ -167,6 +179,10 @@ export const hrefForDestination = (d: Destination): string => {
     case 'history':          return HISTORY;
     case 'studio':           return STUDIO;
     case 'studio.category':  return studio(d.category);
+    case 'studio.scope':     return studioScope(d.serviceId, d.vehicleId);
+    /* Screen 08 is the arrange sheet over the Studio — an address, so it is
+       linkable, restored on reload and closed by the back button (§6.4). */
+    case 'studio.arrange':   return `${STUDIO}?arrange=1`;
     case 'membership':       return MEMBERSHIP;
     case 'membership.join':  return `${MEMBERSHIP}?club=join`;
     case 'profile':          return PROFILE;

@@ -9,7 +9,7 @@
  * fallback — comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
-import type { Booking, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
+import type { Booking, Estimate, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
 import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
@@ -27,6 +27,7 @@ import {
   CHANGE_WINDOW_HOURS, STUDIO_UTC_OFFSET_MIN,
 } from '@/lib/os/lifecycle';
 import { spanDays, DAY_OPEN_MIN, WORK_DAY_MIN } from '@/lib/availability';
+import { scopesOf, addOnsOf } from '@/lib/os/scope';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
 import { projectMoments, sortMoments, groupByMonth, SHOT_CAPTION } from '@/lib/os/moment';
@@ -44,6 +45,8 @@ import type { HistoryModel, HistoryVisit } from '@/components/screens/HistoryScr
 import type { StudioModel } from '@/components/screens/StudioScreen';
 import type { BookedModel, BookedRow } from '@/components/screens/BookedScreen';
 import type { ManageBookingModel } from '@/components/studio/ManageBooking';
+import type { ScopeQuoteModel } from '@/components/studio/ScopeAndQuote';
+import type { CarriedEstimate } from '@/components/studio/BookingFlow';
 import type { YouModel } from '@/components/screens/YouScreen';
 import type { MembershipModel } from '@/components/screens/MembershipScreen';
 
@@ -1197,6 +1200,219 @@ export function toVisit(
   };
 }
 
+/* ── STUDIO ──────────────────────────────────────────────────────────────── */
+
+/**
+ * THE LIVE VISIT. Null unless the car is actually here — a countdown to a
+ * moment that has passed is worse than none. Every value is `os/stay`'s.
+ */
+export function toLiveVisit(
+  picture: CustomerPicture,
+  car: CarPicture,
+  bookingId: string,
+  now = new Date(),
+): LiveVisitModel | null {
+  const protections = protectionsOf(car, picture.catalogue, now);
+  const read = readOwnership(picture, car, protections, now);
+  if (!read.live || read.live.id !== bookingId || !read.stay) return null;
+
+  const stay = read.stay;
+  const job = car.jobs.find(j => j.bookingId === bookingId);
+  const frames = (job?.photos ?? []).map((p, i) => ({
+    id: `${bookingId}-${i}`,
+    url: p.url,
+    caption: SHOT_CAPTION[p.kind as 'before' | 'during' | 'after'],
+  }));
+
+  return {
+    id: bookingId,
+    vehicleName: car.vehicle.name,
+    word: ACT_TITLE[stay.act],
+    line: stay.narration,
+    timing: stay.timing ?? undefined,
+    service: read.live.serviceName,
+    acts: stay.acts.map(a => ({
+      label: a.title,
+      done: a.state === 'done',
+      current: a.state === 'current',
+    })),
+    frames,
+    hero: stay.latestPhoto ?? car.vehicle.photo,
+    backHref: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
+    /* §20.1 — a way to reach a human, on the screen a customer is most likely
+       to want one. The message names the car, so the studio does not have to
+       ask which one it is about. */
+    messageHref: waLink(
+      `Hello AutoModz — about my ${car.vehicle.name} (${car.vehicle.registrationNumber}) in the studio today.`,
+    ),
+  };
+}
+
+/**
+ * The estimate, worded for the sheet that spends it.
+ *
+ * Every value is read from the STORED estimate. Nothing is recomputed: the
+ * figure the customer saw on screen 07 is the figure they see on 08, and it is
+ * the figure the booking is made at, because all three are this one record.
+ */
+export function toCarriedEstimate(e: Estimate): CarriedEstimate {
+  const extras = e.scope.addOns.map(a => a.label);
+  const panels = e.scope.panels?.map(p => p.label) ?? [];
+  return {
+    id: e.id,
+    serviceId: e.serviceId,
+    vehicleId: e.vehicleId,
+    serviceName: e.serviceName,
+    scopeLine: [e.scope.label, ...panels, ...extras].filter(Boolean).join(' · '),
+    total: e.breakdown.washCovered ? 'Covered' : rupees(e.breakdown.total),
+    bay: e.scope.bayDays === 1 ? '1 day in the bay' : `${e.scope.bayDays} days in the bay`,
+    durationMinutes: e.scope.durationMinutes,
+  };
+}
+
+export function toStudio(
+  picture: CustomerPicture,
+  now = new Date(),
+  estimate: Estimate | null = null,
+): StudioModel {
+  const here = picture.cars.find(c => liveOf(c));
+
+  return {
+    place: 'Maninagar · Ahmedabad',
+    /* §4.5 — the absence of news is good news and should look like it. */
+    presence: here ? 'Your car is here' : 'Your car is with you',
+    visitHref: here ? hrefForDestination({ to: 'vehicle' }) : undefined,
+    voice:
+      'Every car is inspected in daylight before anything is put on it. '
+      + 'Paint is corrected by hand, panel by panel, and nothing is coated until '
+      + 'the surface underneath is right. If a car is not ready, it stays.',
+    does: 'Paint correction and ceramic coating. Paint protection film. Glass and '
+      + 'wheel sealing. Interior deep cleaning and leather care. Wash and '
+      + 'maintenance for cars already protected here.',
+    credentials: [],
+    hours: `Open ${COMPANY.hours.open} to ${COMPANY.hours.close}, every day.`,
+    address: COMPANY.address,
+    directionsHref: COMPANY.mapsUrl,
+    /* §6.3's primary action opens the booking flow in place. It used to be an
+       outbound WhatsApp link, because there was no in-app booking surface —
+       the most important control in the product handed the customer to another
+       application. There is one now. */
+    /* MADE PLAIN AT THE BOUNDARY. `StudioScreen` is a client component, and
+       these three are the only things in any projection handed to a renderer
+       as whole Firestore documents — the booking flow wants the Service
+       objects themselves. Those documents carry `Timestamp` CLASS instances
+       (`Service.createdAt`, `Vehicle.createdAt`, `Subscription.createdAt` and
+       friends), and React refuses to serialise a class instance across the
+       server/client boundary. The room threw for every signed-in customer.
+
+       Converted HERE rather than in `loadCustomerPicture`: `customerPicture`,
+       `ownership` and this file all sort on `createdAt?.toMillis?.()`, which
+       with optional chaining would quietly return 0 for a converted value and
+       break every ordering in the product without raising anything. */
+    /* Design 06 → 07 — one address per service, resolved here because a
+       renderer builds none (ARCHITECTURE §1). The car is the lead one, so a
+       customer with a single car never has to answer "which car" twice. */
+    estimate: estimate ? toCarriedEstimate(estimate) : null,
+
+    serviceHref: Object.fromEntries(
+      picture.catalogue
+        .filter(s => s.active !== false)
+        .map(s => [s.id, hrefForDestination({
+          to: 'studio.scope', serviceId: s.id, vehicleId: leadCar(picture)?.vehicle.id,
+        })]),
+    ),
+
+    booking: {
+      services: plainValue(picture.catalogue) as Service[],
+      vehicles: plainValue(picture.cars.map(c => c.vehicle)) as Vehicle[],
+      membership: (plainValue(picture.subscription ?? null) ?? null) as Subscription | null,
+    },
+
+    /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE — `upcomingOf`, the same
+       reader every other room uses, so "Your visits" cannot list a visit the
+       car's own room has stopped believing in.
+
+       TWO THINGS CHANGED HERE. It filtered on status alone, so a request the
+       studio never actioned sat in this list for ever under a heading that
+       says these are your visits, offering "Move it" and "Cancel the visit"
+       for a day that had already gone. And the list came out in GARAGE order —
+       27 July, then 28 July, then 24 July — because it walked the cars and
+       concatenated. Sorted across every car now, soonest first, by the one
+       comparator; the answer to "when is my next visit" is the top row.
+
+       Every upcoming visit is pending or confirmed by construction, which is
+       the same set `firestore.rules` allows the customer to change, so the
+       sheet still cannot offer an act the server will refuse. */
+    manageable: picture.cars
+      .flatMap(car => upcomingOf(car, now).map(b => ({ b, car })))
+      .sort((x, y) => soonestFirst(x.b, y.b))
+      .map(({ b, car }) => ({
+        id: b.id,
+        service: b.serviceName,
+        vehicleName: car.vehicle.name,
+        when: whenWords(b),
+        standing: standingWord(b),
+        href: hrefForDestination({ to: 'booking', bookingId: b.id }),
+      })),
+  };
+}
+
+/* ── SCOPE & QUOTE ───────────────────────────────────────────────────────── */
+
+/**
+ * SCREEN 07 — how much of the car, and what that costs.
+ *
+ * NO PRICE IS COMPUTED HERE. The coverages and extras are WORDED from the
+ * catalogue — a label, a detail line and the figure the catalogue carries —
+ * and the estimate itself comes from the server, which runs `priceVisit`. A
+ * projection that added up a scope and an add-on would be a second pricing
+ * path with no test between it and the customer's money.
+ */
+export function toScopeQuote(
+  picture: CustomerPicture,
+  serviceId: string,
+  vehicleId?: string,
+): ScopeQuoteModel | null {
+  const service = picture.catalogue.find(s => s.id === serviceId && s.active !== false);
+  if (!service) return null;
+
+  /* The car named in the address, or the one the customer is most likely to
+     mean. A quote is FOR a car — the studio prices a bonnet, not an abstraction
+     — so with no car at all there is nothing to quote and the room says so. */
+  const car = (vehicleId ? picture.cars.find(c => c.vehicle.id === vehicleId) : undefined)
+    ?? leadCar(picture);
+  if (!car) return null;
+
+  return {
+    serviceId: service.id,
+    serviceName: service.name,
+    forCar: `For the ${car.vehicle.name}`,
+    vehicleId: car.vehicle.id,
+    brandLine: [service.brand, service.warranty].filter(Boolean).join(' · ') || undefined,
+    scopes: scopesOf(service).map(s => ({
+      id: s.id,
+      kind: s.kind,
+      label: s.label,
+      detail: s.detail,
+      /* "On quote" IS THE PRICE of a custom coverage, and it is the design's
+         own word. A zero would claim the studio does it for nothing. */
+      price: typeof s.price === 'number' && s.price > 0 ? rupees(s.price) : 'On quote',
+      panels: s.panels?.map(p => ({ id: p.id, label: p.label, price: rupees(p.price) })),
+    })),
+    addOns: addOnsOf(service).map(a => ({
+      id: a.id,
+      label: a.label,
+      detail: a.detail,
+      price: rupees(a.price),
+      recommendedWith: a.recommendedWith ?? [],
+    })),
+    /* The date screen, which the estimate id is appended to. Built by the
+       resolver — a screen that assembled this would be a second route table. */
+    nextHrefBase: hrefForDestination({ to: 'studio.arrange' }),
+    backHref: hrefForDestination({ to: 'studio' }),
+  };
+}
+
 /* ── THE BOOKING ─────────────────────────────────────────────────────────── */
 
 /** "9:00 am". The hour as a person says it, never "09:00" on a confirmation. */
@@ -1460,124 +1676,6 @@ function isoInStudio(d: Date): string {
 }
 function hourInStudio(d: Date): string {
   return new Date(d.getTime() + STUDIO_UTC_OFFSET_MIN * 60_000).toISOString().slice(11, 16);
-}
-
-/* ── STUDIO ──────────────────────────────────────────────────────────────── */
-
-/**
- * THE LIVE VISIT. Null unless the car is actually here — a countdown to a
- * moment that has passed is worse than none. Every value is `os/stay`'s.
- */
-export function toLiveVisit(
-  picture: CustomerPicture,
-  car: CarPicture,
-  bookingId: string,
-  now = new Date(),
-): LiveVisitModel | null {
-  const protections = protectionsOf(car, picture.catalogue, now);
-  const read = readOwnership(picture, car, protections, now);
-  if (!read.live || read.live.id !== bookingId || !read.stay) return null;
-
-  const stay = read.stay;
-  const job = car.jobs.find(j => j.bookingId === bookingId);
-  const frames = (job?.photos ?? []).map((p, i) => ({
-    id: `${bookingId}-${i}`,
-    url: p.url,
-    caption: SHOT_CAPTION[p.kind as 'before' | 'during' | 'after'],
-  }));
-
-  return {
-    id: bookingId,
-    vehicleName: car.vehicle.name,
-    word: ACT_TITLE[stay.act],
-    line: stay.narration,
-    timing: stay.timing ?? undefined,
-    service: read.live.serviceName,
-    acts: stay.acts.map(a => ({
-      label: a.title,
-      done: a.state === 'done',
-      current: a.state === 'current',
-    })),
-    frames,
-    hero: stay.latestPhoto ?? car.vehicle.photo,
-    backHref: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
-    /* §20.1 — a way to reach a human, on the screen a customer is most likely
-       to want one. The message names the car, so the studio does not have to
-       ask which one it is about. */
-    messageHref: waLink(
-      `Hello AutoModz — about my ${car.vehicle.name} (${car.vehicle.registrationNumber}) in the studio today.`,
-    ),
-  };
-}
-
-export function toStudio(picture: CustomerPicture, now = new Date()): StudioModel {
-  const here = picture.cars.find(c => liveOf(c));
-
-  return {
-    place: 'Maninagar · Ahmedabad',
-    /* §4.5 — the absence of news is good news and should look like it. */
-    presence: here ? 'Your car is here' : 'Your car is with you',
-    visitHref: here ? hrefForDestination({ to: 'vehicle' }) : undefined,
-    voice:
-      'Every car is inspected in daylight before anything is put on it. '
-      + 'Paint is corrected by hand, panel by panel, and nothing is coated until '
-      + 'the surface underneath is right. If a car is not ready, it stays.',
-    does: 'Paint correction and ceramic coating. Paint protection film. Glass and '
-      + 'wheel sealing. Interior deep cleaning and leather care. Wash and '
-      + 'maintenance for cars already protected here.',
-    credentials: [],
-    hours: `Open ${COMPANY.hours.open} to ${COMPANY.hours.close}, every day.`,
-    address: COMPANY.address,
-    directionsHref: COMPANY.mapsUrl,
-    /* §6.3's primary action opens the booking flow in place. It used to be an
-       outbound WhatsApp link, because there was no in-app booking surface —
-       the most important control in the product handed the customer to another
-       application. There is one now. */
-    /* MADE PLAIN AT THE BOUNDARY. `StudioScreen` is a client component, and
-       these three are the only things in any projection handed to a renderer
-       as whole Firestore documents — the booking flow wants the Service
-       objects themselves. Those documents carry `Timestamp` CLASS instances
-       (`Service.createdAt`, `Vehicle.createdAt`, `Subscription.createdAt` and
-       friends), and React refuses to serialise a class instance across the
-       server/client boundary. The room threw for every signed-in customer.
-
-       Converted HERE rather than in `loadCustomerPicture`: `customerPicture`,
-       `ownership` and this file all sort on `createdAt?.toMillis?.()`, which
-       with optional chaining would quietly return 0 for a converted value and
-       break every ordering in the product without raising anything. */
-    booking: {
-      services: plainValue(picture.catalogue) as Service[],
-      vehicles: plainValue(picture.cars.map(c => c.vehicle)) as Vehicle[],
-      membership: (plainValue(picture.subscription ?? null) ?? null) as Subscription | null,
-    },
-
-    /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE — `upcomingOf`, the same
-       reader every other room uses, so "Your visits" cannot list a visit the
-       car's own room has stopped believing in.
-
-       TWO THINGS CHANGED HERE. It filtered on status alone, so a request the
-       studio never actioned sat in this list for ever under a heading that
-       says these are your visits, offering "Move it" and "Cancel the visit"
-       for a day that had already gone. And the list came out in GARAGE order —
-       27 July, then 28 July, then 24 July — because it walked the cars and
-       concatenated. Sorted across every car now, soonest first, by the one
-       comparator; the answer to "when is my next visit" is the top row.
-
-       Every upcoming visit is pending or confirmed by construction, which is
-       the same set `firestore.rules` allows the customer to change, so the
-       sheet still cannot offer an act the server will refuse. */
-    manageable: picture.cars
-      .flatMap(car => upcomingOf(car, now).map(b => ({ b, car })))
-      .sort((x, y) => soonestFirst(x.b, y.b))
-      .map(({ b, car }) => ({
-        id: b.id,
-        service: b.serviceName,
-        vehicleName: car.vehicle.name,
-        when: whenWords(b),
-        standing: standingWord(b),
-        href: hrefForDestination({ to: 'booking', bookingId: b.id }),
-      })),
-  };
 }
 
 /* ── YOU ─────────────────────────────────────────────────────────────────── */

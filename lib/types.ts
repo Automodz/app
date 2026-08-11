@@ -358,6 +358,17 @@ export interface Booking {
   scope?: BookedScope;
   /** The estimate this booking was made from. */
   estimateId?: string;
+  /**
+   * WHAT IT COST, LINE BY LINE, AS DECIDED AT THE MOMENT OF BOOKING.
+   *
+   * `totalAmount` is the same figure and is kept because every existing reader
+   * uses it. This is the working behind it: the services, the one benefit that
+   * applied, each concierge leg as its own line, and the tax block — absent
+   * rather than zero when no tax applied. Produced by `priceVisit` and by
+   * nothing else, so the estimate, the confirmation and the invoice cannot
+   * quote three different totals for one visit.
+   */
+  breakdown?: StoredBreakdown;
   paymentMethod: 'upi' | 'cash';
   paymentStatus: 'pending' | 'verified' | 'failed';
   transactionId?: string;

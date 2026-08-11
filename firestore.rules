@@ -123,6 +123,26 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdmin();
     }
 
+    // ── Estimates - what a customer was quoted (design screen 07) ───────
+    //    OWNER-READ, SERVER-WRITE. An estimate is a PRICE, and the whole
+    //    reason it is a stored object rather than a number in a query string
+    //    is that a price a client can express is not a price. Rules can check
+    //    that `total` is a number; they cannot check that it is the number
+    //    `priceVisit` would produce from the catalogue, the customer's
+    //    membership and the one promo that applies. So no client writes here
+    //    at all - POST /api/estimate is the only door, and it never reads a
+    //    figure off the request.
+    //
+    //    Reading is scoped to the owner. An estimate names what a customer is
+    //    about to spend and which car they are spending it on; there is no
+    //    reason for anyone else to hold it, including another customer who
+    //    happens to guess an id.
+    match /estimates/{id} {
+      allow read: if request.auth != null &&
+        (isStaff() || resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+
     // ── Visits - THE ANCHOR (docs/VISIT-OBJECT.md) ──────────────────────
     //    A visit is append-only while it runs and PERMANENT once sealed.
     //    The seal is what makes a promise unrewritable: after `sealedAt`,

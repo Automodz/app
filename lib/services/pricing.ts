@@ -3,8 +3,11 @@
 // Everything that decides what a visit costs is in this file, and only the
 // Booking Service (lib/server/bookingService.ts) is allowed to act on it. The
 // UI may call the same functions to QUOTE a price - it just never writes one.
-import type { Promo, MembershipPlan, BookingDiscount, Subscription } from '../types';
+import type {
+  Promo, MembershipPlan, BookingDiscount, Subscription, StoredBreakdown,
+} from '../types';
 import { washesLeftOf } from '../os/club';
+import { GST_ENABLED, GST_RATE, GSTIN } from '../config/storeConfig';
 
 /** Membership "% off other services" perk (Silver 10 / Gold 15 / Platinum 20) */
 export const membershipDiscountPct = (plan: MembershipPlan): number =>
@@ -281,3 +284,46 @@ export const pickupFees = (legs: { pickup?: boolean; drop?: boolean }): FeeLine[
   ...(legs.pickup ? [{ label: 'Pickup', amount: PICKUP_LEG_FEE }] : []),
   ...(legs.drop ? [{ label: 'Drop', amount: PICKUP_LEG_FEE }] : []),
 ];
+
+/**
+ * THE TAX POLICY, READ FROM CONFIGURATION AND NEVER ASSUMED.
+ *
+ * The audit found GST on the invoice and absent from the estimate — one fact,
+ * two calculations, guaranteed to contradict each other the day a GSTIN
+ * exists. This is the one place it is decided, and `priceVisit` is the one
+ * place it is applied, so the estimate, the booking, the invoice and the
+ * payment all move together or not at all.
+ *
+ * It is off today because the studio has no GSTIN, and `priceVisit` then omits
+ * the tax block ENTIRELY rather than writing a zero — a zero would claim the
+ * studio charged nothing on a taxable sale, which is a different statement
+ * from not being registered.
+ */
+export const taxPolicy = (): TaxPolicy => ({
+  enabled: GST_ENABLED && !!GSTIN,
+  rate: GST_RATE,
+  ...(GSTIN ? { gstin: GSTIN } : {}),
+});
+
+/**
+ * A breakdown as it is STORED.
+ *
+ * `PriceBreakdown` carries the whole `Promo` document, which is a live record
+ * with its own usage counts. Freezing a copy of it into an estimate or a
+ * booking would freeze a thing that keeps changing, and the copy would start
+ * lying the first time anybody else redeemed it. Only the promo's IDENTITY
+ * belongs in a snapshot.
+ */
+export const storedBreakdown = (b: PriceBreakdown): StoredBreakdown => ({
+  subtotal: b.subtotal,
+  ...(b.discount ? { discount: b.discount } : {}),
+  discountAmount: b.discountAmount,
+  fees: b.fees,
+  feesTotal: b.feesTotal,
+  taxable: b.taxable,
+  ...(b.tax ? { tax: b.tax } : {}),
+  total: b.total,
+  washCovered: b.washCovered,
+  ...(b.membershipId ? { membershipId: b.membershipId } : {}),
+  ...(b.promo ? { promoId: b.promo.id } : {}),
+});

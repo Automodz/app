@@ -113,6 +113,29 @@ const PART_OF_DAY = [
   ['Evening', (h: number) => h >= 17],
 ] as const;
 
+/**
+ * WHAT THE CUSTOMER WAS QUOTED — design screen 07, carried into 08.
+ *
+ * Read on the SERVER from the estimate's own document and handed down, so the
+ * figure on this sheet is the figure the studio wrote rather than one the
+ * browser reconstructed from a query string. Only its ID travels to the
+ * booking route; the amount is never sent, and would be ignored if it were.
+ */
+export interface CarriedEstimate {
+  id: string;
+  serviceId: string;
+  vehicleId: string;
+  serviceName: string;
+  /** "Full body · Two-stage correction" — what was actually chosen. */
+  scopeLine: string;
+  /** "₹1,26,720", or "Covered" for a membership wash. */
+  total: string;
+  /** "2 days in the bay" */
+  bay: string;
+  /** Minutes, so the slot picker offers hours the work can actually finish in. */
+  durationMinutes: number;
+}
+
 export interface BookingFlowProps {
   open: boolean;
   onClose: () => void;
@@ -121,10 +144,13 @@ export interface BookingFlowProps {
   membership: Subscription | null;
   /** The category the proposal named, when one sent the customer here. */
   prefillCategory?: string | null;
+  /** Set when the customer arrived from the scope screen. */
+  estimate?: CarriedEstimate | null;
 }
 
 export function BookingFlow({
   open, onClose, services, vehicles, membership, prefillCategory = null,
+  estimate = null,
 }: BookingFlowProps) {
   const router = useRouter();
   const online = useOnline();
@@ -141,7 +167,9 @@ export function BookingFlow({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /* What the studio now holds. Set on success; the sheet becomes a receipt. */
-  const [done, setDone] = useState<{ reference: string; when: string; service: string } | null>(null);
+  const [done, setDone] = useState<
+    { reference: string; when: string; service: string; bookingId: string } | null
+  >(null);
 
   /* 1 · the menu, grouped */
   const menu = useMemo(() => {
@@ -171,14 +199,32 @@ export function BookingFlow({
     if (!open) { wasOpen.current = false; return; }
     if (wasOpen.current) return;
     wasOpen.current = true;
-    setVehicleId(vehicles[0]?.id ?? null);
     const active = services.filter(s => s.active !== false);
-    setService(prefillCategory ? active.find(s => s.category === prefillCategory) ?? null : null);
+    /* ARRIVED FROM THE SCOPE SCREEN. The car and the work are already decided
+       and priced; asking again would invite a customer to change one of them
+       and silently keep the other's price. */
+    if (estimate) {
+      setVehicleId(estimate.vehicleId);
+      setService(active.find(s => s.id === estimate.serviceId) ?? null);
+    } else {
+      setVehicleId(vehicles[0]?.id ?? null);
+      setService(prefillCategory ? active.find(s => s.category === prefillCategory) ?? null : null);
+    }
     setDate(null);
     setTime(null);
     setError(null);
     setDone(null);
-  }, [open, prefillCategory, services, vehicles]);
+  }, [open, prefillCategory, services, vehicles, estimate]);
+
+  /**
+   * HOW LONG THE BAY IS ACTUALLY NEEDED.
+   *
+   * The catalogue's headline duration is the whole service; a scope and its
+   * extra stages change it. Offering slots against the headline would let a
+   * customer book a two-day PPF into an afternoon, and the server would then
+   * refuse the very slot the sheet had just offered.
+   */
+  const workMinutes = estimate?.durationMinutes ?? service?.duration ?? 60;
 
   /* Which days and slots are already taken. */
   useEffect(() => {
@@ -201,7 +247,7 @@ export function BookingFlow({
           body: JSON.stringify({
             dates: nextDays(),
             category: service.category,
-            durationMinutes: service.duration,
+            durationMinutes: workMinutes,
           }),
         });
         if (!r.ok || cancelled) return;
@@ -213,7 +259,7 @@ export function BookingFlow({
     })();
 
     return () => { cancelled = true; };
-  }, [open, service]);
+  }, [open, service, workMinutes]);
 
   /* 2 · a membership wash is covered when the plan is active AND washes remain */
   const washCovered = !!service
@@ -281,7 +327,7 @@ export function BookingFlow({
   const total = washCovered ? 0 : applyDiscount(service?.price ?? 0, discount);
 
   const slots = date && service
-    ? generateTimeSlots(service.duration).filter((t: string) => !(full.fullSlots[date] ?? []).includes(t))
+    ? generateTimeSlots(workMinutes).filter((t: string) => !(full.fullSlots[date] ?? []).includes(t))
     : [];
 
   /**
@@ -298,7 +344,12 @@ export function BookingFlow({
    * rather than making a second one.
    */
   const idempotencyKey = () =>
-    `${vehicleId ?? 'v'}_${service?.id ?? 's'}_${date ?? 'd'}_${time ?? 't'}`
+    /* THE ESTIMATE IS PART OF THE INTENT. Two different quotes for the same
+       car, service and slot — a full body, then a front end after thinking
+       better of it — are two different bookings, and without this the second
+       would be swallowed as a replay of the first and the customer would be
+       given the coverage they had just rejected. */
+    `${vehicleId ?? 'v'}_${service?.id ?? 's'}_${date ?? 'd'}_${time ?? 't'}_${estimate?.id ?? 'q'}`
       .replace(/[^A-Za-z0-9_-]/g, '-');
 
   const chosenVehicle = vehicles.find(v => v.id === vehicleId) ?? null;
@@ -335,6 +386,10 @@ export function BookingFlow({
           scheduledTime: time,
           paymentMethod: 'cash',
           useMembershipWash: washCovered,
+          /* THE ID, NEVER THE AMOUNT. The server reads the estimate it wrote
+             and prices the booking from that; a total sent from here has no
+             name on the route and could not be read if it did. */
+          ...(estimate ? { estimateId: estimate.id } : {}),
           idempotencyKey: idempotencyKey(),
         }),
       });
@@ -356,6 +411,7 @@ export function BookingFlow({
         reference: id.slice(-6).toUpperCase(),
         when: `${dayLabel(date!)} at ${time}`,
         service: service!.name,
+        bookingId: id,
       });
       /* The rooms render on the server, so they only show the new visit once
          the server has been asked again. Refreshed here, not on close, so Home,
@@ -386,8 +442,14 @@ export function BookingFlow({
             <Text role="whisper" tone="ink3" style={{ marginTop: space.gap }}>
               Pending &mdash; you can change or cancel it until the studio starts work.
             </Text>
-            <div style={{ marginTop: space.rest }}>
-              <Button tier="primary" onClick={onClose}>Done</Button>
+            <div style={{ marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+              {/* DESIGN 08 → 09. The confirmation is a screen of its own, with
+                  the calendar export and the way to change it; this sheet has
+                  said what it can and the booking takes over. */}
+              {done.bookingId ? (
+                <Button tier="primary" href={`/booking/${done.bookingId}`}>See the booking</Button>
+              ) : null}
+              <Button tier="quiet" onClick={onClose}>Done</Button>
             </div>
           </div>
         ) : (
@@ -553,7 +615,7 @@ export function BookingFlow({
                         <Text role="whisper" tone="ink3">{label}</Text>
                         <Row>
                           {band.map((t: string) => {
-                            const back = endTime(t, service.duration);
+                            const back = endTime(t, workMinutes);
                             return (
                               <Chip key={t} on={time === t} onClick={() => setTime(t)}>
                                 {back ? `${t} – ${back}` : t}
@@ -596,15 +658,15 @@ export function BookingFlow({
             <div style={{ marginTop: space.breath, display: 'grid', gap: space.breath }}>
               <SummaryLine
                 label={chosenVehicle?.name ?? 'Your car'}
-                said={service.name}
+                said={estimate ? `${service.name} · ${estimate.scopeLine}` : service.name}
               />
               <SummaryLine
                 label={dayLabel(date)}
                 said={[
-                  endTime(time, service.duration)
-                    ? `${time} – ${endTime(time, service.duration)}`
+                  endTime(time, workMinutes)
+                    ? `${time} – ${endTime(time, workMinutes)}`
                     : time,
-                  spokenDuration(service.duration),
+                  estimate?.bay ?? spokenDuration(workMinutes),
                 ].filter(Boolean).join(' · ')}
               />
               <div
@@ -619,7 +681,9 @@ export function BookingFlow({
                 }}
               >
                 <Text role="body" tone="ink2">
-                  {washCovered ? 'Membership wash' : discount ? discount.label : 'Total'}
+                  {estimate ? 'Estimate'
+                    : washCovered ? 'Membership wash'
+                    : discount ? discount.label : 'Total'}
                 </Text>
                 <span
                   style={{
@@ -630,14 +694,18 @@ export function BookingFlow({
                     color: color.ink,
                   }}
                 >
-                  {washCovered ? 'Covered' : spokenPrice(total) ?? '\u2014'}
+                  {/* THE FROZEN FIGURE WINS. When the customer arrived from
+                      the scope screen, the estimate is what the studio wrote
+                      and what the booking will be made at; recomputing a
+                      preview beside it could only ever disagree. */}
+                  {estimate ? estimate.total : washCovered ? 'Covered' : spokenPrice(total) ?? '\u2014'}
                 </span>
               </div>
             </div>
             <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
               {washCovered
                 ? 'Taken from this month\u2019s washes. Nothing to settle.'
-                : 'Settled at the studio \u2014 UPI or cash. Nothing is charged now.'}
+                : 'Nothing is charged now. You approve the final figure at handover.'}
             </Text>
           </div>
         ) : service ? (

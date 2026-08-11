@@ -8,9 +8,11 @@ import {
   BOOKING_EXPIRED, BOOKING_TERMINAL,
   type BookingState,
 } from '@/lib/os/lifecycle';
-import { pickupFees } from '@/lib/services/pricing';
+import { pickupFees, priceVisit, taxPolicy, storedBreakdown } from '@/lib/services/pricing';
+import { resolveScope } from '@/lib/os/scope';
 import type {
-  Booking, BookingDiscount, Job, JobServiceItem, JobStatus, Promo, Subscription,
+  Booking, BookingDiscount, Estimate, Job, JobServiceItem, JobStatus,
+  Promo, Service, StoredBreakdown, Subscription,
 } from '@/lib/types';
 
 /**
@@ -71,6 +73,16 @@ export interface AppointmentIntent {
   pickup?: boolean;
   drop?: boolean;
   pickupAddress?: string;
+  /**
+   * THE ESTIMATE THIS BOOKING IS BEING MADE FROM — design screen 07 → 08 → 09.
+   *
+   * An id, never a figure. The estimate is a server-written, immutable record
+   * of what the customer was quoted, so spending it by id means the booking
+   * carries exactly the total that was on the screen when they chose. Absent
+   * for the plain "book this service" path, which prices the whole service
+   * through the same engine.
+   */
+  estimateId?: string;
   /** A REQUEST to spend a membership wash. The server decides if it can. */
   useMembershipWash?: boolean;
   /** Staff booking on behalf of a customer. Ignored for customer callers. */
@@ -282,35 +294,92 @@ const createAppointment = async (
       loadPromoContext(t as unknown as Reader, ownerId),
     ]);
 
-    const duration = service.duration ?? 60;
+    /* ---- THE ESTIMATE, READ INSIDE THE TRANSACTION ----
+       Inside, because it is also SPENT inside: an estimate that has already
+       produced a booking must not produce a second one, and checking that
+       outside the commit is checking it in a window somebody can race. */
+    let estimate: Estimate | null = null;
+    if (intent.estimateId) {
+      const estRef = db.collection('estimates').doc(intent.estimateId);
+      const estSnap = await t.get(estRef);
+      if (!estSnap.exists) throw new BookingError('estimate-not-found', 404);
+      const est = { id: estSnap.id, ...(estSnap.data() as object) } as Estimate;
+      /* The same answer as an id that does not exist, so this cannot be used
+         to discover which estimates are real. */
+      if (est.userId !== ownerId) throw new BookingError('estimate-not-found', 404);
+      if (est.vehicleId !== intent.vehicleId || est.serviceId !== intent.serviceId) {
+        throw new BookingError('estimate-mismatch', 409);
+      }
+      if (est.status === 'consumed') throw new BookingError('estimate-already-used', 409);
+      if (est.expiresOn < today()) throw new BookingError('estimate-expired', 409);
+      estimate = est;
+    }
+
+    /* THE BAY IS HELD FOR THE WORK ACTUALLY CHOSEN. A full-body PPF with a
+       two-stage correction takes longer than the catalogue's headline
+       duration, and reserving the headline would double-book the bay on the
+       second day. */
+    const duration = estimate?.scope.durationMinutes ?? service.duration ?? 60;
     await assertSlotOpen(
       t as unknown as Reader,
       intent.scheduledDate, intent.scheduledTime, service.category ?? '', duration,
     );
 
-    /* ---- the price, decided here and nowhere else ---- */
-    const priced = decidePrice({
-      base: service.price,
-      category: service.category ?? '',
-      serviceId: intent.serviceId,
-      ownerId,
-      membership,
-      wantsWash: !!intent.useMembershipWash,
-      promos,
-      myRedemptions,
-      date: today(),
-    });
+    /* ---- THE PRICE, DECIDED ONCE, BY THE CANONICAL ENGINE ----
 
+       This used to be `decidePrice` for the service line plus a hand-added
+       pickup fee, while the invoice added GST by a different route and the
+       seal INFERRED the discount by subtracting one total from another. Four
+       places, and the estimate and the invoice provably drifted.
+
+       `priceVisit` is the whole calculation: work → discount → fees → tax →
+       total, in that fixed order. Two ways in, one arithmetic:
+
+         · WITH AN ESTIMATE the breakdown is the FROZEN one the customer saw.
+           Re-deciding it here would mean a catalogue edit between quoting and
+           booking silently repriced a customer mid-decision.
+         · WITHOUT ONE the whole service is resolved and priced right here, so
+           the plain path and the scoped path cannot disagree. */
     const pickup = !!intent.pickup, drop = !!intent.drop;
-    /* One arithmetic path: the fee lines the canonical engine names, summed
-       here only to keep the legacy `pickupDropFee` field the admin still
-       reads. `PICKUP_LEG_FEE` and `PICKUP_FEE` are the same ₹50 per leg. */
-    const feeLines = pickupFees({ pickup, drop });
-    const pickupDropFee = feeLines.reduce((n, f) => n + f.amount, 0);
+
+    const whole = resolveScope({ id: intent.serviceId, ...service } as Service, {});
+
+    const breakdown: StoredBreakdown = estimate
+      ? estimate.breakdown
+      : storedBreakdown(priceVisit({
+          services: whole.ok ? whole.lines : [{ name: service.name ?? '', price: service.price }],
+          fees: pickupFees({ pickup, drop }),
+          tax: taxPolicy(),
+          benefit: {
+            base: service.price,
+            category: service.category ?? '',
+            serviceId: intent.serviceId,
+            ownerId,
+            membership,
+            wantsWash: !!intent.useMembershipWash,
+            promos,
+            myRedemptions,
+            date: today(),
+          },
+        }));
+
+    /* The legacy field the admin still reads, summed from the fee lines the
+       engine named rather than computed a second time. */
+    const pickupDropFee = breakdown.fees.reduce((n, f) => n + f.amount, 0);
     if (pickupDropFee > 0 && !intent.pickupAddress?.trim()) {
       throw new BookingError('pickup-address-required', 400);
     }
-    const totalAmount = priced.netService + pickupDropFee;
+    const totalAmount = breakdown.total;
+
+    /* The benefit that was actually applied, as the settlement needs it. With
+       an estimate this comes out of the frozen breakdown — the promo the
+       customer was quoted is the promo that gets counted. */
+    const priced = {
+      washCovered: breakdown.washCovered,
+      membershipId: breakdown.membershipId,
+      discount: breakdown.discount,
+      promo: breakdown.promoId ? promos.find(p => p.id === breakdown.promoId) : undefined,
+    };
 
     /* ---- writes ---- */
     const booking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -352,6 +421,11 @@ const createAppointment = async (
       ...(priced.membershipId && priced.washCovered
         ? { membershipId: priced.membershipId } : {}),
       ...(priced.discount ? { discount: priced.discount } : {}),
+      /* WHAT WAS AGREED, FROZEN. The catalogue is authoritative for the next
+         quote and may never rewrite this one — the same rule the captured
+         warranty terms follow, applied to money. */
+      breakdown,
+      ...(estimate ? { scope: estimate.scope, estimateId: estimate.id } : {}),
     };
 
     t.set(bookingRef, {
@@ -369,6 +443,17 @@ const createAppointment = async (
       washCovered: priced.washCovered,
       membership,
     });
+
+    /* SPENT IN THE SAME COMMIT AS THE BOOKING IT PAID FOR. An estimate marked
+       used without a booking, or a booking made from an estimate still open to
+       be used again, are both representable only if these are two writes. */
+    if (estimate) {
+      t.update(db.collection('estimates').doc(estimate.id), {
+        status: 'consumed',
+        bookingId: bookingRef.id,
+        consumedAt: FieldValue.serverTimestamp(),
+      });
+    }
 
     t.set(intentRef, {
       callerUid, ownerId, kind: 'appointment', bookingId: bookingRef.id,
