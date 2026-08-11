@@ -21,7 +21,8 @@ import 'server-only';
 import { cache } from 'react';
 import { adminDb } from './firebaseAdmin';
 import type {
-  Booking, Invoice, Job, Notification, Protection, Service, Subscription, User, Vehicle, Visit,
+  Booking, Invoice, Job, Notification, Protection, SavedAddress, Service,
+  Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
 
@@ -59,7 +60,9 @@ async function _loadCustomerPicture(session: {
   const db = adminDb;
   const { uid } = session;
 
-  const [profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap, notifSnap] = await Promise.all([
+  const [
+    profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap, notifSnap, addressSnap,
+  ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.collection(`users/${uid}/vehicles`).get(),
     db.collection('subscriptions').where('userId', '==', uid).get(),
@@ -74,6 +77,11 @@ async function _loadCustomerPicture(session: {
        owns it (§17.3), never to draw a list (§17.1). No `orderBy`, so no
        composite index; sorted below. */
     db.collection('notifications').where('userId', '==', uid).limit(30).get(),
+    /* WHERE THE STUDIO MAY COLLECT FROM. Read here so the booking sheet and
+       the settings list are the same list — two fetches would eventually
+       disagree about which address is the default, and the default is what the
+       sheet pre-selects. */
+    db.collection(`users/${uid}/addresses`).get(),
   ]);
 
   const subscriptions = rows<Subscription>(subSnap).sort(
@@ -161,5 +169,10 @@ async function _loadCustomerPicture(session: {
     /* Newest first — which one is "the latest news" depends on it. */
     notifications: rows<Notification>(notifSnap)
       .sort((a, b) => millis(b.createdAt) - millis(a.createdAt)),
+    /* Default first, then alphabetically — the same order the address service
+       returns, so the chip a customer tapped last time is where they left it. */
+    addresses: rows<SavedAddress>(addressSnap).sort((a, b) =>
+      Number(b.isDefault) - Number(a.isDefault)
+      || String(a.label).localeCompare(String(b.label))),
   };
 }

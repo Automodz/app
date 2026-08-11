@@ -48,6 +48,7 @@ const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
     role: 'customer' } as User,
   cars: [], subscription: null, subscriptions: [], invoices: [], notifications: [],
   catalogue: [] as Service[], ...over,
+  addresses: [],
 });
 
 describe('FIRST LOGIN — the welcome appears exactly once', () => {

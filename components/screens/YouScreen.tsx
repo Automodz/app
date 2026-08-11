@@ -94,6 +94,21 @@ export interface YouModel {
   deletion?: YouEntry;
   /** §20.1 — a way to reach a human. */
   support: YouEntry;
+  /* ── DESIGN SCREEN 19's OWN ROWS ────────────────────────────────────── */
+  /** "UPI · okhdfc" when one is saved, and an invitation when none is. */
+  payment?: YouEntry;
+  /** "2 saved" — where the studio collects from. */
+  addresses?: YouEntry;
+  /** The papers a customer may want: invoices and warranties. */
+  papers?: YouEntry;
+  /**
+   * QUIET MODE. A row with a switch rather than a door, because it is one
+   * decision with one answer, and a panel for it would be a room containing a
+   * single control.
+   */
+  quiet?: { line: string; on: boolean };
+  /** Consent is per CAR; the privacy panel needs them. */
+  consentCars?: { id: string; name: string; registration: string; granted: boolean }[];
 }
 
 /** Two letters at most, from the customer's own name. Never a photograph. */
@@ -101,7 +116,7 @@ const monogram = (name: string) =>
   name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || 'A';
 
 export function YouScreen({
-  model, onSignOut,
+  model, onSignOut, quietOn = false, quietBusy = false, onQuietMode,
 }: {
   model: YouModel;
   /**
@@ -110,10 +125,15 @@ export function YouScreen({
    * left the session intact.
    */
   onSignOut: () => void;
+  /** Quiet mode is a switch, so its state and its handler come from the room. */
+  quietOn?: boolean;
+  quietBusy?: boolean;
+  onQuietMode?: () => void;
 }) {
   const {
     name, reachedAt, standing, state, garage, membership,
     details, notifications, ownership, privacy, terms, deletion, support,
+    payment, addresses, papers,
   } = model;
 
   /* The administrative end, as one list. Ordered by how often it is opened,
@@ -123,8 +143,10 @@ export function YouScreen({
      text, and "One car lives here." is the fact; "Your garage" is only the
      door. Dropping the sentence for a tidier list would be tidying away the
      information and keeping the furniture. */
-  const rows = [garage, details, notifications, ownership, privacy, terms]
-    .filter(Boolean) as YouEntry[];
+  const rows = [
+    garage, papers, payment, addresses,
+    details, notifications, ownership, privacy, terms,
+  ].filter(Boolean) as YouEntry[];
 
   return (
     <Screen top={space.rest}>
@@ -240,6 +262,43 @@ export function YouScreen({
               </span>
             </Row>
           ))}
+
+          {/* ── QUIET MODE ────────────────────────────────────────────
+              Design 19. A SWITCH, not a door: one decision with one answer,
+              and a panel for it would be a room containing a single control.
+              Its sentence says exactly what still gets through, because a
+              customer who cannot tell will not turn it on. */}
+          {model.quiet && onQuietMode ? (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={quietOn}
+              aria-busy={quietBusy || undefined}
+              onClick={onQuietMode}
+              disabled={quietBusy}
+              className="am-tap"
+              style={{
+                appearance: 'none', width: '100%', background: 'none', border: 'none',
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: space.line, paddingBlock: space.line, paddingInline: 2,
+                textAlign: 'left', font: 'inherit',
+                cursor: quietBusy ? 'default' : 'pointer',
+              }}
+            >
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontSize: 14.5, color: color.ink }}>Quiet mode</span>
+                <Label style={{ fontSize: 10, letterSpacing: '0.14em' }}>{model.quiet.line}</Label>
+              </span>
+              {/* §21.6 — the word carries the state, not only the shape. */}
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 12, flexShrink: 0,
+                color: quietOn ? color.champagne : color.ink3,
+              }}>
+                {quietOn ? 'ON' : 'OFF'}
+              </span>
+            </button>
+          ) : null}
         </div>
       </section>
 

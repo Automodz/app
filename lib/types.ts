@@ -329,7 +329,31 @@ export interface Booking {
   /** Granular legs - ₹50 each, either or both (older bookings only have pickupDropRequired) */
   pickupRequired?: boolean;
   dropRequired?: boolean;
+  /** The one-line form, kept because the WhatsApp template reads it. */
   pickupAddress?: string;
+  /**
+   * WHERE THE VAN ACTUALLY GOES — a SNAPSHOT of the saved address, never a
+   * reference to it.
+   *
+   * A customer who moves house and corrects "Home" has not changed the street
+   * the studio drove to last March. Editing a saved address must change where
+   * the next van goes and must never rewrite where the last one went — the
+   * same rule the captured warranty terms follow.
+   */
+  pickupAddressRef?: {
+    addressId: string;
+    label: string;
+    line: string;
+    line1: string;
+    line2?: string;
+    area: string;
+    city: string;
+    pincode: string;
+    contactName?: string;
+    contactPhone?: string;
+  };
+  /** Derived from the slot, never chosen. See lib/os/address.pickupTimeFor. */
+  pickupTime?: string;
   totalAmount: number;
   scheduledDate: string;
   /**

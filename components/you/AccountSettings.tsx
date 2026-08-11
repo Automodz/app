@@ -28,12 +28,25 @@ import { useAppStore } from '@/lib/store';
 import { updateUserProfile } from '@/lib/services/auth';
 import { enablePush, disablePush, pushEnabled, pushSupported } from '@/lib/services/push';
 import { getMyReferralCode, referralShareLink, referralWhatsAppLink } from '@/lib/services/referrals';
-import type { NotificationPrefs } from '@/lib/types';
+import type { NotificationPrefs, SavedAddress } from '@/lib/types';
 import { BottomSheet, Heading, Text, Button, OfflineNote, useOnline } from '@/components/system';
 import {
   color, space, INSET, MEASURE, HAIRLINE, TARGET_MIN, radius,
   type as typeScale,
 } from '@/design';
+
+/** The studio's word for each refusal an address can meet. */
+const ADDRESS_FAULT: Record<string, string> = {
+  'label-required': 'Give it a name — "Home", "Office".',
+  'line1-required': 'We need the flat or building.',
+  'area-required': 'Which area is it in?',
+  'city-required': 'Which city?',
+  'pincode-invalid': 'That pincode does not look right — six digits.',
+  'phone-invalid': 'That number does not look right — ten digits.',
+  'too-long': 'That is longer than we can store. Shorten it a little.',
+  'too-many-addresses': 'That is as many as we keep. Remove one first.',
+  'address-in-use': 'A visit is booked to that address. Move or cancel it first.',
+};
 
 /** The four preferences, in the customer's words. There is no fifth. */
 const PREFS: { key: keyof NotificationPrefs; label: string; detail: string }[] = [
@@ -43,13 +56,26 @@ const PREFS: { key: keyof NotificationPrefs; label: string; detail: string }[] =
   { key: 'whatsapp', label: 'WhatsApp', detail: 'Let the studio message you there.' },
 ];
 
-export type SettingsPanel = 'profile' | 'notifications' | 'referral' | 'delete';
+export type SettingsPanel =
+  | 'profile' | 'notifications' | 'referral' | 'delete'
+  /* Design screen 19's own rows. */
+  | 'addresses' | 'payment' | 'privacy';
+
+/** A car, as the privacy panel needs it. Consent belongs to the car (§consent). */
+export interface ConsentCar {
+  id: string;
+  name: string;
+  registration: string;
+  granted: boolean;
+}
 
 export function AccountSettings({
-  panel, onClose,
+  panel, onClose, cars = [],
 }: {
   panel: SettingsPanel | null;
   onClose: () => void;
+  /** Only the privacy panel uses these; consent is per car, never per account. */
+  cars?: ConsentCar[];
 }) {
   const online = useOnline();
   const { user, setUser } = useAppStore();
@@ -79,6 +105,19 @@ export function AccountSettings({
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  /* ── saved addresses (design 08 and 19) ── */
+  const [addresses, setAddresses] = useState<SavedAddress[] | null>(null);
+  const [editing, setEditing] = useState<Partial<SavedAddress> | null>(null);
+  const [addrBusy, setAddrBusy] = useState(false);
+
+  /* ── the payment address ── */
+  const [vpa, setVpa] = useState('');
+  const [vpaBusy, setVpaBusy] = useState(false);
+
+  /* ── consent, per car ── */
+  const [consent, setConsent] = useState<Record<string, boolean>>({});
+  const [consentBusy, setConsentBusy] = useState<string | null>(null);
+
   /**
    * THE ACCOUNT, READ FROM THE ACCOUNT.
    *
@@ -105,6 +144,7 @@ export function AccountSettings({
         promotions: p.notificationPrefs?.promotions ?? true,
         whatsapp: p.notificationPrefs?.whatsapp ?? true,
       });
+      setVpa(p.upiVpa ?? '');
     })();
     return () => { cancelled = true; };
   }, []);
@@ -115,7 +155,31 @@ export function AccountSettings({
     setSaved(false);
     setConfirmText('');
     setCopied(false);
+    setEditing(null);
   }, [panel]);
+
+  /* Consent is per CAR and is read from the car, so opening this panel shows
+     what is actually true rather than what was true when the room rendered. */
+  useEffect(() => {
+    if (panel !== 'privacy') return;
+    setConsent(Object.fromEntries(cars.map(c => [c.id, c.granted])));
+  }, [panel, cars]);
+
+  /* The saved addresses, read through the same endpoint that writes them, so
+     the list a customer sees is the list the booking sheet will offer. */
+  useEffect(() => {
+    if (panel !== 'addresses' || addresses) return;
+    let live = true;
+    void (async () => {
+      const token = await idToken();
+      if (!token || !live) return;
+      const res = await fetch('/api/addresses', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok || !live) { if (live) setAddresses([]); return; }
+      const b = await res.json() as { addresses: SavedAddress[] };
+      if (live) setAddresses(b.addresses ?? []);
+    })();
+    return () => { live = false; };
+  }, [panel, addresses]);
 
   /* Push is a property of THIS DEVICE, not of the account — a customer signed
      in on a phone and a laptop may want it on one and not the other. */
@@ -242,11 +306,117 @@ export function AccountSettings({
     }
   };
 
+  /* ── SAVED ADDRESSES ──
+     Every write goes through the one endpoint: keeping exactly one default is
+     a write to documents the request never names, and refusing to delete an
+     address a van is due at needs a query. Neither is expressible in rules. */
+  const saveAddress = async () => {
+    if (!editing) return;
+    setAddrBusy(true);
+    setError(null);
+    try {
+      const token = await idToken();
+      if (!token) throw new Error('not-signed-in');
+      const res = await fetch('/api/addresses', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(editing),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setError(ADDRESS_FAULT[(b as { error?: string }).error ?? ''] ?? 'That didn’t save.');
+        return;
+      }
+      setEditing(null);
+      setAddresses(null);   // re-read, so the default the server chose is what shows
+    } catch {
+      setError('That didn’t save. Check your connection.');
+    } finally {
+      setAddrBusy(false);
+    }
+  };
+
+  const removeAddress = async (id: string) => {
+    setAddrBusy(true);
+    setError(null);
+    try {
+      const token = await idToken();
+      if (!token) throw new Error('not-signed-in');
+      const res = await fetch(`/api/addresses?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setError(ADDRESS_FAULT[(b as { error?: string }).error ?? ''] ?? 'That didn’t remove.');
+        return;
+      }
+      setAddresses(null);
+    } catch {
+      setError('That didn’t remove. Check your connection.');
+    } finally {
+      setAddrBusy(false);
+    }
+  };
+
+  /* ── THE PAYMENT ADDRESS ──
+     Validated on the server, because a malformed one is a customer tapping
+     "Pay" at the counter and their bank application refusing to open. */
+  const saveVpa = async () => {
+    setVpaBusy(true);
+    setError(null);
+    try {
+      const token = await idToken();
+      if (!token) throw new Error('not-signed-in');
+      const res = await fetch('/api/profile/preferences', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upiVpa: vpa }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setError((b as { error?: string }).error === 'vpa-invalid'
+          ? 'That doesn’t look like a UPI address. They read like name@bank.'
+          : 'That didn’t save. Try again in a moment.');
+        return;
+      }
+      if (account) setAccount({ ...account, upiVpa: vpa.trim().toLowerCase() });
+      setSaved(true);
+    } catch {
+      setError('That didn’t save. Check your connection.');
+    } finally {
+      setVpaBusy(false);
+    }
+  };
+
+  /* ── CONSENT ──
+     Through the engine that already owns it. There is exactly one consent
+     path in this product and this is a caller of it, never a second one. */
+  const toggleConsent = async (vehicleId: string) => {
+    if (!account) return;
+    const next = !consent[vehicleId];
+    setConsentBusy(vehicleId);
+    setError(null);
+    setConsent(c => ({ ...c, [vehicleId]: next }));
+    try {
+      const { setPublicHistoryConsent } = await import('@/lib/services/vehicles');
+      await setPublicHistoryConsent(account.uid, vehicleId, next);
+    } catch {
+      setConsent(c => ({ ...c, [vehicleId]: !next }));
+      setError('That didn’t save. Check your connection.');
+    } finally {
+      setConsentBusy(null);
+    }
+  };
+
   const label =
     panel === 'profile' ? 'Your details'
       : panel === 'notifications' ? 'Notifications'
         : panel === 'referral' ? 'Invite a friend'
-          : 'Delete your account';
+          : panel === 'addresses' ? 'Pickup addresses'
+            : panel === 'payment' ? 'Payment method'
+              : panel === 'privacy' ? 'Your car’s record'
+                : 'Delete your account';
 
   return (
     <BottomSheet open={panel !== null} onClose={onClose} label={label}>
@@ -354,6 +524,158 @@ export function AccountSettings({
                 Preparing your code&hellip;
               </Text>
             )}
+            <div style={{ marginTop: space.rest }}>
+              <Button tier="quiet" onClick={onClose}>Done</Button>
+            </div>
+          </>
+        ) : null}
+
+
+        {/* ── SAVED ADDRESSES ──────────────────────────────────────────
+            Design 08's "Bodakdev · Home" and 19's "2 saved". Structured,
+            because a driver needs the parts and a single line can be neither
+            validated nor corrected. */}
+        {panel === 'addresses' ? (
+          editing ? (
+            <>
+              <div style={{ marginTop: INSET, display: 'grid', gap: space.gap }}>
+                <Field label="Name it" value={editing.label ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, label: v }))} autoComplete="off" />
+                <Field label="Flat, building" value={editing.line1 ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, line1: v }))} autoComplete="address-line1" />
+                <Field label="Street (optional)" value={editing.line2 ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, line2: v }))} autoComplete="address-line2" />
+                <Field label="Area" value={editing.area ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, area: v }))} autoComplete="address-level3" />
+                <Field label="City" value={editing.city ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, city: v }))} autoComplete="address-level2" />
+                <Field label="Pincode" value={editing.pincode ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, pincode: v }))}
+                  autoComplete="postal-code" type="tel" />
+                <Field label="Who the driver asks for (optional)" value={editing.contactName ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, contactName: v }))} autoComplete="name" />
+                <Field label="Their number (optional)" value={editing.contactPhone ?? ''}
+                  onChange={v => setEditing(e => ({ ...e, contactPhone: v }))}
+                  autoComplete="tel" type="tel" />
+              </div>
+              <div style={{ marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+                <Button tier="primary" onClick={saveAddress} loading={addrBusy} disabled={!online || addrBusy}>
+                  Save this address
+                </Button>
+                <Button tier="quiet" onClick={() => setEditing(null)}>Back</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+                Where the studio collects from and brings your car back to.
+              </Text>
+              {addresses === null ? (
+                <Text role="body" tone="ink3" style={{ marginTop: space.gap }}>
+                  Reading your addresses&hellip;
+                </Text>
+              ) : addresses.length === 0 ? (
+                <Text role="body" tone="ink2" style={{ marginTop: space.gap }}>
+                  None saved yet. Add one and every visit after this remembers it.
+                </Text>
+              ) : (
+                <div style={{ marginTop: space.gap }}>
+                  {addresses.map((a, i) => (
+                    <div key={a.id} style={{
+                      paddingBlock: space.gap,
+                      borderTop: i === 0 ? undefined : `${HAIRLINE}px solid ${color.edge}`,
+                    }}>
+                      <Text role="body" tone="ink">
+                        {a.label}{a.isDefault ? ' · default' : ''}
+                      </Text>
+                      <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+                        {[a.line1, a.line2, a.area, `${a.city} ${a.pincode}`].filter(Boolean).join(', ')}
+                      </Text>
+                      <div style={{ marginTop: space.breath, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+                        <Button tier="quiet" onClick={() => setEditing(a)}>Edit</Button>
+                        <Button tier="quiet" onClick={() => removeAddress(a.id)} disabled={addrBusy}>
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+                <Button tier="primary" onClick={() => setEditing({ city: 'Ahmedabad' })}>
+                  Add an address
+                </Button>
+                <Button tier="quiet" onClick={onClose}>Done</Button>
+              </div>
+            </>
+          )
+        ) : null}
+
+        {/* ── PAYMENT METHOD ───────────────────────────────────────────
+            Design 19's "UPI · HDFC". It decides which application opens at
+            handover; it never decides what is owed. */}
+        {panel === 'payment' ? (
+          <>
+            <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+              The studio is paid by UPI at handover. Save your address and the
+              right application opens with the studio&rsquo;s figure already in it.
+            </Text>
+            <div style={{ marginTop: INSET }}>
+              <Field label="Your UPI address" value={vpa} onChange={setVpa} autoComplete="off" />
+            </div>
+            <Text role="whisper" tone="ink3" style={{ marginTop: space.breath }}>
+              Like name@okhdfc. Only you can see it, and the amount is always
+              the studio&rsquo;s &mdash; never one this app works out.
+            </Text>
+            {saved ? (
+              <Text role="body" tone="ink" aria-live="polite" style={{ marginTop: space.line }}>
+                Saved.
+              </Text>
+            ) : null}
+            <div style={{ marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
+              <Button tier="primary" onClick={saveVpa} loading={vpaBusy} disabled={!online || vpaBusy}>
+                Save
+              </Button>
+              <Button tier="quiet" onClick={onClose}>Done</Button>
+            </div>
+          </>
+        ) : null}
+
+        {/* ── THE CAR'S RECORD ─────────────────────────────────────────
+            Consent to publish a car's service history on a listing anyone can
+            open. Per CAR, because it belongs to the car and must outlive any
+            listing. Absent means no, and nobody is grandfathered in. */}
+        {panel === 'privacy' ? (
+          <>
+            <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+              If you ever sell a car through the studio, its record here &mdash;
+              how long it has been looked after, how many visits, what protects
+              it &mdash; can be shown on the listing. Never your name, your
+              number or what you paid.
+            </Text>
+            {cars.length === 0 ? (
+              <Text role="body" tone="ink2" style={{ marginTop: space.gap }}>
+                Nothing to decide yet &mdash; you have no cars in your garage.
+              </Text>
+            ) : (
+              <div style={{ marginTop: INSET }}>
+                {cars.map((c, i) => (
+                  <Switch
+                    key={c.id}
+                    label={c.name}
+                    detail={`${c.registration} · ${consent[c.id] ? 'shown on a listing' : 'private'}`}
+                    on={consent[c.id] === true}
+                    first={i === 0}
+                    busy={consentBusy === c.id}
+                    onToggle={() => toggleConsent(c.id)}
+                  />
+                ))}
+              </div>
+            )}
+            <Text role="whisper" tone="ink3" style={{ marginTop: space.gap }}>
+              Turning it off takes effect immediately, including on a listing
+              that is already up.
+            </Text>
             <div style={{ marginTop: space.rest }}>
               <Button tier="quiet" onClick={onClose}>Done</Button>
             </div>

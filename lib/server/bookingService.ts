@@ -10,6 +10,8 @@ import {
 } from '@/lib/os/lifecycle';
 import { pickupFees, priceVisit, taxPolicy, storedBreakdown } from '@/lib/services/pricing';
 import { resolveScope } from '@/lib/os/scope';
+import { pickupTimeFor, fullAddress } from '@/lib/os/address';
+import { DAY_OPEN_MIN } from '@/lib/availability';
 import type {
   Booking, BookingDiscount, Estimate, Job, JobServiceItem, JobStatus,
   Promo, Service, StoredBreakdown, Subscription,
@@ -73,6 +75,8 @@ export interface AppointmentIntent {
   pickup?: boolean;
   drop?: boolean;
   pickupAddress?: string;
+  /** A SAVED address of the caller's own. Read server-side and snapshotted. */
+  pickupAddressId?: string;
   /**
    * THE ESTIMATE THIS BOOKING IS BEING MADE FROM — design screen 07 → 08 → 09.
    *
@@ -315,6 +319,29 @@ const createAppointment = async (
       estimate = est;
     }
 
+    /* ---- WHERE THE VAN GOES ----
+       Read from UNDER the caller's own document, so a forged address id cannot
+       name somebody else's home — there is no path to it. Snapshotted onto the
+       booking, so a later correction to the saved address cannot rewrite where
+       this visit was collected from. */
+    let addressRef: Booking['pickupAddressRef'] | undefined;
+    if (intent.pickupAddressId) {
+      const aSnap = await t.get(ownerRef.collection('addresses').doc(intent.pickupAddressId));
+      if (!aSnap.exists) throw new BookingError('address-not-yours', 403);
+      const a = aSnap.data() as {
+        label: string; line1: string; line2?: string; area: string;
+        city: string; pincode: string; contactName?: string; contactPhone?: string;
+      };
+      addressRef = {
+        addressId: aSnap.id,
+        label: a.label, line: fullAddress(a),
+        line1: a.line1, ...(a.line2 ? { line2: a.line2 } : {}),
+        area: a.area, city: a.city, pincode: a.pincode,
+        ...(a.contactName ? { contactName: a.contactName } : {}),
+        ...(a.contactPhone ? { contactPhone: a.contactPhone } : {}),
+      };
+    }
+
     /* THE BAY IS HELD FOR THE WORK ACTUALLY CHOSEN. A full-body PPF with a
        two-stage correction takes longer than the catalogue's headline
        duration, and reserving the headline would double-book the bay on the
@@ -366,7 +393,10 @@ const createAppointment = async (
     /* The legacy field the admin still reads, summed from the fee lines the
        engine named rather than computed a second time. */
     const pickupDropFee = breakdown.fees.reduce((n, f) => n + f.amount, 0);
-    if (pickupDropFee > 0 && !intent.pickupAddress?.trim()) {
+    /* A LEG WITH NOWHERE TO GO IS NOT A LEG. The studio cannot collect a car
+       from an address nobody gave it, and charging ₹50 for the attempt would
+       be charging for a journey that cannot be made. */
+    if (pickupDropFee > 0 && !addressRef && !intent.pickupAddress?.trim()) {
       throw new BookingError('pickup-address-required', 400);
     }
     const totalAmount = breakdown.total;
@@ -399,7 +429,14 @@ const createAppointment = async (
       pickupRequired: pickup,
       dropRequired: drop,
       pickupDropFee,
-      pickupAddress: pickupDropFee > 0 ? intent.pickupAddress!.trim() : '',
+      pickupAddress: pickupDropFee > 0
+        ? (addressRef?.line ?? intent.pickupAddress?.trim() ?? '') : '',
+      ...(addressRef ? { pickupAddressRef: addressRef } : {}),
+      /* DERIVED FROM THE SLOT, never chosen — a collection time a customer
+         could set independently could fall after the work was due to start. */
+      ...(pickup
+        ? { pickupTime: pickupTimeFor(intent.scheduledTime, DAY_OPEN_MIN) ?? intent.scheduledTime }
+        : {}),
       totalAmount,
       scheduledDate: intent.scheduledDate,
       scheduledTime: intent.scheduledTime,

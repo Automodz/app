@@ -73,6 +73,7 @@ const picture = (c: CarPicture, notifications: Notification[]): CustomerPicture 
   user: { uid: 'u1', name: 'Meet Sheth', email: 'm@x.test', role: 'customer' } as User,
   cars: [c], subscription: null, subscriptions: [], invoices: [],
   notifications, catalogue: [] as Service[],
+  addresses: [],
 });
 
 describe('an unread notification surfaces as state on the car it belongs to', () => {

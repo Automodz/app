@@ -86,7 +86,7 @@ const car: CarPicture = {
 
 const picture: CustomerPicture = {
   user: { uid: 'u1', name: 'Meera Shah', email: 'meera@example.test', phone: '+91 90000 00000', role: 'customer' } as User,
-  cars: [car], subscription, subscriptions: [subscription], invoices: [], notifications: [], catalogue: [] as Service[],
+  cars: [car], subscription, subscriptions: [subscription], invoices: [], notifications: [], catalogue: [] as Service[], addresses: [],
 };
 
 /** Ops vocabulary that must never reach a customer surface (§5.5, §21.8, §2.2). */

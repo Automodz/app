@@ -143,7 +143,9 @@ export type Destination =
   | { to: 'membership' }
   | { to: 'membership.join' }
   | { to: 'profile' }
-  | { to: 'profile.panel'; panel: 'profile' | 'notifications' | 'referral' | 'delete' }
+  | { to: 'profile.panel';
+      panel: 'profile' | 'notifications' | 'referral' | 'delete'
+        | 'addresses' | 'payment' | 'privacy' }
   | { to: 'vehicle'; vehicleId?: string }
   | { to: 'visit'; visitId: string }
   | { to: 'booking'; bookingId: string }

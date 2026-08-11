@@ -26,7 +26,8 @@ import { getUserSubscription } from '@/lib/services/subscriptions';
 import { getServices } from '@/lib/services/services';
 import { getUserNotifications } from '@/lib/services/notifications';
 import type {
-  Booking, Invoice, Job, Notification, Protection, Service, Subscription, User, Vehicle, Visit,
+  Booking, Invoice, Job, Notification, Protection, SavedAddress, Service,
+  Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 
 /** Everything known about one car. */
@@ -61,6 +62,14 @@ export interface CustomerPicture {
   notifications: Notification[];
   /** Consulted only to capture terms that were never recorded. */
   catalogue: Service[];
+  /**
+   * WHERE THE STUDIO MAY COLLECT FROM — design screens 08 and 19.
+   *
+   * Part of the one read rather than fetched by the two surfaces that need it,
+   * so the booking sheet's chips and the settings list can never disagree
+   * about which address is the default.
+   */
+  addresses: SavedAddress[];
 }
 
 export type CustomerState =
@@ -101,6 +110,11 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
     user, cars, subscription,
     subscriptions: subscription ? [subscription] : [],
     invoices: [], notifications, catalogue,
+    /* The client twin is the legacy read path — every customer room renders on
+       the server now (`lib/server/customerPicture.ts`), and only `Room.tsx`
+       still calls this. Addresses are deliberately not fetched here rather
+       than half-fetched: a surface that needs them is a server-rendered one. */
+    addresses: [],
   };
 }
 

@@ -28,6 +28,10 @@ import {
 } from '@/lib/os/lifecycle';
 import { spanDays, DAY_OPEN_MIN, WORK_DAY_MIN } from '@/lib/availability';
 import { scopesOf, addOnsOf } from '@/lib/os/scope';
+import { shortAddress, fullAddress } from '@/lib/os/address';
+import { maskVpa } from '@/lib/os/upi';
+import { hasPublicHistoryConsent } from '@/lib/os/consent';
+import { PICKUP_LEG_FEE } from '@/lib/services/pricing';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
 import { projectMoments, sortMoments, groupByMonth, SHOT_CAPTION } from '@/lib/os/moment';
@@ -1326,6 +1330,19 @@ export function toStudio(
       services: plainValue(picture.catalogue) as Service[],
       vehicles: plainValue(picture.cars.map(c => c.vehicle)) as Vehicle[],
       membership: (plainValue(picture.subscription ?? null) ?? null) as Subscription | null,
+      /* WHERE THE STUDIO MAY COLLECT FROM — the same list the settings room
+         shows, from the same read, so the two cannot disagree about which
+         address is the default and therefore which chip is pre-selected. */
+      addresses: picture.addresses.map(a => ({
+        id: a.id,
+        chip: shortAddress(a),
+        line: fullAddress(a),
+        isDefault: a.isDefault === true,
+      })),
+      /* THE FEE IS THE ENGINE'S. A figure typed into a screen is a figure that
+         drifts from what the server charges the first time either changes. */
+      legFee: rupees(PICKUP_LEG_FEE),
+      addAddressHref: hrefForDestination({ to: 'profile.panel', panel: 'addresses' }),
     },
 
     /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE — `upcomingOf`, the same
@@ -1766,7 +1783,15 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
       action: { label: 'Invite a friend',
         href: hrefForDestination({ to: 'profile.panel', panel: 'referral' }) },
     },
-    privacy: {
+    privacy: cars.length > 0 ? {
+      /* Design 17's consent, decided here rather than buried in a policy. The
+         published policy is still one tap further on, inside the panel. */
+      line: cars.some(c => hasPublicHistoryConsent(c.vehicle))
+        ? 'A car’s record may be shown if you sell it.'
+        : 'Your cars’ records stay private.',
+      action: { label: 'Your car’s record',
+        href: hrefForDestination({ to: 'profile.panel', panel: 'privacy' }) },
+    } : {
       line: 'What we hold, and why.',
       action: { label: 'Privacy', href: hrefForDestination({ to: 'privacy' }) },
     },
@@ -1778,6 +1803,44 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
       line: 'Leaving for good?',
       action: { label: 'Delete your account',
         href: hrefForDestination({ to: 'profile.panel', panel: 'delete' }) },
+    },
+    /* ── DESIGN SCREEN 19'S OWN ROWS ─────────────────────────────────
+       Each one opens a surface that exists. §10.5 — if there is no
+       destination there is no control, which is why each is conditional on
+       the thing behind it rather than always drawn and sometimes inert. */
+    papers: picture.invoices.length > 0 ? {
+      line: picture.invoices.length === 1
+        ? 'One invoice, and your warranties.'
+        : `${picture.invoices.length} invoices, and your warranties.`,
+      action: { label: 'Invoices and papers', href: hrefForDestination({ to: 'history' }) },
+    } : undefined,
+    payment: {
+      /* MASKED. A payment address on a screen is a payment address in a
+         photograph of that screen. Enough to recognise, not enough to reuse. */
+      line: user.upiVpa ? `UPI · ${maskVpa(user.upiVpa)}` : 'Not saved yet.',
+      action: { label: 'Payment method',
+        href: hrefForDestination({ to: 'profile.panel', panel: 'payment' }) },
+    },
+    addresses: {
+      line: picture.addresses.length === 0 ? 'None saved yet.'
+        : picture.addresses.length === 1 ? 'One saved.'
+        : `${picture.addresses.length} saved.`,
+      action: { label: 'Pickup addresses',
+        href: hrefForDestination({ to: 'profile.panel', panel: 'addresses' }) },
+    },
+    /* CONSENT IS PER CAR, so the row exists only when there is a car to
+       decide about — an empty garage has no record to publish. */
+    ...(cars.length > 0 ? {
+      consentCars: cars.map(c => ({
+        id: c.vehicle.id,
+        name: c.vehicle.name,
+        registration: c.vehicle.registrationNumber,
+        granted: hasPublicHistoryConsent(c.vehicle),
+      })),
+    } : {}),
+    quiet: {
+      line: 'Only approvals and handover reach you.',
+      on: user.quietMode === true,
     },
     support: {
       line: 'Something not right?',

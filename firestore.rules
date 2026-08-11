@@ -42,11 +42,24 @@ service cloud.firestore {
       // which is also the only place the studio's reset lives. A client that
       // could write it could skip its own first arrival, or force somebody
       // else's back by clearing it.
+      //
+      // `upiVpa` and `quietMode` are server-written too, and for reasons rules
+      // cannot cover. A malformed payment address is not a cosmetic problem —
+      // it is a customer tapping "Pay" at the counter and their bank
+      // application refusing to open. And `quietMode` is read BY THE SERVER
+      // when it decides whether a push may be delivered, so a preference the
+      // server must honour is one the server should own: "it saved" and "it
+      // took effect" are then the same event rather than two.
+      // POST /api/profile/preferences is the door.
       allow update: if request.auth != null &&
         ((request.auth.uid == userId &&
           request.resource.data.role == resource.data.role &&
           request.resource.data.get('welcomedAt', null) ==
-            resource.data.get('welcomedAt', null)) ||
+            resource.data.get('welcomedAt', null) &&
+          request.resource.data.get('upiVpa', null) ==
+            resource.data.get('upiVpa', null) &&
+          request.resource.data.get('quietMode', null) ==
+            resource.data.get('quietMode', null)) ||
          isAdmin());
       allow delete: if request.auth != null && isAdmin();
 
@@ -61,6 +74,25 @@ service cloud.firestore {
       // Web-push device tokens - owner writes, admin reads (server uses admin SDK anyway)
       match /fcmTokens/{token} {
         allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      }
+
+      // ── SAVED PICKUP / DROP ADDRESSES ────────────────────────────────
+      //    Design screens 08 and 19. Owner-read; SERVER-WRITE ONLY, and the
+      //    two reasons are rules that cannot be written as rules:
+      //
+      //      · Exactly one default. Making one address the default has to
+      //        stand the others down, which is a write to documents the
+      //        request never named. A client doing it in two writes leaves
+      //        two defaults the first time one of them fails.
+      //      · An address a van is due at on Tuesday may not be deleted.
+      //        Rules cannot query, so they cannot know that.
+      //
+      //    POST/DELETE /api/addresses is the only door. Staff are NOT given a
+      //    read: a customer's home address is not operational data, and the
+      //    driver gets the snapshot the booking carries.
+      match /addresses/{addressId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
       }
 
       // Vehicles subcollection

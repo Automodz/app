@@ -48,7 +48,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { color, space, INSET, imageSizes } from '@/design';
 import type { Service, Subscription, Vehicle } from '@/lib/types';
 import { BookingFlow } from '@/components/studio/BookingFlow';
-import type { CarriedEstimate } from '@/components/studio/BookingFlow';
+import type { CarriedEstimate, AddressChoice } from '@/components/studio/BookingFlow';
 import { OfflineNote } from '@/components/system';
 import {
   Screen, Pane, Label, Statement, Rail, Action, Pulse, Chevron,
@@ -98,6 +98,12 @@ export interface StudioModel {
     services: Service[];
     vehicles: Vehicle[];
     membership: Subscription | null;
+    /** Design screen 08 — where the studio may collect from. */
+    addresses: AddressChoice[];
+    /** ₹ per leg, from the pricing engine. Never a figure typed in a screen. */
+    legFee: string;
+    /** Where a customer with none goes to save their first. */
+    addAddressHref: string;
   };
   /**
    * Visits the customer has arranged, soonest first.
@@ -445,6 +451,9 @@ export function StudioScreen({ model }: { model: StudioModel }) {
         membership={booking.membership}
         prefillCategory={prefillCategory}
         estimate={estimate}
+        addresses={booking.addresses}
+        legFee={booking.legFee}
+        addAddressHref={booking.addAddressHref}
       />
     </Screen>
   );

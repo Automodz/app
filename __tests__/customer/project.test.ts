@@ -7,6 +7,7 @@
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, Job, Protection, Service, Subscription, User, Vehicle } from '@/lib/types';
 import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import { PICKUP_LEG_FEE } from '@/lib/services/pricing';
 import {
   termWords, longDate, stateOf, sinceWords, visitsOf,
   toHome, toGarage, toVehicle, toHistory, toStudio, toYou, toMembership, leadCar,
@@ -35,7 +36,7 @@ const car = (over: Partial<CarPicture> = {}): CarPicture => ({
 
 const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
   user: { uid: 'u1', name: 'Nikhil Patel', email: 'n@example.com', role: 'customer' } as User,
-  cars: [car()], subscription: null, subscriptions: [], invoices: [], notifications: [], catalogue: [] as Service[], ...over,
+  cars: [car()], subscription: null, subscriptions: [], invoices: [], notifications: [], catalogue: [] as Service[], addresses: [], ...over,
 });
 
 describe('termWords — §14.3 and §14.4', () => {
@@ -335,8 +336,22 @@ describe('toStudio', () => {
   it('never states a credential nobody supplied', () => {
     expect(toStudio(picture()).credentials).toEqual([]);
   });
-  it('shows no price anywhere', () => {
-    expect(JSON.stringify(toStudio(picture()))).not.toMatch(/₹|\bprice\b/i);
+  it('words no price into the studio’s own prose (§22.1)', () => {
+    /* NARROWED, and the narrowing is the point. This asserted that the WHOLE
+       model carried no `₹`, which was true only while the projection had
+       nothing to hand the booking sheet. It now carries a concierge leg fee —
+       a real figure, from the pricing engine, that the sheet must state before
+       a customer agrees to it. What §22.1 protects is the studio's VOICE: the
+       room's prose is about craft, and a price in it turns craft into a shelf
+       label. So the prose is what is checked. */
+    const m = toStudio(picture());
+    const prose = [m.place, m.presence, m.voice, m.does, m.hours, m.address,
+      ...(m.credentials ?? [])].join(' ');
+    expect(prose).not.toMatch(/₹|\bprice\b/i);
+  });
+
+  it('the concierge fee it does carry is the engine’s, not a typed figure', () => {
+    expect(toStudio(picture()).booking.legFee).toBe(`₹${PICKUP_LEG_FEE}`);
   });
 });
 
@@ -359,8 +374,31 @@ describe('toYou', () => {
   });
 
   it('never fabricates what the membership has been worth (§15.3 #4)', () => {
+    /* §15.3's fourth fact — "what it has been worth" — is the one that decides
+       renewal, and nothing records it honestly yet. A plausible number would be
+       that figure, invented. Asserted against the MEMBERSHIP block: the room
+       now also says whether a payment address or an address is saved, and
+       "None saved yet." is a fact about a setting, not a claim about money. */
     const sub = { id: 's', plan: 'Gold', status: 'active', endDate: '2026-08-14', washesTotal: 8, washesUsed: 0 } as Subscription;
-    expect(JSON.stringify(toYou(picture({ subscription: sub }), NOW))).not.toMatch(/saved|₹/);
+    const you = toYou(picture({ subscription: sub }), NOW);
+    expect(JSON.stringify(you.membership)).not.toMatch(/saved|worth|₹/);
+  });
+
+  it('says what is saved without inventing it — the design 19 rows', () => {
+    const you = toYou(picture(), NOW);
+    expect(you.payment?.line).toBe('Not saved yet.');
+    expect(you.addresses?.line).toBe('None saved yet.');
+    expect(you.quiet).toEqual({
+      line: 'Only approvals and handover reach you.', on: false,
+    });
+  });
+
+  it('a payment address is MASKED — a screen gets photographed', () => {
+    const you = toYou(picture({
+      user: { uid: 'u1', name: 'Nikhil Patel', email: 'n@example.com', role: 'customer', upiVpa: 'nikhil@okhdfc' } as User,
+    }), NOW);
+    expect(you.payment?.line).toBe('UPI · ni••••@okhdfc');
+    expect(you.payment?.line).not.toContain('nikhil@okhdfc');
   });
 });
 

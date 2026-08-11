@@ -16,7 +16,10 @@ import { forgetDevice } from '@/components/auth/SessionKeeper';
 import { YouScreen } from './YouScreen';
 import type { YouModel } from './YouScreen';
 
-const PANELS: SettingsPanel[] = ['profile', 'notifications', 'referral', 'delete'];
+const PANELS: SettingsPanel[] = [
+  'profile', 'notifications', 'referral', 'delete',
+  'addresses', 'payment', 'privacy',
+];
 
 export function YouRoom({ model }: { model: YouModel }) {
   const router = useRouter();
@@ -69,10 +72,53 @@ export function YouRoom({ model }: { model: YouModel }) {
     }
   }, [leaving]);
 
+  /**
+   * QUIET MODE — design screen 19, and it is a row rather than a panel because
+   * it is one decision with one answer.
+   *
+   * Written through the server: `recordEvent` reads this when it decides
+   * whether a push may be delivered, so a preference the server must honour is
+   * one the server should own. "It saved" and "it took effect" are then the
+   * same event rather than two.
+   */
+  const [quiet, setQuiet] = useState(model.quiet?.on ?? false);
+  const [quietBusy, setQuietBusy] = useState(false);
+
+  const toggleQuiet = useCallback(async () => {
+    if (quietBusy) return;
+    const next = !quiet;
+    setQuietBusy(true);
+    setQuiet(next);
+    try {
+      const { idToken } = await import('@/lib/clientSession');
+      const token = await idToken();
+      if (!token) throw new Error('not-signed-in');
+      const res = await fetch('/api/profile/preferences', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quietMode: next }),
+      });
+      if (!res.ok) throw new Error('save-failed');
+      router.refresh();
+    } catch {
+      /* Put it back. A switch that claims something the server refused is
+         worse than one that will not move. */
+      setQuiet(!next);
+    } finally {
+      setQuietBusy(false);
+    }
+  }, [quiet, quietBusy, router]);
+
   return (
     <>
-      <YouScreen model={model} onSignOut={onSignOut} />
-      <AccountSettings panel={panel} onClose={closePanel} />
+      <YouScreen
+        model={model}
+        onSignOut={onSignOut}
+        quietOn={quiet}
+        quietBusy={quietBusy}
+        onQuietMode={toggleQuiet}
+      />
+      <AccountSettings panel={panel} onClose={closePanel} cars={model.consentCars ?? []} />
     </>
   );
 }

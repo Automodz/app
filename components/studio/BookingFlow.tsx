@@ -136,6 +136,16 @@ export interface CarriedEstimate {
   durationMinutes: number;
 }
 
+/** A saved address, as the sheet needs it. Read on the server, worded there. */
+export interface AddressChoice {
+  id: string;
+  /** "Bodakdev · Home" */
+  chip: string;
+  /** The whole thing, for the customer to check before a van is sent. */
+  line: string;
+  isDefault: boolean;
+}
+
 export interface BookingFlowProps {
   open: boolean;
   onClose: () => void;
@@ -146,11 +156,17 @@ export interface BookingFlowProps {
   prefillCategory?: string | null;
   /** Set when the customer arrived from the scope screen. */
   estimate?: CarriedEstimate | null;
+  /** Where the studio may collect from. Empty is a real state, with a way out. */
+  addresses?: AddressChoice[];
+  /** ₹ per leg, from the pricing engine — never a number typed here. */
+  legFee?: string;
+  /** Where a customer goes to add their first address. */
+  addAddressHref?: string;
 }
 
 export function BookingFlow({
   open, onClose, services, vehicles, membership, prefillCategory = null,
-  estimate = null,
+  estimate = null, addresses = [], legFee = '₹50', addAddressHref,
 }: BookingFlowProps) {
   const router = useRouter();
   const online = useOnline();
@@ -164,6 +180,11 @@ export function BookingFlow({
     { fullDates: [], fullSlots: {} },
   );
   const [discount, setDiscount] = useState<BookingDiscount | undefined>();
+  /* THE CONCIERGE. Two legs, priced separately, because a customer collected
+     AND returned pays two fees and a single boolean cannot say so. */
+  const [pickup, setPickup] = useState(false);
+  const [drop, setDrop] = useState(false);
+  const [addressId, setAddressId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /* What the studio now holds. Set on success; the sheet becomes a receipt. */
@@ -214,6 +235,10 @@ export function BookingFlow({
     setTime(null);
     setError(null);
     setDone(null);
+    setPickup(false);
+    setDrop(false);
+    setAddressId(addresses.find(a => a.isDefault)?.id ?? addresses[0]?.id ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, prefillCategory, services, vehicles, estimate]);
 
   /**
@@ -354,7 +379,11 @@ export function BookingFlow({
 
   const chosenVehicle = vehicles.find(v => v.id === vehicleId) ?? null;
 
-  const ready = !!(vehicleId && service && date && time) && online && !busy;
+  /* A LEG WITH NOWHERE TO GO IS NOT READY. The server refuses it; offering it
+     anyway would be offering an act that is about to fail (§10.5). */
+  const conciergeReady = (!pickup && !drop) || !!addressId;
+  const ready = !!(vehicleId && service && date && time)
+    && conciergeReady && online && !busy;
 
   const confirm = async () => {
     if (!ready) return;
@@ -385,6 +414,11 @@ export function BookingFlow({
           scheduledDate: date,
           scheduledTime: time,
           paymentMethod: 'cash',
+          pickup,
+          drop,
+          /* THE ID, and the server reads the address from under the caller's
+             own document. A line of text sent from here could name anywhere. */
+          ...(pickup || drop ? { pickupAddressId: addressId } : {}),
           useMembershipWash: washCovered,
           /* THE ID, NEVER THE AMOUNT. The server reads the estimate it wrote
              and prices the booking from that; a total sent from here has no
@@ -398,7 +432,11 @@ export function BookingFlow({
         setError(
           body?.error === 'slot-taken'
             ? 'That slot has just gone. Choose another and we’ll hold it.'
-            : 'We couldn’t arrange that. Try again in a moment.',
+            : body?.error === 'pickup-address-required'
+              ? 'Tell us where to collect it from and we’ll come.'
+              : body?.error === 'estimate-expired'
+                ? 'That quote has run out. Price it again and we’ll hold the slot.'
+                : 'We couldn’t arrange that. Try again in a moment.',
         );
         return;
       }
@@ -636,6 +674,64 @@ export function BookingFlow({
           </Group>
         ) : null}
 
+        {/* ── THE CONCIERGE ────────────────────────────────────────────
+            Design screen 08. Two legs, each its own fee, because a customer
+            collected and returned pays twice and reads a receipt that says
+            why. The collection TIME is not offered: it is derived from the
+            slot, and a time a customer could set independently of their slot
+            could fall after the work was due to start. */}
+        {service && date && time ? (
+          <Group label="Getting it here">
+            <div style={{ display: 'flex', gap: space.breath, marginTop: space.breath, flexWrap: 'wrap' }}>
+              <Chip on={pickup} onClick={() => setPickup(v => !v)}>
+                Collect it &middot; {legFee}
+              </Chip>
+              <Chip on={drop} onClick={() => setDrop(v => !v)}>
+                Bring it back &middot; {legFee}
+              </Chip>
+            </div>
+
+            {pickup || drop ? (
+              addresses.length > 0 ? (
+                <div style={{ marginTop: space.gap }}>
+                  <Text role="whisper" tone="ink3">Where from</Text>
+                  <Row>
+                    {addresses.map(a => (
+                      <Chip key={a.id} on={addressId === a.id} onClick={() => setAddressId(a.id)}>
+                        {a.chip}
+                      </Chip>
+                    ))}
+                  </Row>
+                  {addressId ? (
+                    <Text role="whisper" tone="ink3" style={{ marginTop: space.breath }}>
+                      {addresses.find(a => a.id === addressId)?.line}
+                    </Text>
+                  ) : null}
+                </div>
+              ) : (
+                /* §10.5 — the way out is a control, not an explanation. */
+                <div style={{ marginTop: space.gap }}>
+                  <Text role="body" tone="ink">Where should we collect it from?</Text>
+                  <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
+                    Save it once and it stays &mdash; every visit after this one
+                    remembers it.
+                  </Text>
+                  {addAddressHref ? (
+                    <div style={{ marginTop: space.gap }}>
+                      <Button tier="primary" href={addAddressHref}>Add an address</Button>
+                    </div>
+                  ) : null}
+                </div>
+              )
+            ) : (
+              <Text role="whisper" tone="ink3" style={{ marginTop: space.breath }}>
+                Or bring it to the studio &mdash; no charge either way for the
+                work itself.
+              </Text>
+            )}
+          </Group>
+        ) : null}
+
         {/* WHAT YOU ARE ARRANGING — the whole intent in one place, before it
             is committed rather than after. The sheet used to end on a bare
             figure: the car, the work, the day and the hour had each been
@@ -660,6 +756,13 @@ export function BookingFlow({
                 label={chosenVehicle?.name ?? 'Your car'}
                 said={estimate ? `${service.name} · ${estimate.scopeLine}` : service.name}
               />
+              {pickup || drop ? (
+                <SummaryLine
+                  label={pickup && drop ? 'Collected and returned'
+                    : pickup ? 'Collected' : 'Returned'}
+                  said={addresses.find(a => a.id === addressId)?.chip ?? 'Address needed'}
+                />
+              ) : null}
               <SummaryLine
                 label={dayLabel(date)}
                 said={[
