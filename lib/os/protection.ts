@@ -343,3 +343,31 @@ export type Measurement = 'measured' | 'estimated';
 
 export const measurementOf = (p: Pick<Protection, 'since' | 'term'>): Measurement =>
   p.since && p.term.kind === 'dated' ? 'measured' : 'estimated';
+
+/**
+ * HOW MUCH OF A PROMISE IS LEFT, AS A MEASUREMENT — or nothing at all.
+ *
+ * Returns `null` unless the fraction can be taken between two real dates. That
+ * is stricter than the customer-facing dial, and deliberately so: the dial may
+ * fall back to a health BUCKET when `since` was never recorded, because the
+ * customer can see the word beside it and the studio can be asked. A public
+ * listing has neither. "68% life" on a page a stranger reads is a claim about
+ * somebody's car, and a bucket wearing a number is not a claim anyone can
+ * stand behind.
+ *
+ * A perpetual promise has no fraction to take — it does not deplete — so it is
+ * `null` here too, and the surface says what it is rather than how much is
+ * left.
+ */
+export function measuredLifeOf(
+  p: Pick<Protection, 'since' | 'term'>, now = new Date(),
+): number | null {
+  if (measurementOf(p) !== 'measured') return null;
+  if (p.term.kind !== 'dated') return null;
+
+  const end = new Date(`${p.term.expiresOn}T12:00:00`).getTime();
+  const start = new Date(`${p.since}T12:00:00`).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+
+  return Math.max(0, Math.min(1, (end - now.getTime()) / (end - start)));
+}

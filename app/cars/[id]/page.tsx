@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ListingScreen } from '@/components/screens/ListingScreen';
-import { loadListing, loadListings, loadSavedIds } from '@/lib/server/marketplace';
+import { loadListing, loadListings, loadSavedIds, loadListingRecord } from '@/lib/server/marketplace';
 import { toListing } from '@/lib/customer/market';
 import { currentSession } from '@/lib/server/session';
 import { formatCurrency } from '@/lib/utils';
@@ -65,9 +65,19 @@ export default async function CarPage({ params }: { params: Promise<{ id: string
      ids exist. `not-found` renders the product's own 404, not a blank. */
   if (!car) notFound();
 
+  /* THE CAR'S RECORD WITH US — design screen 17.
+     Undefined for a trade-in the studio never touched, for a link that names a
+     car which is not in the stated owner's garage, and for a car whose owner
+     has not consented. `publicHistoryOf` inside `toListing` is still the gate;
+     this is what it is given, and giving it nothing is the safe default. */
+  const record = await loadListingRecord(car);
+
   return (
     <Suspense fallback={null}>
-      <ListingScreen model={toListing(car, all, savedIds)} signedIn={Boolean(session)} />
+      <ListingScreen
+        model={toListing(car, all, savedIds, record)}
+        signedIn={Boolean(session)}
+      />
     </Suspense>
   );
 }

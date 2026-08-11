@@ -134,6 +134,43 @@ export function ListingScreen(
           ))}
         </dl>
 
+        {/* ── ITS RECORD WITH US ─────────────────────────────────────────
+            Design screen 17, and the one place a private record crosses into
+            public. `history` is `null` unless the car's OWNER has explicitly
+            consented — the decision is `publicHistoryOf`'s, made where the
+            data is shaped, so this screen cannot leak a count it was never
+            given. Absent is the ordinary case and draws nothing at all.
+
+            Every value here is a COUNT or a WORDED FACT. There is no price, no
+            invoice, no document and no customer: a buyer learns the car was
+            looked after, never what the owner paid or who they are. */}
+        {model.history ? (
+          <section
+            aria-labelledby="listing-record"
+            style={{ marginTop: space.rest }}
+          >
+            <Heading level="title" id="listing-record">Its record with us</Heading>
+            <dl style={{ marginTop: space.line }}>
+              <RecordRow label="Detailed here since" value={model.history.since} />
+              <RecordRow
+                label="Visits on record"
+                value={String(model.history.visits)}
+              />
+              <RecordRow
+                label="Photographs"
+                value={String(model.history.photographs)}
+              />
+              {model.history.protections.map(p => (
+                <RecordRow key={p.label} label={p.label} value={p.detail} />
+              ))}
+            </dl>
+            <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
+              Shown with the owner&rsquo;s permission. Nothing here identifies
+              them, and nothing here is what they paid.
+            </Text>
+          </section>
+        ) : null}
+
         {/* §15.7 — no description means no heading, not an empty one. */}
         {model.description ? (
           <div style={{ marginTop: space.rest }}>
@@ -234,5 +271,25 @@ export function ListingScreen(
         onClose={() => setAsk(null)}
       />
     </main>
+  );
+}
+
+/** One line of the car's record. The same shape as a fact, said once. */
+function RecordRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: space.gap,
+        paddingBlock: space.line,
+        borderTop: `${HAIRLINE}px solid ${color.edge}`,
+      }}
+    >
+      <dt><Text role="body" tone="ink3" as="span">{label}</Text></dt>
+      <dd style={{ margin: 0 }}>
+        <Text role="body" tone="ink" as="span">{value}</Text>
+      </dd>
+    </div>
   );
 }

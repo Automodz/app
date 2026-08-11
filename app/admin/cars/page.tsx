@@ -10,6 +10,7 @@ import {
 } from '@/lib/firebaseService';
 import PhotoUploader from '@/components/cars/PhotoUploader';
 import { formatCurrency } from '@/lib/utils';
+import { ListingVehicleLink } from '@/components/workspace/ListingVehicleLink';
 import type { CarListing, CarFuel, CarTransmission, CarListingStatus, CarPhoto } from '@/lib/types';
 
 const FUELS: CarFuel[] = ['petrol', 'diesel', 'cng', 'electric'];
@@ -271,6 +272,12 @@ export default function AdminCarsPage() {
                     <PhotoUploader photos={editing.photos ?? []} onUpload={handleUpload} onRemove={handleRemovePhoto} />
                   </div>
                 )}
+
+                {/* WHICH CAR IN WHICH GARAGE — design screen 17's "Its record
+                    with us". Linking says which car; it does NOT grant
+                    permission to publish anything. Consent belongs to the car
+                    and only its owner may give it. */}
+                {editing && <ListingVehicleLink listing={editing} onLinked={load} />}
 
                 <button onClick={handleSave} disabled={saving} className="btn-ember w-full py-3 mt-1">
                   {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create & Add Photos'}

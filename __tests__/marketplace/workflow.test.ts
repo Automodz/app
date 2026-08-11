@@ -387,6 +387,12 @@ describe('ONE SOURCE OF TRUTH', () => {
     const readers = sources.filter(f =>
       /collection\('carListings'\)|collection\(db, 'carListings'\)/.test(codeOf(f)));
     expect(readers.sort()).toEqual([
+      /* The admin operation that says WHICH car a listing is (design 17). It
+         writes `vehicleId`/`vehicleOwnerId` and nothing a customer reads, and
+         it is server-side because the pair has to be PROVEN against the
+         owner's garage before it becomes a link that could publish somebody
+         else's record. */
+      'app/api/cars/link/route.ts',
       'lib/server/marketplace.ts',
       'lib/services/cars.ts',   // the studio's own writes, from admin
     ]);
