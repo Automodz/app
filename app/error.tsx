@@ -12,8 +12,8 @@
  * connection failing, not their property. §20.3 — ours, not theirs.
  */
 import { useEffect } from 'react';
-import { color, space, INSET, MEASURE } from '@/design';
-import { Heading, Text, Button } from '@/components/system';
+import { space } from '@/design';
+import { Screen, RoomHeader, Action } from '@/components/os';
 
 export default function Error(
   { error, reset }: { error: Error & { digest?: string }; reset: () => void },
@@ -34,26 +34,28 @@ export default function Error(
   }, [error]);
 
   return (
-    <main
-      style={{
-        minHeight: '100svh',
-        background: color.paper,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        paddingInline: INSET,
-      }}
-    >
-      <div style={{ maxWidth: MEASURE + INSET * 2, marginInline: 'auto', width: '100%' }}>
-        <Heading level="display">Something went wrong at our end.</Heading>
-        <Text role="body" tone="ink2" style={{ marginTop: space.line, maxWidth: MEASURE }}>
-          Your car and its records are safe. This is our connection, not your car.
-        </Text>
-        <div style={{ marginTop: space.gap, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
-          <Button tier="primary" onClick={reset}>Try again</Button>
-          <Button tier="quiet" href="/">Back to your car</Button>
-        </div>
+    /* The same room every other surface is, rather than a page of its own.
+       It painted `color.paper` opaque, which was the one moment in the product
+       where the ambient field behind the rooms visibly switched off — the same
+       thing `app/loading.tsx` was fixed for. */
+    <Screen top={space.rest} style={{ justifyContent: 'center' }}>
+      <RoomHeader
+        eyebrow="Something failed"
+        supporting="Your car and its records are safe. This is our connection, not your car."
+      >
+        Something went wrong at our end
+      </RoomHeader>
+
+      <div
+        style={{
+          marginTop: space.rest, display: 'flex',
+          flexDirection: 'column', gap: space.line,
+        }}
+      >
+        {/* §6.3 — one control commits, the other only moves. */}
+        <Action onClick={reset}>Try again</Action>
+        <Action href="/" quiet>Back to your car</Action>
       </div>
-    </main>
+    </Screen>
   );
 }

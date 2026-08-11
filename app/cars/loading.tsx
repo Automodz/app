@@ -4,7 +4,7 @@
  * §19.3 forbids a spinner for a whole surface; this is the breath, exactly as
  * the rooms use it.
  */
-import { space, INSET, MEASURE } from '@/design';
+import { space, INSET, MEASURE, stack } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
@@ -21,6 +21,8 @@ export default function CarsLoading() {
          visibly changed material. */
       background: 'transparent',
       minHeight: '100svh',
+        /* The top inset, from the token — see ServerRoom. */
+        paddingTop: stack.top,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',

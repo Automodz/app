@@ -405,7 +405,7 @@ function Toggle(
         background: on
           ? 'linear-gradient(160deg, rgba(232,217,190,0.22), rgba(232,217,190,0.06))'
           : 'rgba(255,255,255,0.045)',
-        color: on ? '#F3EADA' : color.ink2,
+        color: on ? color.champagneHot : color.ink2,
         fontFamily: typeScale.body.family,
         fontSize: 13,
         cursor: 'pointer',

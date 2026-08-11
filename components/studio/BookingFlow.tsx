@@ -972,7 +972,7 @@ function Chip({
         background: on
           ? 'linear-gradient(160deg, rgba(232,217,190,0.22), rgba(232,217,190,0.06))'
           : 'rgba(255,255,255,0.045)',
-        color: on ? '#F3EADA' : disabled ? color.ink3 : color.ink2,
+        color: on ? color.champagneHot : disabled ? color.ink3 : color.ink2,
         fontFamily: 'var(--font-mono)',
         fontSize: 12,
         cursor: disabled ? 'default' : 'pointer',

@@ -129,7 +129,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         {/* ── WHAT IS BEING DONE ────────────────────────────────────────
             §9.5 — the one Display. The label above it names the visit and the
             car, which is the only place either appears on this screen. */}
-        <Statement eyebrow={`${vehicleName} · in the studio`} lit size={29}>
+        <Statement eyebrow={`${vehicleName} · in the studio`} lit>
           {service}
         </Statement>
 

@@ -214,7 +214,7 @@ export function VehicleScreen(
           style={{
             position: 'absolute', inset: 0, pointerEvents: 'none',
             background:
-              'linear-gradient(180deg, rgba(8,9,10,0.7), rgba(8,9,10,0.05) 40%, #08090A 98%)',
+              'linear-gradient(180deg, rgba(8,9,10,0.7), rgba(8,9,10,0.05) 40%, ${color.paper} 98%)',
           }}
         />
 

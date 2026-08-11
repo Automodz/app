@@ -12,7 +12,7 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
-import { color, space, radius, TARGET_MIN } from '@/design';
+import { color, space, radius, TARGET_MIN, type as typeScale } from '@/design';
 
 /* ── THE LABEL ───────────────────────────────────────────────────────────
    Mono, uppercase, widely tracked. Every piece of metadata in the design is
@@ -38,14 +38,41 @@ export function Label(
 
    The heading level is a prop rather than fixed, because §21.6's heading order
    is a property of the PAGE and only the page knows whether this is its h1. */
+/**
+ * THE TWO DISPLAY STEPS, named.
+ *
+ * `room` is the design's own token. `nested` is for a Display that sits under
+ * another room's title — the Studio's sheet inside the Studio — and it is a
+ * step, not a number somebody picked.
+ */
+export const DISPLAY = {
+  room: typeScale.display.size,
+  nested: 'clamp(24px, 6.6vw, 34px)',
+} as const;
+
 export function Statement(
-  { eyebrow, lit = false, children, as: Tag = 'h1', size = 30, style }:
+  { eyebrow, lit = false, children, as: Tag = 'h1', size, style }:
   {
     eyebrow?: ReactNode;
     lit?: boolean;
     children: ReactNode;
     as?: 'h1' | 'h2';
-    size?: number;
+    /**
+     * ONE DISPLAY STEP, AND IT IS THE DESIGN'S OWN.
+     *
+     * This was `size = 30` — a number, fixed at every width — while the other
+     * half of the product set the same headline through `Heading level="display"`,
+     * which is `clamp(30px, 8.6vw, 46px)` from `design/typography.ts`. The two
+     * are the same face at the same weight, so on a phone they were within two
+     * pixels of each other and nobody noticed. On a laptop one was 30 and the
+     * other 46, and the product visibly came from two eras.
+     *
+     * The token wins, because the token is what the design specifies and the
+     * `30` was a hard-coded copy of its lower bound. Absent means the step;
+     * a number is still accepted for the one place that legitimately steps
+     * down — a Display nested under another room's title.
+     */
+    size?: number | string;
     style?: CSSProperties;
   },
 ) {
@@ -54,7 +81,7 @@ export function Statement(
       {eyebrow ? <Label lit={lit}>{eyebrow}</Label> : null}
       <Tag
         className="am-display"
-        style={{ fontSize: size, margin: 0, lineHeight: 1.18 }}
+        style={{ fontSize: size ?? typeScale.display.size, margin: 0, lineHeight: 1.18 }}
       >
         {children}
       </Tag>

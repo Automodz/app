@@ -25,6 +25,8 @@ export default function RoomLoading() {
          visibly changed material. */
       background: 'transparent',
         minHeight: '100svh',
+        /* The top inset, from the token — see ServerRoom. */
+        paddingTop: stack.top,
         paddingBottom: stack.contentFloor,
         display: 'flex',
         flexDirection: 'column',

@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { MotionConfig, motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { color, space, INSET, MEASURE, duration, curve, HAIRLINE } from '@/design';
+import { color, space, INSET, MEASURE, duration, curve, HAIRLINE, stack } from '@/design';
 import { Heading, Text, Button } from '@/components/system';
 import type { WelcomeModel } from '@/lib/customer/welcome';
 import { authedFetch } from '@/lib/clientSession';
@@ -138,6 +138,8 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
       <main
         style={{
           minHeight: '100svh',
+        /* The top inset, from the token — see ServerRoom. */
+        paddingTop: stack.top,
           background: color.paper,
           display: 'flex',
           flexDirection: 'column',

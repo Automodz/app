@@ -88,6 +88,16 @@ export const color = {
    * It never asks for anything, which is exactly what separates it from amber.
    */
   champagne: '#E8D9BE',
+  /**
+   * Champagne under a finger, or lit — the same reflection, closer. The exact
+   * twin of `amberHot`, and it exists for the same reason that one does.
+   *
+   * It was already in the product three times over: the selected star on the
+   * rating, the chosen chip in the scope, and the chosen slot in the booking
+   * flow had each written `#F3EADA` inline. Three files inventing the same
+   * off-palette value independently is what a missing token looks like.
+   */
+  champagneHot: '#F3EADA',
 
   /* ── Meaningful colour · §9.2 ────────────────────────────────────────── */
 

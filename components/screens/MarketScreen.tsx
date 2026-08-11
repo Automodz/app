@@ -224,7 +224,7 @@ function Card({ car }: { car: MarketCard }) {
           <div
             style={{
               position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
-              background: 'radial-gradient(120% 80% at 50% 30%, #15161A 0%, #08090A 70%)',
+              background: 'radial-gradient(120% 80% at 50% 30%, ${color.surface} 0%, ${color.paper} 70%)',
             }}
           >
             <Text role="whisper" tone="ink3">No photograph yet</Text>

@@ -338,7 +338,7 @@ export function SettleScreen({ model }: { model: SettleModel }) {
                       background: stars >= n
                         ? 'linear-gradient(160deg, rgba(232,217,190,0.24), rgba(232,217,190,0.07))'
                         : 'rgba(255,255,255,0.04)',
-                      color: stars >= n ? '#F3EADA' : color.ink3,
+                      color: stars >= n ? color.champagneHot : color.ink3,
                       fontFamily: typeScale.body.family, fontSize: 15, cursor: 'pointer',
                     }}
                   >

@@ -51,7 +51,7 @@ import { BookingFlow } from '@/components/studio/BookingFlow';
 import type { CarriedEstimate, AddressChoice } from '@/components/studio/BookingFlow';
 import { OfflineNote } from '@/components/system';
 import {
-  Screen, Pane, Label, Statement, Rail, Action, Pulse, Chevron,
+  Screen, Pane, Label, Statement, DISPLAY, Rail, Action, Pulse, Chevron,
 } from '@/components/os';
 
 /* ── What the Studio needs to be true ──────────────────────────────────── */
@@ -202,7 +202,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
       {/* ── WHERE MY CAR IS ─────────────────────────────────────────────
           §9.5 — the one Display. §21.7 — it changes without the customer
           acting, so it is announced politely rather than in silence. */}
-      <Statement eyebrow={place} lit={Boolean(visitHref)} size={30}>
+      <Statement eyebrow={place} lit={Boolean(visitHref)}>
         <span aria-live="polite">{presence}</span>
       </Statement>
 
@@ -236,7 +236,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
           style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
         >
           <h2 id="studio-catalogue" style={{ margin: 0 }}>
-            <Statement eyebrow="The studio" as="h2" size={28} lit>
+            <Statement eyebrow="The studio" as="h2" size={DISPLAY.nested} lit>
               What we do to cars
             </Statement>
           </h2>
@@ -436,7 +436,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
             aria-hidden
             style={{
               position: 'absolute', inset: 0,
-              background: 'linear-gradient(180deg, rgba(8,9,10,0.55), rgba(8,9,10,0.2) 40%, #08090A)',
+              background: 'linear-gradient(180deg, rgba(8,9,10,0.55), rgba(8,9,10,0.2) 40%, ${color.paper})',
             }}
           />
         </div>

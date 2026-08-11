@@ -112,6 +112,14 @@ describe('§22.2 — one implementation, and only one', () => {
     const offenders = ALL.filter(f => {
       const src = codeOf(f);
       if (f.endsWith('OfflineNote.tsx')) return false;
+      /* THE OFFLINE PAGE IS NOT A ROOM DRAWING A NOTE — it IS the note, at the
+         size of a document. `OfflineNote` is the inline banner a room shows
+         when the connection drops mid-visit; this is the service worker's
+         fallback, served when there is no room to put a banner in. The rule
+         has always meant the first thing and never the second; it only passed
+         before because the page SHOUTED "YOU'RE OFFLINE" and this regex is
+         case-sensitive. */
+      if (f === 'app/offline/page.tsx') return false;
       return /You&rsquo;re offline|You’re offline/.test(src)
         && !/<OfflineNote/.test(src);
     });

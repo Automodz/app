@@ -38,6 +38,11 @@ function Centred({ children }: { children: ReactNode }) {
         background: 'transparent',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
+        /* THE TOP INSET, ONCE. `Screen` has always reserved it for the rooms
+           that use it; the shells that roll their own `<main>` did not, and the
+           product is installable — in standalone the first line sat under the
+           status bar. §8.5 keeps the inset in the token, never at a call site. */
+        paddingTop: stack.top,
       }}
     >
       <section

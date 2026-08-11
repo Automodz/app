@@ -219,7 +219,6 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         <Statement
           eyebrow={working ? 'In the studio' : 'Nothing in the studio'}
           lit={working}
-          size={30}
         >
           {state.word}
           <br />

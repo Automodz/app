@@ -213,36 +213,56 @@ export const roomFor = (pathname: string): Room | undefined => {
 };
 
 /**
- * IS THIS THE CUSTOMER PRODUCT?
+ * WHAT KIND OF SURFACE IS THIS?
  *
- * A broader question than `roomFor`, and asked for one reason: the ROOM
- * THEME. Every surface below is drawn from `design/colors.ts`, which is a
- * single dark palette — `#EDEBE7` primary ink is 16.74:1 on the room's paper
- * and about 1.1:1 on a white pane — so any of them rendered in the light
- * theme is not "a bit low contrast", it is text that is not there.
+ * Source: design/colors.ts — "the application is dark because a car
+ *         photographed against black reads as a car in a studio"
  *
- * Some of them get away with it today because they paint their own ground
- * (the landing, the welcome, the door, a chapter). The ones that DON'T — the
- * marketplace, a listing, the sell form, and every room, which leave the
- * ground to the body so the ambient field can show through — went white.
- * Measured on `/cars/<id>` with `theme: 'light'` stored: the title, the
- * price, and every value in the specification list were invisible.
+ * ── WHY THE DEFAULT IS DARK, AND WHY THAT IS THE WHOLE POINT ────────────
+ * This started as `isCustomerSurface`: a LIST of customer addresses, with
+ * everything not on the list falling through to whatever theme the browser
+ * had stored. That answered the bug in front of it and left the trap open —
+ * the default was wrong, so every address anybody adds later is light until
+ * somebody remembers this file. It was proven within the hour: a harness
+ * route added to look at the rooms rendered white-on-white, for exactly the
+ * reason the rooms had.
  *
- * NOT the same set as `rooms`. `/cars` and `/dashboard/sell-car` are public
- * and deliberately carry no navigation (see the note above `CARS`) — but they
- * are still the customer's product and still drawn in its palette. One
- * predicate for the light, another for the dock.
+ * So the question is inverted. The product is DARK, and the exceptions are
+ * named. A new address is a room until it says otherwise, which is the way
+ * round that cannot leave a customer with invisible text.
  *
- * Deliberately EXCLUDED, and each for its own reason:
- *   `/privacy` `/terms`  the legal pages, which paint their own ground
- *   `/invoice/<id>`      a document made to be printed on paper
- *   `/admin` `/store`    operations, which has its own shell and its own theme
+ *   `room`        the customer's product. One dark palette, drawn from
+ *                 `design/colors.ts`: `#EDEBE7` primary ink is 16.74:1 on the
+ *                 room's paper and about 1.1:1 on a white pane, so light here
+ *                 is not "low contrast", it is text that is not there.
+ *   `document`    made to be read on paper, or printed from. The legal pages
+ *                 and an invoice, and they honour the customer's preference.
+ *   `operations`  the studio's own application. Its own shell, its own theme,
+ *                 and nothing here touches it.
+ *
+ * `roomFor` still decides the DOCK, which is a different question: `/cars` and
+ * `/dashboard/sell-car` are public, carry no navigation on purpose, and are
+ * still rooms as far as the light is concerned.
  */
-const CUSTOMER_PREFIXES: readonly string[] = [CARS, SELL, WELCOME, '/chapter', '/offline'];
+export type SurfaceKind = 'room' | 'document' | 'operations';
 
+/** Read on paper, or printed. These keep the customer's stored preference. */
+const DOCUMENT_PREFIXES: readonly string[] = ['/privacy', '/terms', '/invoice'];
+/** The studio's own application, which this file has no opinion about. */
+const OPERATIONS_PREFIXES: readonly string[] = ['/admin', '/store'];
+
+const under = (pathname: string, prefixes: readonly string[]) =>
+  prefixes.some(p => pathname === p || pathname.startsWith(`${p}/`));
+
+export const surfaceKind = (pathname: string): SurfaceKind => {
+  if (under(pathname, OPERATIONS_PREFIXES)) return 'operations';
+  if (under(pathname, DOCUMENT_PREFIXES)) return 'document';
+  return 'room';
+};
+
+/** Does this address wear the room's dark palette? */
 export const isCustomerSurface = (pathname: string): boolean =>
-  Boolean(roomFor(pathname))
-  || CUSTOMER_PREFIXES.some(p => pathname === p || pathname.startsWith(`${p}/`));
+  surfaceKind(pathname) === 'room';
 
 /** §6.2 — is the navigation shown at this address? */
 export const chromeFor = (pathname: string): Chrome =>

@@ -39,7 +39,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { color, space, TARGET_MIN, MEASURE } from '@/design';
 import { parentOf, type Parent } from '@/navigation/resolve';
-import { Statement } from './parts';
+import { Statement, DISPLAY } from './parts';
 
 /**
  * THE ONE BACK CONTROL.
@@ -154,17 +154,20 @@ export interface RoomHeaderProps {
   /** `h2` where the page's `h1` is elsewhere — §21.6 is the page's to decide. */
   as?: 'h1' | 'h2';
   /**
-   * The Display's size. Named steps rather than numbers, because the three
-   * that existed were an accident and a fourth would be too.
+   * The Display's size. Two named steps, and neither is a number here — the
+   * three that existed (28, 29, 30) were an accident, and the fix for an
+   * accidental number is not a fourth one.
    *
-   *   `room`    30 — a room's own name
-   *   `subject` 26 — a room about ONE thing that is already named above it
+   *   `room`    the design's Display step, `clamp(30px, 8.6vw, 46px)`
+   *   `subject` one step down, for a room about ONE thing already named above
    */
   scale?: 'room' | 'subject';
   style?: CSSProperties;
 }
 
-const SIZE = { room: 30, subject: 26 } as const;
+/* The two steps, from `parts` — the header does not get its own copy of the
+   scale, which is the whole reason it exists. */
+const SIZE = { room: DISPLAY.room, subject: DISPLAY.nested } as const;
 
 export function RoomHeader({
   parent, eyebrow, lit = false, children, supporting, action,

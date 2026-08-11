@@ -1,26 +1,38 @@
-import Link from 'next/link';
-import Wordmark from '@/components/ui/Wordmark';
+/**
+ * A DEAD LINK IS NOT A DEAD END.
+ *
+ * Source: docs/AUTOMODZ-OS.md §19.1, §20.4, §21.8
+ *
+ * ── WHY IT WAS REWRITTEN ─────────────────────────────────────────────────
+ * The same era as the old `/offline`, and the same disagreements: `min-h-screen`
+ * (`100vh`, which the rest of the product abandoned because it puts content
+ * under a phone's browser bars), four hard-coded colours — `#08090b`, `#fff`,
+ * `#0b0c0e` and a white `rgba` — where one of them is a near-miss of the
+ * palette's own `#08090A`, a `font-hero` display at weight 800 where the
+ * product's display face is Outfit 200, a `clamp(28px, 7vw, 44px)` type scale
+ * that exists nowhere else, and a white filled button where the one filled
+ * control in the product is amber.
+ *
+ * It also read as a different voice: "Wrong turn." blames the customer for a
+ * link the studio published. It is a room like any other now, and it says what
+ * happened without deciding whose fault it was.
+ */
+import { Screen, RoomHeader, Action } from '@/components/os';
+import { space } from '@/design';
 
-/** Branded 404 - a dead link should never be a dead end. */
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center safe-page"
-      style={{ background: '#08090b', paddingBottom: 'max(var(--sab), 24px)' }}>
-      <Wordmark height={22} variant="white" />
-      <p className="font-mono mt-8" style={{ fontSize: 11, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)' }}>
-        404 · PAGE NOT FOUND
-      </p>
-      <h1 className="font-hero mt-3" style={{ fontSize: 'clamp(28px, 7vw, 44px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff' }}>
-        Wrong turn.
-      </h1>
-      <p className="font-body mt-3 max-w-xs" style={{ fontSize: 14.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.55)' }}>
-        This page doesn&apos;t exist - but the studio does.
-      </p>
-      <Link href="/"
-        className="mt-8 inline-flex items-center justify-center px-7 rounded-2xl font-display tap-target"
-        style={{ minHeight: 48, fontSize: 14.5, fontWeight: 700, background: '#fff', color: '#0b0c0e' }}>
-        Back to AutoModz
-      </Link>
-    </div>
+    <Screen top={space.rest} style={{ justifyContent: 'center' }}>
+      <RoomHeader
+        eyebrow="Nothing here"
+        supporting="This address doesn’t lead anywhere — it may have moved, or the link may be older than the page it points at. Everything else is where you left it."
+      >
+        We can’t find that
+      </RoomHeader>
+
+      <div style={{ marginTop: space.rest }}>
+        <Action href="/">Back to your car</Action>
+      </div>
+    </Screen>
   );
 }

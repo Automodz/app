@@ -18,5 +18,5 @@ export { RoomHeader, Back } from './RoomHeader';
 export type { RoomHeaderProps } from './RoomHeader';
 
 export {
-  Label, Statement, Rail, Pulse, Chevron, Meter, Row, Value, Action, Stat,
+  Label, Statement, DISPLAY, Rail, Pulse, Chevron, Meter, Row, Value, Action, Stat,
 } from './parts';
