@@ -72,7 +72,9 @@ describe('a service with no scopes is still bookable', () => {
   it('offers exactly one coverage — itself', () => {
     const only = scopesOf(plain());
     expect(only).toHaveLength(1);
-    expect(only[0]).toMatchObject({ id: WHOLE_SCOPE, label: 'Signature wash', price: 1200 });
+    /* The label answers "how much of the car", not "which service" — the
+       screen has already said the service's name in its title. */
+    expect(only[0]).toMatchObject({ id: WHOLE_SCOPE, label: 'The whole car', price: 1200 });
   });
 
   it('resolves with no choice at all, at the catalogue price', () => {

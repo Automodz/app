@@ -87,7 +87,7 @@ export function conciergeLog(args: {
       const line = b.noShow
         ? `The ${b.serviceName} on ${fmtLong(b.scheduledDate)} was missed.`
         : b.rejectionReason
-        ? `The studio couldn’t take ${b.serviceName} on ${fmtLong(b.scheduledDate)}${b.rejectionReason ? ` - ${b.rejectionReason}` : ''}`
+        ? `The studio couldn’t take ${b.serviceName} on ${fmtLong(b.scheduledDate)}${b.rejectionReason ? ` — ${b.rejectionReason}` : ''}`
         : `${b.serviceName} on ${fmtLong(b.scheduledDate)} was cancelled.`;
       /* `cancelledAt` ONLY. It is the true event and every cancelled booking
          in production carries one; falling through to `updatedAt` would date
@@ -128,7 +128,7 @@ export function conciergeLog(args: {
       id: `protection-${p.kind}`,
       at: new Date(`${p.since ?? ''}T12:00:00`),
       line: p.term.kind === 'dated'
-        ? `${PROTECTION_WORD[p.kind]} applied - protected until ${new Date(`${p.term.expiresOn}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
+        ? `${PROTECTION_WORD[p.kind]} applied — protected until ${new Date(`${p.term.expiresOn}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
         : `${PROTECTION_WORD[p.kind]} applied to the ${vehicleName}.`,
     });
   });

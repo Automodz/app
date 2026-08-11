@@ -15,7 +15,7 @@
  * Not one figure moved.
  */
 import { readFileSync } from 'fs';
-import { hrefForDestination } from '@/navigation/resolve';
+import { hrefForDestination, publicParent } from '@/navigation/resolve';
 
 const codeOf = (p: string) => readFileSync(p, 'utf8');
 const liveCodeOf = (p: string) =>
@@ -57,15 +57,35 @@ describe('the shell is the OS', () => {
 });
 
 describe('there is a way back', () => {
-  it('the page offers one, and falls back to History for a shared link', () => {
-    expect(pageRaw).toMatch(/backHref/);
-    expect(pageRaw).toMatch(/'\/history'/);
+  /**
+   * THE RULE MOVED, AND GOT STRICTER.
+   *
+   * These two assertions read the invoice's own inline implementation — the
+   * `'/history'` literal and the `startsWith` guard. Both now live in
+   * `publicParent`, shared with `/chapter/<id>`, which is the OTHER address in
+   * the product that gets sent to people and which had no way out at all.
+   *
+   * And the fallback changed on purpose: `/history` is behind a session, so a
+   * stranger opening a receipt somebody forwarded them was pointed at a
+   * sign-in wall. A dead end with a sign-in on it is still a dead end.
+   */
+  it('both shared documents ask the same one rule', () => {
+    expect(pageRaw).toMatch(/publicParent\(from\)/);
+    expect(readFileSync('app/chapter/[id]/page.tsx', 'utf8'))
+      .toMatch(/publicParent\(params\.get\('from'\)\)/);
+  });
+
+  it('it lands somewhere a reader with no account can actually stand', () => {
+    expect(publicParent(null).href).toBe('/');
+    expect(publicParent(undefined).href).toBe('/');
   });
 
   it('and it refuses an off-site destination smuggled through the query', () => {
     /* `?from=` is attacker-controllable on a public address. */
-    expect(pageRaw).toMatch(/from\.startsWith\('\/'\)/);
-    expect(pageRaw).toMatch(/!from\.startsWith\('\/\/'\)/);
+    expect(publicParent('/history/v1').href).toBe('/history/v1');
+    expect(publicParent('//evil.example.com').href).toBe('/');
+    expect(publicParent('https://evil.example.com').href).toBe('/');
+    expect(publicParent('javascript:alert(1)').href).toBe('/');
   });
 
   it('the record tells the paper which visit sent it — through the resolver', () => {

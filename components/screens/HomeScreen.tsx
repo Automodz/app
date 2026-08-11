@@ -44,6 +44,7 @@ import { useOpenPalette } from '@/navigation/Palette';
 import {
   color, space, MEASURE, INSET, TARGET_MIN, radius, imageSizes, ground,
 } from '@/design';
+import { dotted } from '@/design';
 import type { StateTone } from '@/design';
 import { OfflineNote } from '@/components/system';
 import type { Tone } from '@/components/system';
@@ -222,8 +223,17 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         >
           {state.word}
           <br />
-          <span style={{ fontSize: 19, color: color.ink3 }}>
-            {vehicle.name} · {vehicle.plate}
+          {/* ITS OWN LEADING. The Display's `line-height: 1.18` is solved for
+              46px type; inherited by a 19px sub-line it puts half a centimetre
+              of air between the car's name and its plate the moment the pair
+              wraps — which a real car name does at 390px. */}
+          <span
+            style={{
+              fontSize: 19, color: color.ink3,
+              lineHeight: 1.3, display: 'inline-block',
+            }}
+          >
+            {dotted(vehicle.name, vehicle.plate)}
           </span>
         </Statement>
 
@@ -338,7 +348,15 @@ export function HomeScreen({ model }: { model: HomeModel }) {
 
           At rest this same slot carries `truth`: the one sentence the studio
           has to say about the car when it is not doing anything to it. */}
-      {working && live ? (
+      {/* DRAWN ONLY WHEN IT HAS SOMETHING OF ITS OWN.
+          Its title was "Follow the visit" — the exact words of the one action
+          below, pointing at the same address. The timing is the fact only this
+          pane holds, so it leads; and when there is no timing the pane has
+          nothing left to say that the eyebrow, the phases and the action have
+          not already said, so it is not drawn. §4.4 — a fact is said once. The
+          pane is `lit`, never `warm`, so §10.4's one filled control per screen
+          is untouched either way. */}
+      {working && live && (live.timing ?? state.timing) ? (
         <Pane
           tone="lit" live
           as={Link}
@@ -350,12 +368,12 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           {...{ href: live.href }}
         >
           <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ fontSize: 14, color: color.ink }}>Follow the visit</span>
-            {live.timing ?? state.timing ? (
-              <Label style={{ letterSpacing: '0.16em', fontSize: 10 }}>
-                {live.timing ?? state.timing}
-              </Label>
-            ) : null}
+            <span style={{ fontSize: 14, color: color.ink }}>
+              {live.timing ?? state.timing}
+            </span>
+            <Label style={{ letterSpacing: '0.16em', fontSize: 10 }}>
+              In the studio
+            </Label>
           </span>
           <Pulse />
         </Pane>
@@ -568,7 +586,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               than the rows it hides. */}
           {protection ? (
             <p style={{ margin: 0, fontSize: 13, color: color.ink3 }}>
-              {protection.layers.join(' · ')} &middot; {protection.said}
+              {dotted(...protection.layers, protection.said)}
             </p>
           ) : null}
 

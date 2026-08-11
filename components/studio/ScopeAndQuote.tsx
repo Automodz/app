@@ -31,6 +31,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authedFetch } from '@/lib/clientSession';
 import { color, space, HAIRLINE, TARGET_MIN, radius, type as typeScale } from '@/design';
+import { DOT } from '@/design';
 import { Screen, Pane, Label, Rail, Action, RoomHeader } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
 
@@ -348,7 +349,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
           <>
             <span className="am-display" style={{ fontSize: 30, lineHeight: 1 }}>{quoted.total}</span>
             <span style={{ fontSize: 13, color: color.ink2 }}>
-              {[quoted.benefit, quoted.bay].filter(Boolean).join(' · ')}
+              {[quoted.benefit, quoted.bay].filter(Boolean).join(DOT)}
             </span>
             {quoted.fees ? (
               <span style={{ fontSize: 12.5, color: color.ink3 }}>

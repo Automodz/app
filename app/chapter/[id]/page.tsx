@@ -18,7 +18,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Heading, Text, Loading } from '@/components/system';
-import { color, space, INSET, MEASURE, radius, imageSizes } from '@/design';
+import { Back } from '@/components/os';
+import { publicParent } from '@/navigation/resolve';
+import { color, space, INSET, MEASURE, radius, imageSizes, stack } from '@/design';
 
 interface SharedChapter {
   id: string;
@@ -34,7 +36,13 @@ const longDate = (iso: string | null) =>
 
 export default function SharedChapterPage() {
   const { id } = useParams<{ id: string }>();
-  const token = useSearchParams().get('t');
+  const params = useSearchParams();
+  const token = params.get('t');
+  /* A CHAPTER IS SENT TO PEOPLE. It is the one screen in the product a
+     stranger is most likely to open cold, and it had no way out of any kind —
+     no dock, no back, nothing. Same rule as the invoice: the visit they came
+     from when the product put them here, the front door otherwise. */
+  const parent = publicParent(params.get('from'));
 
   const [chapter, setChapter] = useState<SharedChapter | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'gone'>('loading');
@@ -81,7 +89,26 @@ export default function SharedChapterPage() {
   const hero = after[0] ?? during[0] ?? before[0];
 
   return (
-    <main style={{ background: color.paper, minHeight: '100svh', paddingBottom: space.movement }}>
+    <main
+      style={{
+        background: color.paper, minHeight: '100svh',
+        paddingBottom: space.movement,
+        paddingTop: stack.top,
+        position: 'relative',
+      }}
+    >
+      {/* Over the photograph when there is one, in the gutter when there is
+          not — the same two placements every other room uses. */}
+      <div
+        style={{
+          position: hero ? 'absolute' : 'static', zIndex: 2,
+          top: `calc(${stack.top} + ${space.line}px)`, left: INSET,
+          paddingInline: hero ? 0 : INSET, paddingTop: hero ? 0 : space.line,
+        }}
+      >
+        <Back over={Boolean(hero)} parent={parent} />
+      </div>
+
       {hero ? (
         <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3' }}>
           <Image

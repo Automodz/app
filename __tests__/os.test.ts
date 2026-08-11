@@ -191,7 +191,7 @@ describe('the Stay model', () => {
     const quiet = job({ statusHistory: [{ status: 'checked_in', at: at(10), byEmployeeId: 'e', byEmployeeName: 'R' }], status: 'checked_in' });
     const s = deriveStay(booking({ status: 'vehicle_received' }), quiet, NOW);
     expect(s.narrationIsStudio).toBe(false);
-    expect(s.narration).toBe('Your vehicle has arrived safely.');
+    expect(s.narration).toBe('Your car has arrived safely.');
   });
 
   it('records the arrival and chains the evidence', () => {
@@ -242,7 +242,7 @@ describe('the Stay model', () => {
         arrivedAt(morning),
         new Date('2026-07-20T14:00:00'),
       );
-      expect(s.timing).toBe('Running longer than planned - the work sets the pace.');
+      expect(s.timing).toBe('Running longer than planned — the work sets the pace.');
     });
   });
 
@@ -260,7 +260,7 @@ describe('the Stay model', () => {
   it('offers a planned finish only while it is still a plan', () => {
     expect(deriveStay(booking(), job(), NOW).timing).toMatch(/^Planned finish around /);
     const late = deriveStay(booking({ serviceDurationMinutes: 30 }), job(), NOW);
-    expect(late.timing).toBe('Running longer than planned - the work sets the pace.');
+    expect(late.timing).toBe('Running longer than planned — the work sets the pace.');
   });
 
   it('says nothing about time at Ready, or before the car has arrived', () => {
@@ -316,7 +316,7 @@ describe('the Club model', () => {
     expect(clubModel({ membership: sub({ endDate: iso(-3) }), completed: [], now: NOW }).state).toBe('grace');
     const lapsed = clubModel({ membership: sub({ endDate: iso(-40) }), completed: [], now: NOW });
     expect(lapsed.state).toBe('lapsed');
-    expect(lapsed.context).toBe('Rejoin any time - your history holds.');
+    expect(lapsed.context).toBe('Rejoin any time — your history holds.');
     expect(clubModel({ membership: sub({ status: 'expired' }), completed: [], now: NOW }).state).toBe('lapsed');
   });
 
@@ -429,7 +429,7 @@ describe('the concierge log', () => {
       } as never, NOW) as unknown as Protection],
       membership: { id: 'm1', plan: 'Silver', status: 'active', startDate: '2026-07-05' } as unknown as Subscription,
     });
-    expect(rich.some(e => e.line === 'Ceramic coating applied - protected until July 2029.')).toBe(true);
+    expect(rich.some(e => e.line === 'Ceramic coating applied — protected until July 2029.')).toBe(true);
     expect(rich.some(e => e.line === 'The studio confirmed your Club membership on Silver.')).toBe(true);
   });
 

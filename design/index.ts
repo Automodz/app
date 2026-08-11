@@ -60,3 +60,5 @@ export type { IconSize } from './icons';
 /* The room the application stands in, and the one glass material over it. */
 export { ambient, glass } from './ambient';
 export type { AmbientLight } from './ambient';
+
+export { DOT, dotted } from './words';

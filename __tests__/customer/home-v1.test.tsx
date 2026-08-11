@@ -14,6 +14,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Timestamp } from 'firebase/firestore';
 import { HomeScreen, type HomeModel } from '@/components/screens/HomeScreen';
+import { DOT } from '@/design';
 
 const base: HomeModel = {
   vehicle: { name: 'BMW M4', plate: 'GJ 01 AA 0001' },
@@ -136,7 +137,10 @@ describe('Home V1 — one composition', () => {
         ],
       });
       expect(h).toContain('Protected');
-      expect(h).toContain('PPF · Ceramic · Glass');
+      /* The separator is `DOT` — the same glyph, but binding forward so it can
+         never end a line. Compared through the token rather than by retyping
+         it, since the two are indistinguishable on screen. */
+      expect(h).toContain(['PPF', 'Ceramic', 'Glass'].join(DOT));
       expect(h).toContain('Through March 2027');
       expect(h).not.toContain('<details');
     });

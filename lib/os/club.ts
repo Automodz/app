@@ -140,7 +140,7 @@ export function clubModel(args: {
 
   const context =
     state === 'pending' ? null // the card carries its own confirming line
-    : state === 'lapsed' ? 'Rejoin any time - your history holds.'
+    : state === 'lapsed' ? 'Rejoin any time — your history holds.'
     : state === 'grace'
     ? `The cycle ended ${fmtLong(m.endDate)} - renew to keep it going.`
     : `${washesLeft} wash${washesLeft === 1 ? '' : 'es'} left this cycle · renews ${fmtLong(m.endDate)}`;

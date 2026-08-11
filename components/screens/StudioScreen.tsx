@@ -46,6 +46,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { color, space, INSET, imageSizes } from '@/design';
+import { DOT } from '@/design';
 import type { Service, Subscription, Vehicle } from '@/lib/types';
 import { BookingFlow } from '@/components/studio/BookingFlow';
 import type { CarriedEstimate, AddressChoice } from '@/components/studio/BookingFlow';
@@ -289,7 +290,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
                       behind the work, and how long the car is away. */}
                   {s.brand || away ? (
                     <Label style={{ fontSize: 9.5, letterSpacing: '0.18em' }}>
-                      {[s.brand, away].filter(Boolean).join(' · ')}
+                      {[s.brand, away].filter(Boolean).join(DOT)}
                     </Label>
                   ) : null}
                 </Pane>

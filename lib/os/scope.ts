@@ -88,7 +88,12 @@ export function scopesOf(service: Service): ServiceScope[] {
     return [{
       id: WHOLE_SCOPE,
       kind: 'full',
-      label: service.name,
+      /* NOT THE SERVICE'S NAME. The screen that draws this has already spent
+         its one Display on exactly that string, so the single card underneath
+         repeated the headline word for word — under a heading that asks "how
+         much of the car". This answers the question that was asked. §4.4: a
+         fact is said once. */
+      label: 'The whole car',
       detail: service.description || 'The service as the studio sells it.',
       price: service.price,
       durationMinutes: service.duration,

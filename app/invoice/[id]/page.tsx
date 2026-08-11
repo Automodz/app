@@ -31,6 +31,7 @@ import RatingCard from '@/components/invoice/RatingCard';
 import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';
 import { Heading, Text, Button, Loading } from '@/components/system';
 import { color, space, INSET, MEASURE, stack } from '@/design';
+import { publicParent } from '@/navigation/resolve';
 
 export default function PublicInvoicePage() {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +54,11 @@ export default function PublicInvoicePage() {
       .catch(e => setError(e.message));
   }, [id, token]);
 
-  const backHref = from && from.startsWith('/') && !from.startsWith('//') ? from : '/history';
+  /* One rule for both shared documents — see `publicParent`. This fell back
+     to `/history`, which is behind a session, so a stranger opening a receipt
+     somebody sent them was pointed at a sign-in wall. */
+  const parent = publicParent(from);
+  const backHref = parent.href;
 
   /* One ground for all three states, so the page never changes character
      between loading, failing and holding the document. */

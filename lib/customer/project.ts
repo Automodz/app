@@ -21,6 +21,7 @@ import {
 } from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
 import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst, isUpcoming } from './ownership';
+import { DOT } from '@/design';
 import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
 import {
   changeWindowOf, bookingTransition, scheduledEpochMs, approvalHasExpired,
@@ -994,7 +995,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     car.vehicle.color,
     car.vehicle.category,
     car.vehicle.year ? String(car.vehicle.year) : undefined,
-  ].filter(Boolean).join(' · ') || undefined;
+  ].filter(Boolean).join(DOT) || undefined;
 
   /**
    * WHAT THE STUDIO STANDS BEHIND, AND UNTIL WHEN.
@@ -1322,7 +1323,7 @@ export function toCarriedEstimate(e: Estimate): CarriedEstimate {
     serviceId: e.serviceId,
     vehicleId: e.vehicleId,
     serviceName: e.serviceName,
-    scopeLine: [e.scope.label, ...panels, ...extras].filter(Boolean).join(' · '),
+    scopeLine: [e.scope.label, ...panels, ...extras].filter(Boolean).join(DOT),
     total: e.breakdown.washCovered ? 'Covered' : rupees(e.breakdown.total),
     bay: e.scope.bayDays === 1 ? '1 day in the bay' : `${e.scope.bayDays} days in the bay`,
     durationMinutes: e.scope.durationMinutes,
@@ -1460,7 +1461,7 @@ export function toScopeQuote(
     serviceName: service.name,
     forCar: `For the ${car.vehicle.name}`,
     vehicleId: car.vehicle.id,
-    brandLine: [service.brand, service.warranty].filter(Boolean).join(' · ') || undefined,
+    brandLine: [service.brand, service.warranty].filter(Boolean).join(DOT) || undefined,
     scopes: scopesOf(service).map(s => ({
       id: s.id,
       kind: s.kind,
@@ -1539,7 +1540,7 @@ export function toSettle(args: {
 
   return {
     bookingId: b.id,
-    eyebrow: [car.vehicle.name, 'closed'].filter(Boolean).join(' · '),
+    eyebrow: [car.vehicle.name, 'closed'].filter(Boolean).join(DOT),
     headline: args.money.payable === 0 ? 'All settled.' : 'Back with you.',
     handover: collected,
     lines,
@@ -1614,7 +1615,7 @@ export function toApproval(
 
   return {
     id: approval.id,
-    eyebrow: ['In the studio', approval.vehicleName].filter(Boolean).join(' · '),
+    eyebrow: ['In the studio', approval.vehicleName].filter(Boolean).join(DOT),
     headline: approval.reason,
     detail: approval.detail,
     photos: approval.photos ?? [],
@@ -1756,7 +1757,7 @@ export function toBooked(
   const back = b.endDate && b.endDate !== b.scheduledDate
     ? `${longDate(b.endDate)}, end of day`
     : [spokenHour(endOfSlot(b.scheduledTime, duration)) ?? null, 'the same day']
-        .filter(Boolean).join(' · ');
+        .filter(Boolean).join(DOT);
 
   /* HOW THE CAR GETS THERE. The legs are what the customer actually chose, and
      the address is the SNAPSHOT stored on the booking — never the saved
@@ -1773,7 +1774,7 @@ export function toBooked(
     {
       label: 'Work',
       value: b.serviceName,
-      detail: [car.vehicle.name, b.scope?.label].filter(Boolean).join(' · ') || undefined,
+      detail: [car.vehicle.name, b.scope?.label].filter(Boolean).join(DOT) || undefined,
     },
     { label: 'In the bay', value: bayWords(duration) },
     { label: 'Back to you', value: back },
@@ -1958,7 +1959,7 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
 
   return {
     name: user.name || 'You',
-    reachedAt: [user.email, user.phone].filter(Boolean).join(' · '),
+    reachedAt: [user.email, user.phone].filter(Boolean).join(DOT),
     /* "Gold · since 2023" — and just "Gold" when no membership carries a
        start date, rather than the dangling "Gold · since" a template with an
        empty tail produces. */
@@ -2081,15 +2082,28 @@ function membershipLines(club: ClubModel): string[] {
      asked here as a second opinion on a lifecycle `clubModel` had already
      resolved — and it answered "healthy" for a cancelled plan, because a
      cancellation is not a date. */
+  /* NO DATE MEANS NO DATE, NOT AN EMPTY SPACE WHERE ONE WOULD BE.
+     Every branch interpolated `when` unguarded, so a membership with no known
+     renewal — a lapsed one, most often — was shown the sentence
+
+         Lapsed .
+
+     with a stranded space before the stop. `Renews .` and `The cycle ended .`
+     were the same defect waiting on the same absent field. §18.1: nothing is
+     drawn for nothing, so the date leaves the sentence rather than leaving a
+     hole in it, and a renewal nobody can name is not announced at all. */
   const when = club.renewsOn ? longDate(club.renewsOn) : '';
+  const standing =
+    club.state === 'lapsed' ? (when ? `Lapsed ${when}.` : 'Lapsed.')
+      : club.state === 'grace' ? (when ? `The cycle ended ${when}.` : 'The cycle has ended.')
+      : club.state === 'pending' ? 'Waiting on the studio to confirm it.'
+      : when ? `Renews ${when}.` : '';
+
   return [
     `${club.plan} member.`,
     `${remaining === 0 ? 'No washes' : remaining === 1 ? 'One wash' : `${remaining} washes`} left this cycle.`,
-    club.state === 'lapsed' ? `Lapsed ${when}.`
-      : club.state === 'grace' ? `The cycle ended ${when}.`
-      : club.state === 'pending' ? 'Waiting on the studio to confirm it.'
-      : `Renews ${when}.`,
-  ];
+    standing,
+  ].filter(Boolean);
 }
 
 /* ── MEMBERSHIP ──────────────────────────────────────────────────────────── */

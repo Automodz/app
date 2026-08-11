@@ -366,3 +366,29 @@ export const parentOf = (pathname: string): Parent | null => {
 
   return null;
 };
+
+/**
+ * WHERE A SHARED DOCUMENT GOES BACK TO.
+ *
+ * An invoice and a chapter are the two addresses in the product that leave it:
+ * they are sent to a spouse, a buyer, an insurer. So the reader may be someone
+ * with no account, no session and no history behind them — `back()` does
+ * nothing for them, and the room they came from does not exist.
+ *
+ * The rule, one implementation for both:
+ *
+ *   · `?from=` when the product itself put it there and it is a safe internal
+ *     path. That is the customer who opened their own document from their own
+ *     record, and they go back to it.
+ *   · `/` otherwise. It is the one address that answers for both readers — the
+ *     landing to a visitor, Now to an owner — and it is the same reasoning
+ *     `parentOf` already uses for the public marketplace.
+ *
+ * The invoice previously fell back to `/history`, which is behind a session:
+ * a stranger opening a shared receipt was sent to a sign-in wall. A dead end
+ * with a sign-in on it is still a dead end.
+ */
+export const publicParent = (from: string | null | undefined): Parent =>
+  (from && from.startsWith('/') && !from.startsWith('//')
+    ? { href: from, name: 'The visit' }
+    : { href: HOME, name: 'AutoModz' });

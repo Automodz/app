@@ -65,9 +65,15 @@ export function isLive(b: Pick<Booking, 'status'>): boolean {
 
 /** Act narration - the one sentence per act (voice law, Art. 8/13). */
 export const ACT_LINE: Record<CareAct, string> = {
-  received:     'Your vehicle has arrived safely.',
+  /* "car", not "vehicle", and "the studio", not "our team". §21.8 asks for the
+     customer's word: seven customer-facing strings in the product say car and
+     these two said vehicle, while every other sentence about the studio names
+     it the way `PHASE_LINE` does immediately below. `in_care` is the most-read
+     line in the product — it is under the title for the whole of every visit —
+     so it was the most visible place to be off-voice. */
+  received:     'Your car has arrived safely.',
   looked_over:  'A careful look before any work begins.',
-  in_care:      'Our team is caring for your vehicle.',
+  in_care:      'The studio is caring for your car.',
   final_checks: 'Final checks before it comes home.',
   ready:        'Ready for collection.',
 };

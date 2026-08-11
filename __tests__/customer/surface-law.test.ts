@@ -10,6 +10,8 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { surfaceKind, isCustomerSurface } from '@/navigation/routes';
+import { publicParent } from '@/navigation/resolve';
+import { DOT, dotted } from '@/design';
 
 const codeOf = (p: string) =>
   readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -231,5 +233,133 @@ describe('one safe-area strategy', () => {
     expect(grid).toMatch(/contentFloor:[^;]*env\(safe-area-inset-bottom/);
     expect(grid).toMatch(/bottom:[^;]*env\(safe-area-inset-bottom/);
     expect(grid).toMatch(/top: 'env\(safe-area-inset-top/);
+  });
+});
+
+/* ── WHAT THE VISUAL PASS FOUND ──────────────────────────────────────────── */
+
+describe('a line of two facts survives a real car name', () => {
+  /**
+   * Thirteen call sites joined `A · B` with a plain `' · '`, and at 390px with
+   * "BMW M340i xDrive Sport" three screens broke the same way at once — Now,
+   * the live visit and settling — each stranding the separator at the end of a
+   * line:
+   *
+   *     BMW M340i xDrive Sport ·
+   *     GJ01AB1234
+   *
+   * One convention, no implementation, so every site typed it itself.
+   */
+  it('the separator binds forward, so it can never end a line', () => {
+    /* A normal space before it keeps the break opportunity; a non-breaking
+       space after it stops the dot being orphaned from what it introduces. */
+    expect(DOT).toBe(' · ');
+    expect(DOT.startsWith(' ')).toBe(true);
+    expect(DOT.endsWith(' ')).toBe(true);
+  });
+
+  it('and it drops absent facts rather than punctuating nothing', () => {
+    expect(dotted('BMW M340i', 'GJ01AB1234')).toBe(`BMW M340i${DOT}GJ01AB1234`);
+    expect(dotted('BMW M340i', undefined)).toBe('BMW M340i');
+    expect(dotted(undefined, 'GJ01AB1234')).toBe('GJ01AB1234');
+    expect(dotted(null, false, '')).toBe('');
+  });
+
+  it('nothing composes its own separator any more', () => {
+    /* The whole point: a fourteenth call site cannot reintroduce this. */
+    const offenders = CUSTOMER_FILES
+      .concat(['lib/customer/project.ts'])
+      .filter(f => /join\(' · '\)|` · `|' · '/.test(codeOf(f)));
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('the product says the same word for the same thing', () => {
+  /**
+   * `ACT_LINE` is the most-read copy in the product — it sits under the title
+   * for the whole of every visit — and two of its five lines said "vehicle"
+   * where seven other customer strings say "car", one of them naming the
+   * studio as "our team" where every other sentence says "the studio".
+   */
+  const copy = [
+    'lib/os/visit.ts', 'lib/os/stay.ts', 'lib/os/log.ts', 'lib/os/club.ts',
+    'lib/customer/project.ts',
+  ];
+
+  it('it is a car, never a vehicle', () => {
+    for (const f of copy) {
+      const said = (codeOf(f).match(/'[^']*\byour vehicle\b[^']*'/g) ?? []);
+      expect({ f, said }).toEqual({ f, said: [] });
+    }
+  });
+
+  it('and the studio, never a team', () => {
+    for (const f of copy) {
+      expect({ f, team: /'[^']*\bOur team\b/.test(codeOf(f)) }).toEqual({ f, team: false });
+    }
+  });
+
+  it('a dash is an em dash, as it is everywhere else in the product', () => {
+    /* Three strings used a hyphen where the same FILE used an em dash a few
+       lines above — including the sentence from the original bug report.
+       Matched line by line: a regex spanning a whole file swallows code
+       between two apostrophes and reports the file back to you. */
+    for (const f of copy) {
+      const hyphenated = codeOf(f).split('\n')
+        /* Interpolations first: `${MONTHS[m - 1]}` is arithmetic, not prose. */
+        .map(l => l.replace(/\$\{[^}]*\}/g, '~'))
+        .filter(l => /(['`])[^'`]*\w - \w[^'`]*\1/.test(l))
+        .map(l => l.trim().slice(0, 60));
+      expect({ f, hyphenated }).toEqual({ f, hyphenated: [] });
+    }
+  });
+});
+
+describe('a sentence never has a hole where a fact should be', () => {
+  /**
+   * Every branch of the membership line interpolated a renewal date that a
+   * lapsed plan does not have, so the customer was shown "Lapsed ." — with a
+   * stranded space before the stop. `Renews .` was the same defect waiting.
+   */
+  it('the date leaves the sentence rather than leaving a gap', () => {
+    const src = codeOf('lib/customer/project.ts');
+    const fn = src.slice(src.indexOf('function membershipLines'));
+    const block = fn.slice(0, fn.indexOf('\n}'));
+    /* Every branch that can name a date must ask whether there is one. */
+    expect(block).toMatch(/when \? `Lapsed \$\{when\}\.` : 'Lapsed\.'/);
+    expect(block).toMatch(/when \? `The cycle ended \$\{when\}\.` : 'The cycle has ended\.'/);
+    expect(block).toMatch(/when \? `Renews \$\{when\}\.` : ''/);
+    expect(block).toMatch(/\.filter\(Boolean\)/);
+  });
+
+  it('and the line is dropped rather than drawn empty', () => {
+    /* §18.1 — nothing is drawn for nothing. An active plan with no renewal
+       date on file says nothing about renewal at all. */
+    const src = codeOf('lib/customer/project.ts');
+    const fn = src.slice(src.indexOf('function membershipLines'));
+    expect(fn.slice(0, fn.indexOf('\n}'))).toMatch(/\]\.filter\(Boolean\)/);
+  });
+});
+
+describe('a document that gets sent to people can be left', () => {
+  /**
+   * `/invoice/<id>` and `/chapter/<id>` are the two addresses that leave the
+   * product. The chapter had no way out of any kind, and the invoice fell back
+   * to `/history`, which is behind a session — a stranger opening a forwarded
+   * receipt met a sign-in wall.
+   */
+  it('both use the one rule', () => {
+    expect(codeOf('app/invoice/[id]/page.tsx')).toMatch(/publicParent/);
+    expect(codeOf('app/chapter/[id]/page.tsx')).toMatch(/publicParent/);
+  });
+
+  it('and the chapter actually draws the control', () => {
+    expect(codeOf('app/chapter/[id]/page.tsx')).toMatch(/<Back\b/);
+  });
+
+  it('the fallback is reachable without an account', () => {
+    /* `/` is the landing to a visitor and Now to an owner — the same reasoning
+       `parentOf` uses for the public marketplace. */
+    expect(publicParent(null).href).toBe('/');
   });
 });

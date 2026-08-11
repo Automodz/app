@@ -2,7 +2,7 @@
  * THE COMPOSITION HOLDS ON A PHONE.
  *
  * Reported from production, Safari on an iPhone, a car in the studio:
- * "Running longer than planned - the work sets the pace." was set in 62px
+ * "Running longer than planned — the work sets the pace." was set in 62px
  * display type, wrapped over six lines, and drawn straight through the car's
  * own name, the state's sentence, the ring it was supposed to be inside, and
  * the card below it. The screen was unreadable and nothing was clipping it.
@@ -32,7 +32,7 @@ const codeOf = (p: string) =>
   readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
 /** The exact sentence from the production screenshot. `lib/os/stay.ts`. */
-const LATE = 'Running longer than planned - the work sets the pace.';
+const LATE = 'Running longer than planned — the work sets the pace.';
 const ON_PLAN = 'Planned finish around 5:40 pm.';
 
 const base: HomeModel = {
@@ -107,7 +107,12 @@ describe('the live dial holds a measure, not the sentence', () => {
        screen. */
     const visible = html().replace(/<[^>]+>/g, '\n');
     expect((visible.match(/Running longer than planned/g) ?? []).length).toBe(1);
-    expect(visible.indexOf('Follow the visit')).toBeLessThan(visible.indexOf('Running longer'));
+    /* It LEADS the pane now rather than following the pane's own title. The
+       title was "Follow the visit" — the exact words of the one action below
+       it, pointing at the same address — so the pane says the thing only it
+       has instead, and the words appear once, on the action. */
+    expect((visible.match(/Follow the visit/g) ?? []).length).toBe(1);
+    expect(visible.indexOf('Running longer')).toBeLessThan(visible.indexOf('Follow the visit'));
   });
 
   it('the ring is still lit by the same fraction', () => {

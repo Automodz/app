@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation';
    happen. See lib/clientSession.ts. */
 import { authedFetch } from '@/lib/clientSession';
 import { washesLeftOf } from '@/lib/os/club';
+import { DOT } from '@/design';
 import { generateTimeSlots } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils';
 import type { Service, Subscription, Vehicle } from '@/lib/types';
@@ -481,7 +482,7 @@ export function BookingFlow({
             before, which made the sheet read as a form title rather than as
             the studio setting a bay aside. */}
         <span className="am-label" style={{ letterSpacing: '0.3em' }}>
-          {[service?.name, chosenVehicle?.name].filter(Boolean).join(' · ') || 'The studio'}
+          {[service?.name, chosenVehicle?.name].filter(Boolean).join(DOT) || 'The studio'}
         </span>
         <h2
           className="am-display"
@@ -754,7 +755,7 @@ export function BookingFlow({
                     ? `${time} – ${endTime(time, workMinutes)}`
                     : time,
                   estimate?.bay ?? spokenDuration(workMinutes),
-                ].filter(Boolean).join(' · ')}
+                ].filter(Boolean).join(DOT)}
               />
               <div
                 style={{

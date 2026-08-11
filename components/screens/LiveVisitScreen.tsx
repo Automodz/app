@@ -33,6 +33,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { color, space, INSET, MEASURE, radius, stack, imageSizes } from '@/design';
+import { dotted } from '@/design';
 import { Modal, OfflineNote, LiveRefresh } from '@/components/system';
 import { Pane, Label, Statement, Pulse, Action, Back } from '@/components/os';
 
@@ -129,7 +130,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         {/* ── WHAT IS BEING DONE ────────────────────────────────────────
             §9.5 — the one Display. The label above it names the visit and the
             car, which is the only place either appears on this screen. */}
-        <Statement eyebrow={`${vehicleName} · in the studio`} lit>
+        <Statement eyebrow={dotted(vehicleName, 'in the studio')} lit>
           {service}
         </Statement>
 
