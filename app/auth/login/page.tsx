@@ -53,6 +53,7 @@ import {
   duration, curve, TARGET_MIN, HAIRLINE,
 } from '@/design';
 import { isInAppBrowser, currentUserAgent } from '@/lib/browser';
+import { authFault, authDiagnostic } from '@/lib/authError';
 import { rememberDevice, forgetDevice } from '@/components/auth/SessionKeeper';
 
 /**
@@ -195,6 +196,14 @@ function Login() {
   const [phase, setPhase] = useState<'waiting' | 'opening' | 'welcoming'>('waiting');
   const [greeting, setGreeting] = useState('');
   const [error, setError] = useState('');
+  /**
+   * THE RAW CODE, shown only where it helps and never to a customer.
+   *
+   * On screen in development, and in production only behind `?debug=1` — which
+   * the owner can add to the URL and a customer never will. It reveals an
+   * error code and nothing else: no token, no address, no account.
+   */
+  const [diagnostic, setDiagnostic] = useState('');
   /* §22.2 — the one reader of the connection. This surface used to consult
      `navigator.onLine` on its own. */
   const online = useOnline();
@@ -208,6 +217,8 @@ function Login() {
   const signingIn = useRef(false);
 
   const dest = safeDest(params.get('redirect'));
+  /* Development always; production only when the owner asks with `?debug=1`. */
+  const showDiagnostic = process.env.NODE_ENV !== 'production' || params.get('debug') === '1';
 
   // staff land in the studio OS; everyone else in the customer experience
   const homeFor = (role?: string) =>
@@ -375,21 +386,26 @@ function Login() {
       setPhase('welcoming');
       enter(homeFor(profile.role), WELCOME_BEAT);
     } catch (err: unknown) {
-      const code = (err as { code?: string }).code;
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        // they simply changed their mind - not an error
-      } else if (code === 'auth/popup-blocked') {
-        /* Inside Instagram's or Facebook's webview there is no pop-up setting
-           to change, so the old advice was an instruction the customer could
-           not follow. Say the thing that actually works. */
-        setError(isInAppBrowser(currentUserAgent())
-          ? 'Open this page in Safari or Chrome to sign in — this app’s built-in browser can’t.'
-          : 'Allow pop-ups for AutoModz, then try again.');
-      } else if (code === 'auth/network-request-failed') {
-        setError('That didn’t reach Google — check your connection and try again.');
-      } else {
-        setError('That did not go through. Please try again.');
-      }
+      /**
+       * THE CODE IS NEVER THROWN AWAY AGAIN.
+       *
+       * This was four handled codes and an `else` that said "That did not go
+       * through" — so a disabled provider, an unauthorised domain, a browser
+       * refusing third-party storage and a Firestore rule refusing the profile
+       * write all reached the customer as one sentence, and reached whoever
+       * was on call as nothing at all. A production failure was reported in
+       * Chrome AND Safari, for new and returning accounts, and there was
+       * nothing in it to tell the causes apart by.
+       *
+       * `authFault` decides the sentence; the code goes to the console on
+       * every environment. The customer's sentence still carries no code, no
+       * stack and no Firebase word.
+       */
+      const fault = authFault(err, isInAppBrowser(currentUserAgent()));
+      console.error(authDiagnostic(fault, err));
+      setDiagnostic(fault.code);
+      /* An abandoned pop-up is not a failure and says nothing (§20.2). */
+      setError(fault.message);
     } finally {
       /* Only released on a failure — on success the document is on its way out
          and re-arming the effect would give it a second navigation to make. */
@@ -546,14 +562,25 @@ function Login() {
                 <OfflineNote inline caption="You’re offline — reconnect to sign in." />
 
                 {error ? (
-                  <Text
-                    role="body"
-                    tone="ink2"
-                    style={{ marginTop: space.line }}
-                    aria-live="polite"
-                  >
-                    {error}
-                  </Text>
+                  <>
+                    <Text
+                      role="body"
+                      tone="ink2"
+                      style={{ marginTop: space.line }}
+                      aria-live="polite"
+                    >
+                      {error}
+                    </Text>
+                    {showDiagnostic && diagnostic ? (
+                      <Text
+                        role="whisper"
+                        tone="ink3"
+                        style={{ marginTop: space.hair, fontFamily: 'var(--font-mono)' }}
+                      >
+                        {diagnostic}
+                      </Text>
+                    ) : null}
+                  </>
                 ) : (
                   <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
                     One tap — no password to remember.

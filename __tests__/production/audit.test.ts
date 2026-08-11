@@ -28,6 +28,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { isInAppBrowser } from '@/lib/browser';
+import { authFault } from '@/lib/authError';
 import { tooLargeToUpload, MAX_UPLOAD_BYTES } from '@/lib/services/storage';
 
 const codeOf = (p: string) =>
@@ -104,11 +105,18 @@ describe('a failure in an in-app browser says something possible', () => {
   });
 
   it('the door tells them what actually works', () => {
-    const src = codeOf('app/auth/login/page.tsx');
-    expect(src).toMatch(/isInAppBrowser\(currentUserAgent\(\)\)/);
-    expect(src).toMatch(/Open this page in Safari or Chrome/);
+    /* The sentences moved out of the door and into `lib/authError.ts` when the
+       generic `else` was replaced — see __tests__/auth/failure.test.ts. What
+       this block protects is unchanged and is asserted the better way: on the
+       advice itself, not on where the string is typed. The door's remaining
+       job is to say WHICH browser it is in, so the map can choose. */
+    expect(codeOf('app/auth/login/page.tsx'))
+      .toMatch(/authFault\(err, isInAppBrowser\(currentUserAgent\(\)\)\)/);
+    expect(authFault({ code: 'auth/popup-blocked' }, true).message)
+      .toMatch(/Open this page in Safari or Chrome/);
     /* And still gives the ordinary advice to an ordinary browser. */
-    expect(src).toMatch(/Allow pop-ups for AutoModz/);
+    expect(authFault({ code: 'auth/popup-blocked' }, false).message)
+      .toMatch(/Allow pop-ups for AutoModz/);
   });
 });
 

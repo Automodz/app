@@ -10,6 +10,7 @@
  * mocks, not the door.
  */
 import { readFileSync, existsSync } from 'fs';
+import { authFault } from '@/lib/authError';
 
 const NEW = 'app/auth/login/page.tsx';
 const OLD = 'reference/customer-old/app/auth/login/page.tsx';
@@ -63,6 +64,15 @@ describe('every service call the old door made, the new one makes', () => {
 });
 
 describe('every message the old door could show', () => {
+  /**
+   * The failure sentences left the door for `lib/authError.ts` when the
+   * generic `else` was replaced with a map that keeps the SDK's code. Parity
+   * is with the PRODUCT, not with a file: what the old door could say, the new
+   * one must still be able to say. So the two sources are read together, and
+   * the ones that are now a pure function are asserted by calling it.
+   */
+  const door = src + codeOf('lib/authError.ts');
+
   it.each([
     'You’re offline — reconnect to sign in.',
     'The studio could not open your account. Please try again.',
@@ -70,12 +80,15 @@ describe('every message the old door could show', () => {
     'That didn’t reach Google — check your connection and try again.',
     'That did not go through. Please try again.',
   ])('still exists: %s', message => {
-    expect(src).toContain(message);
+    expect(door).toContain(message);
   });
 
   it('stays silent when the customer closes the Google window', () => {
-    expect(src).toContain('auth/popup-closed-by-user');
-    expect(src).toContain('auth/cancelled-popup-request');
+    /* Asserted on the outcome now rather than on the presence of a code: an
+       abandoned pop-up is not a failure and must produce no sentence at all. */
+    for (const code of ['auth/popup-closed-by-user', 'auth/cancelled-popup-request']) {
+      expect(authFault({ code })).toEqual({ kind: 'abandoned', message: '', code });
+    }
   });
 
   it('keeps the welcome, the sub and the reassurance', () => {

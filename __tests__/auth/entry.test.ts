@@ -192,8 +192,33 @@ describe('the door carries no instrumentation', () => {
     }
   });
 
-  it('the door logs nothing to the console', () => {
-    expect(login).not.toMatch(/console\./);
+  /**
+   * REVISED, DELIBERATELY. This read `expect(login).not.toMatch(/console\./)`.
+   *
+   * That was right about the stage trail and wrong as a general rule, and the
+   * cost came due in production: a sign-in failure was reported in Chrome and
+   * Safari, on new and returning accounts, and the door had thrown the SDK's
+   * error code away at the only point it existed. A silent door is not a clean
+   * door — it is one nobody can diagnose.
+   *
+   * So: exactly one console call, an `error`, carrying the code and nothing
+   * about the customer. The instrumentation ban above is unchanged.
+   */
+  it('the door reports failures and narrates nothing else', () => {
+    /* `console.error` and nothing else — `removeConsole` strips every other
+       level from a production build anyway, so a `console.log` here is a line
+       that exists only to be missing when it is needed. */
+    const levels = new Set((login.match(/console\.(\w+)/g) ?? []));
+    expect([...levels]).toEqual(['console.error']);
+    expect(login).toMatch(/console\.error\(authDiagnostic\(fault, err\)\)/);
+  });
+
+  it('and the line it logs cannot carry the customer', () => {
+    /* The diagnostic is built from the fault and the SDK's own message. No
+       email, no token, no profile — a console is not a private place. */
+    const diag = codeOf('lib/authError.ts');
+    const fn = diag.slice(diag.indexOf('export function authDiagnostic'));
+    expect(fn).not.toMatch(/email|uid|token|profile|user/i);
   });
 });
 

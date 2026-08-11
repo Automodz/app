@@ -92,6 +92,19 @@ const nextConfig = {
         'https://*.googleapis.com', 'https://*.firebaseio.com',
         'https://firestore.googleapis.com', 'https://identitytoolkit.googleapis.com',
         'https://securetoken.googleapis.com', 'https://fcmregistrations.googleapis.com',
+        /* `apis.google.com` IS NOT `*.googleapis.com` — different host, and the
+           wildcard above does not cover it. `script-src` has trusted it since
+           this policy was written, because the auth relay's gapi loader is
+           served from there; `connect-src` never did, so anything that loader
+           fetches was refused by our own policy. Measured against production:
+           a request to https://apis.google.com/js/api.js is reported as a
+           `connect-src` violation while the identical URL loads fine as a
+           script. Trusting a host to run code but not to be spoken to is not a
+           security boundary, it is a gap. */
+        'https://apis.google.com',
+        /* Same shape: the sign-in pop-up is a window on accounts.google.com,
+           which `frame-src` already trusts. */
+        'https://accounts.google.com',
         'https://api.cloudinary.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com',
         'wss://*.firebaseio.com',
         /* The local Firebase suite, in development only. Without these the
