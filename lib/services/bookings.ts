@@ -138,8 +138,35 @@ export const markNoShow = async (
   } catch { /* best-effort */ }
 };
 
-export const rescheduleBooking = (id: string, scheduledDate: string, scheduledTime: string) =>
-  updateDoc(doc(db, 'bookings', id), { scheduledDate, scheduledTime, updatedAt: serverTimestamp() });
+/**
+ * MOVE A BOOKING — through the server, always.
+ *
+ * This was `updateDoc(doc(db,'bookings',id), { scheduledDate, scheduledTime })`,
+ * and `firestore.rules` permitted it because the rule checked which KEYS had
+ * changed and nothing about their values. So a customer could move a visit into
+ * an hour the studio was already working, into the past, onto a slot that does
+ * not exist, or — the expensive one — to two hours' notice on a two-day PPF
+ * whose film had already been cut. The 24-hour rule was also decided from the
+ * browser's own clock.
+ *
+ * The rule is now closed and the whole decision — window, capacity, span,
+ * audit trail — is one transaction in the Booking Service.
+ */
+export const rescheduleBooking = async (
+  id: string, scheduledDate: string, scheduledTime: string,
+): Promise<void> => {
+  const token = await idToken();
+  if (!token) throw new Error('not-signed-in');
+  const res = await fetch('/api/booking/reschedule', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookingId: id, scheduledDate, scheduledTime }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string })?.error ?? 'reschedule-failed');
+  }
+};
 
 export const saveBookingAdminNotes = (id: string, adminNotes: string) =>
   updateDoc(doc(db, 'bookings', id), { adminNotes, updatedAt: serverTimestamp() });

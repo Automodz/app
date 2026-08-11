@@ -71,6 +71,16 @@ export const PROFILE = '/you';
 /** Rooms reached by going deeper, never by tabbing. */
 export const HISTORY = '/history';
 export const VEHICLE = '/vehicle';
+/**
+ * A BOOKING'S OWN ADDRESS — design screens 09 and 10.
+ *
+ * These were a bottom sheet at `/studio?manage=<id>`, which gave the two most
+ * consequential screens in the product — the confirmation, and the place a
+ * customer moves or cancels a visit — no address worth sharing, no back
+ * button of their own, and no way to be reached from a notification. §6.4:
+ * every surface is addressable.
+ */
+export const BOOKING = '/booking';
 
 /**
  * THE MARKETPLACE. Public, unlike every other address above it — `/cars` is
@@ -123,6 +133,16 @@ export const rooms: Record<string, Room> = {
     name: 'Studio',
     concept: 'studio',
     chrome: 'nav',
+    activates: STUDIO,
+  },
+  [BOOKING]: {
+    path: BOOKING,
+    name: 'Your booking',
+    concept: 'studio',
+    chrome: 'nav',
+    /* Arranging a visit is the Studio's, and a booking is what arranging
+       produced — so standing in one lights the Studio rather than adding a
+       sixth slot for a screen a customer visits twice per visit. */
     activates: STUDIO,
   },
   [MEMBERSHIP]: {

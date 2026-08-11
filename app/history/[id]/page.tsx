@@ -1,7 +1,8 @@
 import { VisitScreen } from '@/components/screens/VisitScreen';
 import { LiveVisitScreen } from '@/components/screens/LiveVisitScreen';
+import { BookedScreen } from '@/components/screens/BookedScreen';
 import { ServerRoom, NoCar } from '@/components/screens/ServerRoom';
-import { visitsOf, toVisit, toLiveVisit } from '@/lib/customer/project';
+import { visitsOf, toVisit, toLiveVisit, toBooked } from '@/lib/customer/project';
 
 /**
  * A customer's own room is never static. `cookies()` already forces this, but
@@ -36,6 +37,18 @@ export default async function VisitPage(
           const visit = visitsOf(car).find(v => v.id === id);
           if (visit) return <VisitScreen visit={toVisit(visit, car, picture.invoices)} />;
         }
+
+        /* A BOOKING THAT HAS NOT BECOME A VISIT YET.
+           Every notification written before events existed addresses
+           `/history/<bookingId>` — forty-two of them in production — and a
+           booking that is neither live nor sealed has no visit under that id.
+           They all landed on the no-car invitation, which reads as the
+           customer's garage having been emptied. The booking's own screen is
+           the truthful answer, so one address stays correct at every stage of
+           a visit's life. */
+        const booked = toBooked(picture, id);
+        if (booked) return <BookedScreen model={booked} />;
+
         return <NoCar />;
       }}
     </ServerRoom>

@@ -3,6 +3,8 @@ import { adminDb, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
 import { runRetentionForUser } from '@/lib/server/retention';
 import { notifyAdmins as notifyAdminsShared } from '@/lib/server/notify';
 import { isLapsed } from '@/lib/os/club';
+import { expireBookingAuthoritative } from '@/lib/server/bookingService';
+import { announceBookingClosed } from '@/lib/server/bookingNotify';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -17,7 +19,8 @@ export const maxDuration = 60;
  *  2. Low-stock check → admin notification
  *  3. Receivables aging (>3 days unpaid) → admin notification
  *  4. Pending memberships waiting on verification → admin notification
- *  5. Daily aggregate doc (dailyStats/YYYY-MM-DD) for fast reports
+ *  5. Stale bookings aged out of `pending`/`confirmed` into `expired`
+ *  6. Daily aggregate doc (dailyStats/YYYY-MM-DD) for fast reports
  */
 export async function GET(req: NextRequest) {
   try {
@@ -103,6 +106,37 @@ export async function GET(req: NextRequest) {
     d.ref.update({ status: 'expired', updatedAt: new Date() }),
   ));
   summary.expiredMemberships = lapsed.length;
+
+  /* 4c. AGE OUT REQUESTS THE STUDIO NEVER ANSWERED.
+     Three bookings sat `pending` thirteen to seventeen days past the day they
+     asked for. They were correctly excluded from "upcoming", which meant the
+     customer could not see them, could not cancel them, and were never told
+     the studio was not going to answer. A record with no terminal state does
+     not resolve; it just stops being looked at.
+
+     `expired` is not `cancelled` (lib/os/lifecycle) — nobody decided this. The
+     service is idempotent and re-checks the clock inside its own transaction,
+     so a second sweep on the same day writes nothing. */
+  const stale = await adminDb!.collection('bookings')
+    .where('status', 'in', ['pending', 'confirmed'])
+    .where('scheduledDate', '<=', new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10))
+    .get();
+  let expiredBookings = 0;
+  for (const d of stale.docs) {
+    try {
+      const r = await expireBookingAuthoritative(d.id);
+      if (r.expired) {
+        expiredBookings++;
+        const b = d.data() as {
+          userId: string; vehicleId: string; vehicleName: string; serviceName: string;
+        };
+        /* Told, in the studio's own words. An unanswered request that simply
+           vanishes is the studio deciding not to explain itself. */
+        await announceBookingClosed({ id: d.id, ...b }, 'booking_expired');
+      }
+    } catch { /* one stale booking never kills the sweep */ }
+  }
+  summary.expiredBookings = expiredBookings;
 
   // 5. Daily aggregate for fast reports (yesterday's numbers are final)
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);

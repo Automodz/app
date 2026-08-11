@@ -22,7 +22,10 @@ import {
  */
 export interface Reader {
   get(ref: DocumentReference): Promise<{ exists: boolean; data(): unknown }>;
-  get(q: Query): Promise<{ docs: { data(): unknown }[] }>;
+  /* `id` is carried because a booking being MOVED must not be counted as an
+     obstacle to its own move — see `excludeBookingIds` below. Every real
+     Firestore snapshot has it; the type simply admitted it did not. */
+  get(q: Query): Promise<{ docs: { id?: string; data(): unknown }[] }>;
 }
 
 /** The date window that can overlap `dates` once multi-day work is considered. */
@@ -38,10 +41,21 @@ export const occupancyRange = (dates: string[], durationMinutes: number) => {
   };
 };
 
+/**
+ * `excludeBookingIds` — reservations that must NOT count against the query.
+ *
+ * A booking being rescheduled occupies the bay it is about to leave. Counting
+ * it would make a two-day job unable to move by one day, and would refuse a
+ * move to an adjacent hour on the grounds that the booking itself is in the
+ * way. The exclusion is by ID, never by field matching: two identical-looking
+ * bookings on one day are two real reservations, and only one of them is the
+ * one moving.
+ */
 export const loadOccupancy = async (
   reader: Reader,
   rangeStart: string,
   rangeEnd: string,
+  opts: { excludeBookingIds?: readonly string[] } = {},
 ): Promise<{ occupants: Occupant[]; cfg: ResourceConfig }> => {
   const db = adminDb!;
   const [bookingsSnap, jobsSnap, servicesSnap, cfgSnap] = await Promise.all([
@@ -73,8 +87,10 @@ export const loadOccupancy = async (
   const durationOf = (cat: string, serviceName?: string) =>
     (serviceName && byName.get(serviceName)) || byCategory.get(cat) || 60;
 
+  const excluded = new Set(opts.excludeBookingIds ?? []);
   const occupants: Occupant[] = [];
   bookingsSnap.docs.forEach(d => {
+    if (d.id && excluded.has(d.id)) return;
     const o = bookingToOccupant(d.data() as Parameters<typeof bookingToOccupant>[0], durationOf);
     if (o) occupants.push(o);
   });

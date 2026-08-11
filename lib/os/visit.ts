@@ -11,7 +11,14 @@ export type VisitPhase =
   | 'agreed'
   | 'live'      // one of the five acts - see careAct()
   | 'archived'
-  | 'cancelled';
+  | 'cancelled'
+  /**
+   * A request the studio never answered, aged out by the clock. Distinct from
+   * `cancelled` because nobody decided it, and telling a customer their visit
+   * "was cancelled" when in fact it was never answered is the studio putting a
+   * decision it did not make into their record.
+   */
+  | 'expired';
 
 const LIVE: BookingStatus[] = [
   'vehicle_received', 'in_progress', 'quality_check', 'ready_for_delivery',
@@ -22,6 +29,7 @@ export function visitPhase(status: BookingStatus): VisitPhase {
   if (status === 'confirmed') return 'agreed';
   if (LIVE.includes(status)) return 'live';
   if (status === 'completed') return 'archived';
+  if (status === 'expired') return 'expired';
   return 'cancelled';
 }
 
@@ -70,6 +78,7 @@ export const PHASE_TITLE: Record<Exclude<VisitPhase, 'live'>, string> = {
   agreed:    'Reserved',
   archived:  'Home',
   cancelled: 'Cancelled',
+  expired:   'Not taken up',
 };
 
 export const PHASE_LINE: Record<Exclude<VisitPhase, 'live'>, string> = {
@@ -77,6 +86,8 @@ export const PHASE_LINE: Record<Exclude<VisitPhase, 'live'>, string> = {
   agreed:    'A bay is reserved. See you soon.',
   archived:  'Delivered. Thank you for trusting us.',
   cancelled: 'This visit was cancelled.',
+  /* The studio's own failure, said as the studio's own failure. */
+  expired:   'That day passed without us confirming it. Arrange another and we will.',
 };
 
 /** Ops JOB status → customer act. Jobs use `checked_in` where bookings use

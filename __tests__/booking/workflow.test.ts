@@ -18,7 +18,7 @@ const service = codeOf('lib/server/bookingService.ts');
 const route = codeOf('app/api/booking/create/route.ts');
 const notify = codeOf('lib/server/bookingNotify.ts');
 const flow = codeOf('components/studio/BookingFlow.tsx');
-const manage = codeOf('components/studio/ManageVisit.tsx');
+const manage = codeOf('components/studio/ManageBooking.tsx');
 const board = codeOf('app/admin/page.tsx');
 
 describe('no duplicate bookings', () => {
@@ -108,23 +108,44 @@ describe('no customer action disappears', () => {
   });
 });
 
+/**
+ * THE CUSTOMER IS NEVER OFFERED WHAT THE SERVER WILL REFUSE.
+ *
+ * This used to assert that `firestore.rules` let a customer write
+ * `scheduledDate` and `scheduledTime` directly, and that the sheet mirrored
+ * the rule's status list. Both were the wrong shape of guarantee: rules can
+ * check WHICH keys changed and nothing about their values, and every value in
+ * a reschedule is a business rule — a slot that exists, a bay that is free,
+ * and more than 24 hours' notice measured on a clock the customer does not
+ * control. The door is closed and the decision is the Booking Service's.
+ */
 describe('the customer is never offered what the server will refuse', () => {
   const rules = readFileSync('firestore.rules', 'utf8');
+  const bookingsBlock = rules.slice(
+    rules.indexOf('match /bookings/{bookingId}'),
+    rules.indexOf('match /visits/{id}'),
+  );
 
-  it('rules permit a customer to change only a pending or confirmed booking', () => {
-    expect(rules).toMatch(/resource\.data\.status in \['pending', 'confirmed'\]/);
+  it('no client may create or update a booking; only the admin console may', () => {
+    expect(bookingsBlock).toMatch(/allow create: if false;/);
+    expect(bookingsBlock).toMatch(/allow update: if request\.auth != null && isAdmin\(\);/);
   });
 
-  it('rules whitelist the fields a customer may touch', () => {
-    expect(rules).toMatch(/hasOnly\(\['scheduledDate', 'scheduledTime', 'status', 'cancelledAt', 'updatedAt'\]\)/);
+  it('the owner-writable field whitelist is GONE — it could not check a value', () => {
+    expect(bookingsBlock).not.toMatch(/scheduledDate/);
   });
 
-  it('rules allow a customer to move a booking only to cancelled', () => {
-    expect(rules).toMatch(/request\.resource\.data\.status == 'cancelled'/);
+  it('the one table decides what may follow what, and the service asks it', () => {
+    const lifecycle = codeOf('lib/os/lifecycle.ts');
+    expect(lifecycle).toMatch(/export const BOOKING_TRANSITIONS/);
+    expect(lifecycle).toMatch(/export function bookingTransition/);
+    expect(service).toMatch(/bookingTransition\(/);
   });
 
-  it('the sheet mirrors that rule instead of inventing one', () => {
-    expect(manage).toMatch(/changeable/);
+  it('the screen asks the projection what may be done, and says why when it may not', () => {
+    expect(manage).toMatch(/model\.moveable/);
+    expect(manage).toMatch(/moveBlockedBecause/);
+    expect(manage).toMatch(/cancelBlockedBecause/);
   });
 });
 

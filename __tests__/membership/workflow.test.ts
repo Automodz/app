@@ -181,8 +181,13 @@ describe('a cancelled visit gives back what it consumed', () => {
   });
 
   it('a customer cannot cancel work already under way', () => {
-    expect(svc).toMatch(/CANCELLABLE/);
-    expect(svc).toMatch(/'too-late'/);
+    /* The set used to be a local `CANCELLABLE` array here, a duplicate list in
+       firestore.rules and a third in the manage sheet. One table now, asked by
+       all three, so they cannot drift apart. */
+    const lifecycle = readFileSync('lib/os/lifecycle.ts', 'utf8');
+    expect(svc).toMatch(/bookingTransition\(\s*\n?\s*booking\.status, 'cancelled'/);
+    expect(lifecycle).toMatch(/CUSTOMER_CANCELLABLE/);
+    expect(lifecycle).toMatch(/'too-late'/);
   });
 
   it('the studio refusing a booking still returns the wash', () => {

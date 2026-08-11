@@ -31,6 +31,7 @@ import 'server-only';
  */
 import { adminDb } from './firebaseAdmin';
 import { notifyAdmins, whatsAppToStudio } from './notify';
+import { recordEvent } from './events';
 import { reportError } from './report';
 import type { Booking } from '@/lib/types';
 
@@ -107,4 +108,90 @@ export async function announceBooking(booking: Booking): Promise<void> {
   } catch (e) {
     await reportError(e, { op: 'booking.notify.activity', extra: { bookingId: booking.id } });
   }
+}
+
+/**
+ * Tell BOTH sides that a visit has moved.
+ *
+ * The studio, because a bay it had set aside is now free and another day's is
+ * not; and the customer, because a change they made on a phone in a tunnel may
+ * have succeeded without them seeing it.
+ *
+ * Idempotent on the destination slot: replaying the same move announces once,
+ * while a genuine second move to a different day is genuinely a second event.
+ * That is why the discriminator is the new slot rather than a counter — a
+ * counter would make a retry look like a new decision.
+ */
+export async function announceReschedule(
+  bookingId: string,
+  to: { scheduledDate: string; scheduledTime: string },
+): Promise<void> {
+  if (!adminDb) return;
+
+  let booking: Booking | null = null;
+  try {
+    const snap = await adminDb.collection('bookings').doc(bookingId).get();
+    booking = snap.exists ? ({ id: snap.id, ...(snap.data() as object) } as Booking) : null;
+  } catch (e) {
+    await reportError(e, { op: 'booking.reschedule.read', extra: { bookingId } });
+  }
+  if (!booking) return;
+
+  const when = to.scheduledTime ? `${to.scheduledDate} at ${to.scheduledTime}` : to.scheduledDate;
+  const slot = `${to.scheduledDate}-${to.scheduledTime}`;
+
+  try {
+    await notifyAdmins(
+      'booking_rescheduled',
+      'Booking moved',
+      `${booking.serviceName} · ${booking.vehicleName || booking.vehicleRegNo} · now ${when}`,
+      { url: ADMIN_BOOKING_URL(bookingId), dedupeKey: `${bookingId}_${slot}` },
+    );
+  } catch (e) {
+    await reportError(e, { op: 'booking.reschedule.admins', extra: { bookingId } });
+  }
+
+  await recordEvent({
+    type: 'booking_rescheduled',
+    customerId: booking.userId,
+    source: { kind: 'booking', id: bookingId },
+    vehicleId: booking.vehicleId,
+    subject: booking.vehicleName || booking.serviceName,
+    detail: when,
+  }, { discriminator: slot });
+
+  try {
+    await adminDb.collection('activity').doc(`booking_rescheduled_${bookingId}_${slot}`).set({
+      kind: 'booking_rescheduled',
+      bookingId,
+      customerId: booking.userId,
+      vehicleId: booking.vehicleId,
+      summary: `${booking.serviceName} moved to ${when}`,
+      actorKind: booking.rescheduledBy === 'studio' ? 'studio' : 'customer',
+      createdAt: new Date(),
+    });
+  } catch (e) {
+    await reportError(e, { op: 'booking.reschedule.activity', extra: { bookingId } });
+  }
+}
+
+/**
+ * Tell the customer their booking was cancelled or aged out.
+ *
+ * The studio is not told: it either performed the cancellation itself, or the
+ * clock did, and neither needs announcing to the people who caused it.
+ */
+export async function announceBookingClosed(
+  booking: Pick<Booking, 'id' | 'userId' | 'vehicleId' | 'vehicleName' | 'serviceName'>,
+  kind: 'booking_cancelled' | 'booking_expired',
+  detail?: string,
+): Promise<void> {
+  await recordEvent({
+    type: kind,
+    customerId: booking.userId,
+    source: { kind: 'booking', id: booking.id },
+    vehicleId: booking.vehicleId,
+    subject: booking.vehicleName || booking.serviceName,
+    detail,
+  });
 }

@@ -47,11 +47,9 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { color, space, INSET, imageSizes } from '@/design';
 import type { Service, Subscription, Vehicle } from '@/lib/types';
 import { BookingFlow } from '@/components/studio/BookingFlow';
-import { ManageVisit } from '@/components/studio/ManageVisit';
-import type { ManageVisitModel } from '@/components/studio/ManageVisit';
 import { OfflineNote } from '@/components/system';
 import {
-  Screen, Pane, Label, Statement, Rail, Action, Pulse,
+  Screen, Pane, Label, Statement, Rail, Action, Pulse, Chevron,
 } from '@/components/os';
 
 /* ── What the Studio needs to be true ──────────────────────────────────── */
@@ -91,8 +89,26 @@ export interface StudioModel {
     vehicles: Vehicle[];
     membership: Subscription | null;
   };
-  /** Visits the customer may still move or cancel. */
-  manageable: ManageVisitModel[];
+  /**
+   * Visits the customer has arranged, soonest first.
+   *
+   * Each carries the address of its OWN screen. This used to carry a whole
+   * `ManageVisitModel` and open a sheet over this room; a booking has two
+   * screens of its own now (design 09 and 10), so the row is a doorway rather
+   * than a second implementation of them.
+   */
+  manageable: StudioVisitRow[];
+}
+
+export interface StudioVisitRow {
+  id: string;
+  service: string;
+  vehicleName: string;
+  /** "Wed 12 February at 9:00 am" — worded by the projection. */
+  when: string;
+  /** The studio's word for where it stands. */
+  standing: string;
+  href: string;
 }
 
 /**
@@ -130,21 +146,8 @@ export function StudioScreen({ model }: { model: StudioModel }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const arranging = params.get('arrange') === '1';
-  const managingId = params.get('manage');
-  const managing = manageable.find(v => v.id === managingId) ?? null;
   const prefillCategory = params.get('cat');
 
-  const closeManage = () => {
-    const next = new URLSearchParams(params.toString());
-    next.delete('manage');
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
-  const openManage = (id: string) => {
-    const next = new URLSearchParams(params.toString());
-    next.set('manage', id);
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-  };
   const setArranging = (on: boolean) => {
     const next = new URLSearchParams(params.toString());
     if (on) next.set('arrange', '1');
@@ -157,12 +160,6 @@ export function StudioScreen({ model }: { model: StudioModel }) {
     if (prefillCategory && !arranging) setArranging(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillCategory]);
-
-  /** The day a visit falls on, said the way a person would say it. */
-  const longDay = (iso: string) =>
-    new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', {
-      weekday: 'short', day: 'numeric', month: 'long',
-    });
 
   /* §5.2 — the catalogue, in the studio's own order. The one marked `popular`
      is the warm pane: at most one thing on a screen is asking (§3.2), and this
@@ -287,34 +284,30 @@ export function StudioScreen({ model }: { model: StudioModel }) {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: space.line }}>
             {manageable.map(v => (
+              /* THE WHOLE ROW IS THE DOOR (§21.3, §4.3 — depth of one). It was
+                 a pane with a small "Change or cancel" link inside it, which
+                 made the target the words rather than the visit. */
               <Pane
                 key={v.id}
+                as="a"
+                {...{ href: v.href }}
+                className="am-tap"
                 style={{
                   padding: `${space.gap}px ${space.gap + 2}px`,
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  gap: space.line,
+                  gap: space.line, textDecoration: 'none',
                 }}
               >
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <span style={{ fontSize: 15, color: color.ink }}>{v.service}</span>
                   <Label style={{ fontSize: 10, letterSpacing: '0.14em' }}>
-                    {v.vehicleName} · {longDay(v.scheduledDate)}
-                    {v.scheduledTime ? ` at ${v.scheduledTime}` : ''}
+                    {v.vehicleName} · {v.when}
                   </Label>
                 </span>
-                {v.changeable ? (
-                  <button
-                    type="button"
-                    onClick={() => openManage(v.id)}
-                    className="am-tap am-label"
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: color.amber, letterSpacing: '0.16em', flexShrink: 0,
-                    }}
-                  >
-                    Change or cancel
-                  </button>
-                ) : null}
+                <span style={{ display: 'flex', alignItems: 'center', gap: space.breath, flexShrink: 0 }}>
+                  <Label style={{ fontSize: 9, letterSpacing: '0.16em' }}>{v.standing}</Label>
+                  <Chevron size={16} />
+                </span>
               </Pane>
             ))}
           </div>
@@ -423,10 +416,6 @@ export function StudioScreen({ model }: { model: StudioModel }) {
         membership={booking.membership}
         prefillCategory={prefillCategory}
       />
-
-      {/* MOVING OR CANCELLING ONE. Home's "Manage the visit" lands here with
-          `?manage=<id>` — the address the resolver already emits. */}
-      <ManageVisit open={managing !== null} onClose={closeManage} visit={managing} />
     </Screen>
   );
 }

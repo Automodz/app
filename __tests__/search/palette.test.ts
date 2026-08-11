@@ -332,8 +332,16 @@ describe('§21.4 — it is the way you navigate, not a feature of one screen', (
       .map(m => m[2]);
     expect(paths.length).toBeGreaterThanOrEqual(7);
     for (const path of paths) {
-      const page = path === '/' ? 'app/page.tsx' : `app${path}/page.tsx`;
-      expect(codeOf(page)).toMatch(/ServerRoom/);
+      /* A room's address is a PREFIX, and some rooms have no index page —
+         a booking is always a booking, so `/booking` exists only as
+         `/booking/[id]`. Every page under the prefix is checked, which is a
+         stronger statement than checking one file: a room with three screens
+         must feed the palette from all three. */
+      const dir = path === '/' ? 'app' : `app${path}`;
+      const pages = (path === '/' ? ['app/page.tsx'] : walk(dir))
+        .filter(f => /page\.tsx$/.test(f));
+      expect(pages.length).toBeGreaterThan(0);
+      for (const page of pages) expect(codeOf(page)).toMatch(/ServerRoom/);
     }
   });
 

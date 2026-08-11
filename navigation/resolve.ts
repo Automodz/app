@@ -14,10 +14,23 @@
 import type { NextAction, ActionIntent } from '@/lib/os/action';
 import {
   STUDIO, GARAGE, MEMBERSHIP, HOME, HISTORY, PROFILE, VEHICLE, CARS, SELL, WELCOME,
+  BOOKING,
 } from './routes';
 
 /** Where a visit is watched or read. */
 const visit = (id?: string) => (id ? `/history/${id}` : '/history');
+
+/**
+ * A booking's own two screens — the confirmation and the place it is changed.
+ *
+ * `manage_visit` used to resolve to `${STUDIO}?manage=${id}`, a sheet over the
+ * Studio. One address per screen, so a notification, a share and the back
+ * button all behave.
+ */
+const booking = (id: string) => `${BOOKING}/${encodeURIComponent(id)}`;
+const bookingManage = (id: string) => `${booking(id)}/manage`;
+/** The calendar file for a booking. A FILE, not a room. */
+const bookingCalendar = (id: string) => `/api/booking/${encodeURIComponent(id)}/calendar`;
 
 /**
  * The marketplace, with a search already applied.
@@ -74,7 +87,7 @@ const RESOLVERS: Record<ActionIntent, (a: NextAction) => string> = {
   add_car:             () => `${GARAGE}?add=1`,
   arrange_visit:       () => studio(),
   arrange_again:       () => studio(),
-  manage_visit:        a => (a.params?.visitId ? `${STUDIO}?manage=${a.params.visitId}` : STUDIO),
+  manage_visit:        a => (a.params?.visitId ? bookingManage(a.params.visitId) : STUDIO),
   follow_visit:        a => visit(a.params?.visitId),
   see_visit:           a => visit(a.params?.visitId),
   renew_protection:    a => studio(a.params?.category),
@@ -121,6 +134,9 @@ export type Destination =
   | { to: 'profile.panel'; panel: 'profile' | 'notifications' | 'referral' | 'delete' }
   | { to: 'vehicle'; vehicleId?: string }
   | { to: 'visit'; visitId: string }
+  | { to: 'booking'; bookingId: string }
+  | { to: 'booking.manage'; bookingId: string }
+  | { to: 'booking.calendar'; bookingId: string }
   | { to: 'privacy' }
   | { to: 'terms' }
   | { to: 'cars' }
@@ -157,6 +173,9 @@ export const hrefForDestination = (d: Destination): string => {
     case 'profile.panel':    return `${PROFILE}?panel=${d.panel}`;
     case 'vehicle':          return d.vehicleId ? `${VEHICLE}?car=${d.vehicleId}` : VEHICLE;
     case 'visit':            return visit(d.visitId);
+    case 'booking':          return booking(d.bookingId);
+    case 'booking.manage':   return bookingManage(d.bookingId);
+    case 'booking.calendar': return bookingCalendar(d.bookingId);
     case 'privacy':          return '/privacy';
     case 'terms':            return '/terms';
     case 'cars':             return CARS;
@@ -186,6 +205,35 @@ export const hrefForDestination = (d: Destination): string => {
  * 404. This is the one place that answer is written, so the push payload, the
  * stored notification and the service worker cannot disagree about it.
  */
+export const eventHref = (
+  event: string,
+  source: { kind: string; id: string },
+): string => {
+  /* A booking's own screen while it is still a booking; the visit's while the
+     car is here or after it has been sealed. The distinction is the event, not
+     the collection the id came from — `vehicle_ready` names a booking id and
+     yet belongs on the visit, because that is the surface that owns the fact
+     (§17.3). */
+  switch (event) {
+    case 'booking_confirmed':
+    case 'booking_rescheduled':
+    case 'booking_cancelled':
+    case 'booking_expired':
+      return booking(source.id);
+    case 'approval_requested':
+    case 'approval_approved':
+    case 'approval_declined':
+      return source.kind === 'approval' ? `/approval/${encodeURIComponent(source.id)}` : visit(source.id);
+    case 'vehicle_ready':
+    case 'payment_required':
+    case 'payment_settled':
+    case 'visit_completed':
+      return visit(source.id);
+    default:
+      return source.kind === 'booking' ? booking(source.id) : visit(source.id);
+  }
+};
+
 export const notificationHref = (n: {
   type?: string;
   bookingId?: string;

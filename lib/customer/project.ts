@@ -9,7 +9,7 @@
  * fallback — comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
-import type { Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
+import type { Booking, Invoice, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
 import { PROTECTION_TITLE, MEMBERSHIP_PLANS } from '@/lib/types';
 import { COMPANY, waLink } from '@/lib/company';
 import { healthOf, termDaysLeft, type Health, type Term } from '@/lib/os/term';
@@ -22,6 +22,11 @@ import {
 import type { CarPicture, CustomerPicture } from './source';
 import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst, isUpcoming } from './ownership';
 import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
+import {
+  changeWindowOf, bookingTransition, scheduledEpochMs,
+  CHANGE_WINDOW_HOURS, STUDIO_UTC_OFFSET_MIN,
+} from '@/lib/os/lifecycle';
+import { spanDays, DAY_OPEN_MIN, WORK_DAY_MIN } from '@/lib/availability';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
 import { projectMoments, sortMoments, groupByMonth, SHOT_CAPTION } from '@/lib/os/moment';
@@ -37,6 +42,8 @@ import type { PhotographSource } from '@/components/vehicle';
 import type { RegionId } from '@/components/vehicle';
 import type { HistoryModel, HistoryVisit } from '@/components/screens/HistoryScreen';
 import type { StudioModel } from '@/components/screens/StudioScreen';
+import type { BookedModel, BookedRow } from '@/components/screens/BookedScreen';
+import type { ManageBookingModel } from '@/components/studio/ManageBooking';
 import type { YouModel } from '@/components/screens/YouScreen';
 import type { MembershipModel } from '@/components/screens/MembershipScreen';
 
@@ -72,11 +79,15 @@ const TONE: Record<Health, HomeProtection['tone']> = {
  * Not `/history/{id}`. Home's NEXT VISIT block pointed there, and a booking has
  * no record until it is sealed — so tapping the visit you have booked told a
  * customer with four cars in their garage "Your car's place is ready. Add your
- * car." The Studio's own sheet is the one surface a pending visit HAS, and the
- * Vehicle room was already pointing at it; this makes that the single answer.
+ * car."
+ *
+ * It then pointed at `/studio?manage=<id>`, a sheet over the Studio, which was
+ * the only surface a pending visit had. A booking has its OWN two screens now
+ * (design 09 and 10), so this is the confirmation — what the studio holds —
+ * and the manage screen is one tap further in, exactly as the design draws it.
  */
 const manageHref = (bookingId: string) =>
-  `${hrefForDestination({ to: 'studio' })}?manage=${bookingId}`;
+  hrefForDestination({ to: 'booking', bookingId });
 
 /**
  * §14.3 and §14.4 in one place: the unit that suits the term, at the precision
@@ -1186,6 +1197,271 @@ export function toVisit(
   };
 }
 
+/* ── THE BOOKING ─────────────────────────────────────────────────────────── */
+
+/** "9:00 am". The hour as a person says it, never "09:00" on a confirmation. */
+export function spokenHour(time?: string): string | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(time ?? '');
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  const suffix = h < 12 ? 'am' : 'pm';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return min === 0 ? `${h12} ${suffix}` : `${h12}:${m[2]} ${suffix}`;
+}
+
+/** "Wednesday 12 February" — the day named, because a confirmation is read once. */
+function fullDay(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const weekday = new Date(Date.UTC(y, m - 1, d))
+    .toLocaleDateString('en-IN', { weekday: 'long', timeZone: 'UTC' });
+  return `${weekday} ${d} ${MONTHS[m - 1]}`;
+}
+
+/** "Thu 12 Feb" — the compact form, for a chip. */
+export function shortDay(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const weekday = new Date(Date.UTC(y, m - 1, d))
+    .toLocaleDateString('en-IN', { weekday: 'short', timeZone: 'UTC' });
+  return `${weekday} ${d} ${MONTHS[m - 1].slice(0, 3)}`;
+}
+
+/**
+ * WHEN, ACROSS HOWEVER MANY DAYS IT TAKES.
+ *
+ * A two-day job said as one day is the single most consequential thing this
+ * product could get wrong on a confirmation: the customer plans a morning
+ * without a car and loses two.
+ */
+function whenWords(b: Booking): string {
+  const start = fullDay(b.scheduledDate);
+  const hour = spokenHour(b.scheduledTime);
+  const end = b.endDate && b.endDate !== b.scheduledDate ? b.endDate : null;
+  if (end) return `${shortDay(b.scheduledDate)} – ${shortDay(end)}`;
+  return hour ? `${start} at ${hour}` : start;
+}
+
+/** "2 days in the bay" / "4 hours in the studio" — the same wording as screen 07. */
+export function bayWords(minutes: number): string {
+  if (!Number.isFinite(minutes) || minutes <= 0) return 'To be confirmed';
+  if (minutes < WORK_DAY_MIN) {
+    const h = Math.max(1, Math.round(minutes / 60));
+    return `${h} hour${h === 1 ? '' : 's'}`;
+  }
+  const d = spanDays(DAY_OPEN_MIN, minutes);
+  return `${d} day${d === 1 ? '' : 's'}`;
+}
+
+export interface FoundBooking {
+  booking: Booking;
+  car: CarPicture;
+}
+
+/**
+ * ONE BOOKING, FOUND BY ID ACROSS EVERY CAR THE CUSTOMER OWNS.
+ *
+ * Ownership is structural: `CustomerPicture` was built by querying `bookings`
+ * where `userId == <the verified session's uid>`, so a booking that is not
+ * this customer's is not in here to be found. There is no id check to forget.
+ */
+export function findBooking(picture: CustomerPicture, id: string): FoundBooking | null {
+  for (const car of picture.cars) {
+    const booking = car.bookings.find(b => b.id === id);
+    if (booking) return { booking, car };
+  }
+  return null;
+}
+
+/** The studio's word for a booking's standing, on its own two screens. */
+function standingWord(b: Booking): string {
+  switch (visitPhase(b.status)) {
+    case 'proposed':  return 'Awaiting the studio';
+    case 'agreed':    return 'Confirmed';
+    case 'live':      return 'In the studio';
+    case 'archived':  return 'Finished';
+    case 'expired':   return 'Not taken up';
+    case 'cancelled': return 'Cancelled';
+  }
+}
+
+/**
+ * SCREEN 09 — BOOKED.
+ *
+ * Every figure comes from the stored booking, which the Booking Service wrote
+ * from its own arithmetic. Nothing is recomputed here, so this screen cannot
+ * quote a total the studio does not hold.
+ */
+export function toBooked(
+  picture: CustomerPicture, id: string, now = new Date(),
+): BookedModel | null {
+  const found = findBooking(picture, id);
+  if (!found) return null;
+  const { booking: b, car } = found;
+
+  const phase = visitPhase(b.status);
+  const awaiting = phase === 'proposed';
+  const settled = phase === 'archived' || phase === 'cancelled' || phase === 'expired';
+  const duration = b.serviceDurationMinutes ?? 60;
+
+  const back = b.endDate && b.endDate !== b.scheduledDate
+    ? `${longDate(b.endDate)}, end of day`
+    : [spokenHour(endOfSlot(b.scheduledTime, duration)) ?? null, 'the same day']
+        .filter(Boolean).join(' · ');
+
+  /* HOW THE CAR GETS THERE. The legs are what the customer actually chose, and
+     the address is the SNAPSHOT stored on the booking — never the saved
+     address as it stands today, which they may have edited since. */
+  const collection = b.pickupRequired && b.dropRequired
+    ? `We collect it and bring it back${b.pickupAddress ? ` — ${b.pickupAddress}` : ''}.`
+    : b.pickupRequired
+      ? `We collect it${b.pickupAddress ? ` from ${b.pickupAddress}` : ''}. You collect it from the studio.`
+      : b.dropRequired
+        ? `Bring it to the studio; we bring it back${b.pickupAddress ? ` to ${b.pickupAddress}` : ''}.`
+        : 'Bring it to the studio — Maninagar, Ahmedabad.';
+
+  const rows: BookedRow[] = [
+    {
+      label: 'Work',
+      value: b.serviceName,
+      detail: [car.vehicle.name, b.scope?.label].filter(Boolean).join(' · ') || undefined,
+    },
+    { label: 'In the bay', value: bayWords(duration) },
+    { label: 'Back to you', value: back },
+    {
+      label: 'Estimate',
+      value: rupees(b.totalAmount ?? 0),
+      detail: b.usedMembershipWash
+        ? 'Covered by your membership'
+        : b.discount?.label ?? 'Final on inspection',
+    },
+  ];
+
+  const window = changeWindowOf(b, now);
+
+  return {
+    headline: awaiting ? 'We have your request.'
+      : phase === 'agreed' ? 'The bay is yours.'
+      : phase === 'live' ? 'Your car is with us.'
+      : phase === 'archived' ? 'Back with you.'
+      : phase === 'expired' ? 'That day passed.'
+      : 'This visit was cancelled.',
+    standing: standingWord(b),
+    awaiting,
+    when: whenWords(b),
+    collection,
+    rows,
+    /* NO CALENDAR ENTRY FOR A BAY NOBODY HAS PROMISED. A request the studio
+       has not accepted is not an appointment, and putting one in an owner's
+       calendar would be the product asserting something the studio has not. */
+    calendarHref: awaiting || settled
+      ? undefined
+      : hrefForDestination({ to: 'booking.calendar', bookingId: b.id }),
+    manageHref: hrefForDestination({ to: 'booking.manage', bookingId: b.id }),
+    lockedBecause: window.allowed || phase === 'proposed'
+      ? undefined
+      : lockedWords(window.reason),
+    visitHref: phase === 'live'
+      ? hrefForDestination({ to: 'visit', visitId: b.id }) : undefined,
+    homeHref: hrefForDestination({ to: 'home' }),
+  };
+}
+
+/** When the slot ends, from the start and the work's own duration. */
+function endOfSlot(time: string | undefined, durationMinutes: number): string | undefined {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(time ?? '');
+  if (!m) return undefined;
+  const total = Number(m[1]) * 60 + Number(m[2]) + durationMinutes;
+  if (total >= 24 * 60) return undefined;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** Why it can no longer be changed, in the studio's words. */
+function lockedWords(reason: string): string {
+  switch (reason) {
+    case 'inside-window':
+      return 'Your slot is less than a day away, so the studio is already '
+        + 'preparing for it. Call us and we will sort it.';
+    case 'work-started':
+      return 'The studio has started on this one, so it can no longer be '
+        + 'changed here. Call us and we will sort it.';
+    case 'already-completed':
+      return 'This visit is finished. Its record is in your car’s history.';
+    case 'already-cancelled':
+      return 'This visit was cancelled.';
+    case 'already-expired':
+      return 'That day passed without us confirming it. Arrange another and we will.';
+    default:
+      return 'This visit can no longer be changed here. Call us and we will sort it.';
+  }
+}
+
+/**
+ * SCREEN 10 — MANAGE BOOKING.
+ *
+ * `openings` is passed in rather than computed, because it depends on every
+ * other customer's bookings and this file may not read a database (§1). The
+ * page loads them through `lib/server/openings.ts`, from the same occupancy
+ * the Booking Service accepts against.
+ */
+export function toManageBooking(
+  picture: CustomerPicture,
+  id: string,
+  openings: { date: string; time: string }[] = [],
+  now = new Date(),
+): ManageBookingModel | null {
+  const found = findBooking(picture, id);
+  if (!found) return null;
+  const { booking: b, car } = found;
+
+  const window = changeWindowOf(b, now);
+  const canCancel = bookingTransition(b.status, 'cancelled', 'customer').ok;
+
+  /* WHEN THE FREE CHANGE RUNS OUT, stated before it does rather than after.
+     The design's promise is "free until 24 hours before", and a promise with
+     no stated deadline is one the customer discovers by being refused. */
+  const at = scheduledEpochMs(b.scheduledDate, b.scheduledTime);
+  const deadline = at === null ? null : new Date(at - CHANGE_WINDOW_HOURS * 3600_000);
+  const freeUntil = window.allowed && deadline
+    ? `Free to change until ${longDate(isoInStudio(deadline))}, `
+      + `${spokenHour(hourInStudio(deadline)) ?? ''}.`
+    : undefined;
+
+  return {
+    id: b.id,
+    standing: standingWord(b),
+    headline: b.serviceName,
+    vehicleName: car.vehicle.name,
+    when: whenWords(b),
+    freeUntil,
+    moveable: window.allowed,
+    moveBlockedBecause: window.allowed ? undefined : lockedWords(window.reason),
+    cancellable: canCancel,
+    /* A booking may be cancellable while it may no longer be MOVED — inside
+       the last day the studio has prepared for a slot, but the customer may
+       still withdraw. Two rules, two answers, never one control for both. */
+    cancelBlockedBecause: canCancel ? undefined : lockedWords(
+      b.status === 'cancelled' ? 'already-cancelled'
+        : b.status === 'expired' ? 'already-expired'
+        : b.status === 'completed' ? 'already-completed'
+        : 'work-started',
+    ),
+    openings: openings.map(o => ({ ...o, label: shortDay(o.date) })),
+    backHref: hrefForDestination({ to: 'booking', bookingId: b.id }),
+    homeHref: hrefForDestination({ to: 'home' }),
+  };
+}
+
+/** A studio-local date from an instant. The studio keeps studio time (§lifecycle). */
+function isoInStudio(d: Date): string {
+  return new Date(d.getTime() + STUDIO_UTC_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
+}
+function hourInStudio(d: Date): string {
+  return new Date(d.getTime() + STUDIO_UTC_OFFSET_MIN * 60_000).toISOString().slice(11, 16);
+}
+
 /* ── STUDIO ──────────────────────────────────────────────────────────────── */
 
 /**
@@ -1297,10 +1573,9 @@ export function toStudio(picture: CustomerPicture, now = new Date()): StudioMode
         id: b.id,
         service: b.serviceName,
         vehicleName: car.vehicle.name,
-        scheduledDate: b.scheduledDate,
-        scheduledTime: b.scheduledTime,
-        durationMinutes: b.serviceDurationMinutes ?? 60,
-        changeable: true,
+        when: whenWords(b),
+        standing: standingWord(b),
+        href: hrefForDestination({ to: 'booking', bookingId: b.id }),
       })),
   };
 }

@@ -94,11 +94,14 @@ describe('an unread notification surfaces as state on the car it belongs to', ()
     expect(n?.href).not.toBe('/history/b1');
   });
 
-  it('A VISIT STILL TO COME — the doorway opens where it can be changed', () => {
+  it('A VISIT STILL TO COME — the doorway opens the booking itself', () => {
+    /* It used to open `/studio?manage=b1`, a sheet over the Studio. A booking
+       has its own address now (design screen 09), so the doorway opens the
+       thing the notification is ABOUT rather than a room with a sheet on it. */
     const c = car({ bookings: [booking({ status: 'pending', scheduledDate: '2026-08-04' })] });
     const n = noticeOf(picture(c, [notif({ title: 'Booking Confirmed' })]), c, NOW);
 
-    expect(n?.href).toBe('/studio?manage=b1');
+    expect(n?.href).toBe('/booking/b1');
   });
 
   it('NO OWNING SURFACE, NO MARK — and no destination is invented', () => {

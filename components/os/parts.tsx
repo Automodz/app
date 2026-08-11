@@ -200,7 +200,7 @@ export function Value({ children, tone = color.champagne }: { children: ReactNod
    a screen offers two things and neither is the commitment (the visit's "see
    today's photos" / "message the studio"). */
 export function Action(
-  { children, href, onClick, quiet = false, tone = 'amber', style, ...rest }:
+  { children, href, onClick, quiet = false, tone = 'amber', style, disabled = false, download = false, ...rest }:
   {
     children: ReactNode;
     href?: string;
@@ -208,6 +208,18 @@ export function Action(
     quiet?: boolean;
     tone?: 'amber' | 'champagne';
     style?: CSSProperties;
+    /**
+     * A control that is momentarily unusable — a move with no date chosen yet,
+     * a request already in flight. NOT a permanently dead control: §10.5 says
+     * a screen must explain rather than disable, and every caller here pairs a
+     * disabled state with a sentence saying what would enable it.
+     */
+    disabled?: boolean;
+    /**
+     * The href is a FILE, not a place. Without this the browser navigates to
+     * the calendar route and tries to render `text/calendar` as a page.
+     */
+    download?: boolean;
     'aria-label'?: string;
   },
 ) {
@@ -222,7 +234,6 @@ export function Action(
     letterSpacing: '0.02em',
     textAlign: 'center',
     textDecoration: 'none',
-    cursor: 'pointer',
     border: quiet ? '1px solid rgba(255,255,255,0.08)' : 'none',
     /* OPAQUE STOPS, NOT ALPHA. The design draws these as amber and champagne
        at 92%→64% alpha over the room, and at the weak end that composites to
@@ -241,11 +252,42 @@ export function Action(
     width: '100%',
     font: 'inherit',
     fontWeight: 400,
+    /* Dimmed rather than redrawn: it is the SAME control, momentarily not
+       ready, and a control that changes shape when it becomes usable is a
+       different control appearing. */
+    opacity: disabled ? 0.45 : undefined,
+    cursor: disabled ? 'default' : 'pointer',
     ...style,
   };
 
-  if (href) return <Link href={href} className="am-tap" style={base} {...rest}>{children}</Link>;
-  return <button type="button" onClick={onClick} className="am-tap" style={base} {...rest}>{children}</button>;
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="am-tap"
+        style={base}
+        /* `download` on a Next.js Link is passed through to the anchor; a
+           calendar file must be handed to the calendar, not navigated to. */
+        {...(download ? { download: true } : {})}
+        {...rest}
+      >
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-disabled={disabled || undefined}
+      className="am-tap"
+      style={base}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
 }
 
 /* ── THE STAT ────────────────────────────────────────────────────────────

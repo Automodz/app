@@ -99,18 +99,27 @@ service cloud.firestore {
     //    rules cannot. A ₹2,20,000 PPF for ₹1 satisfied every condition here.
     //    Rules can validate shape; only a server can validate arithmetic. So
     //    the arithmetic moved, and this door closed.
+    //    UPDATE IS SERVER-ONLY TOO, NOW.
+    //    The previous rule let the owner write `scheduledDate` and
+    //    `scheduledTime` directly, on the grounds that it could check WHICH
+    //    keys changed. It could not check their values, and every value here
+    //    is a business rule: the destination must be a slot that exists, that
+    //    the studio is not already working, and that is more than 24 hours
+    //    away — measured against the booking's own timestamp on a clock the
+    //    customer does not control. A browser deciding any of those is a
+    //    browser deciding whether a bay is free.
+    //    Cancelling was equally unsound here: a cancellation must return the
+    //    membership wash and the promo the booking spent, and those live on
+    //    documents a customer may not touch, so a client-side cancel silently
+    //    destroyed an entitlement the customer had paid for.
+    //    Both go through the Booking Service: /api/booking/reschedule and
+    //    /api/booking/cancel. Rules can validate shape; only a server can
+    //    validate a bay.
     match /bookings/{bookingId} {
       allow read: if request.auth != null &&
         (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if false;
-      allow update: if request.auth != null &&
-        (isAdmin() ||
-         (resource.data.userId == request.auth.uid &&
-          resource.data.status in ['pending', 'confirmed'] &&
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['scheduledDate', 'scheduledTime', 'status', 'cancelledAt', 'updatedAt']) &&
-          (request.resource.data.status == resource.data.status ||
-           request.resource.data.status == 'cancelled')));
+      allow update: if request.auth != null && isAdmin();
       allow delete: if request.auth != null && isAdmin();
     }
 

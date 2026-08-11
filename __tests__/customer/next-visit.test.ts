@@ -63,7 +63,10 @@ const asked = (cars: CarPicture[]) => {
   const home = toHome(p, NOW);
   const vehicleRoom = toVehicle(cars[0], p, NOW);
   const studio = toStudio(p, NOW);
-  const idIn = (href?: string) => href?.match(/manage=([^&]+)/)?.[1];
+  /* A booking's own address is `/booking/<id>` (design screen 09). It was
+     `/studio?manage=<id>` — a sheet over another room — until the two screens
+     the design draws for a booking were built. */
+  const idIn = (href?: string) => href?.match(/\/booking\/([^/?&]+)/)?.[1];
   return {
     engine: nextVisitOf(cars[0], NOW)?.id,
     /* The hero's own sentence, which is where the contradiction showed. */
@@ -195,7 +198,7 @@ describe('the next visit', () => {
     /* The hero is about the car being here, so it does not own the booking —
        and the section carries it, because nothing else on the screen does. */
     expect(home?.live).toBeDefined();
-    expect(home?.next?.href).toContain('manage=ahead');
+    expect(home?.next?.href).toContain('/booking/ahead');
     expect(toVehicle(c, picture([c]), NOW).followHref).toContain('here');
   });
 
@@ -240,8 +243,8 @@ describe('the next visit', () => {
     const home = toHome(picture([c]), NOW);
     const room = toVehicle(c, picture([c]), NOW);
 
-    expect(home?.next?.href).toBe('/studio?manage=ahead');
-    expect(room.next?.manageHref).toBe('/studio?manage=ahead');
+    expect(home?.next?.href).toBe('/booking/ahead');
+    expect(room.next?.manageHref).toBe('/booking/ahead');
     expect(home?.next?.href).not.toMatch(/^\/history\//);
   });
 });

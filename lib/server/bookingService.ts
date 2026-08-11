@@ -2,10 +2,15 @@ import { FieldValue, Timestamp, type DocumentReference, type Transaction } from 
 import { adminDb } from './firebaseAdmin';
 import { loadOccupancy, occupancyRange, type Reader } from './occupancy';
 import { decidePrice, applyDiscount } from '@/lib/services/pricing';
-import { computeAvailability, candidateSlots } from '@/lib/availability';
+import { computeAvailability, candidateSlots, spanEndDate } from '@/lib/availability';
+import {
+  bookingTransition, changeWindowOf, scheduledEpochMs,
+  BOOKING_EXPIRED, BOOKING_TERMINAL,
+  type BookingState,
+} from '@/lib/os/lifecycle';
 import { pickupFees } from '@/lib/services/pricing';
 import type {
-  Booking, BookingDiscount, BookingStatus, Job, JobServiceItem, JobStatus, Promo, Subscription,
+  Booking, BookingDiscount, Job, JobServiceItem, JobStatus, Promo, Subscription,
 } from '@/lib/types';
 
 /**
@@ -157,13 +162,17 @@ const loadMembership = async (
 const assertSlotOpen = async (
   reader: Reader,
   date: string, time: string, category: string, durationMinutes: number,
+  /* The booking being MOVED is not an obstacle to its own move. */
+  opts: { excludeBookingId?: string } = {},
 ) => {
   if (!isDateStr(date) || !isTimeStr(time)) throw new BookingError('bad-slot', 400);
   if (date < today()) throw new BookingError('slot-in-the-past', 400);
   if (!candidateSlots(durationMinutes).includes(time)) throw new BookingError('not-a-slot', 400);
 
   const { rangeStart, rangeEnd } = occupancyRange([date], durationMinutes);
-  const { occupants, cfg } = await loadOccupancy(reader, rangeStart, rangeEnd);
+  const { occupants, cfg } = await loadOccupancy(reader, rangeStart, rangeEnd, {
+    excludeBookingIds: opts.excludeBookingId ? [opts.excludeBookingId] : undefined,
+  });
   const { fullSlots } = computeAvailability([date], category, durationMinutes, occupants, cfg);
   if ((fullSlots[date] ?? []).includes(time)) throw new BookingError('slot-taken');
 };
@@ -325,6 +334,16 @@ const createAppointment = async (
       totalAmount,
       scheduledDate: intent.scheduledDate,
       scheduledTime: intent.scheduledTime,
+      /* THE LAST DAY THE BAY IS HELD. Equal to `scheduledDate` for anything
+         that finishes the same day, so every booking carries the field and no
+         reader has to decide whether an absent one means "same day" or "we
+         never worked it out". Derived from the duration by the availability
+         engine — the same expansion that reserves the bay. */
+      endDate: spanEndDate(
+        intent.scheduledDate,
+        Number(intent.scheduledTime.slice(0, 2)) * 60 + Number(intent.scheduledTime.slice(3, 5)),
+        duration,
+      ),
       status: 'pending',
       paymentMethod: intent.paymentMethod === 'upi' ? 'upi' : 'cash',
       paymentStatus: 'pending',
@@ -588,8 +607,15 @@ export interface CancelResult {
   promoRestored: boolean;
 }
 
-/** Statuses a booking may still be cancelled from. Mirrors firestore.rules. */
-const CANCELLABLE: BookingStatus[] = ['pending', 'confirmed'];
+/**
+ * WHICH STATUSES MAY STILL BE CANCELLED IS NOT THIS FILE'S OPINION.
+ *
+ * It used to be: a local `CANCELLABLE` array here, a duplicate list in
+ * `firestore.rules`, and a third in `ManageVisit`'s `changeable` flag. The one
+ * table lives in `lib/os/lifecycle` now, and every caller asks it — so the
+ * sheet cannot offer an act the server refuses, and the rules cannot allow one
+ * the service rejects.
+ */
 
 /**
  * Cancel a booking and return everything it consumed, in ONE commit.
@@ -627,10 +653,12 @@ export const cancelBookingAuthoritative = async (
       return { id: bookingId, alreadyCancelled: true, washRestored: false, promoRestored: false };
     }
 
-    /* A customer may not cancel work already under way; the studio may. */
-    if (!opts.byStaff && !CANCELLABLE.includes(booking.status)) {
-      throw new BookingError('too-late', 409);
-    }
+    /* A customer may not cancel work already under way; the studio may. The
+       machine decides, and returns the reason the API hands back verbatim. */
+    const move = bookingTransition(
+      booking.status, 'cancelled', opts.byStaff ? 'studio' : 'customer',
+    );
+    if (!move.ok) throw new BookingError(move.reason ?? 'too-late', 409);
 
     let washRestored = false;
     let promoRestored = false;
@@ -692,4 +720,194 @@ export const cancelBookingAuthoritative = async (
 
     return { id: bookingId, alreadyCancelled: false, washRestored, promoRestored };
   }, { maxAttempts: 8 });
+};
+
+/* ────────────────────────────────────────────────────────────────────────────
+   MOVING A VISIT — design screen 10.
+
+   THE RULE THIS ENFORCES IS NOT A UI RULE. Until now `rescheduleBooking` was
+   `updateDoc(doc(db,'bookings',id), { scheduledDate, scheduledTime })` from the
+   browser, permitted by a rule that checked only which KEYS changed. So a
+   customer could move a visit to an hour the studio was already working, to a
+   date in the past, to a slot that does not exist, and — the one that costs
+   money — to two hours before a two-day PPF the studio had already ordered
+   film for. The browser also decided whether the 24-hour window had closed,
+   from the browser's own clock, which anybody can set.
+
+   Everything below runs on the server's clock, against the booking's OWN
+   scheduled timestamp, inside the transaction that writes the move.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface RescheduleResult {
+  id: string;
+  from: { scheduledDate: string; scheduledTime: string };
+  to: { scheduledDate: string; scheduledTime: string; endDate: string };
+  /** How many times this booking has now been moved. */
+  moves: number;
+  /** True when the request asked for the slot it already held. */
+  unchanged: boolean;
+}
+
+export const rescheduleBookingAuthoritative = async (
+  callerUid: string,
+  bookingId: string,
+  next: { scheduledDate: string; scheduledTime: string },
+  opts: { byStaff?: boolean; now?: Date } = {},
+): Promise<RescheduleResult> => {
+  if (!adminDb) throw new BookingError('not-configured', 503);
+  if (!bookingId || typeof bookingId !== 'string') throw new BookingError('bad-booking', 400);
+  if (!isDateStr(next?.scheduledDate) || !isTimeStr(next?.scheduledTime)) {
+    throw new BookingError('bad-slot', 400);
+  }
+  const db = adminDb;
+  const now = opts.now ?? new Date();
+
+  return db.runTransaction(async t => {
+    const ref = db.collection('bookings').doc(bookingId);
+    const snap = await t.get(ref);
+    if (!snap.exists) throw new BookingError('not-found', 404);
+    const booking = { id: snap.id, ...(snap.data() as object) } as Booking;
+
+    if (!opts.byStaff && booking.userId !== callerUid) {
+      throw new BookingError('not-yours', 403);
+    }
+
+    /* ── 1 · a settled booking has no slot left to move ──
+       A move is not a status change, so the transition table is not the guard
+       here; what it does settle is that these three states are final, and a
+       record that is final may not acquire a new date under any caller. */
+    if (BOOKING_TERMINAL.includes(booking.status)) {
+      throw new BookingError(`already-${booking.status}`, 409);
+    }
+
+    /* ── 2 · the 24-hour rule, on the SERVER's clock ──
+       Measured from the booking's own scheduled timestamp, interpreted in
+       studio time. Staff may move a booking at any time — the studio ringing a
+       customer to say "we can take you earlier" is the case this exists for,
+       and it is the studio's own bay to give away. */
+    if (!opts.byStaff) {
+      const window = changeWindowOf(
+        {
+          status: booking.status as BookingState,
+          scheduledDate: booking.scheduledDate,
+          scheduledTime: booking.scheduledTime,
+        },
+        now,
+      );
+      if (!window.allowed) throw new BookingError(window.reason, 409);
+    }
+
+    /* Asking for the slot it already holds is not an error and writes nothing:
+       a double tap must not consume a move or re-announce the visit. */
+    if (booking.scheduledDate === next.scheduledDate
+        && booking.scheduledTime === next.scheduledTime) {
+      return {
+        id: bookingId,
+        from: { scheduledDate: booking.scheduledDate, scheduledTime: booking.scheduledTime },
+        to: {
+          scheduledDate: booking.scheduledDate,
+          scheduledTime: booking.scheduledTime,
+          endDate: booking.endDate ?? booking.scheduledDate,
+        },
+        moves: booking.rescheduleCount ?? 0,
+        unchanged: true,
+      };
+    }
+
+    /* ── 3 · the destination must be a slot the studio can actually work ──
+       The SAME occupancy the availability endpoint offers from, inside this
+       transaction, with this booking excluded so it cannot block itself. */
+    const duration = booking.serviceDurationMinutes ?? 60;
+    await assertSlotOpen(
+      t as unknown as Reader,
+      next.scheduledDate, next.scheduledTime, booking.serviceCategory ?? '', duration,
+      { excludeBookingId: bookingId },
+    );
+
+    const startMin = Number(next.scheduledTime.slice(0, 2)) * 60
+      + Number(next.scheduledTime.slice(3, 5));
+    const endDate = spanEndDate(next.scheduledDate, startMin, duration);
+
+    t.update(ref, {
+      scheduledDate: next.scheduledDate,
+      scheduledTime: next.scheduledTime,
+      endDate,
+      /* The audit trail. `SEQUENCE` in the calendar export reads this, which is
+         what tells an owner's calendar that the new time supersedes the old. */
+      rescheduleCount: (booking.rescheduleCount ?? 0) + 1,
+      rescheduledAt: FieldValue.serverTimestamp(),
+      rescheduledBy: opts.byStaff ? 'studio' : 'customer',
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return {
+      id: bookingId,
+      from: { scheduledDate: booking.scheduledDate, scheduledTime: booking.scheduledTime },
+      to: { scheduledDate: next.scheduledDate, scheduledTime: next.scheduledTime, endDate },
+      moves: (booking.rescheduleCount ?? 0) + 1,
+      unchanged: false,
+    };
+  }, { maxAttempts: 8 });
+};
+
+/* ────────────────────────────────────────────────────────────────────────────
+   AGEING A REQUEST OUT.
+
+   Three bookings sat `pending` thirteen to seventeen days past the day they
+   asked for. They were correctly excluded from "upcoming", so the customer
+   could not see them, could not cancel them, and had no way to learn that the
+   studio was never going to answer. A record with no terminal state does not
+   resolve; it just stops being looked at.
+
+   `expired` is deliberately NOT `cancelled` — see lib/os/lifecycle. A wash is
+   returned here, because the studio held a bay nobody used only in the sense
+   that the studio never accepted it: an unanswered request consumed nothing.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export const expireBookingAuthoritative = async (
+  bookingId: string,
+  opts: { now?: Date } = {},
+): Promise<{ id: string; expired: boolean; washRestored: boolean }> => {
+  if (!adminDb) throw new BookingError('not-configured', 503);
+  const db = adminDb;
+  const now = opts.now ?? new Date();
+
+  return db.runTransaction(async t => {
+    const ref = db.collection('bookings').doc(bookingId);
+    const snap = await t.get(ref);
+    if (!snap.exists) throw new BookingError('not-found', 404);
+    const booking = { id: snap.id, ...(snap.data() as object) } as Booking;
+
+    const move = bookingTransition(booking.status as BookingState, BOOKING_EXPIRED, 'system');
+    if (!move.ok) return { id: bookingId, expired: false, washRestored: false };
+
+    /* Only a request whose DAY has gone. `isStaleRequest` is the same predicate
+       the projection uses to stop calling it upcoming, so a booking can never
+       be invisible and un-expired at once. */
+    const at = scheduledEpochMs(booking.scheduledDate, booking.scheduledTime);
+    if (at === null || now.getTime() - at <= 24 * 60 * 60 * 1000) {
+      return { id: bookingId, expired: false, washRestored: false };
+    }
+
+    let washRestored = false;
+    if (booking.usedMembershipWash && booking.membershipId) {
+      const subRef = db.collection('subscriptions').doc(booking.membershipId);
+      const subSnap = await t.get(subRef);
+      if (subSnap.exists) {
+        const sub = subSnap.data() as Subscription;
+        t.update(subRef, {
+          washesUsed: Math.max(0, (sub.washesUsed ?? 0) - 1),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        washRestored = true;
+      }
+    }
+
+    t.update(ref, {
+      status: BOOKING_EXPIRED,
+      expiredAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return { id: bookingId, expired: true, washRestored };
+  }, { maxAttempts: 6 });
 };

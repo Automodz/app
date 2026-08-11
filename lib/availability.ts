@@ -84,6 +84,24 @@ export const expandIntervals = (
 export const spanDays = (startMin: number, durationMin: number): number =>
   expandIntervals({ date: '2000-01-01', startMin, durationMin }).length;
 
+/**
+ * THE LAST DAY THE BAY IS HELD — design screen 08, "Wed 12 – Thu 13 Feb".
+ *
+ * Derived from the work's own duration rather than stored as a separate
+ * customer choice: a two-day PPF is two days because it takes two days, and a
+ * bookable `endDate` a customer could pick independently of the work would be a
+ * second, contradictable answer to the same question. The engine already
+ * expands a reservation across working days for capacity; this reads the last
+ * day out of that same expansion, so what the customer is told and what the
+ * bay is actually held for cannot drift.
+ */
+export const spanEndDate = (date: string, startMin: number, durationMin: number): string =>
+  expandIntervals({ date, startMin, durationMin }).slice(-1)[0]?.date ?? date;
+
+/** The dates a reservation touches, first to last. */
+export const spanDates = (date: string, startMin: number, durationMin: number): string[] =>
+  expandIntervals({ date, startMin, durationMin }).map(i => i.date);
+
 /** date → bucketIndex → occupied count, one map per resource. */
 export type OccupancyMap = Map<string, number[]>;
 

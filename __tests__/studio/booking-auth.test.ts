@@ -143,12 +143,15 @@ describe('the idempotency key survives the server rule', () => {
 /**
  * A BOOKING YOU CANNOT SEE IS A BOOKING YOU CANNOT CHANGE.
  *
- * `ManageVisit` has always been able to move or cancel a visit, and nothing in
- * the product rendered a control that opened it: the sheet was reachable only
- * by typing `?manage=<id>` into the address bar. A customer could arrange a
- * visit and then had no way to change it — or even to see that it existed.
- * `manageable` was already projected, already mirrored `firestore.rules`, and
- * was simply never drawn.
+ * The sheet that used to move or cancel a visit was reachable only by typing
+ * `?manage=<id>` into the address bar: a customer could arrange a visit and
+ * then had no way to change it, or even to see that it existed. `manageable`
+ * was already projected and simply never drawn.
+ *
+ * It is drawn now, and it is a DOORWAY rather than a sheet. A booking has two
+ * screens of its own (design 09 and 10), so the Studio lists what the customer
+ * has arranged and each row opens the booking itself — which is what makes the
+ * back button, a shared link and a notification all behave.
  */
 describe('an arranged visit is visible and changeable', () => {
   const studio = codeOf('components/screens/StudioScreen.tsx');
@@ -157,18 +160,25 @@ describe('an arranged visit is visible and changeable', () => {
     expect(studio).toMatch(/manageable\.map\(/);
   });
 
-  it('and offers to change only the ones the server would let it', () => {
-    /* `changeable` mirrors firestore.rules — pending or confirmed only. */
-    const list = studio.slice(studio.indexOf('manageable.map('), studio.indexOf('7 · ARRANGING'));
-    expect(list).toMatch(/v\.changeable \?/);
-    expect(list).toMatch(/Change or cancel/);
+  it('every row is a door to that booking, not a control inside a card', () => {
+    /* §21.3, §4.3 — the whole row is the target. A small "Change or cancel"
+       link inside a pane made the words the target rather than the visit. */
+    const list = studio.slice(studio.indexOf('manageable.map('), studio.indexOf('THE WORK'));
+    expect(list).toMatch(/href: v\.href/);
+    expect(list).toMatch(/v\.standing/);
+    expect(list).not.toMatch(/onClick/);
   });
 
-  it('opening it writes the address, so the back button closes it', () => {
-    /* §6.4 — moving or cancelling is addressable. Local state would make the
-       sheet unlinkable and would leave the back button dismissing the room. */
-    expect(studio).toMatch(/const openManage = \(id: string\) => \{/);
-    expect(studio).toMatch(/next\.set\('manage', id\)/);
+  it('the Studio no longer carries a manage sheet of its own', () => {
+    /* Two implementations of one screen is how they drift. The sheet is gone
+       and its file with it. */
+    expect(studio).not.toMatch(/ManageVisit/);
+    expect(() => codeOf('components/studio/ManageVisit.tsx')).toThrow();
+  });
+
+  it('the address it opens is built by the resolver, never by the screen', () => {
+    const project = codeOf('lib/customer/project.ts');
+    expect(project).toMatch(/hrefForDestination\(\{ to: 'booking', bookingId: b\.id \}\)/);
   });
 
   /* The assertion that stood here matched the literal `?manage=${next.id}` in

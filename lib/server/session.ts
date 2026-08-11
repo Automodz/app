@@ -11,6 +11,7 @@ import 'server-only';
  * the Admin SDK on every request. The browser keeps its own session for the
  * client-side sign-in flow; this is the copy the server can read.
  */
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { adminAuth } from './firebaseAdmin';
 
@@ -51,7 +52,20 @@ export async function hasSessionCookie(): Promise<boolean> {
  * lookup per request, which is the correct trade for a surface that shows a
  * customer's own property.
  */
-export async function currentSession(): Promise<ServerSession | null> {
+/**
+ * MEMOISED FOR THE REQUEST, exactly as `loadCustomerPicture` is.
+ *
+ * `verifySessionCookie(raw, true)` is a network round trip to check revocation.
+ * A page that needs both the picture AND something ownership-scoped beside it
+ * — the manage screen needs the studio's openings — would otherwise pay for
+ * that twice for one render. `cache` is an RSC-only export, absent in a unit
+ * test, so the wrapper degrades to the plain function rather than making the
+ * module unimportable.
+ */
+export const currentSession: typeof _currentSession =
+  typeof cache === 'function' ? cache(_currentSession) : _currentSession;
+
+async function _currentSession(): Promise<ServerSession | null> {
   /* THE COOKIE IS READ FIRST, BEFORE ANY OTHER CHECK, AND THAT ORDER IS LOAD
      BEARING. `cookies()` is what tells Next this render depends on the request.
      With the check the other way round, a build without admin credentials

@@ -33,8 +33,56 @@ export interface User {
    * for someone. The server owns this.
    */
   welcomedAt?: Timestamp;
+  /**
+   * QUIET MODE — design screen 19: "Only approvals and handover reach you."
+   *
+   * It suppresses DELIVERY, never the record. Which events break through is
+   * `BREAKS_QUIET` in lib/os/events.ts, and it is the engine's decision rather
+   * than each caller's, so no code path can forget to honour it and none can
+   * silently over-honour it and swallow a handover.
+   */
+  quietMode?: boolean;
+  /**
+   * The customer's UPI address, for the payment intent on screen 13.
+   *
+   * NEVER read to decide an amount, and never published. The payable figure is
+   * always the studio's own, from the sealed visit; this only decides which
+   * app opens. Owner-readable and owner-writable, and nothing else may read it.
+   */
+  upiVpa?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+}
+
+/**
+ * A SAVED PICKUP OR DROP ADDRESS — `users/{uid}/addresses/{id}`.
+ *
+ * Design screens 08 ("Bodakdev · Home") and 19 ("Pickup addresses · 2 saved").
+ * Structured rather than a free string, because a driver needs the parts:
+ * `bookings.pickupAddress` was declared and never populated, and a single line
+ * cannot be validated, cannot be re-used, and cannot tell a pincode from a
+ * flat number.
+ *
+ * A booking stores a SNAPSHOT of the chosen address, not a reference. Editing
+ * a saved address later must never rewrite where a past visit was collected
+ * from — the same rule the captured warranty terms follow.
+ */
+export interface SavedAddress {
+  id: string;
+  /** "Home", "Office" — the customer's own word. */
+  label: string;
+  line1: string;
+  line2?: string;
+  area: string;
+  city: string;
+  pincode: string;
+  /** Who the driver asks for, when it is not the account holder. */
+  contactName?: string;
+  contactPhone?: string;
+  /** Exactly one address may hold this. Enforced server-side in one commit. */
+  isDefault: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 export interface Vehicle {
@@ -94,6 +142,61 @@ export interface Vehicle {
   createdAt: Timestamp;
 }
 
+/**
+ * HOW MUCH OF THE CAR — design screen 07's three coverages.
+ *
+ * A scope is a PRICED VARIANT of a service, not a service of its own. "Front
+ * end PPF" and "Full-body PPF" are one piece of work at two sizes: the same
+ * film, the same warranty, the same bay. Modelling them as two catalogue
+ * entries would duplicate the brand, the description and the warranty, and the
+ * day one of those is edited the two stop agreeing about what the studio sells.
+ */
+export type ScopeKind = 'front' | 'full' | 'custom';
+
+export interface ServicePanel {
+  id: string;
+  /** "Rear quarter", "Bonnet" — the customer's word for a part of the car. */
+  label: string;
+  price: number;
+  durationMinutes: number;
+}
+
+export interface ServiceScope {
+  id: string;
+  kind: ScopeKind;
+  /** "Full body" */
+  label: string;
+  /** The one line under it — what is actually covered. */
+  detail: string;
+  /**
+   * ABSENT FOR `custom`, and that absence is the design's "On quote".
+   * A custom coverage is priced by picking panels, or by the studio quoting
+   * it; there is no table price to read, and a zero here would claim there is.
+   */
+  price?: number;
+  durationMinutes?: number;
+  /** Which panels this scope covers. Only meaningful for `custom`. */
+  panels?: ServicePanel[];
+  order?: number;
+}
+
+/**
+ * An extra stage, chosen at quote time. A real catalogue object with a price
+ * and a duration — never a string a client can invent.
+ */
+export interface ServiceAddOn {
+  id: string;
+  /** "Two-stage correction" */
+  label: string;
+  /** "Recommended before film" / "Adds 4 hours" */
+  detail: string;
+  price: number;
+  durationMinutes: number;
+  /** Scope ids this is recommended alongside. Advisory only; never enforced. */
+  recommendedWith?: string[];
+  order?: number;
+}
+
 export interface Service {
   id: string;
   category: 'PPF' | 'Washing' | 'Ceramic' | 'Coating';
@@ -106,13 +209,105 @@ export interface Service {
   popular: boolean;
   active: boolean;
   order: number;
+  /**
+   * Screen 07's coverages. A service with none is booked whole, at `price`,
+   * exactly as every service was before — so this is additive and no existing
+   * catalogue entry has to change to keep working.
+   */
+  scopes?: ServiceScope[];
+  addOns?: ServiceAddOn[];
   createdAt: Timestamp;
 }
 
+/**
+ * WHAT WAS CHOSEN, AS IT WAS PRICED AT THE TIME.
+ *
+ * Copied onto the estimate and then onto the booking. The catalogue is
+ * authoritative for the NEXT quote and may never rewrite this one — the same
+ * rule `CapturedTerm` exists for, applied to money instead of to a warranty.
+ */
+export interface BookedScope {
+  scopeId: string;
+  scopeKind: ScopeKind;
+  label: string;
+  /** Only for `custom`: the panels chosen, each at the price it carried then. */
+  panels?: { id: string; label: string; price: number }[];
+  addOns: { id: string; label: string; price: number; durationMinutes: number }[];
+  /** The work before any benefit — the figure the estimate was built on. */
+  workPrice: number;
+  durationMinutes: number;
+  /** Screen 07's "2 days in the bay". */
+  bayDays: number;
+}
+
+/**
+ * A PRICE BREAKDOWN AS STORED.
+ *
+ * `PriceBreakdown` (lib/services/pricing.ts) carries the whole `Promo`
+ * document, which is a live record with its own timestamps and usage counts.
+ * Freezing that into an estimate would be freezing a copy of a record that
+ * keeps changing; only the promo's IDENTITY belongs in a snapshot.
+ */
+export interface StoredBreakdown {
+  subtotal: number;
+  discount?: BookingDiscount;
+  discountAmount: number;
+  fees: { label: string; amount: number }[];
+  feesTotal: number;
+  taxable: number;
+  /** ABSENT when no tax applied — never a zero, which would claim a nil charge. */
+  tax?: { rate: number; amount: number; gstin?: string };
+  total: number;
+  washCovered: boolean;
+  membershipId?: string;
+  promoId?: string;
+}
+
+/**
+ * THE ESTIMATE — design screen 07's "Estimate · Gold −12% · ₹1,26,720".
+ *
+ * Server-created, immutable, owner-scoped. It exists so that the figure a
+ * customer saw when they chose is the figure carried to the date screen, to
+ * the confirmation, and into the booking — rather than each of those four
+ * surfaces recomputing it and one of them being right.
+ *
+ * "Final on inspection" is still true and is not a licence to drift: the final
+ * figure may only rise through an APPROVAL the customer granted (screen 12).
+ */
+export interface Estimate {
+  id: string;
+  userId: string;
+  vehicleId: string;
+  serviceId: string;
+  serviceName: string;
+  serviceCategory: string;
+  scope: BookedScope;
+  breakdown: StoredBreakdown;
+  /** Legs priced into `breakdown.fees`, restated so a reader need not parse labels. */
+  pickup: boolean;
+  drop: boolean;
+  /** YYYY-MM-DD. A price quoted against a catalogue does not stand for ever. */
+  expiresOn: string;
+  status: 'open' | 'consumed' | 'expired';
+  bookingId?: string;
+  createdAt: Timestamp;
+}
+
+/**
+ * `expired` is a TERMINAL state and it is not a cancellation.
+ *
+ * Three bookings sat `pending` thirteen to seventeen days past the day they
+ * asked for, correctly excluded from "upcoming" and therefore invisible: the
+ * customer could not see them, could not cancel them, and were never told the
+ * studio would not answer. A request that is never answered has to resolve
+ * somewhere, and calling it `cancelled` would put a decision in the record that
+ * nobody made — and would credit back a membership wash on a slot that was
+ * never accepted. The transitions into it live in lib/os/lifecycle.ts.
+ */
 export type BookingStatus =
   | 'pending' | 'confirmed' | 'vehicle_received'
   | 'in_progress' | 'quality_check' | 'ready_for_delivery'
-  | 'completed' | 'cancelled';
+  | 'completed' | 'cancelled' | 'expired';
 
 export interface Booking {
   id: string;
@@ -137,8 +332,32 @@ export interface Booking {
   pickupAddress?: string;
   totalAmount: number;
   scheduledDate: string;
+  /**
+   * THE LAST WORKING DAY THE BAY IS HELD — design screen 08's "Wed 12 – Thu 13
+   * Feb". Derived from the work's duration by `spanEndDate`, never chosen: a
+   * customer-settable end date would be a second, contradictable answer to
+   * "how long is my car away". Equal to `scheduledDate` for same-day work, and
+   * absent only on bookings written before the field existed.
+   */
+  endDate?: string;
   scheduledTime: string;
   status: BookingStatus;
+  /** How many times it has been moved. Feeds the calendar export's SEQUENCE. */
+  rescheduleCount?: number;
+  rescheduledAt?: Timestamp;
+  rescheduledBy?: 'customer' | 'studio';
+  /** When an unanswered request aged out. Never set on a cancellation. */
+  expiredAt?: Timestamp;
+  /**
+   * WHAT WAS CHOSEN AND WHAT IT COST, frozen at the moment of booking.
+   *
+   * The catalogue is authoritative for a NEW quote and must never rewrite an
+   * old one: editing the price of full-body PPF cannot change what a customer
+   * agreed to last month. See lib/os/scope.ts.
+   */
+  scope?: BookedScope;
+  /** The estimate this booking was made from. */
+  estimateId?: string;
   paymentMethod: 'upi' | 'cash';
   paymentStatus: 'pending' | 'verified' | 'failed';
   transactionId?: string;
@@ -167,9 +386,27 @@ export interface Notification {
   userId: string;
   title: string;
   body: string;
+  /** The coarse channel category. `event` below carries the precise fact. */
   type: 'booking_update' | 'promotion' | 'reminder' | 'membership';
   read: boolean;
   bookingId?: string;
+  /**
+   * THE EVENT THIS RECORD IS. See lib/os/events.ts.
+   *
+   * Absent on documents written before events existed, which is why every
+   * reader still works from `type` and treats this as an refinement rather
+   * than a requirement.
+   */
+  event?: import('./os/events').StudioEventType;
+  sourceKind?: import('./os/events').EventSourceKind;
+  sourceId?: string;
+  vehicleId?: string;
+  /**
+   * The record was written and the phone stayed dark, because the customer
+   * asked for quiet. Never means the fact was dropped — quiet mode suppresses
+   * DELIVERY and never history.
+   */
+  heldByQuietMode?: boolean;
   /**
    * §17.3 — the surface this notification is about. Resolved once, at the
    * moment it is written, by `navigation/resolve.notificationHref`, so the
