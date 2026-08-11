@@ -29,16 +29,16 @@ import {
   subscribePendingBookings,
   updateJobStatus, getJobsForDate,
 } from '@/lib/firebaseService';
-import OpsTimeline from '@/components/studio/OpsTimeline';
+import OpsTimeline from '@/components/workspace/OpsTimeline';
 import { fmtMin } from '@/lib/services/washMetrics';
 import {
   RESOURCE_LABELS, categoryToResource, DAY_OPEN_MIN, DAY_CLOSE_MIN, WORK_DAY_MIN,
   BUFFER_MIN, type ResourceKey,
 } from '@/lib/availability';
 import { useAppStore } from '@/lib/store';
-import { useFloor, type Occupant } from '@/components/studio/useFloor';
-import StudioDrawer, { type DrawerTarget } from '@/components/studio/StudioDrawer';
-import TechnicianDrawer from '@/components/studio/TechnicianDrawer';
+import { useFloor, type Occupant } from '@/components/workspace/useFloor';
+import StudioDrawer, { type DrawerTarget } from '@/components/workspace/StudioDrawer';
+import TechnicianDrawer from '@/components/workspace/TechnicianDrawer';
 import { formatCurrency, formatTime } from '@/lib/utils';
 import type { AttendanceRecord, Booking, Job, JobStatus } from '@/lib/types';
 

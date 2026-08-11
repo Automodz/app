@@ -35,27 +35,38 @@ describe('a member is quoted the member rate', () => {
     expect(applyDiscount(64000, d)).toBeLessThan(64000);
   });
 
-  it('and no client-side session either', () => {
-    /* The whole regression in one assertion: the effect must not stand down
-       because the Zustand user is absent. */
-    const effect = flow.slice(
-      flow.indexOf('setDiscount(undefined)'),
-      flow.indexOf('const total = washCovered'),
-    );
-    expect(effect).not.toBe('');
-    expect(flow).not.toMatch(/if \(!open \|\| !service \|\| !user\b/);
-    expect(flow).toMatch(/if \(!open \|\| !service \|\| washCovered\)/);
+  it('and the sheet no longer quotes at all — the SERVER does', () => {
+    /* THE STRONGER FIX. The regression these assertions were written for was a
+       client-side discount effect gated on a session the customer rooms never
+       mount, so members were quoted full price and charged the discounted one.
+       Both versions of that effect — the broken one and the corrected one —
+       shared the same flaw: a total worked out in a browser is a total the
+       server has never agreed to.
+
+       The sheet asks `/api/estimate` with `preview: true`, which runs
+       `priceVisit` — the one calculation the booking, the approval and the
+       invoice also run — and stores nothing. The figure on the screen and the
+       figure in the record are produced by the same code, so they cannot
+       differ for a member or for anybody else. */
+    expect(flow).not.toMatch(/from '@\/lib\/services\/pricing'/);
+    expect(flow).not.toMatch(/computeBestDiscount|applyDiscount/);
+    expect(flow).toMatch(/preview: true/);
+    expect(flow).toMatch(/fetch\('\/api\/estimate'/);
   });
 
-  it('the uid is only ever reached for promos, and may be absent', () => {
-    const effect = flow.slice(
-      flow.indexOf('setDiscount(undefined)'),
-      flow.indexOf('const total = washCovered'),
-    );
-    /* Falls back to the Firebase session, and skips promos when neither is
-       available — rather than abandoning the whole quote. */
-    expect(effect).toMatch(/await currentUid\(\)/);
-    expect(effect).toMatch(/if \(uid\) \{/);
+  it('and it needs no client-side session to get the member rate', () => {
+    /* No Zustand user, no uid lookup, nothing optional between a member and
+       their rate — the request carries a bearer token and the server reads the
+       membership itself. */
+    expect(flow).not.toMatch(/from '@\/lib\/store'/);
+    expect(flow).not.toMatch(/currentUid\(\)/);
+    const quote = flow.slice(flow.indexOf("fetch('/api/estimate'"),
+      flow.indexOf("fetch('/api/estimate'") + 400);
+    expect(quote).toMatch(/Authorization: `Bearer \$\{token\}`/);
+  });
+
+  it('and shows nothing rather than a guess when the studio is unreachable', () => {
+    expect(flow).toMatch(/if \(live\) setQuoted\(null\)/);
   });
 
   it('a non-member is quoted the plain price', () => {

@@ -6,6 +6,7 @@ import { toHome } from '@/lib/customer/project';
 import { currentSession } from '@/lib/server/session';
 import { loadPriceFloor } from '@/lib/server/publicCatalogue';
 import { loadListings } from '@/lib/server/marketplace';
+import { nextOpenings } from '@/lib/server/openings';
 import { shouldWelcome } from '@/lib/os/welcome';
 import { hrefForDestination } from '@/navigation/resolve';
 
@@ -44,6 +45,19 @@ export default async function RootPage(
     return <LandingScreen prices={prices} />;
   }
 
+  /* THE STUDIO'S SOONEST OPENING — design screens 03 and 05, "Next opening ·
+     Thu 9:00 am". A real query against real occupancy, from the same source
+     the Booking Service accepts against, so a day named here cannot be a day
+     the writer then refuses. Loaded before the room because a `ServerRoom`
+     child is a synchronous render function. */
+  const opening = (await nextOpenings({
+    /* The bay most of the studio's work occupies. A wash bay is a separate
+       resource and is almost never the constraint. */
+    category: 'PPF',
+    durationMinutes: 60,
+    limit: 1,
+  }))[0] ?? null;
+
   return (
     <ServerRoom>
       {picture => {
@@ -59,7 +73,7 @@ export default async function RootPage(
           redirect(hrefForDestination({ to: 'welcome' }));
         }
 
-        const model = toHome(picture, new Date(), selectedCar);
+        const model = toHome(picture, new Date(), selectedCar, opening);
         if (!model) return <NoCar />;
         /* THE MARKET, READ HERE. A projection is pure and reads nothing
            (ARCHITECTURE §1), so the listings are fetched at the page and

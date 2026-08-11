@@ -14,7 +14,7 @@ import { washDayStats, fmtMin } from '@/lib/services/washMetrics';
 import {
   categoryToResource, WORK_DAY_MIN, resourceCapacity, type ResourceKey,
 } from '@/lib/availability';
-import { useFloor, type Occupant } from '@/components/studio/useFloor';
+import { useFloor, type Occupant } from '@/components/workspace/useFloor';
 import type { Booking, Job } from '@/lib/types';
 
 const timeLabel = (d: Date) =>

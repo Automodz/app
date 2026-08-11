@@ -350,14 +350,22 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
             {viewed.caption ? (
               <p style={{ margin: 0, fontSize: 13.5, color: color.ink2 }}>{viewed.caption}</p>
             ) : null}
-            <Link
-              href="#"
-              onClick={e => { e.preventDefault(); setViewing(null); }}
+            {/* A BUTTON, because it goes nowhere. This was a `<Link href="#">`
+                with `preventDefault` — a control that announces itself to a
+                screen reader as a link to the top of the page, and which a
+                middle-click opens in a new tab. Closing is an action. */}
+            <button
+              type="button"
+              onClick={() => setViewing(null)}
               className="am-tap"
-              style={{ color: color.ink3, fontSize: 14, textDecoration: 'none' }}
+              style={{
+                background: 'none', border: 'none', padding: 0,
+                color: color.ink3, fontSize: 14, font: 'inherit', cursor: 'pointer',
+                textAlign: 'left',
+              }}
             >
               Close
-            </Link>
+            </button>
           </div>
         ) : null}
       </Modal>

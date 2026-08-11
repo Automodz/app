@@ -35,6 +35,7 @@ import {
   color, space, HAIRLINE, TARGET_MIN, radius, type as typeScale,
 } from '@/design';
 import { Screen, Pane, Label, Statement, Rail, Action } from '@/components/os';
+import { OfflineNote } from '@/components/system';
 
 export interface ManageOpening {
   /** YYYY-MM-DD */
@@ -133,6 +134,9 @@ export function ManageBooking({ model }: { model: ManageBookingModel }) {
 
   return (
     <Screen top={space.gap}>
+      {/* Moving or cancelling needs a connection, and a control that silently
+          fails is worse than one that says why it cannot act. */}
+      <OfflineNote />
       <Statement eyebrow={model.standing} size={28}>{model.headline}</Statement>
 
       <Pane style={{

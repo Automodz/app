@@ -13,7 +13,7 @@ import { applyDiscount } from '@/lib/services/pricing';
 import { subscribeTodaysJobs } from '@/lib/firebaseService';
 import { fmtMin } from '@/lib/services/washMetrics';
 import { categoryToResource, RESOURCE_LABELS } from '@/lib/availability';
-import { useFloor } from '@/components/studio/useFloor';
+import { useFloor } from '@/components/workspace/useFloor';
 import ServiceIcon from '@/components/ui/ServiceIcon';
 import { useAppStore } from '@/lib/store';
 import type { Service, User, JobServiceItem, BookingDiscount, Employee, Job, Subscription } from '@/lib/types';

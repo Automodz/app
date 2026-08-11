@@ -26,17 +26,14 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/store';
 /* WAITED FOR, NOT GUESSED AT — `auth.currentUser` is null until the SDK has
    restored the persisted session, and no customer room subscribes to make that
    happen. See lib/clientSession.ts. */
-import { idToken, currentUid } from '@/lib/clientSession';
-import { getEligiblePromos } from '@/lib/services/promos';
-import { computeBestDiscount, applyDiscount } from '@/lib/services/pricing';
+import { idToken } from '@/lib/clientSession';
 import { washesLeftOf } from '@/lib/os/club';
 import { generateTimeSlots } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils';
-import type { Service, Subscription, BookingDiscount, Vehicle } from '@/lib/types';
+import type { Service, Subscription, Vehicle } from '@/lib/types';
 import { BottomSheet, Heading, Text, Button, OfflineNote, useOnline } from '@/components/system';
 import {
   color, space, INSET, MEASURE, HAIRLINE, TARGET_MIN, radius,
@@ -170,7 +167,6 @@ export function BookingFlow({
 }: BookingFlowProps) {
   const router = useRouter();
   const online = useOnline();
-  const { user } = useAppStore();
 
   const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -179,7 +175,8 @@ export function BookingFlow({
   const [full, setFull] = useState<{ fullDates: string[]; fullSlots: Record<string, string[]> }>(
     { fullDates: [], fullSlots: {} },
   );
-  const [discount, setDiscount] = useState<BookingDiscount | undefined>();
+  /** The benefit the SERVER applied, worded. Never one worked out here. */
+  const [discount, setDiscount] = useState<{ label: string } | undefined>();
   /* THE CONCIERGE. Two legs, priced separately, because a customer collected
      AND returned pays two fees and a single boolean cannot say so. */
   const [pickup, setPickup] = useState(false);
@@ -296,60 +293,58 @@ export function BookingFlow({
     && washesLeftOf(membership) > 0;
 
   /**
-   * 3 · THE MEMBERSHIP DISCOUNT MUST NEVER DEPEND ON ANYTHING OPTIONAL.
+   * 3 · THE FIGURE IS THE SERVER'S, AND ALWAYS WAS SUPPOSED TO BE.
    *
-   * The promo call was already wrapped for exactly this reason — a promo
-   * outage must not cost a member their rate — and then the whole effect was
-   * gated on `user` from the client store, which reintroduced the same
-   * failure by a different door. `ClientSession` (and with it `AuthProvider`)
-   * is mounted only under `/admin`, `/store` and `/auth`; the customer rooms
-   * render on the server and mount none of it, so `user` is ALWAYS null here.
-   * Every member was quoted the full price and then charged the discounted
-   * one — the server got it right, the screen did not, and being surprised
-   * about money is not made acceptable by the surprise being pleasant.
+   * This used to fetch the promos and run `computeBestDiscount` here, and the
+   * note above it explained at length why the membership rate must not depend
+   * on the promo call succeeding. All of that was solving the wrong problem:
+   * a total worked out in a browser is a total the server has never agreed to,
+   * and the audit found the estimate and the invoice drifting for exactly that
+   * reason.
    *
-   * The membership is a SERVER-PROVIDED PROP and needs no session to read.
-   * The uid is needed only to look up personal promos, so its absence costs
-   * a promo, never the membership rate.
+   * `/api/estimate` with `preview: true` runs `priceVisit` — the same single
+   * calculation the booking, the approval and the invoice run — and stores
+   * nothing. One round trip per choice, and the figure on the screen is the
+   * figure the studio holds.
+   *
+   * Skipped entirely when the customer arrived from the scope screen: they
+   * already hold a written estimate, and re-quoting beside it could only ever
+   * disagree with it.
    */
+  const [quoted, setQuoted] = useState<string | null>(null);
   useEffect(() => {
-    if (!open || !service || washCovered) { setDiscount(undefined); return; }
-    let cancelled = false;
+    if (!open || !service || !vehicleId || estimate) { setQuoted(null); return; }
+    let live = true;
 
     void (async () => {
-      const today = iso(new Date());
-      const activeMember = membership?.status === 'active' && membership.endDate >= today
-        ? membership
-        : null;
-
-      let promos: Awaited<ReturnType<typeof getEligiblePromos>> = [];
-      const uid = user?.uid ?? await currentUid();
-      if (uid) {
-        try {
-          promos = await getEligiblePromos({
-            serviceId: service.id,
-            category: service.category,
-            userId: uid,
-            date: today,
-          });
-        } catch {
-          /* No promos reachable — the membership still stands. */
-        }
+      const token = await idToken();
+      if (!token || !live) return;
+      try {
+        const res = await fetch('/api/estimate', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicleId, serviceId: service.id, preview: true,
+            pickup, drop, useMembershipWash: washCovered,
+          }),
+        });
+        if (!res.ok || !live) return;
+        const e = await res.json() as {
+          breakdown: { total: number; washCovered: boolean; discount?: { label: string } };
+        };
+        if (!live) return;
+        setQuoted(e.breakdown.washCovered ? 'Covered' : spokenPrice(e.breakdown.total));
+        setDiscount(e.breakdown.discount);
+      } catch {
+        /* Unreachable. The sheet shows no figure rather than a guessed one —
+           the server decides the price at the moment of booking either way. */
+        if (live) setQuoted(null);
       }
-
-      if (cancelled) return;
-      setDiscount(computeBestDiscount({
-        price: service.price,
-        membershipPlan: activeMember?.plan ?? null,
-        eligiblePromos: promos,
-      }));
     })();
 
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, service?.id, user?.uid, washCovered, membership?.id]);
+    return () => { live = false; };
+  }, [open, service, vehicleId, estimate, pickup, drop, washCovered]);
 
-  const total = washCovered ? 0 : applyDiscount(service?.price ?? 0, discount);
 
   const slots = date && service
     ? generateTimeSlots(workMinutes).filter((t: string) => !(full.fullSlots[date] ?? []).includes(t))
@@ -801,7 +796,7 @@ export function BookingFlow({
                       the scope screen, the estimate is what the studio wrote
                       and what the booking will be made at; recomputing a
                       preview beside it could only ever disagree. */}
-                  {estimate ? estimate.total : washCovered ? 'Covered' : spokenPrice(total) ?? '\u2014'}
+                  {estimate ? estimate.total : quoted ?? '\u2014'}
                 </span>
               </div>
             </div>
@@ -820,7 +815,7 @@ export function BookingFlow({
             ) : (
               <>
                 <Text role="body" tone="ink">
-                  {[spokenPrice(total), discount?.label, spokenDuration(service.duration)]
+                  {[quoted, discount?.label, spokenDuration(workMinutes)]
                     .filter(Boolean).join(' \u00b7 ')}
                 </Text>
                 <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>

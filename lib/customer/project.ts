@@ -399,6 +399,17 @@ export function toHome(
   now = new Date(),
   /** The car the customer chose, when they chose one (`?car=`). */
   selectedId?: string,
+  /**
+   * THE STUDIO'S SOONEST OPENING — design 03 and 05.
+   *
+   * Passed in rather than computed: it depends on every other customer's
+   * bookings, and a projection may not read a database (ARCHITECTURE §1). The
+   * page loads it from the same occupancy the Booking Service accepts against,
+   * so a day named here cannot be a day the writer then refuses. Absent when
+   * the studio cannot be reached — an invented opening is a customer told to
+   * come on a day the bays are full.
+   */
+  opening?: { date: string; time: string } | null,
 ): HomeModel | null {
   /* THE CAR THE CUSTOMER IS LOOKING AT. `leadCar` decides for them on first
      arrival — the one that needs attention — and the garage rail lets them
@@ -575,6 +586,18 @@ export function toHome(
        visit is booked or in flight; this is the second half of the same idea —
        a proposal the hero has already spoken does not get a second section of
        its own. Nothing here decides anything; it is carried. */
+    /* THE SOONEST THE STUDIO CAN TAKE IT — design 03 and 05, and only while
+       nothing is booked and nothing is in flight. A customer whose visit is on
+       Thursday does not need to be told the studio is free on Thursday, and a
+       customer whose car is on a bay needs the bay, not a calendar. */
+    nextOpening: opening && !read.live && !read.agreed
+      ? {
+          line: `Next opening · ${shortDay(opening.date)}${
+            spokenHour(opening.time) ? `, ${spokenHour(opening.time)}` : ''}`,
+          href: hrefForDestination({ to: 'studio' }),
+        }
+      : undefined,
+
     suggestion: read.proposal && !heroOwnsTheProposal ? {
       headline: read.proposal.headline,
       reason: read.proposal.reason,

@@ -135,6 +135,16 @@ export interface HomeModel {
     frames: readonly { id: string; url: string; caption?: string }[];
     href: string;
   };
+  /**
+   * THE STUDIO'S SOONEST OPENING — design screens 03 and 05.
+   *
+   * Present only when the car has nothing booked and nothing in flight: a
+   * customer whose visit is on Thursday does not need to be told the studio is
+   * free on Thursday. It is a real query against real occupancy, and absent
+   * rather than guessed when the studio cannot be reached — an invented
+   * opening is a customer told to come on a day the bays are full.
+   */
+  nextOpening?: { line: string; href: string };
   suggestion?: { headline: string; reason: string; href: string };
   next?: { service: string; when: string; vehicleName: string; href: string };
   life?: { photo?: string; count: string; href: string };
@@ -166,7 +176,7 @@ const TONE: Record<StateTone, string> = {
 export function HomeScreen({ model }: { model: HomeModel }) {
   const {
     vehicle, state, truth, nextAction, live, suggestion, protection, protections,
-    next, life, record, membership, garage, forSale, marketHref, studio,
+    next, life, record, membership, garage, forSale, marketHref, studio, nextOpening,
   } = model;
   const openPalette = useOpenPalette();
 
@@ -555,6 +565,14 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           {next ? (
             <Label style={{ letterSpacing: '0.14em', fontSize: 10 }}>
               Next · {next.when}
+            </Label>
+          ) : nextOpening ? (
+            /* Design 1c/03/05 — the soonest the studio can actually take the
+               car, under the one control that acts on it. Only when nothing is
+               booked: a customer with a visit on Thursday does not need to be
+               told the studio is free on Thursday. */
+            <Label style={{ letterSpacing: '0.14em', fontSize: 10 }}>
+              {nextOpening.line}
             </Label>
           ) : null}
         </span>
