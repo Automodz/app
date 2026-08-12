@@ -40,7 +40,7 @@ const ts = (iso: string) => Timestamp.fromDate(new Date(iso));
 const car = (over: Partial<CarPicture> = {}): CarPicture => ({
   vehicle: { id: 'v1', name: 'BMW M4', registrationNumber: 'GJ01AB1234',
     createdAt: ts('2026-01-01T00:00:00Z') } as Vehicle,
-  protections: [], visits: [], bookings: [], jobs: [], ...over,
+  protections: [], declarations: [], visits: [], bookings: [], jobs: [], ...over,
 });
 
 const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({

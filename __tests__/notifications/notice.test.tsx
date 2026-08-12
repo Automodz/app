@@ -66,7 +66,7 @@ const notif = (over: Partial<Notification> = {}): Notification => ({
 } as unknown as Notification);
 
 const car = (over: Partial<CarPicture> = {}): CarPicture => ({
-  vehicle, protections: [], visits: [], bookings: [], jobs: [], ...over,
+  vehicle, protections: [], declarations: [], visits: [], bookings: [], jobs: [], ...over,
 });
 
 const picture = (c: CarPicture, notifications: Notification[]): CustomerPicture => ({

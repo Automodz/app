@@ -80,7 +80,7 @@ const sealedVisit = {
 };
 
 const car: CarPicture = {
-  vehicle, protections: [protection],
+  vehicle, protections: [protection], declarations: [],
   visits: [sealedVisit] as never, bookings: [booking], jobs: [job],
 };
 
@@ -340,7 +340,7 @@ it('a brand-new customer with one unphotographed car renders every room', () => 
     subscription: null, subscriptions: [], invoices: [], notifications: [],
     cars: [{
       vehicle: { id: 'v9', name: 'Tata Nexon', registrationNumber: 'GJ 01 ZZ 9999', createdAt: ts('2026-07-29T10:00:00Z') },
-      protections: [], visits: [], bookings: [], jobs: [],
+      protections: [], declarations: [], visits: [], bookings: [], jobs: [],
     }],
   };
   const one = leadCar(bare)!;

@@ -6,6 +6,7 @@ import type { User } from '@/lib/types';
 
 const getVehicles = jest.fn();
 const getProtections = jest.fn();
+const getDeclarations = jest.fn();
 const getVisitsForVehicle = jest.fn();
 const getBookingsForVehicle = jest.fn();
 const getJobsForVehicle = jest.fn();
@@ -19,6 +20,10 @@ jest.mock('@/lib/services/vehicles', () => ({
   getJobsForVehicle: (...a: unknown[]) => getJobsForVehicle(...a),
 }));
 jest.mock('@/lib/services/protections', () => ({ getProtections: (...a: unknown[]) => getProtections(...a) }));
+/* The papers the owner has sent, read beside the protections — a declaration
+   waiting on the studio produces no protection and is still the whole of what
+   the car has to say about its certificate. */
+jest.mock('@/lib/services/declarations', () => ({ getDeclarations: (...a: unknown[]) => getDeclarations(...a) }));
 jest.mock('@/lib/services/visits', () => ({
   getVisitsForVehicle: (...a: unknown[]) => getVisitsForVehicle(...a),
   visitFromPair: jest.fn(),
@@ -41,6 +46,7 @@ beforeEach(() => {
     { id: 'v2', name: 'Car Two', registrationNumber: 'GJ 01 BB 2222' },
   ]);
   getProtections.mockResolvedValue([]);
+  getDeclarations.mockResolvedValue([]);
   getVisitsForVehicle.mockResolvedValue([]);
   getBookingsForVehicle.mockResolvedValue([]);
   getJobsForVehicle.mockResolvedValue([]);
@@ -62,6 +68,7 @@ it('loads one picture covering every car', async () => {
 it('reads EVERY collection by vehicle id — never by plate', async () => {
   await loadPicture(USER);
   expect(getProtections.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
+  expect(getDeclarations.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
   expect(getVisitsForVehicle.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
   expect(getBookingsForVehicle.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
   expect(getJobsForVehicle.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);

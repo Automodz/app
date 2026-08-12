@@ -309,6 +309,82 @@ export function approvalHasExpired(
   return nowMs - approval.requestedAtMs > APPROVAL_VALID_HOURS * 60 * 60 * 1000;
 }
 
+/* ── DECLARATION (a paper the owner holds) ───────────────────────────────── */
+
+/**
+ * THE CUSTOMER MAY NEVER WRITE `verified`.
+ *
+ * It is the protection machine's twin of `paid`: the single write that turns
+ * something a customer typed into something the product asserts on its own
+ * surfaces. `declareProtection()` had no such boundary — the browser wrote the
+ * Protection directly and `firestore.rules` could only check that it said
+ * `declared`, which is a claim about provenance, not about truth. A customer
+ * could have given themselves a pollution certificate valid until 2099.
+ *
+ * So the two halves are separated and the separation lives here: the customer
+ * SUBMITS, the studio DECIDES, and nothing else is legal.
+ */
+export type DeclarationState =
+  | 'submitted' | 'verified' | 'rejected' | 'superseded' | 'withdrawn';
+
+export const DECLARATION_TERMINAL: readonly DeclarationState[] = [
+  'rejected', 'superseded', 'withdrawn',
+];
+
+/**
+ * What may follow what.
+ *
+ * `verified` is NOT terminal, and that is the whole shape of a renewal: a
+ * verified certificate is superseded by the next one the studio verifies,
+ * rather than being edited into it. The old record keeps its own dates for
+ * ever, so "what was this car certified for in March" stays answerable.
+ *
+ * Nothing leads back to `submitted`. A refused declaration is not re-opened
+ * and argued about — the customer sends the certificate again, which is a new
+ * record of a new act.
+ */
+export const DECLARATION_TRANSITIONS: Record<DeclarationState, readonly DeclarationState[]> = {
+  submitted:  ['verified', 'rejected', 'withdrawn'],
+  verified:   ['superseded'],
+  rejected:   [],
+  superseded: [],
+  withdrawn:  [],
+};
+
+/**
+ * Who may cause each transition.
+ *
+ * The customer may only ever WITHDRAW their own submission — the same shape as
+ * a booking, where every advance belongs to the studio because every advance
+ * asserts something about the physical world. Only somebody holding the
+ * certificate can say it is real.
+ *
+ * `superseded` is the studio's too, because it is a consequence of the studio
+ * verifying the next one rather than an act of its own.
+ */
+const DECLARATION_ACTORS: Record<DeclarationState, readonly Actor[]> = {
+  submitted:  ['customer'],
+  verified:   ['studio'],
+  rejected:   ['studio'],
+  superseded: ['studio'],
+  withdrawn:  ['customer'],
+};
+
+export function declarationTransition(
+  from: DeclarationState, to: DeclarationState, actor: Actor,
+): TransitionVerdict {
+  /* Terminal first, so a second decision on a refused declaration is
+     `already-rejected` — the fact — rather than `illegal-transition`, which
+     tells a caller nothing about why. */
+  if (DECLARATION_TERMINAL.includes(from)) return no(`already-${from}`);
+  /* `verified → verified` lands here: a double tap on the studio's own control
+     must not write a second protection for one certificate. */
+  if (from === to) return no('no-change');
+  if (!DECLARATION_TRANSITIONS[from]?.includes(to)) return no('illegal-transition');
+  if (!DECLARATION_ACTORS[to].includes(actor)) return no('not-yours-to-make');
+  return YES;
+}
+
 /* ── PAYMENT (design screen 13) ──────────────────────────────────────────── */
 
 /**

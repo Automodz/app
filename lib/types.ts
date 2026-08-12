@@ -1217,9 +1217,97 @@ export interface Protection {
   term: Term;
   /** the work that created it - required when studio-applied. Opens its Chapter. */
   visitId?: string;
+  /**
+   * The declaration the studio verified to create it - the `visitId` of a
+   * promise nobody sold. Provenance, not a second key: it says WHICH piece of
+   * paper this protection stands on, so a customer's own submission can be
+   * traced from the ledger back to the certificate they photographed.
+   */
+  declarationId?: string;
   /** View Original. Never a primary surface. */
   document?: { url: string; label: string };
   termsSource: TermsSource;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// ─── DECLARATION (a paper the owner holds) ───────────────────────────────────
+
+/**
+ * WHAT THE OWNER SAYS, BEFORE IT IS WHAT THE STUDIO STANDS BEHIND.
+ *
+ * A Protection is an assertion the product makes on its own surfaces: this car
+ * is covered until this date. `declareProtection()` let that assertion be
+ * written straight from a browser, which meant the strongest claim in the
+ * product - "you are protected" - was the one claim anybody could type.
+ *
+ * So the two halves are separated. A DECLARATION is what the customer submits:
+ * a certificate they hold, with its dates and, where they have one, a
+ * photograph of it. It creates no protection and changes no state on the car.
+ * The studio reads it, compares it against the paper, and only then does a
+ * Protection exist (`lib/server/pucService.ts`).
+ *
+ * ── IT IS NEVER REWRITTEN ────────────────────────────────────────────────
+ * A renewal is a NEW declaration and a NEW protection, and the one it replaces
+ * is marked `superseded` rather than edited. That is what makes "what was this
+ * car certified for in March" a question with an answer - the same reason a
+ * sealed Visit is permanent (§16.2).
+ *
+ * `kind` is a `ProtectionKind` rather than the literal `'puc'`: insurance, the
+ * RC and a FASTag are the same act with a different piece of paper, and a new
+ * one must be data rather than a second collection.
+ */
+export type DeclarationStatus =
+  /** the customer has sent it; the studio has not looked yet */
+  | 'submitted'
+  /** the studio has seen the paper and it is now a Protection */
+  | 'verified'
+  /** the studio looked and would not stand behind it */
+  | 'rejected'
+  /** a later declaration was verified in its place */
+  | 'superseded'
+  /** the customer replaced it before the studio decided */
+  | 'withdrawn';
+
+export interface Declaration {
+  id: string;
+  vehicleId: string;
+  /**
+   * WHO SENT IT - taken from the verified session, never from the request.
+   * Stored so the studio's queue can be read without walking every customer's
+   * garage to find out whose car this is.
+   */
+  ownerUid: string;
+  kind: ProtectionKind;
+
+  /** The certificate's own number, as it reads on the paper. */
+  reference: string;
+  /** issued, YYYY-MM-DD */
+  issuedOn: string;
+  /** valid until, YYYY-MM-DD */
+  expiresOn: string;
+  /** the photograph of the certificate, through the one media pipeline */
+  evidence?: { url: string; path: string };
+  /** the owner's own sentence, if they added one */
+  note?: string;
+
+  /**
+   * The car as it read when this was sent. A snapshot for the studio's queue,
+   * exactly as a Visit snapshots its terms - a plate that is corrected later
+   * must not silently re-label a decision somebody already made.
+   */
+  vehicleName?: string;
+  registrationNumber?: string;
+
+  status: DeclarationStatus;
+  submittedAt: Timestamp;
+  /** when the studio decided, and what it decided against */
+  decidedAt?: Timestamp;
+  /** the studio's reason for refusing. Shown to the customer verbatim. */
+  decisionReason?: string;
+  /** the Protection this became, once verified */
+  protectionId?: string;
+
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

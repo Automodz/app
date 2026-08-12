@@ -265,21 +265,60 @@ service cloud.firestore {
     }
 
     // ── Protections - the promises shielding a car ──────────────────────
-    //    Physical protection is created by a sealing visit (server-side);
-    //    the owner may declare and remove their OWN papers - insurance,
-    //    PUC, RC, FASTag - which AutoModz did not sell.
+    //    READ by the car's owner, WRITTEN by nobody with a browser.
+    //
+    //    This used to let an owner create and update their own `declared`
+    //    protection directly. The rule could check that the document SAID
+    //    `declared`, which is a claim about provenance - it could not check
+    //    that the certificate existed, that the dates were real, or that the
+    //    car had ever been tested. So the single strongest assertion the
+    //    product makes on a customer's own screen - "this car is protected
+    //    until <date>" - was the one assertion the customer could type. A
+    //    pollution certificate valid until 2099 was one console call away.
+    //
+    //    Nothing was using that door: `declareProtection()` in
+    //    lib/services/protections.ts had no caller in the product. The
+    //    declaration flow it was meant for is now real, and it goes
+    //    customer -> /api/protection/puc/declare -> `declarations` (below)
+    //    -> studio decision -> a protection written by the Admin SDK.
+    //
+    //    Delete went with it. An owner who could delete a protection could
+    //    delete the ceramic warranty the STUDIO captured at seal - somebody
+    //    else's record of what they sold - and `removeProtection` had no
+    //    caller either.
     match /protections/{id} {
       allow read: if request.auth != null &&
         (isStaff() || ownsVehicle(resource.data.vehicleId));
-      allow create, update: if request.auth != null &&
-        (isStaff() ||
-         (ownsVehicle(request.resource.data.vehicleId) &&
-          // an owner may only ever declare - never forge a captured term,
-          // which is the studio's own record of what it sold
-          request.resource.data.termsSource == 'declared' &&
-          !(request.resource.data.keys().hasAny(['visitId']))));
-      allow delete: if request.auth != null &&
-        (isAdmin() || ownsVehicle(resource.data.vehicleId));
+      allow create, update: if request.auth != null && isStaff();
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // ── Declarations - a paper the OWNER holds, before it is a promise ───
+    //    The customer's half of the protection machine (lib/os/puc.ts):
+    //    a certificate they hold, with its dates and a photograph of it.
+    //
+    //    READ is owner-scoped by the same vehicle lookup the protections
+    //    use, so a car's papers are visible exactly where the car is.
+    //
+    //    EVERY WRITE IS REFUSED, including the customer's own submission.
+    //    That is deliberate and it is the whole design: what may be stored
+    //    depends on facts a rule cannot reach - that the vehicle is under
+    //    this uid, that the photograph was uploaded for this car, that the
+    //    dates are a real calendar span, that it runs later than what is
+    //    already standing, and that a second submission replaces the first
+    //    rather than joining it. All of that is arithmetic and lookups, so
+    //    it belongs to the server, exactly as booking prices do.
+    //
+    //    `verified` in particular is refused to everyone here. It is the
+    //    protection machine's twin of `paid`: only the studio may write it,
+    //    and only through /api/protection/puc/verify, which reads the
+    //    caller's role from their own profile.
+    match /declarations/{id} {
+      allow read: if request.auth != null &&
+        (isStaff() || ownsVehicle(resource.data.vehicleId));
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     // ── Services - anyone authenticated reads, only admin writes ────────

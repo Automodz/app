@@ -44,7 +44,7 @@ const booking = (id: string, vehicleId: string, status: string) => ({
 } as unknown as Booking);
 
 const car = (v: Vehicle, over: Partial<CarPicture> = {}): CarPicture => ({
-  vehicle: v, protections: [] as Protection[], visits: [], bookings: [], jobs: [], ...over,
+  vehicle: v, protections: [] as Protection[], declarations: [], visits: [], bookings: [], jobs: [], ...over,
 } as CarPicture);
 
 const BMW = vehicle('v-bmw', 'BMW M340i', 'GJ01AB1234');
@@ -145,7 +145,7 @@ describe('legacy and malformed records do not take the room down', () => {
   });
 
   it('a car with a malformed visits field is skipped, not fatal', () => {
-    const broken = { vehicle: KIA, protections: [], visits: [], bookings: [], jobs: [] } as CarPicture;
+    const broken = { vehicle: KIA, protections: [], declarations: [], visits: [], bookings: [], jobs: [] } as CarPicture;
     const p = picture([car(BMW, { visits: [visit('vs-bmw-1', 'v-bmw', '2025-11-04')] }), broken]);
     expect(historyContextOf(p, { visitId: 'vs-bmw-1' }, NOW).kind).toBe('visit');
   });

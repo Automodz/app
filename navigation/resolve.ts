@@ -13,8 +13,8 @@
  */
 import type { NextAction, ActionIntent } from '@/lib/os/action';
 import {
-  STUDIO, GARAGE, MEMBERSHIP, HOME, HISTORY, PROFILE, VEHICLE, CARS, SELL, WELCOME,
-  BOOKING, APPROVAL,
+  STUDIO, GARAGE, MEMBERSHIP, HOME, HISTORY, PROFILE, VEHICLE, VEHICLE_PUC,
+  CARS, SELL, WELCOME, BOOKING, APPROVAL,
 } from './routes';
 
 /** Where a visit is watched or read. */
@@ -155,6 +155,14 @@ export type Destination =
       panel: 'profile' | 'notifications' | 'referral' | 'delete'
         | 'addresses' | 'payment' | 'privacy' }
   | { to: 'vehicle'; vehicleId?: string }
+  /**
+   * The car's pollution certificate — declared, renewed, and read.
+   *
+   * UNDER the car, because it is something you do TO one: the address reads as
+   * what it is, and `parentOf` therefore returns the customer to the SAME car
+   * they walked in from rather than to whichever one the product would pick.
+   */
+  | { to: 'vehicle.puc'; vehicleId?: string }
   | { to: 'visit'; visitId: string }
   | { to: 'booking'; bookingId: string }
   | { to: 'booking.manage'; bookingId: string }
@@ -200,6 +208,7 @@ export const hrefForDestination = (d: Destination): string => {
     case 'profile':          return PROFILE;
     case 'profile.panel':    return `${PROFILE}?panel=${d.panel}`;
     case 'vehicle':          return d.vehicleId ? `${VEHICLE}?car=${d.vehicleId}` : VEHICLE;
+    case 'vehicle.puc':      return d.vehicleId ? `${VEHICLE_PUC}?car=${d.vehicleId}` : VEHICLE_PUC;
     case 'visit':            return visit(d.visitId);
     case 'booking':          return booking(d.bookingId);
     case 'booking.manage':   return bookingManage(d.bookingId);
@@ -371,6 +380,18 @@ export const parentOf = (pathname: string): Parent | null => {
   if (seg[0] === 'approval' && seg[1]) return { href: HOME, name: 'Now' };
 
   if (path.startsWith(`${STUDIO}/`)) return { href: STUDIO, name: 'The studio' };
+  /**
+   * THE CERTIFICATE BELONGS TO A CAR, SO BACK GOES TO THAT CAR.
+   *
+   * `withCar` carries `?car=` upward, exactly as the record already does — and
+   * for the same reason. Without it a customer who walked Garage → the second
+   * car → its certificate would land on `/vehicle`, which resolves to whichever
+   * car the product leads with, and Back would silently hand them a DIFFERENT
+   * car. With no `car` in the address there is nothing to carry and nothing to
+   * lose: the certificate screen and `/vehicle` then lead with the same car,
+   * so the answer is still the car they were looking at.
+   */
+  if (path === VEHICLE_PUC) return { href: withCar(VEHICLE), name: 'The car' };
   if (path === VEHICLE) return { href: GARAGE, name: 'Your garage' };
 
   /* The marketplace is public, so its root goes to whatever `/` is for whoever

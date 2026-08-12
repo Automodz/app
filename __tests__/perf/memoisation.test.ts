@@ -20,7 +20,7 @@ const booking = (over: Partial<Booking> = {}) => ({
 const car = (id: string, bookings: Booking[]): CarPicture => ({
   vehicle: { id, name: 'Car ' + id, registrationNumber: 'GJ 01 AB 1234',
              createdAt: ts('2023-03-01T10:00:00Z') } as Vehicle,
-  protections: [], visits: [], bookings, jobs: [],
+  protections: [], declarations: [], visits: [], bookings, jobs: [],
 });
 
 const picture = (cars: CarPicture[]): CustomerPicture => ({

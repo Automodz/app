@@ -39,7 +39,7 @@ const vehicle: Vehicle = {
 } as Vehicle;
 
 const car: CarPicture = {
-  vehicle, protections: [], visits: [], bookings: [], jobs: [],
+  vehicle, protections: [], declarations: [], visits: [], bookings: [], jobs: [],
 };
 
 const sub = (over: Partial<Subscription> = {}): Subscription => ({

@@ -31,7 +31,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
 } as Booking);
 
 const car = (over: Partial<CarPicture> = {}): CarPicture => ({
-  vehicle: vehicle(), protections: [], visits: [], bookings: [], jobs: [], ...over,
+  vehicle: vehicle(), protections: [], declarations: [], visits: [], bookings: [], jobs: [], ...over,
 });
 
 const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
@@ -246,8 +246,10 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
       protection({ id: 'p3', kind: 'glass' }),
     ] }), picture({ cars: [] }), NOW);
 
+    /* The certificate is ALWAYS in the ledger, whatever the car has — "not
+       added" is an answer and an absent row is not (§19.1). See `toPuc`. */
     expect(m.protections.map(p => p.label).sort())
-      .toEqual(['Ceramic coating', 'Glass coating', 'Insurance']);
+      .toEqual(['Ceramic coating', 'Glass coating', 'Insurance', 'Pollution certificate']);
     expect(m.protections.find(p => p.label === 'Insurance')?.region).toBeUndefined();
     expect(m.protections.filter(p => p.region).map(p => p.region).sort())
       .toEqual(['glass', 'paint']);
@@ -260,7 +262,10 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
        owns it. In the car's room it would be the same fact under a second
        owner — and it is not a layer on this vehicle. */
     const m = toVehicle(car({ protections: [protection({ kind: 'membership' })] }), picture({ cars: [] }), NOW);
-    expect(m.protections).toHaveLength(0);
+    /* The certificate's own row is the only thing left, and it says the car
+       has none — which is the truth about this car. */
+    expect(m.protections.map(p => p.label)).toEqual(['Pollution certificate']);
+    expect(m.protections[0].term).toBe('Not added');
   });
 
   it('two coatings on the paint are both listed, and the region answers once', () => {

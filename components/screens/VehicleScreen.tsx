@@ -73,6 +73,15 @@ export interface VehicleProtection {
   measurement?: 'measured' | 'estimated';
   /** §14.6 - the file, where one exists. */
   documentHref?: string;
+  /**
+   * THE ONE WAY IN, for a promise the customer can do something about.
+   *
+   * §10.5 - nothing is inert. A pollution certificate is the first protection
+   * with a state a term cannot express (sent, refused, waiting) and the first
+   * the customer can act on, so its row carries the act. The label is worded
+   * by the projection for the state it is in; this draws it and knows neither.
+   */
+  action?: { label: string; href: string };
 }
 
 export interface VehicleFrame {
@@ -103,7 +112,6 @@ export interface VehicleModel {
   notice?: { id: string; title: string; href: string };
   media: readonly VehicleMediaMonth[];
   editHref: string;
-  declareHref?: string;
   next?: {
     service: string;
     when: string;
@@ -127,7 +135,7 @@ export function VehicleScreen(
 ) {
   const {
     name, plate, descriptor, state, since, warranty, odometer, historyHref,
-    protections, notice, media, editHref, declareHref, next, followHref, arrangeHref,
+    protections, notice, media, editHref, next, followHref, arrangeHref,
   } = model;
 
   /* §11.4 - which region the customer is asking about. `null` is the resting
@@ -302,6 +310,9 @@ export function VehicleScreen(
             The bar is drawn only where the term actually depletes. A
             perpetual protection with a full bar would be a lie shaped like a
             measurement; it states its term and nothing more. */}
+        {/* The ledger is never empty: the certificate's row is always in it
+            (§19.1 — "not added" is an answer). The guard stays because a model
+            is a contract, not a promise about today's data. */}
         {protections.length > 0 ? (
           <Pane
             as="section"
@@ -333,9 +344,8 @@ export function VehicleScreen(
                   </>
                 );
 
-                return typeof p.remaining === 'number' ? (
+                const layer = typeof p.remaining === 'number' ? (
                   <Meter
-                    key={p.id}
                     label={p.label}
                     value={value}
                     fill={p.remaining}
@@ -343,7 +353,6 @@ export function VehicleScreen(
                   />
                 ) : (
                   <div
-                    key={p.id}
                     style={{
                       flexWrap: 'wrap',
                       display: 'flex', justifyContent: 'space-between',
@@ -361,24 +370,43 @@ export function VehicleScreen(
                     </span>
                   </div>
                 );
+
+                /* A layer with somewhere to go carries the way there under
+                   itself, so the row stays a row and the control stays a
+                   control — §21.3's 44px floor is the link's own, whatever
+                   size the type beside it is. */
+                return p.action ? (
+                  <div
+                    key={p.id}
+                    style={{ display: 'flex', flexDirection: 'column', gap: space.breath }}
+                  >
+                    {layer}
+                    <Link
+                      href={p.action.href}
+                      className="am-tap"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: space.breath,
+                        width: 'fit-content', minHeight: TARGET_MIN,
+                        fontSize: 13.5, color: color.amber, textDecoration: 'none',
+                      }}
+                    >
+                      {p.action.label}
+                      <Chevron size={15} tone={color.amber} />
+                    </Link>
+                  </div>
+                ) : (
+                  <div key={p.id}>{layer}</div>
+                );
               })}
             </div>
           </Pane>
-        ) : declareHref ? (
-          /* §18.4 - a car with nothing recorded is invited to say what
-             protects it, rather than shown an empty ledger. */
-          <Pane style={{ padding: `${space.gap + 2}px ${space.gap + 4}px` }}>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: color.ink2 }}>
-              Nothing declared yet. If this car has a coating, a film or a policy
-              from elsewhere, tell us and it will sit here.
-            </p>
-            <div style={{ marginTop: space.line }}>
-              <Action href={declareHref} quiet style={{ fontSize: 13.5 }}>
-                Tell us what protects it
-              </Action>
-            </div>
-          </Pane>
         ) : null}
+        {/* THE EMPTY-LEDGER PANE STOOD HERE — "Nothing declared yet. …tell us
+            and it will sit here", over a `wa.me` link. It was the product's
+            only declaration path and it ended in a messaging application. The
+            ledger now always carries the certificate's own row, whatever else
+            the car has, so there is no empty ledger left for an invitation to
+            fill (§18.4, and lib/customer/project.ts#toVehicle). */}
 
         {/* ── THE TWO STANDING FIGURES ────────────────────────────────
             Warranty and odometer. Either may be absent - a car with neither

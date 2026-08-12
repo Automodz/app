@@ -17,6 +17,9 @@ import {
   liveProtection, projectProtections, sortByUrgency, oneProtectionPerKind, measurementOf,
 } from '@/lib/os/protection';
 import {
+  readPuc, mayDeclare, PUC, PUC_TONE, PUC_STATUS_WORD, type PucState,
+} from '@/lib/os/puc';
+import {
   visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE, visitDateOf,
 } from '@/lib/os/visit';
 import type { CarPicture, CustomerPicture } from './source';
@@ -44,6 +47,7 @@ import { resolveAction, hrefForRef, hrefForDestination } from '@/navigation/reso
 import { plainValue } from '@/lib/server/plain';
 import type { GarageModel } from '@/components/screens/GarageScreen';
 import type { VehicleModel, VehicleProtection } from '@/components/screens/VehicleScreen';
+import type { PucModel, PucCertificate } from '@/components/screens/PucScreen';
 import type { PhotographSource } from '@/components/vehicle';
 import type { RegionId } from '@/components/vehicle';
 import type { HistoryModel, HistoryVisit } from '@/components/screens/HistoryScreen';
@@ -1026,6 +1030,74 @@ const REGION_OF: Partial<Record<ProtectionKind, RegionId>> = {
   ppf: 'paint', ceramic: 'paint', glass: 'glass', interior: 'interior',
 };
 
+/* ── THE POLLUTION CERTIFICATE, IN WORDS ─────────────────────────────────
+   One vocabulary for the ledger row, the room's headline and its action, so
+   the car and the certificate's own screen can never say different things
+   about the same state (§22.2). */
+
+/** What the ledger row's value says. `termWords` wherever a term is running. */
+function pucLedgerWords(puc: ReturnType<typeof readPuc>, now: Date): string {
+  if (puc.protection && puc.state !== 'declared') return termWords(puc.protection.term, now);
+  if (puc.state === 'declared') return 'Verification in progress';
+  if (puc.state === 'rejected') return 'Not accepted';
+  return 'Not added';
+}
+
+/**
+ * The one way in, worded for the state it is in.
+ *
+ * Every state has one - including the two where there is nothing to do but
+ * wait, because "see what you sent" is still an act and a row with no way into
+ * it is a fact the customer cannot check (§10.5).
+ */
+function pucActionWords(puc: ReturnType<typeof readPuc>): string {
+  switch (puc.state) {
+    case 'missing':  return 'Declare certificate';
+    case 'declared': return 'See what you sent';
+    case 'renewing': return 'See the renewal';
+    case 'expired':  return 'Renew certificate';
+    case 'rejected': return 'Declare again';
+    case 'active':
+      return puc.protection?.health === 'healthy' ? 'See the certificate' : 'Renew certificate';
+  }
+}
+
+/** The headline on the certificate's own screen. The date, said in full. */
+function pucHeadline(puc: ReturnType<typeof readPuc>): string {
+  const term = puc.protection?.term;
+  const until = term?.kind === 'dated' ? longDate(term.expiresOn) : '';
+  switch (puc.state) {
+    case 'missing':  return 'Not added';
+    case 'declared': return 'Verification in progress';
+    case 'rejected': return 'Not accepted';
+    case 'expired':  return until ? `Expired ${until}` : 'Expired';
+    case 'active':
+    case 'renewing': return until ? `Valid until ${until}` : 'On record';
+  }
+}
+
+/** The sentence under it. Never a restatement of the headline. */
+const PUC_LINE: Record<PucState, string> = {
+  missing:
+    'Nothing on record for this car. Send us the certificate and it will sit '
+    + 'beside everything else that protects it.',
+  declared:
+    'It is with the studio. Once we have seen the certificate itself, it will '
+    + 'stand on your car.',
+  renewing:
+    'The certificate we hold still stands. The one you have just sent is with '
+    + 'the studio.',
+  active:
+    'On record and in date. We will say so here as the day approaches, so it '
+    + 'is never a surprise.',
+  expired:
+    'The certificate we hold has run out. Have the car tested, then send us '
+    + 'the new one.',
+  rejected:
+    'The studio could not accept the last certificate you sent. Send it again '
+    + 'once it is sorted, and we will look straight away.',
+};
+
 export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new Date()): VehicleModel {
   const catalogue = picture.catalogue;
   const protections = protectionsOf(car, catalogue, now);
@@ -1050,6 +1122,11 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
        and to `os/club`, and listing it in the car's own room would be the same
        fact in a second place under a different owner. */
     .filter(p => p.kind !== 'membership')
+    /* THE CERTIFICATE IS DRAWN BELOW, WHOLE. It is the one protection with a
+       state a Term cannot express - sent, refused, waiting - and it is the one
+       the customer can act on, so it carries its own row and its own act.
+       Mapping it here as well would put one fact in two places. */
+    .filter(p => p.kind !== PUC)
     .map(p => ({
     id: p.id,
     region: REGION_OF[p.kind],
@@ -1067,6 +1144,36 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
        this is undefined throughout; the room draws no control for it. */
     documentHref: p.document ? p.document.url : undefined,
   }));
+
+  /**
+   * THE POLLUTION CERTIFICATE, AS A TRUTHFUL ROW.
+   *
+   * Always drawn, whatever the car has - because "not added" is an answer and
+   * an absent row is not (§19.1). A Protection alone could only ever say two
+   * things about it, in date or out of it; a car whose owner sent a
+   * certificate last night was told "not added" and had no way to know it had
+   * arrived. The state comes from the engine, which reads the declarations
+   * beside the protections and never treats a submission as a promise.
+   */
+  const puc = readPuc({ protections, declarations: car.declarations ?? [] });
+  const pucHref = hrefForDestination({ to: 'vehicle.puc', vehicleId: car.vehicle.id });
+  const pucRow: VehicleProtection = {
+    id: puc.protection?.id ?? `${car.vehicle.id}_puc`,
+    label: PROTECTION_TITLE[PUC],
+    term: pucLedgerWords(puc, now),
+    /* A bar only where a real term is running. A submission has no proportion
+       to draw and drawing one would be the wait wearing a measurement. */
+    remaining: puc.protection && (puc.state === 'active' || puc.state === 'renewing')
+      ? remainingOf(puc.protection, now)
+      : undefined,
+    measurement: puc.protection ? measurementOf(puc.protection) : undefined,
+    tone: puc.protection && (puc.state === 'active' || puc.state === 'renewing')
+      ? TONE[puc.protection.health]
+      : TONE[PUC_TONE[puc.state]],
+    /* §10.5 - nothing is inert, and every state has exactly one way in. The
+       word changes with the state; the destination never does. */
+    action: { label: pucActionWords(puc), href: pucHref },
+  };
 
   /**
    * THE CAR'S NEXT VISIT.
@@ -1108,8 +1215,15 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
    * the word "covered". A car whose protections are all perpetual or all
    * balances has no date to give, and the tile is simply not drawn.
    */
+  /* AND IT MUST STILL HOLD. This read every dated term including LAPSED ones,
+     so a Land Rover whose only protection was a pollution certificate that ran
+     out on 30 July was given a tile reading "Active to July 2026" — under a
+     ledger row saying "Lapsed 30 July 2026", on the same screen. Found by
+     looking at the rendered room, not by any assertion that existed. The word
+     on the tile is "Active to"; a promise that has ended is not one, and a car
+     with nothing live draws no tile rather than a false one (§18.1). */
   const furthest = protections
-    .filter(p => p.kind !== 'membership' && p.term.kind === 'dated')
+    .filter(p => p.kind !== 'membership' && p.term.kind === 'dated' && p.health !== 'lapsed')
     .map(p => (p.term as Extract<Term, { kind: 'dated' }>).expiresOn)
     .sort()
     .pop();
@@ -1159,7 +1273,10 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     /* Carries the car. Without it, following History from the second car in a
        garage showed the FIRST car's life. */
     historyHref: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),
-    protections: layers,
+    /* The certificate last, because it is the one row that is always there
+       whatever the car has, and `sortByUrgency` has already ordered the
+       promises that actually depend on a term. */
+    protections: [...layers, pucRow],
 
     /* THE CAR'S MEDIA, month by month - `os/moment`, connected. The old
        Garage carried this for the selected car; the car has its own room now,
@@ -1187,12 +1304,131 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
 
     /* Correcting the car is the Garage's form, addressed. */
     editHref: hrefForDestination({ to: 'garage.edit', vehicleId: car.vehicle.id }),
-    /* §18.4's invitation. Was `'/studio'`, which has no declare flow. */
-    declareHref: waLink(
-      `Hello AutoModz — I would like to add what protects my ${car.vehicle.name}.`,
+    /* `declareHref` STOOD HERE — a `wa.me` link with a sentence typed into it,
+       and the only way the product ever offered to declare anything. It drew an
+       empty-ledger pane saying "tell us what protects it", which opened
+       WhatsApp and ended there: nothing on the other side wrote a Protection,
+       and `declareProtection()` had no caller at all. A control that opens a
+       messaging application is not a flow.
+       The certificate now has a real one, and the ledger always carries its
+       row — so there is no empty ledger left for an invitation to fill. The
+       way to reach a person survives on the certificate's own screen, where it
+       is secondary to the form rather than instead of it (§18.4). */
+  };
+}
+
+/* ── THE POLLUTION CERTIFICATE ───────────────────────────────────────────── */
+
+/**
+ * The certificate's own room — what stands, what is waiting, what was refused,
+ * and every certificate this car has ever had.
+ *
+ * ── NOTHING HERE IS DERIVED TWICE ────────────────────────────────────────
+ * The state, whether a certificate may be sent and the words for each are the
+ * SAME functions the car's ledger row uses, so the row and the room cannot
+ * disagree about the car in front of them. This only chooses shapes.
+ *
+ * ── AND NOTHING HERE IS INVENTED ─────────────────────────────────────────
+ * A protection with no `since` — every pollution certificate in production is
+ * one, because they were seeded rather than declared — prints no issue date
+ * rather than a guessed one, and a protection with no declaration behind it
+ * prints no certificate number. The row simply is not drawn (§18.1).
+ */
+export function toPuc(car: CarPicture, picture: CustomerPicture, now = new Date()): PucModel {
+  const protections = protectionsOf(car, picture.catalogue, now);
+  const declarations = car.declarations ?? [];
+  const puc = readPuc({ protections, declarations });
+
+  const held = puc.protection;
+  const term = held?.term;
+
+  /* The declaration the standing protection was created from, when there is
+     one. It is the only place a certificate NUMBER lives — a Protection has
+     no field for one and inventing one would be a fact nobody gave us. */
+  const behind = held?.declarationId
+    ? declarations.find(d => d.id === held.declarationId)
+    : undefined;
+
+  const standing: PucCertificate | undefined = held
+    ? {
+        reference: behind?.reference,
+        /* Bare. The row's label is the word for it — a value that repeats its
+           own label reads as a stammer. */
+        issued: held.since ? longDate(held.since) : undefined,
+        /* And the word for the end of the term follows the state, so a lapsed
+           certificate is never filed under "Valid". */
+        untilLabel: held.health === 'lapsed' ? 'Ran out' : 'Valid until',
+        until: term?.kind === 'dated' ? longDate(term.expiresOn) : termWords(held.term, now),
+        evidenceUrl: held.document?.url,
+      }
+    : undefined;
+
+  return {
+    car: car.vehicle.name,
+    plate: car.vehicle.registrationNumber,
+    state: pucHeadline(puc),
+    line: PUC_LINE[puc.state],
+    tone: puc.protection && (puc.state === 'active' || puc.state === 'renewing')
+      ? TONE[puc.protection.health]
+      : TONE[PUC_TONE[puc.state]],
+
+    standing,
+
+    pending: puc.pending
+      ? {
+          reference: puc.pending.reference,
+          until: longDate(puc.pending.expiresOn),
+          sent: longDate(isoDayOf(puc.pending.submittedAt)),
+        }
+      : undefined,
+
+    refused: puc.refused
+      ? {
+          reference: puc.refused.reference,
+          on: longDate(isoDayOf(puc.refused.decidedAt ?? puc.refused.submittedAt)),
+          because: puc.refused.decisionReason,
+        }
+      : undefined,
+
+    /* THE WHOLE RECORD, UNEDITED. This is what "a renewal does not rewrite the
+       last one" looks like from the customer's side: every certificate they
+       have ever sent, with the dates it was sent with and what became of it. */
+    record: puc.record.map(d => ({
+      id: d.id,
+      reference: d.reference,
+      validity: `Until ${longDate(d.expiresOn)}`,
+      state: PUC_STATUS_WORD[d.status],
+      tone: d.status === 'verified' ? TONE.healthy
+        : d.status === 'rejected' ? TONE.urgent
+          : d.status === 'submitted' ? TONE.attention
+            : TONE.lapsed,
+    })),
+
+    /* §10.5 — offered only where the server would accept it. `mayDeclare` is
+       the engine's answer and the same one the service enforces, so the form
+       is never drawn for an act that would be refused. */
+    declare: mayDeclare(puc)
+      ? {
+          vehicleId: car.vehicle.id,
+          title: puc.state === 'missing' || puc.state === 'rejected'
+            ? 'Declare the certificate'
+            : 'Renew it',
+          note: 'We check what you send against the certificate itself before '
+            + 'it stands on your car. Nothing changes here until we have.',
+          submit: 'Send it to the studio',
+        }
+      : undefined,
+
+    /* §18.4 — a way to reach a person, kept as the alternative it is. */
+    askHref: waLink(
+      `Hello AutoModz — this is about the pollution certificate for my ${car.vehicle.name}.`,
     ),
   };
 }
+
+/** A stored moment as an ISO day, for the one date formatter. */
+const isoDayOf = (t?: { toMillis?: () => number }): string =>
+  (millis(t) ? new Date(millis(t)).toISOString().slice(0, 10) : '');
 
 /* ── HISTORY ─────────────────────────────────────────────────────────────── */
 

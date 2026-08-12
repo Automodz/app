@@ -47,7 +47,7 @@ const picture = (): CustomerPicture => ({
   cars: [{
     vehicle: { id: 'v1', name: 'BMW M4', registrationNumber: 'GJ01AB1234',
       createdAt: ts('2026-01-01T00:00:00Z') } as Vehicle,
-    protections: [], visits: [], jobs: [],
+    protections: [], declarations: [], visits: [], jobs: [],
     bookings: [],
   } as CarPicture],
   subscription: {

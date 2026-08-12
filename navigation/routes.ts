@@ -72,6 +72,17 @@ export const PROFILE = '/you';
 export const HISTORY = '/history';
 export const VEHICLE = '/vehicle';
 /**
+ * THE CAR'S POLLUTION CERTIFICATE — declared, renewed and read.
+ *
+ * Under `/vehicle` rather than beside it, because it is one fact ABOUT a car
+ * and the address should read that way: `roomFor` therefore resolves it to the
+ * car's own room by longest match, so the dock lights the Garage exactly as it
+ * does while standing in the car, and `parentOf` returns to the car that was
+ * walked in from — carrying `?car=`, so a garage of four cars cannot lose
+ * which one this was about.
+ */
+export const VEHICLE_PUC = '/vehicle/puc';
+/**
  * A BOOKING'S OWN ADDRESS — design screens 09 and 10.
  *
  * These were a bottom sheet at `/studio?manage=<id>`, which gave the two most

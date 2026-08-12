@@ -21,7 +21,7 @@ import 'server-only';
 import { cache } from 'react';
 import { adminDb } from './firebaseAdmin';
 import type {
-  Approval, Booking, Invoice, Job, Notification, Protection, SavedAddress,
+  Approval, Booking, Declaration, Invoice, Job, Notification, Protection, SavedAddress,
   Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
@@ -140,8 +140,13 @@ async function _loadCustomerPicture(session: {
      * A job with no `vehicleId` therefore attaches to no car until the value
      * is backfilled from its booking, which is the authoritative parent.
      */
-    const [prot, vis, bk, jb] = await Promise.all([
+    const [prot, decl, vis, bk, jb] = await Promise.all([
       db.collection('protections').where('vehicleId', '==', vehicle.id).get(),
+      /* THE PAPERS THE OWNER HAS SENT. Keyed by the car exactly as the
+         protections are, so a declaration waiting on the studio reaches the
+         car's own room without a second read anywhere. One equality filter,
+         so no composite index. */
+      db.collection('declarations').where('vehicleId', '==', vehicle.id).get(),
       db.collection('visits').where('vehicleId', '==', vehicle.id).get(),
       db.collection('bookings')
         .where('userId', '==', uid).where('vehicleId', '==', vehicle.id).get(),
@@ -155,6 +160,7 @@ async function _loadCustomerPicture(session: {
     return {
       vehicle,
       protections: rows<Protection>(prot),
+      declarations: rows<Declaration>(decl),
       visits: rows<Visit>(vis).sort(byNewest),
       bookings: rows<Booking>(bk).sort(byNewest),
       jobs: rows<Job>(jb).sort(byNewest),

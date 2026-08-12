@@ -143,7 +143,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
 
 const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
   user: { uid: 'u1', name: 'A', email: 'a@x.test', role: 'customer' } as User,
-  cars: [{ vehicle, protections: [], visits: [], bookings: [booking()], jobs: [] } as CarPicture],
+  cars: [{ vehicle, protections: [], declarations: [], visits: [], bookings: [booking()], jobs: [] } as CarPicture],
   subscription: null, subscriptions: [], invoices: [], notifications: [],
   catalogue: [] as Service[], addresses: [], approvals: [],
   ...over,
@@ -226,7 +226,7 @@ describe('screen 13 states the working, never a bare total', () => {
     /* Rather than inventing a decomposition of a total nobody itemised. */
     const m = toSettle({
       picture: picture({
-        cars: [{ vehicle, protections: [], visits: [], jobs: [], bookings: [booking({ breakdown: undefined })] } as CarPicture],
+        cars: [{ vehicle, protections: [], declarations: [], visits: [], jobs: [], bookings: [booking({ breakdown: undefined })] } as CarPicture],
       }),
       bookingId: 'bk1', visit: null,
       money: { total: 43622, received: 0, payable: 43622 },

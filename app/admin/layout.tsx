@@ -53,6 +53,9 @@ const NAV_GROUPS: { group: string; mode: Mode; items: { href: string; label: str
       { href: '/admin/customers',     label: 'Customers',   icon: Users },
       { href: '/admin/subscriptions', label: 'Memberships', icon: CreditCard },
       { href: '/admin/quotes',        label: 'Quotes',      icon: FileSpreadsheet },
+      // Certificates customers have sent. Verifying one is what makes it stand
+      // on their car, so it is a business decision, not a floor one.
+      { href: '/admin/papers',        label: 'Papers',      icon: Shield },
     ],
   },
   {

@@ -41,7 +41,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
 
 const picture = (bookings: Booking[]): CustomerPicture => ({
   user: { uid: 'u1', name: 'A', email: 'a@x.test', role: 'customer' } as User,
-  cars: [{ vehicle, protections: [], visits: [], bookings, jobs: [] } as CarPicture],
+  cars: [{ vehicle, protections: [], declarations: [], visits: [], bookings, jobs: [] } as CarPicture],
   subscription: null, subscriptions: [], invoices: [], notifications: [],
   catalogue: [] as Service[],
   addresses: [], approvals: [],

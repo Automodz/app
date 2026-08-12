@@ -14,8 +14,19 @@
  * itself said nothing about it.
  *
  * These assertions are the ownership: the room states every layer and when it
- * runs out, it draws no document control where there is no document, and it
- * offers the §18.4 invitation when a car has nothing declared.
+ * runs out, and it draws no document control where there is no document.
+ *
+ * ── WHAT CHANGED WITH THE CERTIFICATE FLOW ───────────────────────────────
+ * Two assertions here used to pin the §18.4 invitation: an empty-ledger pane
+ * saying "Nothing declared yet · Tell us what protects it", over a `wa.me`
+ * link. That was the product's ONLY declaration path and it ended in a
+ * messaging application — nothing on the other side of it wrote a Protection.
+ * A test that pins a workaround keeps the workaround.
+ *
+ * The certificate now carries its own row in the ledger whatever the car has,
+ * and the row carries a real act, so there is no empty ledger left to fill.
+ * The two assertions below replace those: a layer with an act draws it, and a
+ * layer without one draws nothing extra.
  */
 import { renderToStaticMarkup } from 'react-dom/server';
 import { VehicleScreen } from '@/components/screens/VehicleScreen';
@@ -32,7 +43,6 @@ const base: VehicleModel = {
   media: [],
   editHref: '/garage?edit=v1',
   arrangeHref: '/studio?arrange=1',
-  declareHref: 'https://wa.me/000',
 };
 
 const layer = (over: Partial<VehicleProtection> = {}): VehicleProtection => ({
@@ -99,18 +109,35 @@ describe('what protects the car, in the car’s own room', () => {
     expect(h).toContain('https://files.test/puc.pdf');
   });
 
-  it('a car with nothing declared gets the invitation, not an empty frame', () => {
-    /* §18.4 — one line, one action. It existed only behind a region tap,
-       which nothing in the product could perform. */
-    const h = html({ protections: [] });
-    expect(h).toContain('Nothing declared yet');
-    expect(h).toContain('Tell us what protects it');
-    expect(h).not.toContain('What protects it<');
+  it('a layer the customer can act on carries the way in, in the ledger', () => {
+    /* §10.5 — nothing is inert. The certificate is the first protection with
+       something to do about it, and the row is where that lives. */
+    const h = html({ protections: [
+      layer({
+        label: 'Pollution certificate',
+        term: 'Not added',
+        tone: 'caution',
+        region: undefined,
+        action: { label: 'Declare certificate', href: '/vehicle/puc?car=v1' },
+      }),
+    ] });
+    expect(h).toContain('Declare certificate');
+    expect(h).toContain('/vehicle/puc?car=v1');
   });
 
-  it('and no invitation where there is nowhere to send it', () => {
-    /* §10.5 — never a control with no destination. */
-    const h = html({ protections: [], declareHref: undefined });
+  it('and a layer with nothing to do about it draws no control at all', () => {
+    /* A ceramic coating is not something a customer renews from a screen. */
+    const h = html({ protections: [layer()] });
+    expect(h).not.toContain('Declare certificate');
+    expect(h).not.toContain('/vehicle/puc');
+  });
+
+  it('the dead WhatsApp invitation is gone, and stays gone', () => {
+    /* It was the only declaration path in the product and it wrote nothing.
+       `render.test.tsx` already forbids `wa.me` across the rooms; this pins
+       the copy, because a sentence can outlive the link under it. */
+    const h = html({ protections: [] });
+    expect(h).not.toContain('Nothing declared yet');
     expect(h).not.toContain('Tell us what protects it');
   });
 

@@ -48,7 +48,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
 } as Booking);
 
 const car = (over: Partial<CarPicture> = {}): CarPicture => ({
-  vehicle: vehicle(), protections: [], visits: [], bookings: [], jobs: [], ...over,
+  vehicle: vehicle(), protections: [], declarations: [], visits: [], bookings: [], jobs: [], ...over,
 });
 
 const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({

@@ -25,8 +25,9 @@ import { getVisitsForVehicle } from '@/lib/services/visits';
 import { getUserSubscription } from '@/lib/services/subscriptions';
 import { getServices } from '@/lib/services/services';
 import { getUserNotifications } from '@/lib/services/notifications';
+import { getDeclarations } from '@/lib/services/declarations';
 import type {
-  Approval, Booking, Invoice, Job, Notification, Protection, SavedAddress,
+  Approval, Booking, Declaration, Invoice, Job, Notification, Protection, SavedAddress,
   Service, Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
 
@@ -34,6 +35,17 @@ import type {
 export interface CarPicture {
   vehicle: Vehicle;
   protections: Protection[];
+  /**
+   * THE PAPERS THE OWNER HAS SENT — and what the studio made of each.
+   *
+   * Read beside the protections rather than derived from them, because a
+   * declaration that is still waiting, or one the studio refused, produces no
+   * protection at all and yet is the whole of what the car has to say about
+   * its certificate. Without this the ledger could only ever show the two
+   * states a Protection has (in date, out of date) and the customer who sent
+   * something last night would be told "not added" (§19.1).
+   */
+  declarations: Declaration[];
   /** newest first. Empty until the visit migration runs. */
   visits: Visit[];
   /** newest first. The fallback History and Protection are projected from. */
@@ -104,14 +116,15 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
   /* A customer has a handful of cars, so this is a handful of parallel queries
      rather than an N+1 walk over a collection. */
   const cars = await Promise.all(vehicles.map(async (vehicle): Promise<CarPicture> => {
-    const [protections, visits, bookings, jobs] = await Promise.all([
+    const [protections, declarations, visits, bookings, jobs] = await Promise.all([
       getProtections(vehicle.id),
+      getDeclarations(vehicle.id),
       getVisitsForVehicle(vehicle.id),
       /* §P1.6 — the ID, never the plate. See lib/server/customerPicture.ts. */
       getBookingsForVehicle(vehicle.id, user.uid),
       getJobsForVehicle(vehicle.id, user.uid),
     ]);
-    return { vehicle, protections, visits, bookings, jobs };
+    return { vehicle, protections, declarations, visits, bookings, jobs };
   }));
 
   return {
