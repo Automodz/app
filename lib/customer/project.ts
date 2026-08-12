@@ -2514,6 +2514,9 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
       ? `${days} day${days === 1 ? '' : 's'} left in this cycle`
       : undefined,
     awaitingPayment: club.awaitingPayment,
+    /* What they have already told the studio, so the room does not ask twice
+       for something it was given last night (§19.1). */
+    paymentClaimed: sub?.transactionId,
     tone: TONE[health],
     benefits: plan?.perks,
     /* The benefit is used, not admired - a wash that is already paid for is

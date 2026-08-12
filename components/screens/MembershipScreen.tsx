@@ -36,6 +36,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
 import type { MembershipPlan } from '@/lib/types';
 import { ClubFlow, LeaveClub } from '@/components/membership/ClubFlow';
+import { ClaimPayment } from '@/components/membership/ClaimPayment';
 import type { ClubIntent } from '@/components/membership/ClubFlow';
 import { color, space, radius, TARGET_MIN } from '@/design';
 import type { StateTone } from '@/design';
@@ -73,6 +74,8 @@ export interface MembershipModel {
   countdown?: string;
   /** The studio has not taken payment yet. */
   awaitingPayment?: boolean;
+  /** The reference the customer has already given, when they have given one. */
+  paymentClaimed?: string;
   tone?: StateTone;
   /** What this plan includes — the plan's own perks, never a second list. */
   benefits?: readonly string[];
@@ -96,7 +99,7 @@ const TONE: Record<StateTone, string> = {
 export function MembershipScreen({ model }: { model: MembershipModel }) {
   const {
     held, tier, holder, memberNo, memberSince, remaining, share, term, countdown,
-    awaitingPayment, tone = 'assent',
+    awaitingPayment, paymentClaimed, tone = 'assent',
     benefits = [], bookWashHref, subscriptionId, currentPlan, history = [],
   } = model;
 
@@ -229,6 +232,13 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
             The studio has not taken payment for this yet. It starts when they do.
           </p>
         </Pane>
+      ) : null}
+
+      {/* §10.5 — a true sentence with nothing to do about it is a dead end.
+          Somebody who has just paid at the counter has something to tell the
+          studio, and this is where they tell it. It grants nothing. */}
+      {awaitingPayment && subscriptionId ? (
+        <ClaimPayment subscriptionId={subscriptionId} claimed={paymentClaimed} />
       ) : null}
 
       {/* ── WHAT REMAINS ────────────────────────────────────────────────

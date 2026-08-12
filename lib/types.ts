@@ -468,7 +468,18 @@ export interface StepData {
 // ─── MEMBERSHIP / SUBSCRIPTION ───────────────────────────────────────────────
 
 export type MembershipPlan = 'Silver' | 'Gold' | 'Platinum';
-export type MembershipStatus = 'active' | 'expired' | 'cancelled' | 'pending';
+/**
+ * `pending`   asked for; the studio has not seen the money.
+ * `active`    the studio has, and the cycle is running.
+ * `rejected`  the studio looked and would not activate it. EXTENDED here for
+ *             the same reason `expired` was added to `BookingStatus`: a request
+ *             the studio refuses had no terminal state, so it sat `pending` for
+ *             ever and the customer was never told anything.
+ * `expired`   the cycle ended. Rejoining is a NEW subscription, never a revival.
+ * `cancelled` withdrawn by the customer, or superseded by an upgrade.
+ */
+export type MembershipStatus =
+  'active' | 'expired' | 'cancelled' | 'pending' | 'rejected';
 
 export interface MembershipPlanConfig {
   id: MembershipPlan;
@@ -503,7 +514,24 @@ export interface Subscription {
   washesIncluded?: number;
   washesUsed: number;
   paymentMethod: 'upi' | 'cash';
+  /**
+   * THE CUSTOMER'S OWN REFERENCE FOR A PAYMENT THEY SAY THEY MADE.
+   *
+   * A CLAIM, exactly as `submitPaymentReference` records one against a visit —
+   * it activates nothing and releases nothing. The studio still activates
+   * against money it has actually seen.
+   */
   transactionId?: string;
+  /** When that claim was made. Absent means none was ever offered. */
+  paymentClaimedAt?: Timestamp;
+  /**
+   * WHAT THIS COST, DECIDED BY THE SERVER FROM THE CATALOGUE at the moment it
+   * was asked for — never a figure a browser sent. `amountPaid` is the twin,
+   * stamped at activation; this is what the customer was told they owed.
+   */
+  amountDue?: number;
+  /** The subscription this upgrade replaced, when it replaced one. */
+  supersedesId?: string;
   adminNotes?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

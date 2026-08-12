@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { CreditCard, Phone, Droplets, CalendarRange } from 'lucide-react';
-import { getAllSubscriptions, updateSubscriptionStatus, expireLapsedSubscriptions } from '@/lib/firebaseService';
+import { getAllSubscriptions } from '@/lib/firebaseService';
+import { authedFetch } from '@/lib/clientSession';
 import type { Subscription } from '@/lib/types';
 
 const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
@@ -19,20 +21,39 @@ export default function AdminSubscriptionsPage() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all');
 
   useEffect(() => {
-    // Persist expiry for lapsed memberships first (only admin may write it), then load
-    expireLapsedSubscriptions()
-      .catch(() => {})
-      .then(() => getAllSubscriptions())
+    /* Expiry is the nightly job's (`/api/cron/daily`), not this screen's. It
+       used to run here on load, which meant whether a customer's membership
+       had expired depended on somebody in the studio opening a page. */
+    getAllSubscriptions()
       .then(s => setSubs(s))
       .catch(e => console.error('subscriptions load failed', e))
       .finally(() => setLoading(false));
   }, []);
 
-  const changeStatus = async (id: string, status: Subscription['status']) => {
+  /**
+   * ACTIVATING IS A SERVER WRITE, and this screen may not make it.
+   *
+   * `active` grants free washes and a standing discount. It also has to close
+   * any other membership the customer holds in the same commit — which a
+   * client write cannot do, and which is how a customer ends up with two wash
+   * allowances. `firestore.rules` refuses every write here, including from an
+   * admin console, so this asks `/api/membership` like everything else.
+   */
+  const decide = async (id: string, decision: 'activate' | 'reject') => {
     try {
-      await updateSubscriptionStatus(id, status);
-      setSubs(prev => prev.map(s => s.id === id ? { ...s, status } : s));
-    } catch {}
+      const res = await authedFetch('/api/membership', {
+        method: 'PUT',
+        body: JSON.stringify({ subscriptionId: id, decision }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: '' })) as { error?: string };
+        toast.error(body.error || 'Could not save that');
+        return;
+      }
+      const { status } = await res.json() as { status: Subscription['status'] };
+      toast.success(status === 'active' ? 'Activated' : 'Refused');
+      getAllSubscriptions().then(setSubs).catch(() => {});
+    } catch { toast.error('Could not reach the server'); }
   };
 
   const shown = filter === 'all' ? subs : subs.filter(s => s.status === filter);
@@ -96,20 +117,26 @@ export default function AdminSubscriptionsPage() {
                     </a>
                   )}
                 </div>
-                <div className="flex gap-2 mt-4">
-                  {s.status !== 'active' && (
-                    <button onClick={() => changeStatus(s.id, 'active')}
-                      className="btn-ember flex-1 py-2.5 text-xs">Activate</button>
-                  )}
-                  {s.status === 'active' && (
-                    <button onClick={() => changeStatus(s.id, 'expired')}
-                      className="btn-ghost flex-1 py-2.5 text-xs">Mark Expired</button>
-                  )}
-                  {(s.status === 'active' || s.status === 'expired') && (
-                    <button onClick={() => changeStatus(s.id, 'cancelled')}
-                      className="btn-ghost flex-1 py-2.5 text-xs" style={{ color: 'var(--danger)' }}>Cancel</button>
-                  )}
-                </div>
+                {/* THE TWO ACTS THE LIFECYCLE ACTUALLY HAS.
+                    "Mark Expired" and "Cancel" on an active membership were
+                    offered here and are gone: expiry belongs to the clock
+                    (the nightly job persists it the day a cycle ends) and
+                    leaving belongs to the customer. A studio control that
+                    ends somebody's paid month by hand is not a lifecycle, it
+                    is an override — and `membershipTransition` refuses it. */}
+                {s.status === 'pending' && (
+                  <div className="flex gap-2 mt-4">
+                    <button onClick={() => decide(s.id, 'activate')}
+                      className="btn-ember flex-1 py-2.5 text-xs">Payment seen · activate</button>
+                    <button onClick={() => decide(s.id, 'reject')}
+                      className="btn-ghost flex-1 py-2.5 text-xs" style={{ color: 'var(--danger)' }}>Refuse</button>
+                  </div>
+                )}
+                {s.transactionId && (
+                  <p className="font-body text-xs mt-3" style={{ color: 'var(--steel)' }}>
+                    Customer&rsquo;s reference · {s.transactionId}
+                  </p>
+                )}
               </div>
             );
           })}

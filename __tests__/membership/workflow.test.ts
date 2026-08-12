@@ -55,30 +55,65 @@ describe('the arithmetic exists once', () => {
   });
 });
 
-describe('the customer may only do what the rules permit', () => {
+/**
+ * THESE FOUR ASSERTIONS USED TO PIN THE WORKAROUND.
+ *
+ * They read: "a self-purchase always lands as pending", and checked that
+ * `firestore.rules` said `request.resource.data.status == 'pending'` while
+ * `ClubFlow` wrote `status: 'pending'` into a document it assembled itself.
+ * Both halves were true and the guarantee was worthless — rules can check that
+ * ONE WORD and nothing else about the document, so `plan: 'Platinum'`,
+ * `washesTotal: 999` and `endDate: '2099-12-31'` all travelled beside it
+ * untouched, and the studio's activation screen honoured what it found.
+ *
+ * A test that asserts the shape of a workaround keeps the workaround. These
+ * are what the product actually has to guarantee.
+ */
+describe('the customer cannot write their own membership', () => {
   const rules = readFileSync('firestore.rules', 'utf8');
   const flow = codeOf('components/membership/ClubFlow.tsx');
+  const service = codeOf('lib/services/subscriptions.ts');
+  const block = rules.slice(
+    rules.indexOf('match /subscriptions/{subId}'),
+    rules.indexOf('match /', rules.indexOf('match /subscriptions/{subId}') + 10),
+  );
 
-  it('a self-purchase always lands as pending', () => {
-    expect(rules).toMatch(/request\.resource\.data\.status == 'pending'/);
-    expect(flow).toMatch(/status: 'pending'/);
+  it('NO CLIENT WRITES A SUBSCRIPTION AT ALL — not even a pending one', () => {
+    expect(block).toMatch(/allow create: if false;/);
+    expect(block).toMatch(/allow update: if false;/);
+    expect(block).toMatch(/allow delete: if false;/);
   });
 
-  it('joining, upgrading and renewing are the SAME write', () => {
-    /* The rules allow a customer to change only `status`, and only to
-       `cancelled` — so a plan change cannot be an edit. All three create. */
-    expect(rules).toMatch(/hasOnly\(\['status', 'updatedAt'\]\)/);
-    expect(rules).toMatch(/request\.resource\.data\.status == 'cancelled'/);
-    expect((flow.match(/createSubscription/g) ?? []).length).toBeGreaterThanOrEqual(1);
+  it('and the rule no longer pretends a status check is a guarantee', () => {
+    expect(block).not.toMatch(/status == 'pending'/);
+    expect(block).not.toMatch(/hasOnly/);
   });
 
-  it('leaving uses the one service call the rules allow', () => {
-    expect(flow).toMatch(/updateSubscriptionStatus\(subscriptionId, 'cancelled'\)/);
+  it('the client service can only READ', () => {
+    expect(service).not.toMatch(/setDoc|addDoc|updateDoc|deleteDoc|writeBatch/);
   });
 
-  it('no membership status is written client-side except cancelled', () => {
-    const writes = flow.match(/updateSubscriptionStatus\([^)]*\)/g) ?? [];
-    for (const w of writes) expect(w).toContain("'cancelled'");
+  it('the flow sends a plan NAME, and has nothing else to send', () => {
+    expect(flow).toMatch(/'\/api\/membership'/);
+    expect(flow).toMatch(/JSON\.stringify\(\{ plan: chosen\.id, paymentMethod: method \}\)/);
+    /* Every field it used to compute for itself. */
+    for (const forged of ['startDate', 'endDate', 'washesTotal', 'washesUsed', 'status:']) {
+      expect({ forged, present: flow.includes(forged) }).toEqual({ forged, present: false });
+    }
+  });
+
+  it('leaving goes through the same door, and is a transition like any other', () => {
+    expect(flow).toMatch(/action: 'leave'/);
+    expect(codeOf('lib/server/membershipService.ts'))
+      .toMatch(/membershipTransition\(held\.status, 'cancelled', 'customer'\)/);
+  });
+
+  it('joining, renewing and upgrading are ONE request the SERVER classifies', () => {
+    const engine = codeOf('lib/os/membership.ts');
+    expect(engine).toMatch(/export function mayJoin/);
+    for (const act of ["'join'", "'renew'", "'upgrade'"]) expect(engine).toContain(act);
+    /* And the browser never decides which it is. */
+    expect(flow).not.toMatch(/act:|intent === 'upgrade' \?/);
   });
 });
 
@@ -206,14 +241,20 @@ describe('membership revenue is its own line, on the payment date', () => {
   });
 
   it('the payment stamp is written once, at activation', () => {
-    /* Re-activating must not move revenue into a later month. */
-    expect(subs).toMatch(/if \(status === 'active'\)/);
-    expect(subs).toMatch(/!existing\.paidAt/);
+    /* Re-activating must not move revenue into a later month. Asserted on the
+       SERVICE now — the client stamp is gone, along with the client write. */
+    const svc = codeOf('lib/server/membershipService.ts');
+    expect(svc).toMatch(/held\.paidAt \? \{\} : \{ paidAt: Timestamp\.fromDate\(now\) \}/);
+    expect(subs).not.toMatch(/paidAt/);
   });
 
   it('the amount is captured then, not looked up later', () => {
-    /* Otherwise changing a plan's price rewrites past months. */
-    expect(subs).toMatch(/data\.amountPaid = plan\.price/);
+    /* Otherwise changing a plan's price rewrites past months. And it is the
+       figure the customer was TOLD they owed — derived from the catalogue at
+       the moment of the request — rather than today's price list. */
+    const svc = codeOf('lib/server/membershipService.ts');
+    expect(svc).toMatch(/held\.amountPaid == null && price != null \? \{ amountPaid: price \}/);
+    expect(svc).toMatch(/const price = held\.amountDue \?\? planOf\(held\.plan\)\?\.price;/);
   });
 
   it('reports query on paidAt, not createdAt or updatedAt', () => {

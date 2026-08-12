@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
 import { runRetentionForUser } from '@/lib/server/retention';
 import { notifyAdmins as notifyAdminsShared } from '@/lib/server/notify';
-import { isLapsed } from '@/lib/os/club';
 import { expireBookingAuthoritative } from '@/lib/server/bookingService';
+import { expireLapsedMemberships } from '@/lib/server/membershipService';
 import { announceBookingClosed } from '@/lib/server/bookingNotify';
 
 export const dynamic = 'force-dynamic';
@@ -97,15 +97,13 @@ export async function GET(req: NextRequest) {
      and the read path compute expiry), but every QUERY that filters on status
      counted them as members. Nightly is where this belongs.
 
-     The rule is `os/club.isLapsed`, shared with the client service, so the two
-     cannot disagree about what "run out" means. */
-  const activeSubs = await adminDb!.collection('subscriptions')
-    .where('status', '==', 'active').get();
-  const lapsed = activeSubs.docs.filter(d => isLapsed(d.data() as { status?: string; endDate?: string }));
-  await Promise.all(lapsed.map(d =>
-    d.ref.update({ status: 'expired', updatedAt: new Date() }),
-  ));
-  summary.expiredMemberships = lapsed.length;
+     THROUGH THE SERVICE, not with a raw update. This wrote `status: 'expired'`
+     directly, which is the same shape of shortcut the whole membership pass
+     removed everywhere else: the transition table is only worth having if
+     nothing routes around it, and `system` is the actor precisely so an
+     automated expiry can never be mistaken in an audit for somebody deciding
+     something (lib/os/lifecycle). */
+  summary.expiredMemberships = await expireLapsedMemberships();
 
   /* 4c. AGE OUT REQUESTS THE STUDIO NEVER ANSWERED.
      Three bookings sat `pending` thirteen to seventeen days past the day they

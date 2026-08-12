@@ -13,7 +13,7 @@
  * which Jest will not parse (see `__tests__/deploy/serialisation.test.ts` for
  * the same constraint). So the SHAPE the Admin SDK presents is modelled:
  * documents, a where-query, and a transaction whose reads all precede its
- * writes. The emulator script (`scripts/security/puc/run.sh`) is what proves
+ * writes. The emulator script (`scripts/security/customer/run.sh`) is what proves
  * this against real Firestore semantics; this proves the decisions.
  */
 

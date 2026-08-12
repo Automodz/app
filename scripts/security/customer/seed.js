@@ -44,6 +44,19 @@ const declarations = [
   }],
 ];
 
+const subscriptions = [
+  ['sub-A-pending', {
+    userId: 'custA', userName: 'Customer A', plan: 'Silver', status: 'pending',
+    startDate: '2026-08-01', endDate: '2026-08-31',
+    washesTotal: 4, washesUsed: 0, amountDue: 1499, paymentMethod: 'upi',
+  }],
+  ['sub-B-active', {
+    userId: 'custB', userName: 'Customer B', plan: 'Gold', status: 'active',
+    startDate: '2026-08-01', endDate: '2026-08-31',
+    washesTotal: 8, washesUsed: 2, amountDue: 2999, amountPaid: 2999, paymentMethod: 'cash',
+  }],
+];
+
 const protections = [
   ['carA_puc_decl-A-old', {
     vehicleId: 'carA', kind: 'puc', since: '2026-01-01',
@@ -77,7 +90,10 @@ const protections = [
   for (const [id, data] of protections) {
     await db.doc(`protections/${id}`).set({ ...data, createdAt: new Date(), updatedAt: new Date() });
   }
+  for (const [id, data] of subscriptions) {
+    await db.doc(`subscriptions/${id}`).set({ ...data, createdAt: new Date(), updatedAt: new Date() });
+  }
   fs.writeFileSync(__dirname + '/tokens.json', JSON.stringify(tokens, null, 2));
-  console.log('seeded: 4 users, 2 cars, 2 declarations, 2 protections');
+  console.log('seeded: 4 users, 2 cars, 2 declarations, 2 protections, 2 subscriptions');
   process.exit(0);
 })();

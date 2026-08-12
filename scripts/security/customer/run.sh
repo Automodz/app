@@ -6,7 +6,7 @@
 # an owner reads their own papers, nobody reads anybody else's, and no browser
 # — customer, technician or owner — can write a declaration or a protection.
 #
-#   ./scripts/security/puc/run.sh
+#   ./scripts/security/customer/run.sh
 #
 # No dev server is needed: this is about the rules, not about the routes (the
 # service's own decisions are covered by __tests__/protection/service.test.ts).
@@ -16,7 +16,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
-WORK="${TMPDIR:-/tmp}/automodz-puc-emu"
+WORK="${TMPDIR:-/tmp}/automodz-customer-emu"
 PORT_FS=8085 PORT_AUTH=9099
 
 # firebase-tools 15 needs a JDK 21+; the repo's default may be older

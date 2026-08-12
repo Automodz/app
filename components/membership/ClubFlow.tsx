@@ -4,27 +4,28 @@
  *
  * Source: reference/customer-old/components/os/JoinClub.tsx
  *
- * WHY JOIN, UPGRADE AND RENEW ARE ONE PATH. `firestore.rules` lets a customer
- * CREATE a subscription only with `status: 'pending'`, and UPDATE one only to
- * `'cancelled'`. There is deliberately no honour-system activation — the studio
- * takes payment and an admin activates. So all three acts are the same write:
- * a new pending subscription naming the plan wanted. Modelling upgrade as a
- * plan edit would be inventing a path the server refuses.
+ * WHY JOIN, UPGRADE AND RENEW ARE ONE PATH. All three are one request naming
+ * one plan; the SERVER decides which of the three it actually is, from what
+ * the customer already holds (`lib/os/membership.mayJoin`). Modelling upgrade
+ * as a plan edit would be inventing a path the server refuses.
  *
- * NO ARITHMETIC IS REDEFINED HERE. The plans and their perks are
- * `MEMBERSHIP_PLANS`; the cycle length is `os/club.cycleEnd`; the write is
- * `createSubscription`; leaving is `updateSubscriptionStatus`. This file
- * chooses and submits, and computes nothing.
+ * ── THIS FILE COMPUTES NOTHING, AND THAT IS NEW ──────────────────────────
+ * It used to assemble the whole subscription document — plan, start date, end
+ * date, wash count, payment method — and write it straight to Firestore, which
+ * accepted it because it said `pending`. So the terms of a standing
+ * entitlement were the browser's to write: `washesTotal: 999` and an `endDate`
+ * in 2099 were one devtools session away, and the studio's activation screen
+ * had no reason to doubt the record in front of it.
+ *
+ * Now it sends a plan NAME and a payment method, and nothing else exists to
+ * send. The price, the dates and the wash count are derived server-side from
+ * the catalogue and the studio's clock (`/api/membership`).
  */
 import { useEffect, useMemo, useState } from 'react';
-import { currentUid } from '@/lib/clientSession';
-import { getUserProfile } from '@/lib/firebaseService';
+import { authedFetch } from '@/lib/clientSession';
 import { useRouter } from 'next/navigation';
-import { createSubscription, updateSubscriptionStatus } from '@/lib/services/subscriptions';
-import { fireOpsEvent } from '@/lib/services/notifications';
-import { cycleEnd } from '@/lib/os/club';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
-import type { MembershipPlan, Subscription } from '@/lib/types';
+import type { MembershipPlan } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { BottomSheet, Heading, Text, Button, OfflineNote, useOnline } from '@/components/system';
 import {
@@ -32,7 +33,21 @@ import {
   type as typeScale,
 } from '@/design';
 
-const todayISO = () => new Date().toISOString().split('T')[0];
+/**
+ * EVERY WAY THE STUDIO CAN REFUSE, IN THE CUSTOMER'S WORDS.
+ *
+ * Keyed by the same codes the engine and the route return, so a refusal
+ * invented on the server still arrives as a sentence rather than a slug.
+ */
+const REFUSAL: Record<string, string> = {
+  'plan-unknown': 'That plan is not one we offer any more.',
+  'payment-method-invalid': 'Choose how you would like to pay.',
+  'already-pending': 'You already have one with the studio. We will confirm it shortly.',
+  'already-a-member': 'You are already in the Club on that plan or a better one.',
+  'not-configured': 'The studio cannot be reached just now. Try again shortly.',
+};
+const SIGNED_OUT = 'Your session has expired. Sign in again and we\u2019ll pick this up.';
+const UNKNOWN = 'That didn\u2019t reach the studio — try again.';
 
 /** What the customer is here to do. All three write the same shape. */
 export type ClubIntent = 'join' | 'upgrade' | 'renew';
@@ -82,58 +97,31 @@ export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlow
 
   const submit = async () => {
     if (!chosen) return;
-    if (!online) { setError('You’re offline — reconnect to do this.'); return; }
+    if (!online) { setError('You\u2019re offline — reconnect to do this.'); return; }
     setBusy(true);
     setError(null);
-    const start = todayISO();
     try {
-      /* NOT `user` FROM THE STORE. Membership renders on the SERVER and mounts
-         no `AuthProvider`, so the store's user is always null here — and this
-         opened with `if (!user) return`, which meant pressing join did nothing
-         at all, silently, for every customer. The one act in the product that
-         takes a standing payment could not be performed.
-         The identity is read from the account itself, which is also the only
-         copy `firestore.rules` will accept a subscription against. */
-      const uid = await currentUid();
-      if (!uid) {
-        setError('Your session has expired. Sign in again and we’ll pick this up.');
+      /* A PLAN NAME AND A PAYMENT METHOD. That is the whole request, and
+         there is deliberately nothing else to send: the price, the dates and
+         the wash count are the studio's to decide, and the route derives them
+         from the catalogue and its own clock. Announcing it to the studio
+         happens there too, in the same request that writes the record. */
+      const res = await authedFetch('/api/membership', {
+        method: 'POST',
+        body: JSON.stringify({ plan: chosen.id, paymentMethod: method }),
+      });
+
+      if (res.status === 401) { setError(SIGNED_OUT); return; }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: '' })) as { error?: string };
+        setError(REFUSAL[body.error ?? ''] ?? UNKNOWN);
         return;
       }
-      const profile = await getUserProfile(uid);
-      /* Exactly the old payload. `status: 'pending'` is not a choice — the
-         rules refuse anything else from a customer. */
-      const payload: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'> = {
-        userId: uid,
-        userName: profile?.name ?? '',
-        userEmail: profile?.email ?? '',
-        userPhone: profile?.phone ?? '',
-        plan: chosen.id,
-        status: 'pending',
-        startDate: start,
-        endDate: cycleEnd(start),
-        washesTotal: chosen.washesPerMonth,
-        washesUsed: 0,
-        paymentMethod: method,
-      };
-      const id = await createSubscription(payload);
-
-      /* TELL THE STUDIO. `fireOpsEvent` and the `membership_pending` arm of
-         `/api/notify/event` have both existed since the rebuild with NO
-         CALLER — a customer could join and nobody would know until someone
-         opened /admin/subscriptions. The route verifies ownership server-side
-         and `notifyAdmins` is idempotent per subscription id, so a retry
-         cannot produce a second notice.
-
-         Client-fired, unlike the booking announcement, because the write
-         itself is client-side: `createSubscription` goes straight to Firestore
-         under the rules, so there is no server moment to hook without
-         inventing a second way to create a subscription. */
-      void fireOpsEvent('membership_pending', id);
 
       setDone(true);
       router.refresh();
     } catch {
-      setError('That didn’t reach the studio — try again.');
+      setError(UNKNOWN);
     } finally {
       setBusy(false);
     }
@@ -288,7 +276,17 @@ export function LeaveClub({
     setBusy(true);
     setError(null);
     try {
-      await updateSubscriptionStatus(subscriptionId, 'cancelled');
+      /* Through the same door as everything else. Leaving is a lifecycle
+         transition like any other, and `membershipTransition` is what decides
+         whether this membership may take it — a cancelled one cannot be
+         cancelled again, and an expired one is history rather than something
+         to leave. */
+      const res = await authedFetch('/api/membership', {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'leave', subscriptionId }),
+      });
+      if (res.status === 401) { setError(SIGNED_OUT); return; }
+      if (!res.ok) { setError('That didn’t cancel. Try again in a moment.'); return; }
       onClose();
       router.refresh();
     } catch {

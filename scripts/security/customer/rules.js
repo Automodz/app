@@ -1,4 +1,4 @@
-/* THE CERTIFICATE'S DOORS, PROVEN AGAINST REAL FIRESTORE SEMANTICS.
+/* THE CUSTOMER'S TRUST BOUNDARY, PROVEN AGAINST REAL FIRESTORE SEMANTICS.
  *
  * `npx jest` reads `firestore.rules` as TEXT — it can prove the file SAYS the
  * right thing, and nothing more. This runs the real rules engine in the
@@ -109,6 +109,79 @@ const CERT = {
   ok('CANNOT delete the ceramic warranty the STUDIO captured at seal',
     await denied(() => deleteDoc(doc(db, 'protections', 'carA_ceramic'))));
 
+  /* ── THE CLUB ─────────────────────────────────────────────────────── */
+  ok('CAN read their own membership',
+    await allowed(() => getDocs(query(collection(db, 'subscriptions'), where('userId', '==', 'custA')))));
+
+  ok('CANNOT read another customer’s membership',
+    await denied(() => getDoc(doc(db, 'subscriptions', 'sub-B-active'))));
+
+  ok('CANNOT write themselves a membership — not even a `pending` one',
+    await denied(() => setDoc(doc(db, 'subscriptions', 'forged-1'), {
+      userId: 'custA', plan: 'Platinum', status: 'pending',
+      startDate: '2026-08-01', endDate: '2099-12-31',
+      washesTotal: 999, washesUsed: 0, paymentMethod: 'cash',
+    })));
+
+  ok('  …nor with addDoc, which is the same write with a generated id',
+    await denied(() => addDoc(collection(db, 'subscriptions'), {
+      userId: 'custA', plan: 'Silver', status: 'pending',
+      startDate: '2026-08-01', endDate: '2026-08-31',
+      washesTotal: 4, washesUsed: 0, paymentMethod: 'cash',
+    })));
+
+  ok('CANNOT activate their own pending membership',
+    await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { status: 'active' })));
+
+  ok('CANNOT give themselves washes back',
+    await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { washesUsed: 0, washesTotal: 99 })));
+
+  ok('CANNOT extend their own cycle',
+    await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { endDate: '2099-12-31' })));
+
+  ok('CANNOT even cancel from the browser — leaving is a transition too',
+    await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { status: 'cancelled' })));
+
+  ok('CANNOT stamp their own payment',
+    await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), {
+      paidAt: new Date(), amountPaid: 1,
+    })));
+
+  /* ── EVERYTHING ELSE A CUSTOMER MUST NOT WRITE ────────────────────── */
+  ok('CANNOT create a payment, so no amount is ever theirs to name',
+    await denied(() => setDoc(doc(db, 'payments', 'forged-p1'), {
+      customerId: 'custA', bookingId: 'b1', amount: 1, status: 'paid',
+    })));
+
+  ok('CANNOT mark an existing payment paid',
+    await denied(() => updateDoc(doc(db, 'payments', 'any'), { status: 'paid' })));
+
+  ok('CANNOT approve their own approval',
+    await denied(() => setDoc(doc(db, 'approvals', 'forged-a1'), {
+      customerId: 'custA', status: 'approved', amount: 0,
+    })));
+
+  ok('CANNOT write an estimate, so no price is theirs to name',
+    await denied(() => setDoc(doc(db, 'estimates', 'forged-e1'), {
+      userId: 'custA', total: 1,
+    })));
+
+  ok('CANNOT create a booking at all',
+    await denied(() => addDoc(collection(db, 'bookings'), {
+      userId: 'custA', vehicleId: 'carA', status: 'pending', totalAmount: 1,
+    })));
+
+  ok('CANNOT seal a visit',
+    await denied(() => setDoc(doc(db, 'visits', 'forged-v1'), {
+      vehicleId: 'carA', status: 'sealed', sealedAt: new Date(), termsCaptured: [],
+    })));
+
+  ok('CANNOT promote themselves to staff',
+    await denied(() => updateDoc(doc(db, 'users', 'custA'), { role: 'admin' })));
+
+  ok('CANNOT rate on somebody else’s behalf',
+    await denied(() => setDoc(doc(db, 'ratings', 'v-any'), { customerId: 'custB', stars: 5 })));
+
   /* ── ANOTHER CUSTOMER ──────────────────────────────────────────────── */
   await signInWithCustomToken(auth, tokens.custB);
   console.log('\nRULES · signed in as custB (owns carB, not carA)');
@@ -140,6 +213,12 @@ const CERT = {
   ok('CANNOT create a declaration on a customer’s behalf from a browser',
     await denied(() => addDoc(collection(db, 'declarations'), CERT)));
 
+  ok('CANNOT activate a membership from a browser either',
+    await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { status: 'active' })));
+
+  ok('CAN read every membership — the counter has to see them',
+    await allowed(() => getDocs(collection(db, 'subscriptions'))));
+
   ok('CAN still write a protection — the seal runs as staff',
     await allowed(() => setDoc(doc(db, 'protections', 'carA_glass'), {
       vehicleId: 'carA', kind: 'glass', termsSource: 'captured',
@@ -156,6 +235,14 @@ const CERT = {
   ok('CANNOT delete a declaration — the record is the record',
     await denied(() => deleteDoc(doc(db, 'declarations', 'decl-A-open'))));
 
+  ok('CANNOT activate a membership from the admin console',
+    await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { status: 'active' })));
+
+  ok('CANNOT create one either — /api/membership is the one door',
+    await denied(() => addDoc(collection(db, 'subscriptions'), {
+      userId: 'custA', plan: 'Gold', status: 'active',
+    })));
+
   /* ── SIGNED OUT ────────────────────────────────────────────────────── */
   await auth.signOut();
   console.log('\nRULES · signed out');
@@ -165,6 +252,14 @@ const CERT = {
 
   ok('CANNOT read any protection',
     await denied(() => getDoc(doc(db, 'protections', 'carA_ceramic'))));
+
+  ok('CANNOT read any membership',
+    await denied(() => getDoc(doc(db, 'subscriptions', 'sub-A-pending'))));
+
+  ok('CANNOT read anybody’s bookings, payments or visits',
+    await denied(() => getDocs(collection(db, 'bookings')))
+    && await denied(() => getDocs(collection(db, 'payments')))
+    && await denied(() => getDocs(collection(db, 'visits'))));
 
   ok('CANNOT write anything at all',
     await denied(() => setDoc(doc(db, 'declarations', 'anon-1'), CERT)));

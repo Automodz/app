@@ -17,12 +17,12 @@ import { doc, getDoc, getDocs, updateDoc, collection, query, where } from 'fireb
 import { db } from '@/lib/firebase';
 import {
   getJobsForCustomer, getInvoicesForCustomer, listPromos, updatePromo,
-  buildInvoiceWhatsAppLink, invoicePublicUrl, createSubscription,
+  buildInvoiceWhatsAppLink, invoicePublicUrl,
 } from '@/lib/firebaseService';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
+import { authedFetch } from '@/lib/clientSession';
 import { formatCurrency, formatDate, getStatusLabel, getStatusColor } from '@/lib/utils';
 import type { User, Vehicle, Booking, Subscription, Job, Invoice, Promo } from '@/lib/types';
-import { cycleEnd } from '@/lib/os/club';
 
 type TimelineItem = {
   id: string;
@@ -115,28 +115,33 @@ export default function CustomerDetailPage() {
     setSavingEdit(false);
   };
 
+  /**
+   * THE STUDIO STARTS A MEMBERSHIP AT THE COUNTER.
+   *
+   * This used to assemble the document here — plan, dates, wash count — and
+   * write `status: 'active'` straight to Firestore. Two writers meant two
+   * chances for the terms to drift from the catalogue, and this copy carried
+   * no `amountPaid` at all, so a membership sold at the counter recorded no
+   * revenue. One door now, and the terms are derived from the plan.
+   */
   const createPlanFor = async (planId: 'Silver' | 'Gold' | 'Platinum') => {
     if (!customer) return;
-    const cfg = MEMBERSHIP_PLANS.find(p => p.id === planId)!;
     setCreatingPlan(planId);
     try {
-      const start = new Date().toISOString().split('T')[0];
-      /* The cycle's length belongs to the club engine, so admin and customer
-         cannot disagree about when a membership ends (§22.2). */
-      const end = cycleEnd(start);
-      await createSubscription({
-        userId: id, userName: customer.name,
-        userEmail: customer.email, userPhone: customer.phone || '',
-        plan: planId, status: 'active',
-        startDate: start, endDate: end,
-        washesTotal: cfg.washesPerMonth, washesUsed: 0,
-        paymentMethod: 'cash',
+      const res = await authedFetch('/api/membership', {
+        method: 'POST',
+        body: JSON.stringify({ userId: id, plan: planId, paymentMethod: 'cash' }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: '' })) as { error?: string };
+        toast.error(body.error || 'Could not create membership');
+        return;
+      }
       toast.success(`${planId} membership started for ${customer.name}`);
       setPlanPickerOpen(false);
       await load();
     } catch { toast.error('Could not create membership'); }
-    setCreatingPlan(null);
+    finally { setCreatingPlan(null); }
   };
 
   const assignPromo = async (p: Promo) => {

@@ -327,23 +327,35 @@ service cloud.firestore {
       allow write: if request.auth != null && isAdmin();
     }
 
-    // ── Subscriptions - owner may cancel their own; admin manages all ───
+    // ── Subscriptions - the Club. READ by its owner, WRITTEN by the server ──
+    //    This used to let a CUSTOMER create their own subscription, provided
+    //    the document said `status: 'pending'`. Rules can check that word.
+    //    They cannot check that `plan` is a real plan, that `endDate` is
+    //    thirty days away rather than in 2099, that `washesTotal` is what the
+    //    plan grants rather than 999, or that the customer does not already
+    //    hold one - and every one of those was a field the browser wrote.
+    //    The studio's activation screen then honoured what it found, so the
+    //    honest description of the old flow is that a customer wrote their own
+    //    membership terms and asked the studio to rubber-stamp them.
+    //
+    //    Everything a subscription needs is derivable from the plan name and
+    //    the clock, so that is what the server does (lib/os/membership.ts,
+    //    lib/server/membershipService.ts). /api/membership is the one door:
+    //    POST to ask, PATCH to give a payment reference or to leave, PUT for
+    //    the studio to activate or refuse.
+    //
+    //    `active` is refused to everyone here, INCLUDING the admin console.
+    //    It is the third of the three writes a browser must never reach -
+    //    `paid` releases a car, `verified` grants a protection, and `active`
+    //    grants free washes and a standing discount. Activation also has to
+    //    close any other membership the customer holds in the SAME commit,
+    //    which rules cannot do: a client write would leave two running.
     match /subscriptions/{subId} {
       allow read: if request.auth != null &&
-        (resource.data.userId == request.auth.uid || isAdmin());
-      // Self-purchase always lands as 'pending' - only admin verifies payment
-      // and activates (audit S6 #1: no honor-system activation).
-      allow create: if request.auth != null &&
-        (isAdmin() ||
-         (request.resource.data.userId == request.auth.uid &&
-          request.resource.data.status == 'pending'));
-      allow update: if request.auth != null &&
-        (isAdmin() ||
-         (resource.data.userId == request.auth.uid &&
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['status', 'updatedAt']) &&
-          request.resource.data.status == 'cancelled'));
-      allow delete: if request.auth != null && isAdmin();
+        (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
     // ── Gallery - PUBLIC read (logged-out landing page), admin write ────

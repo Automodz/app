@@ -41,7 +41,7 @@
  *
  * Three axes, three machines, no state that can only be reached by lying.
  */
-import type { BookingStatus, JobStatus, VisitStatus } from '@/lib/types';
+import type { BookingStatus, JobStatus, MembershipStatus, VisitStatus } from '@/lib/types';
 
 /* ── WHO IS ASKING ───────────────────────────────────────────────────────── */
 
@@ -307,6 +307,76 @@ export function approvalHasExpired(
   if (approval.status !== 'requested') return false;
   const nowMs = typeof now === 'number' ? now : now.getTime();
   return nowMs - approval.requestedAtMs > APPROVAL_VALID_HOURS * 60 * 60 * 1000;
+}
+
+/* ── MEMBERSHIP (the Club) ───────────────────────────────────────────────── */
+
+/**
+ * A CUSTOMER MAY NEVER WRITE `active`.
+ *
+ * It is the third of the three writes in this file that a browser must never
+ * reach — `paid` releases a car, `verified` grants a protection, and `active`
+ * grants a standing entitlement: free washes and a discount on every visit,
+ * against money the studio may never have received.
+ *
+ * `firestore.rules` used to let a customer CREATE their own subscription so
+ * long as it said `status: 'pending'`. Rules can check that word. They cannot
+ * check that `plan` is a real plan, that `endDate` is thirty days away rather
+ * than in 2099, that `washesTotal` is what the plan grants rather than 999, or
+ * that the customer does not already hold one. Every one of those was a field
+ * the browser wrote, and the studio's activation screen then honoured them —
+ * so the honest description of the old flow is that a customer could write
+ * their own membership terms and ask the studio to rubber-stamp them.
+ *
+ * The whole document is server-derived now (`lib/server/membershipService.ts`)
+ * and this table is what may follow what.
+ */
+export type MembershipState = MembershipStatus;
+
+export const MEMBERSHIP_TERMINAL: readonly MembershipState[] = [
+  'expired', 'cancelled', 'rejected',
+];
+
+/**
+ * Note what does NOT lead back to `active`.
+ *
+ * An expired membership is not revived — rejoining creates a NEW subscription,
+ * so the cycle that ended keeps its own dates, its own `paidAt` and its own
+ * `amountPaid` for ever. That is the same reason a renewed pollution
+ * certificate gets its own record: revenue and entitlement are history, and
+ * history that can be edited is not history.
+ */
+export const MEMBERSHIP_TRANSITIONS: Record<MembershipState, readonly MembershipState[]> = {
+  pending:   ['active', 'rejected', 'cancelled'],
+  active:    ['expired', 'cancelled'],
+  expired:   [],
+  cancelled: [],
+  rejected:  [],
+};
+
+/**
+ * `cancelled` is the customer's — leaving is theirs to decide — and also the
+ * studio's, because an upgrade supersedes the membership it replaces and that
+ * is the studio's act of activating the new one.
+ */
+const MEMBERSHIP_ACTORS: Record<MembershipState, readonly Actor[]> = {
+  pending:   ['customer', 'studio'],
+  active:    ['studio'],
+  rejected:  ['studio'],
+  expired:   ['system', 'studio'],
+  cancelled: ['customer', 'studio'],
+};
+
+export function membershipTransition(
+  from: MembershipState, to: MembershipState, actor: Actor,
+): TransitionVerdict {
+  /* Terminal first, so re-activating a cancelled membership is refused as the
+     fact — `already-cancelled` — rather than as a shape error. */
+  if (MEMBERSHIP_TERMINAL.includes(from)) return no(`already-${from}`);
+  if (from === to) return no('no-change');
+  if (!MEMBERSHIP_TRANSITIONS[from]?.includes(to)) return no('illegal-transition');
+  if (!MEMBERSHIP_ACTORS[to].includes(actor)) return no('not-yours-to-make');
+  return YES;
 }
 
 /* ── DECLARATION (a paper the owner holds) ───────────────────────────────── */
