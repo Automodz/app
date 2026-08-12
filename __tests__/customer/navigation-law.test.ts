@@ -203,8 +203,14 @@ describe('a renderer still builds no addresses (ARCHITECTURE §1)', () => {
        which is a renderer naming a route — the architecture suite caught it.
        The control reads its own address and asks the one route table. */
     const src = codeOf('components/os/RoomHeader.tsx');
-    expect(src).toMatch(/const here = usePathname\(\)/);
-    expect(src).toMatch(/parent \?\? parentOf\(here\)/);
+    /* It reads its own address — path AND search, because the car is part of
+       the address — and asks the one route table. It never receives a route
+       from a renderer. */
+    expect(src).toMatch(/usePathname\(\)/);
+    expect(src).toMatch(/useSearchParams\(\)/);
+    /* The walk this session took, then the parent map. An explicit `parent`
+       from the MODEL still wins over both. */
+    expect(src).toMatch(/parent \?\? walked \?\? parentOf\(here\)/);
   });
 
   it('the screens that override it do so from the MODEL', () => {
@@ -245,5 +251,45 @@ describe('the light and the dock are two questions, from one table', () => {
       if (roomFor(route) || NO_PARENT_BY_DESIGN.has(route)) continue;
       expect({ route, exit: drawsBack(file) }).toEqual({ route, exit: true });
     }
+  });
+});
+
+describe('the hybrid model: the walk, then the map', () => {
+  /**
+   * Approved after the owner reported Garage → the BMW → its record → Back
+   * landing on Now. Two sources, one control, and a strict order:
+   *
+   *   1. an explicit `parent` — the MODEL knows something the address cannot
+   *   2. the walk this session actually took
+   *   3. the deterministic parent map
+   *
+   * Rule 2 is what makes Back mean "back". Rule 3 is what keeps a notification
+   * safe. Neither replaces the other, and neither is the browser's history.
+   */
+  it('the control asks in that order and no other', () => {
+    expect(codeOf('components/os/RoomHeader.tsx'))
+      .toMatch(/parent \?\? walked \?\? parentOf\(here\)/);
+  });
+
+  it('the walk never comes from the browser', () => {
+    for (const f of ['navigation/NavigationProvider.tsx', 'navigation/useWalkedFrom.ts',
+      'components/os/RoomHeader.tsx']) {
+      expect({ f, browser: /router\.back\(\)|history\.back\(\)|document\.referrer/.test(codeOf(f)) })
+        .toEqual({ f, browser: false });
+    }
+  });
+
+  it('the car is part of the address, so it is part of the parent', () => {
+    /* `/history?car=v1` used to resolve to `/history` → `/`. The generic record
+       then shows whichever car the product defaults to, so Back could hand the
+       customer a different vehicle's history than the one they were reading. */
+    expect(parentOf('/history?car=v1')?.href).toBe('/vehicle?car=v1');
+    expect(parentOf('/history/vs1?car=v1')?.href).toBe('/history?car=v1');
+    /* Without a car named, the record is still under Now. */
+    expect(parentOf('/history')?.href).toBe('/');
+  });
+
+  it('and a sheet is not context — only the room is', () => {
+    expect(parentOf('/history?car=v1&panel=x')?.href).toBe('/vehicle?car=v1');
   });
 });

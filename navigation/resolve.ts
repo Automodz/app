@@ -326,16 +326,37 @@ export interface Parent {
 const ROOT = new Set<string>([HOME, STUDIO, GARAGE, MEMBERSHIP, PROFILE]);
 
 export const parentOf = (pathname: string): Parent | null => {
-  /* A root room is where back leads, so it has none. */
-  if (ROOT.has(pathname)) return null;
+  const [path, query = ''] = pathname.split('?');
 
-  const seg = pathname.split('?')[0].split('/').filter(Boolean);
+  /* A root room is where back leads, so it has none. */
+  if (ROOT.has(path)) return null;
+
+  /**
+   * WHICH CAR THIS ROOM IS ABOUT, CARRIED UPWARD.
+   *
+   * `/history?car=v1` used to resolve to `/history`, which resolves to `/`,
+   * and the customer who had walked Garage → the BMW → its record landed on
+   * Now — a room they had never been in. Worse, the generic record then shows
+   * whichever vehicle the product picks by default, so Back could hand them a
+   * DIFFERENT car's history than the one they were reading.
+   *
+   * The car is part of the address, so it is part of the address's parent.
+   */
+  const car = new URLSearchParams(query).get('car');
+  const withCar = (href: string) =>
+    (car && !href.includes('?') ? `${href}?car=${encodeURIComponent(car)}` : href);
+
+  const seg = path.split('/').filter(Boolean);
 
   /* /history/<id>/settle → the visit · /history/<id> → the record · /history → Now */
   if (seg[0] === 'history') {
     if (seg[2] === 'settle') return { href: visit(seg[1]), name: 'The visit' };
-    if (seg[1]) return { href: HISTORY, name: 'Your visits' };
-    return { href: HOME, name: 'Now' };
+    /* A visit's parent is the record OF ITS CAR when the address says which. */
+    if (seg[1]) return { href: withCar(HISTORY), name: 'Your visits' };
+    /* And the record's own parent is that car, not the generic Now. */
+    return car
+      ? { href: withCar(VEHICLE), name: 'The car' }
+      : { href: HOME, name: 'Now' };
   }
 
   /* /booking/<id>/manage → the booking · /booking/<id> → where it was arranged */
@@ -349,10 +370,8 @@ export const parentOf = (pathname: string): Parent | null => {
      the answer when the screen has nothing truer to give. */
   if (seg[0] === 'approval' && seg[1]) return { href: HOME, name: 'Now' };
 
-  if (pathname.startsWith(`${STUDIO}/`)) return { href: STUDIO, name: 'The studio' };
-  if (pathname === VEHICLE || pathname.startsWith(`${VEHICLE}?`)) {
-    return { href: GARAGE, name: 'Your garage' };
-  }
+  if (path.startsWith(`${STUDIO}/`)) return { href: STUDIO, name: 'The studio' };
+  if (path === VEHICLE) return { href: GARAGE, name: 'Your garage' };
 
   /* The marketplace is public, so its root goes to whatever `/` is for whoever
      is standing there — the landing to a visitor, Now to an owner. Named for
@@ -361,8 +380,8 @@ export const parentOf = (pathname: string): Parent | null => {
   if (seg[0] === 'cars') {
     return seg[1] ? { href: CARS, name: 'All cars' } : { href: HOME, name: 'AutoModz' };
   }
-  if (pathname === SELL) return { href: CARS, name: 'Cars for sale' };
-  if (pathname === WELCOME) return null;
+  if (path === SELL) return { href: CARS, name: 'Cars for sale' };
+  if (path === WELCOME) return null;
 
   return null;
 };

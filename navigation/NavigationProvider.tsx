@@ -34,19 +34,24 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { pushRoute, previousRoute } from '@/lib/os/navstack';
+import { parentOf } from './resolve';
 import { activeSlotFor, chromeFor, roomFor } from './routes';
 import type { Room } from './routes';
 
 /** Where the last room is remembered across a cold launch. §6.6 */
 const MEMORY_KEY = 'automodz.room';
 
-/** How deep the truthful-back stack goes before it starts forgetting. §6.5 */
-const STACK_LIMIT = 10;
-
 interface NavigationValue {
   /** The current address. */
   pathname: string;
+  /**
+   * §6.5 — the rooms this session has walked through, newest last, each with
+   * the car it was about. Exposed so `Back` can prefer the walk over the
+   * parent map; the rules live in `lib/os/navstack`.
+   */
+  walk: readonly string[];
   /** The room the customer is standing in, if the address names one. */
   room: Room | undefined;
   /** Which navigation element is lit. §6.2 */
@@ -72,20 +77,30 @@ const NavigationContext = createContext<NavigationValue | null>(null);
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
+  const search = useSearchParams();
   const router = useRouter();
 
   /** §6.2 — how many non-address takeovers are currently open. */
   const [suppressed, setSuppressed] = useState(0);
 
-  /** §6.5 — how the customer actually got here. */
+  /**
+   * §6.5 — how the customer actually got here.
+   *
+   * The rules live in `lib/os/navstack`, pure and tested, because this is the
+   * thing that decides where Back goes and it was previously three lines in an
+   * effect that pushed `pathname` alone. Dropping the query is what sent a
+   * customer reading the BMW's record to Now: `/history?car=v1` became
+   * `/history`, and `/history` is under `/`.
+   */
   const stack = useRef<string[]>([]);
+  /* A snapshot in state, so a control reading the walk re-renders with it. */
+  const [walkSnapshot, setWalkSnapshot] = useState<readonly string[]>([]);
 
   useEffect(() => {
-    const s = stack.current;
-    if (s[s.length - 1] !== pathname) {
-      s.push(pathname);
-      if (s.length > STACK_LIMIT) s.shift();
-    }
+    /* The SEARCH is part of the address — see `CONTEXT_KEYS`. */
+    const here = pathname + (search?.toString() ? `?${search.toString()}` : '');
+    stack.current = pushRoute(stack.current, here);
+    setWalkSnapshot(stack.current);
     /* §6.6 — remember the room. Reading it back is the shell's business.
 
        No room check here: `CustomerChrome` does not mount this provider outside
@@ -113,18 +128,26 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname, router]);
 
+  /**
+   * §6.5, §17.3 — the walk when there is one, the parent map when there is not.
+   *
+   * NEVER `router.back()`. This used to fall through to it, and from an address
+   * opened by a notification that leaves the application entirely while from a
+   * shared link it does nothing at all — both indistinguishable from working
+   * when you happen to have arrived through the front door.
+   */
   const back = useCallback(() => {
-    const s = stack.current;
-    // drop where we are, then go where we came from
-    s.pop();
-    const previous = s[s.length - 1];
-    if (previous) {
-      s.pop();
-      navigate(previous);
-    } else {
-      router.back();
+    const here = pathname + (search?.toString() ? `?${search.toString()}` : '');
+    const step = previousRoute(stack.current, here);
+    if (step) {
+      stack.current = step.stack;
+      setWalkSnapshot(stack.current);
+      navigate(step.href);
+      return;
     }
-  }, [navigate, router]);
+    const parent = parentOf(here);
+    if (parent) navigate(parent.href);
+  }, [navigate, pathname, search]);
 
   const suppress = useCallback(() => {
     setSuppressed(n => n + 1);
@@ -146,6 +169,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<NavigationValue>(() => ({
     pathname,
+    walk: walkSnapshot,
     room: roomFor(pathname),
     activeSlot: activeSlotFor(pathname),
     /* §6.2 — hidden for an address that declares itself a takeover, and for a
@@ -154,16 +178,28 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     navVisible: chromeFor(pathname) === 'nav' && suppressed === 0,
     navigate,
     back,
-    canGoBack: stack.current.length > 1,
+    canGoBack: walkSnapshot.length > 1,
     suppress,
     rememberedRoom,
-  }), [pathname, suppressed, navigate, back, suppress, rememberedRoom]);
+  }), [pathname, walkSnapshot, suppressed, navigate, back, suppress, rememberedRoom]);
 
   return (
     <NavigationContext.Provider value={value}>
       {children}
     </NavigationContext.Provider>
   );
+}
+
+/**
+ * The same context, without the throw.
+ *
+ * `Back` is drawn by screens that render server-side and by tests that mount a
+ * screen on its own — neither has a provider, and neither is a bug. A control
+ * that cannot be rendered outside a provider is a control that dictates where
+ * it may be used.
+ */
+export function useNavigationOptional(): NavigationValue | null {
+  return useContext(NavigationContext);
 }
 
 export function useNavigation(): NavigationValue {

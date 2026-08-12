@@ -36,9 +36,10 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { color, space, TARGET_MIN, MEASURE } from '@/design';
 import { parentOf, type Parent } from '@/navigation/resolve';
+import { useWalkedFrom } from '@/navigation/useWalkedFrom';
 import { Statement, DISPLAY } from './parts';
 
 /**
@@ -74,8 +75,21 @@ export function Back(
     style?: CSSProperties;
   },
 ) {
-  const here = usePathname() ?? '';
-  const to = parent ?? parentOf(here);
+  const search = useSearchParams();
+  const here = (usePathname() ?? '')
+    + (search?.toString() ? `?${search.toString()}` : '');
+
+  /**
+   * THE WALK FIRST, THE PARENT MAP SECOND.
+   *
+   * If the customer arrived from another room in this session, Back returns to
+   * that room — with the car it was about. If they were sent here by a
+   * notification or a shared link there is no walk, and the deterministic
+   * parent is the only safe answer (§17.3). An explicit `parent` still wins
+   * over both: it is the model saying something truer than the address can.
+   */
+  const walked = useWalkedFrom(here);
+  const to = parent ?? walked ?? parentOf(here);
   /* A root room has no parent and must not grow one (§6.2). Drawing nothing
      is the answer, so a screen can place `<Back />` unconditionally. */
   if (!to) return null;
