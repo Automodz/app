@@ -12,6 +12,8 @@ import { join } from 'path';
 import { surfaceKind, isCustomerSurface } from '@/navigation/routes';
 import { publicParent } from '@/navigation/resolve';
 import { DOT, dotted } from '@/design';
+import { ownerWord } from '@/lib/os/market';
+import { longDate } from '@/lib/customer/project';
 
 const codeOf = (p: string) =>
   readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -50,7 +52,7 @@ describe('no customer surface measures itself against the large viewport', () =>
   /**
    * `100vh` on a phone is the height WITHOUT the browser's own bars, so the
    * last of the page sits under them. Every hand-written surface had already
-   * moved to `100svh` — and the rule was being broken anyway, by TWO screens
+   * moved to `100svh` - and the rule was being broken anyway, by TWO screens
    * using Tailwind's `min-h-screen`, which compiles to exactly `100vh`. The
    * previous law grepped for the literal string and saw nothing.
    */
@@ -69,7 +71,7 @@ describe('every surface declares what kind of surface it is', () => {
    * This began as a LIST of customer addresses, with anything not on the list
    * inheriting whatever theme the browser had stored. That answered the bug in
    * front of it and left the trap open: the default was wrong, so the next
-   * address anybody added was light. It was proven within the hour — a harness
+   * address anybody added was light. It was proven within the hour - a harness
    * route added to LOOK at the rooms rendered white-on-white for exactly the
    * reason the rooms had.
    */
@@ -92,7 +94,7 @@ describe('every surface declares what kind of surface it is', () => {
   });
 
   it('and the room palette follows the classification, not a second list', () => {
-    /* One question, one answer — a second predicate is how the two drift. */
+    /* One question, one answer - a second predicate is how the two drift. */
     for (const p of ['/', '/cars', '/dashboard/sell-car', '/welcome', '/anything']) {
       expect(isCustomerSurface(p)).toBe(surfaceKind(p) === 'room');
     }
@@ -104,8 +106,8 @@ describe('every surface declares what kind of surface it is', () => {
 
 describe('there is one Display step and it is the design’s own', () => {
   /**
-   * Half the product set its headline through `Heading level="display"` —
-   * `clamp(30px, 8.6vw, 46px)` from `design/typography.ts` — and the other half
+   * Half the product set its headline through `Heading level="display"` -
+   * `clamp(30px, 8.6vw, 46px)` from `design/typography.ts` - and the other half
    * through `Statement size={30}`, a hard-coded copy of that clamp's LOWER
    * BOUND. Same face, same weight, so on a phone they were within two pixels
    * and nobody saw it. At 1280 one was 30px and the other 46px, and the two
@@ -118,7 +120,7 @@ describe('there is one Display step and it is the design’s own', () => {
   });
 
   it('no screen hard-codes a Display size any more', () => {
-    /* `size={30}` / `size={29}` / `size={28}` — the three that existed. */
+    /* `size={30}` / `size={29}` / `size={28}` - the three that existed. */
     for (const file of CUSTOMER_FILES) {
       expect({ file, hard: /<Statement[^>]*\ssize=\{\d+\}/.test(codeOf(file)) })
         .toEqual({ file, hard: false });
@@ -140,8 +142,8 @@ describe('there is one Display step and it is the design’s own', () => {
 describe('the customer product draws its own marks', () => {
   /**
    * Every mark in the customer product is one 1.4px stroke on a 24 grid, drawn
-   * inline. `/offline` imported three lucide glyphs — a lightning bolt, a
-   * struck-through wifi and a refresh arrow — which is a second icon language
+   * inline. `/offline` imported three lucide glyphs - a lightning bolt, a
+   * struck-through wifi and a refresh arrow - which is a second icon language
    * on one screen out of nineteen. Operations uses lucide deliberately and is
    * not in this list.
    */
@@ -156,7 +158,7 @@ describe('the customer product draws its own marks', () => {
 describe('colour comes from the palette, not from a literal', () => {
   /**
    * §22.4. `app/not-found.tsx` carried four: `#08090b`, `#fff`, `#0b0c0e` and
-   * a white `rgba` — and the first of those is a NEAR MISS of the palette's
+   * a white `rgba` - and the first of those is a NEAR MISS of the palette's
    * own `#08090A`, which is the kind of thing nobody ever finds by looking.
    *
    * Scoped to the screens. The primitives in `components/os` compose the
@@ -176,7 +178,7 @@ describe('colour comes from the palette, not from a literal', () => {
 describe('the system states are rooms like any other', () => {
   /**
    * `/offline` and `/not-found` were the last two surfaces speaking the
-   * pre-rewrite identity — Tailwind utility shells, an 800-weight display, a
+   * pre-rewrite identity - Tailwind utility shells, an 800-weight display, a
    * white filled button, a shouted headline, and copy that called a visit a
    * "job". They are the screens a customer meets when something has already
    * gone wrong, which is the worst moment to look like a different app.
@@ -214,7 +216,7 @@ describe('one safe-area strategy', () => {
   /**
    * `Screen` reserves the top inset and the whole fixed bottom stack for every
    * room. The surfaces that roll their own `<main>` did neither until they were
-   * found one at a time — the product is installable, so in standalone the
+   * found one at a time - the product is installable, so in standalone the
    * first control sat under the status bar.
    */
   const ROLL_THEIR_OWN = CUSTOMER_FILES.filter(f => {
@@ -241,8 +243,8 @@ describe('one safe-area strategy', () => {
 describe('a line of two facts survives a real car name', () => {
   /**
    * Thirteen call sites joined `A · B` with a plain `' · '`, and at 390px with
-   * "BMW M340i xDrive Sport" three screens broke the same way at once — Now,
-   * the live visit and settling — each stranding the separator at the end of a
+   * "BMW M340i xDrive Sport" three screens broke the same way at once - Now,
+   * the live visit and settling - each stranding the separator at the end of a
    * line:
    *
    *     BMW M340i xDrive Sport ·
@@ -276,8 +278,8 @@ describe('a line of two facts survives a real car name', () => {
 
 describe('the product says the same word for the same thing', () => {
   /**
-   * `ACT_LINE` is the most-read copy in the product — it sits under the title
-   * for the whole of every visit — and two of its five lines said "vehicle"
+   * `ACT_LINE` is the most-read copy in the product - it sits under the title
+   * for the whole of every visit - and two of its five lines said "vehicle"
    * where seven other customer strings say "car", one of them naming the
    * studio as "our team" where every other sentence says "the studio".
    */
@@ -301,7 +303,7 @@ describe('the product says the same word for the same thing', () => {
 
   it('a dash is an em dash, as it is everywhere else in the product', () => {
     /* Three strings used a hyphen where the same FILE used an em dash a few
-       lines above — including the sentence from the original bug report.
+       lines above - including the sentence from the original bug report.
        Matched line by line: a regex spanning a whole file swallows code
        between two apostrophes and reports the file back to you. */
     for (const f of copy) {
@@ -318,7 +320,7 @@ describe('the product says the same word for the same thing', () => {
 describe('a sentence never has a hole where a fact should be', () => {
   /**
    * Every branch of the membership line interpolated a renewal date that a
-   * lapsed plan does not have, so the customer was shown "Lapsed ." — with a
+   * lapsed plan does not have, so the customer was shown "Lapsed ." - with a
    * stranded space before the stop. `Renews .` was the same defect waiting.
    */
   it('the date leaves the sentence rather than leaving a gap', () => {
@@ -333,7 +335,7 @@ describe('a sentence never has a hole where a fact should be', () => {
   });
 
   it('and the line is dropped rather than drawn empty', () => {
-    /* §18.1 — nothing is drawn for nothing. An active plan with no renewal
+    /* §18.1 - nothing is drawn for nothing. An active plan with no renewal
        date on file says nothing about renewal at all. */
     const src = codeOf('lib/customer/project.ts');
     const fn = src.slice(src.indexOf('function membershipLines'));
@@ -345,7 +347,7 @@ describe('a document that gets sent to people can be left', () => {
   /**
    * `/invoice/<id>` and `/chapter/<id>` are the two addresses that leave the
    * product. The chapter had no way out of any kind, and the invoice fell back
-   * to `/history`, which is behind a session — a stranger opening a forwarded
+   * to `/history`, which is behind a session - a stranger opening a forwarded
    * receipt met a sign-in wall.
    */
   it('both use the one rule', () => {
@@ -358,7 +360,7 @@ describe('a document that gets sent to people can be left', () => {
   });
 
   it('the fallback is reachable without an account', () => {
-    /* `/` is the landing to a visitor and Now to an owner — the same reasoning
+    /* `/` is the landing to a visitor and Now to an owner - the same reasoning
        `parentOf` uses for the public marketplace. */
     expect(publicParent(null).href).toBe('/');
   });
@@ -375,7 +377,7 @@ describe('a value never crushes the label beside it', () => {
    *     Sport
    *
    * The value was `flexShrink: 0`, so it took the whole row; the label had
-   * `minWidth: 0` — which it needs, or the row can never wrap at all — so it
+   * `minWidth: 0` - which it needs, or the row can never wrap at all - so it
    * collapsed to nothing and broke one word per line. Both halves of that are
    * required for the defect, which is why neither looked wrong on its own.
    */
@@ -384,7 +386,11 @@ describe('a value never crushes the label beside it', () => {
     const value = parts.slice(parts.indexOf('export function Value'));
     expect(value.slice(0, 700)).not.toMatch(/flexShrink: 0/);
     expect(value.slice(0, 700)).toMatch(/marginLeft: 'auto'/);
-    expect(value.slice(0, 700)).toMatch(/overflowWrap: 'anywhere'/);
+    /* `break-word`, NOT `anywhere`. `anywhere` breaks INSIDE a word, and the
+       garage printed a price across two lines - "₹32,00" then "0". A number is
+       never a break opportunity. */
+    expect(value.slice(0, 700)).toMatch(/overflowWrap: 'break-word'/);
+    expect(value.slice(0, 700)).not.toMatch(/overflowWrap: 'anywhere'/);
   });
 
   it('and the row it sits in can wrap', () => {
@@ -398,7 +404,7 @@ describe('a value never crushes the label beside it', () => {
        this comes back. */
     for (const file of CUSTOMER_FILES) {
       const src = codeOf(file);
-      /* Within ONE style object — no `}` between the two — so a fixed-size
+      /* Within ONE style object - no `}` between the two - so a fixed-size
          decorative element that happens to sit near a value is not counted. */
       const before = src.match(/font-mono[^}]{0,200}?flexShrink: 0/g)?.length ?? 0;
       const after = src.match(/flexShrink: 0[^}]{0,200}?font-mono/g)?.length ?? 0;
@@ -410,7 +416,7 @@ describe('a value never crushes the label beside it', () => {
 describe('a sealed record from an older schema does not take the room down', () => {
   /**
    * A sealed visit is immutable, so a record written before a field existed
-   * still has no value for it — and `stages`, `stage.media`, `services` and
+   * still has no value for it - and `stages`, `stage.media`, `services` and
    * `termsCaptured` were all read unguarded inside a `.map` over EVERY visit.
    * One legacy document did not cost that visit its photographs; it threw, and
    * the whole History room fell to the error boundary. Found by rendering a
@@ -431,8 +437,8 @@ describe('a sealed record from an older schema does not take the room down', () 
 describe('a photograph that does not arrive composes rather than reports', () => {
   /**
    * §11.5. A failed `next/image` puts its ALT TEXT on screen at body size; on
-   * a full-bleed hero that is a sentence sprawled across the composition —
-   * "BMW M340i xDrive Sport, finished at AutoModz" — beside a browser glyph.
+   * a full-bleed hero that is a sentence sprawled across the composition -
+   * "BMW M340i xDrive Sport, finished at AutoModz" - beside a browser glyph.
    * The attribute stays, because that is what a screen reader reads.
    */
   it('the rule exists and hides only the rendered text', () => {
@@ -446,9 +452,15 @@ describe('a photograph that does not arrive composes rather than reports', () =>
     const withImages = CUSTOMER_FILES.filter(f => /<Image\b/.test(codeOf(f)));
     for (const file of withImages) {
       const src = codeOf(file);
-      const images = (src.match(/<Image\b/g) ?? []).length;
+      /* Both element kinds: `next/image` AND the plain `<img>` the live visit
+         uses for a frame it does not want optimised. Every one of them must
+         wear the rule — counted as "no photograph is unmarked", not as an
+         exact tally, since a file may legitimately hold more of one than the
+         other. */
+      const photos = (src.match(/<Image\b/g) ?? []).length + (src.match(/<img\b/g) ?? []).length;
       const marked = (src.match(/className="am-photo"/g) ?? []).length;
-      expect({ file, images, marked }).toEqual({ file, images, marked: images });
+      expect({ file, unmarked: Math.max(0, photos - marked) })
+        .toEqual({ file, unmarked: 0 });
     }
   });
 });
@@ -465,5 +477,47 @@ describe('the way back never shares a line with what follows it', () => {
     expect(back).toMatch(/display: 'flex'/);
     expect(back).toMatch(/width: 'fit-content'/);
     expect(back).not.toMatch(/display: 'inline-flex'/);
+  });
+});
+
+describe('nothing the customer reads is assembled from an absent fact', () => {
+  /**
+   * Two of these reached a rendered screen in one sweep:
+   *   · a listing with no owner count read "undefinedth owner" to a buyer
+   *   · a membership benefit with no date threw inside `longDate` and took
+   *     the whole Club room to the error boundary
+   * Both are the same mistake - a value formatted before it was checked.
+   */
+  it('a missing owner count is silence, not a word', () => {
+    expect(ownerWord(1)).toBe('1st owner');
+    expect(ownerWord(3)).toBe('3rd owner');
+    expect(ownerWord(undefined as unknown as number)).toBe('');
+    expect(ownerWord(null as unknown as number)).toBe('');
+    expect(ownerWord(0)).toBe('');
+    expect(ownerWord(NaN)).toBe('');
+  });
+
+  it('and the row goes with it', () => {
+    const src = codeOf('lib/customer/market.ts');
+    expect(src).toMatch(/ownerWord\(c\.ownership\) \? \[\{ label: 'Owners'/);
+  });
+
+  it('a date nobody recorded is empty, never a crash', () => {
+    /* Sixteen callers reach `longDate`; any one of them can be handed nothing. */
+    expect(longDate(undefined as unknown as string)).toBe('');
+    expect(longDate(null as unknown as string)).toBe('');
+    expect(longDate('')).toBe('');
+    expect(longDate('2026-07-12')).toBe('12 July 2026');
+  });
+
+  it('no customer string can print the word undefined', () => {
+    /* The shape that produced it: interpolating a possibly-absent value
+       straight into a sentence. */
+    for (const f of ['lib/os/market.ts', 'lib/customer/market.ts', 'lib/customer/project.ts']) {
+      const bad = codeOf(f).split('\n')
+        .filter(l => /\$\{[a-zA-Z.?\[\]]*\}(st|nd|rd|th)\b/.test(l))
+        .map(l => l.trim().slice(0, 50));
+      expect({ f, bad }).toEqual({ f, bad: [] });
+    }
   });
 });

@@ -1,20 +1,20 @@
 'use client';
 /**
- * SCOPE & QUOTE — design screen 07.
+ * SCOPE & QUOTE - design screen 07.
  *
  * The screen where a customer decides HOW MUCH OF THE CAR, and learns what
  * that costs before committing to a day.
  *
  * ── NOTHING HERE DOES ARITHMETIC ─────────────────────────────────────────
- * Not one rupee is added up in this file. Every figure — the coverage price,
- * the extra stage, the member's rate, the total — comes back from
+ * Not one rupee is added up in this file. Every figure - the coverage price,
+ * the extra stage, the member's rate, the total - comes back from
  * `POST /api/estimate`, which runs `priceVisit`, the single calculation the
  * booking and the invoice also run. A component that summed prices would be a
  * fifth implementation of the arithmetic, and the audit found four already
  * disagreeing.
  *
  * The consequence is visible in the code: choosing something asks the server
- * what it costs. That is a round trip per tap, and it is the right trade — the
+ * what it costs. That is a round trip per tap, and it is the right trade - the
  * alternative is a number on the screen that the server has never agreed to.
  *
  * ── PREVIEW, THEN COMMIT ─────────────────────────────────────────────────
@@ -67,7 +67,7 @@ export interface ScopeQuoteModel {
   /** Where "Choose a date" goes, with the estimate id appended by this screen. */
   nextHrefBase: string;
   backHref: string;
-  /** Said when the customer has no car at all — there is nothing to quote for. */
+  /** Said when the customer has no car at all - there is nothing to quote for. */
   noCarHref?: string;
 }
 
@@ -196,13 +196,13 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
       <OfflineNote />
 
       {/* MOVED UP FROM THE FOOT OF THE PAGE. It was a `quiet` Action after
-          everything else, which is a footer link and not an escape route — a
+          everything else, which is a footer link and not an escape route - a
           way out you reach by scrolling past the whole screen is one the
           customer has already given up looking for. One idiom, at the top,
           in every room. */}
       {/* One header: the way back, the eyebrow and the Display, at one
           scale. These five drew the same three elements by hand and disagreed
-          on the size — 28, 29 and 30 — which nobody chose. */}
+          on the size - 28, 29 and 30 - which nobody chose. */}
       <RoomHeader
         parent={{ href: model.backHref, name: 'The studio' }}
         eyebrow={model.forCar}
@@ -217,7 +217,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
 
       {/* ── HOW MUCH OF THE CAR ─────────────────────────────────────────
           One of three, always. A coverage with no price is "On quote" and
-          says so — a zero would claim the studio does it for nothing. */}
+          says so - a zero would claim the studio does it for nothing. */}
       <section
         aria-labelledby="scope-coverage"
         style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
@@ -245,7 +245,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
               }}>
                 <span style={{ fontSize: 16, color: color.ink }}>{s.label}</span>
                 <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 12, marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+                  fontFamily: 'var(--font-mono)', fontSize: 12, marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
                   color: scopeId === s.id ? color.champagne : 'rgba(232,217,190,0.8)',
                 }}>
                   {s.price}
@@ -257,7 +257,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
         </div>
       </section>
 
-      {/* ── WHICH PANELS — only for a custom coverage ───────────────────── */}
+      {/* ── WHICH PANELS - only for a custom coverage ───────────────────── */}
       {isCustom && chosen?.panels?.length ? (
         <section
           aria-labelledby="scope-panels"
@@ -314,7 +314,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
                   }}>
                     <span style={{ fontSize: 15, color: color.ink }}>{a.label}</span>
                     <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 12, marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+                      fontFamily: 'var(--font-mono)', fontSize: 12, marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
                       color: on ? color.champagne : 'rgba(232,217,190,0.8)',
                     }}>
                       +{a.price}
@@ -386,7 +386,7 @@ export function ScopeAndQuote({ model }: { model: ScopeQuoteModel }) {
 /** In rupees, in the grouping an Indian customer reads. */
 const rupees = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
-/** One panel, chosen or not. §21.3 — a real target; §21.6 — state in aria. */
+/** One panel, chosen or not. §21.3 - a real target; §21.6 - state in aria. */
 function Toggle(
   { on, onClick, label, aside }:
   { on: boolean; onClick: () => void; label: string; aside?: string },

@@ -5,7 +5,7 @@
  * Source: docs/AUTOMODZ-OS.md §3.5, §9.5, §14.4, §17.1, §21.3, §21.6, §22.2
  *         design "AutoModz App.dc.html"
  *
- * Each of these appears five or more times across the twelve screens. §22.2 —
+ * Each of these appears five or more times across the twelve screens. §22.2 -
  * one implementation of anything; the reason they are here rather than copied
  * into each room is that a whisper that is 10px in one room and 9.5px in the
  * next is a whisper nobody tuned.
@@ -33,7 +33,7 @@ export function Label(
 }
 
 /* ── THE STATEMENT ───────────────────────────────────────────────────────
-   §9.5 — one Display per screen, and it always arrives the same way: a label
+   §9.5 - one Display per screen, and it always arrives the same way: a label
    above it naming the situation, then the sentence itself in Outfit 200.
 
    The heading level is a prop rather than fixed, because §21.6's heading order
@@ -42,7 +42,7 @@ export function Label(
  * THE TWO DISPLAY STEPS, named.
  *
  * `room` is the design's own token. `nested` is for a Display that sits under
- * another room's title — the Studio's sheet inside the Studio — and it is a
+ * another room's title - the Studio's sheet inside the Studio - and it is a
  * step, not a number somebody picked.
  */
 export const DISPLAY = {
@@ -60,7 +60,7 @@ export function Statement(
     /**
      * ONE DISPLAY STEP, AND IT IS THE DESIGN'S OWN.
      *
-     * This was `size = 30` — a number, fixed at every width — while the other
+     * This was `size = 30` - a number, fixed at every width - while the other
      * half of the product set the same headline through `Heading level="display"`,
      * which is `clamp(30px, 8.6vw, 46px)` from `design/typography.ts`. The two
      * are the same face at the same weight, so on a phone they were within two
@@ -70,7 +70,7 @@ export function Statement(
      * The token wins, because the token is what the design specifies and the
      * `30` was a hard-coded copy of its lower bound. Absent means the step;
      * a number is still accepted for the one place that legitimately steps
-     * down — a Display nested under another room's title.
+     * down - a Display nested under another room's title.
      */
     size?: number | string;
     style?: CSSProperties;
@@ -91,7 +91,7 @@ export function Statement(
 
 /* ── THE RAIL ────────────────────────────────────────────────────────────
    A section's name, preceded by a short rule. Used where a screen changes
-   subject mid-scroll — "History" under the collection, "The rest of the
+   subject mid-scroll - "History" under the collection, "The rest of the
    rooms" in the design's own canvas. */
 export function Rail({ children }: { children: ReactNode }) {
   return (
@@ -106,7 +106,7 @@ export function Rail({ children }: { children: ReactNode }) {
 }
 
 /* ── THE PULSE ───────────────────────────────────────────────────────────
-   §17.1 — "state changes surface as state." One breathing point of amber,
+   §17.1 - "state changes surface as state." One breathing point of amber,
    which is the entire vocabulary the product has for "this is happening now".
    It is never a count and never a badge. */
 export function Pulse({ size = 9 }: { size?: number }) {
@@ -138,10 +138,10 @@ export function Chevron({ size = 17, tone = color.ink3 }: { size?: number; tone?
 }
 
 /* ── THE METER ───────────────────────────────────────────────────────────
-   §14.2 — protection as a proportion of its term. A 2px bar, because the
+   §14.2 - protection as a proportion of its term. A 2px bar, because the
    number beside it is the fact and the bar is only its shape.
 
-   §14.4 — the tone is the term's, not the meter's: champagne for a thing in
+   §14.4 - the tone is the term's, not the meter's: champagne for a thing in
    force, amber for a thing due, neutral for a thing with years left. */
 export function Meter(
   { label, value, fill, tone = color.champagne }:
@@ -160,7 +160,7 @@ export function Meter(
         <span
           style={{
             fontFamily: 'var(--font-mono)', color: tone,
-            marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+            marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
           }}
         >
           {value}
@@ -231,8 +231,8 @@ export function Value({ children, tone = color.champagne }: { children: ReactNod
       style={{
         fontFamily: 'var(--font-mono)', fontSize: 12, color: tone,
         /* NOT `flexShrink: 0`. A value that refuses to yield takes the whole
-           row, and the label beside it — which has `minWidth: 0` so the row can
-           ever wrap at all — collapses to nothing and breaks ONE WORD PER LINE:
+           row, and the label beside it - which has `minWidth: 0` so the row can
+           ever wrap at all - collapses to nothing and breaks ONE WORD PER LINE:
 
                Work        Full-body paint protection film
                BMW
@@ -242,9 +242,9 @@ export function Value({ children, tone = color.champagne }: { children: ReactNod
 
            seen on the booking at 390px with a real service name. The value now
            yields and, when it cannot fit beside the label, takes its own line
-           under it — which is the same shape the row already has for a wrapped
+           under it - which is the same shape the row already has for a wrapped
            label, and preserves the hierarchy rather than shrinking the type. */
-        textAlign: 'right', marginLeft: 'auto', overflowWrap: 'anywhere',
+        textAlign: 'right', marginLeft: 'auto', overflowWrap: 'break-word',
       }}
     >
       {children}
@@ -253,7 +253,7 @@ export function Value({ children, tone = color.champagne }: { children: ReactNod
 }
 
 /* ── THE ACTION ──────────────────────────────────────────────────────────
-   §6.3, §3.3 — the one control on a screen that commits to something. It is
+   §6.3, §3.3 - the one control on a screen that commits to something. It is
    the only element in the product filled with light rather than lit by it,
    which is what makes it unmistakable without a second colour existing.
 
@@ -270,7 +270,7 @@ export function Action(
     tone?: 'amber' | 'champagne';
     style?: CSSProperties;
     /**
-     * A control that is momentarily unusable — a move with no date chosen yet,
+     * A control that is momentarily unusable - a move with no date chosen yet,
      * a request already in flight. NOT a permanently dead control: §10.5 says
      * a screen must explain rather than disable, and every caller here pairs a
      * disabled state with a sentence saying what would enable it.
@@ -298,7 +298,7 @@ export function Action(
     border: quiet ? '1px solid rgba(255,255,255,0.08)' : 'none',
     /* OPAQUE STOPS, NOT ALPHA. The design draws these as amber and champagne
        at 92%→64% alpha over the room, and at the weak end that composites to
-       #926C3E — 4.12:1 against the label, under §21.1's floor. Solid stops
+       #926C3E - 4.12:1 against the label, under §21.1's floor. Solid stops
        down the same ramps look the same and hold their contrast wherever the
        control lands: amber 10.10:1 → 7.21:1, champagne 14.02:1 → 8.94:1. */
     background: quiet

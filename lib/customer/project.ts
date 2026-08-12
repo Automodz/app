@@ -5,8 +5,8 @@
  * `CustomerPicture`, so no screen ever touches a Firestore document and no two
  * rooms can compute a different answer for the same car (§22.5).
  *
- * Everything derived — health, term wording, the visit's act, the protection
- * fallback — comes from the existing engines in `lib/os`. Nothing is
+ * Everything derived - health, term wording, the visit's act, the protection
+ * fallback - comes from the existing engines in `lib/os`. Nothing is
  * re-implemented here; this file only chooses words and shapes.
  */
 import type { Approval, Booking, Estimate, Invoice, PaymentStatus, Notification, Protection, ProtectionKind, Service, Subscription, Vehicle, Visit } from '@/lib/types';
@@ -66,13 +66,20 @@ const MONTHS = [
 ];
 
 /** "12 July 2026". §16.4-adjacent: a date a customer would say out loud. */
-export function longDate(iso: string): string {
+export function longDate(iso: string | null | undefined): string {
+  /* SIXTEEN CALLERS, AND ANY ONE OF THEM CAN BE HANDED NOTHING. A membership
+     benefit with no date threw here and took the whole Club room to the error
+     boundary - the guard two lines below was already thinking about a
+     malformed date and never about an absent one. §19.1: an absence is a
+     state. Empty, so `x ? longDate(x) : ''` at a call site still reads the
+     same and nothing prints a stray fragment. */
+  if (!iso) return '';
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
   return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
-/** "March 2029" — §14.4, beyond a season the date alone speaks. */
+/** "March 2029" - §14.4, beyond a season the date alone speaks. */
 function monthYear(iso: string): string {
   const [y, m] = iso.split('-').map(Number);
   return y && m ? `${MONTHS[m - 1]} ${y}` : iso;
@@ -88,13 +95,13 @@ const TONE: Record<Health, HomeProtection['tone']> = {
  * WHERE A VISIT THAT HAS NOT STARTED IS REACHED.
  *
  * Not `/history/{id}`. Home's NEXT VISIT block pointed there, and a booking has
- * no record until it is sealed — so tapping the visit you have booked told a
+ * no record until it is sealed - so tapping the visit you have booked told a
  * customer with four cars in their garage "Your car's place is ready. Add your
  * car."
  *
  * It then pointed at `/studio?manage=<id>`, a sheet over the Studio, which was
  * the only surface a pending visit had. A booking has its OWN two screens now
- * (design 09 and 10), so this is the confirmation — what the studio holds —
+ * (design 09 and 10), so this is the confirmation - what the studio holds -
  * and the manage screen is one tap further in, exactly as the design draws it.
  */
 const manageHref = (bookingId: string) =>
@@ -115,7 +122,7 @@ export function termWords(term: Term, now = new Date()): string {
   if (days < 0) return `Lapsed ${longDate(term.expiresOn)}`;
   if (days === 0) return 'Expires today';
   if (days === 1) return '1 day left';
-  /* §14.4 — "a countdown is honest only when the number is small enough to act
+  /* §14.4 - "a countdown is honest only when the number is small enough to act
      on. Beyond a season, the date alone speaks." */
   if (days <= 90) return `${days} days left`;
   return `Through ${monthYear(term.expiresOn)}`;
@@ -142,7 +149,7 @@ function remainingOf(p: Protection, now = new Date()): number | undefined {
 /**
  * MEMOISED PER CAR.
  *
- * `protectionsOf` and `stateOf` are each called several times per render — Home
+ * `protectionsOf` and `stateOf` are each called several times per render - Home
  * asks for protections and Garage asks again for every car, and both walk the
  * booking list. A `WeakMap` keyed on the `CarPicture` gives one computation per
  * car per request and releases with it, so nothing is cached across customers or
@@ -161,11 +168,11 @@ export function protectionsOf(car: CarPicture, catalogue: Service[], now = new D
 
 /**
  * The car's protections, stored if they exist and projected from completed work
- * if they do not. Never merged — `projectProtections` documents why.
+ * if they do not. Never merged - `projectProtections` documents why.
  */
 function computeProtections(car: CarPicture, catalogue: Service[], now = new Date()) {
   if (car.protections.length > 0) {
-    /* §14.2 — a car has ONE answer per kind. Enforced in the engine rather than
+    /* §14.2 - a car has ONE answer per kind. Enforced in the engine rather than
        by an id convention any writer can route around; production carries two
        glass protections for one car because a seed chose its own id. */
     return sortByUrgency(
@@ -184,7 +191,7 @@ function computeProtections(car: CarPicture, catalogue: Service[], now = new Dat
   return projectProtections({ vehicleId: car.vehicle.id, completed, catalogue, now });
 }
 
-/* `liveBooking` STOOD HERE — the second implementation of "the next visit",
+/* `liveBooking` STOOD HERE - the second implementation of "the next visit",
    and the one that disagreed with the first. It read `car.bookings` in
    `createdAt` order and returned the newest open booking rather than the
    soonest, and it never looked at whether the day had already passed. Both
@@ -197,7 +204,7 @@ function computeProtections(car: CarPicture, catalogue: Service[], now = new Dat
  * THE ONE STATE WORD, for every surface that shows one.
  *
  * Home reads the full ownership engine (11 states, docs/HOME-STATE-MAP.md).
- * Garage and Vehicle show only the word — but it must be the SAME word, or the
+ * Garage and Vehicle show only the word - but it must be the SAME word, or the
  * same car reads "Cared for" on one screen and "Protected" on the next. That
  * divergence is what `lib/os/*` was written to prevent, and a test caught it
  * the moment Home was reconnected.
@@ -223,7 +230,7 @@ export function stateOf(car: CarPicture, now = new Date()): { word: string; line
 }
 
 function computeState(car: CarPicture, now: Date): { word: string; line?: string } {
-  /* The visit in flight outranks the one that is coming — a car being worked on
+  /* The visit in flight outranks the one that is coming - a car being worked on
      is not "booked in". Both from the canonical readers. */
   const b = liveOf(car) ?? nextVisitOf(car, now);
   if (!b) {
@@ -259,24 +266,24 @@ export function sinceWords(car: CarPicture, prefix = 'with AutoModz since'): str
 /**
  * The car's completed visits, newest first.
  *
- * §16.1 — "every COMPLETED visit". Sealed only, and STORED only.
+ * §16.1 - "every COMPLETED visit". Sealed only, and STORED only.
  *
  * There used to be a fallback here that projected a visit from its Booking+Job
  * pair whenever `visits` was empty, because nothing wrote visits. It is gone:
  * `lib/server/sealVisit.ts` now writes one on completion and the backfill seals
- * every historical job. The fallback had to go for a reason beyond tidiness —
+ * every historical job. The fallback had to go for a reason beyond tidiness -
  * §22.5, truth is not recomputed. A projected visit read its warranty from the
  * live catalogue, so editing a price list rewrote what a past customer had been
  * promised. A sealed visit cannot be rewritten by anything.
  *
  * DEPLOY ORDER MATTERS: run `POST /api/visit/backfill` before or immediately
  * after shipping this. Until it has run, a car whose jobs predate the seal shows
- * no history — correctly, since nothing has been sealed for it yet, but visibly.
+ * no history - correctly, since nothing has been sealed for it yet, but visibly.
  */
 /**
- * A car's HISTORY — sealed visits only.
+ * A car's HISTORY - sealed visits only.
  *
- * §16 — history never recalculates. A sealed visit carries its own services,
+ * §16 - history never recalculates. A sealed visit carries its own services,
  * its own amounts and its own captured terms, so nothing here consults the
  * catalogue, the price list or the current warranties. It took a `catalogue`
  * argument that was never read (`_catalogue`), threaded through four call
@@ -290,7 +297,7 @@ export function visitsOf(car: CarPicture): Visit[] {
 /* ── what a visit cost ───────────────────────────────────────────────────── */
 
 /**
- * WHAT A VISIT COST — one figure, from one source, chosen once.
+ * WHAT A VISIT COST - one figure, from one source, chosen once.
  *
  * Two numbers exist for the same visit and they are not the same kind of fact.
  * `visit.amounts.total` is what the visit was SEALED at, from the services it
@@ -305,13 +312,13 @@ export function visitsOf(car: CarPicture): Visit[] {
  * The album's total was ₹11,990 higher than the sum of everything the customer
  * could actually open, and nothing in the product could see the gap.
  *
- * The invoice wins where one exists — it is the money that changed hands and
+ * The invoice wins where one exists - it is the money that changed hands and
  * the only figure with a document behind it. The sealed amount is the fallback,
  * which is most visits: the studio raises paper for a minority of them.
  *
  * AND EACH INVOICE IS CLAIMED BY AT MOST ONE VISIT. Matching is by the visit's
  * own ids, never by date or amount, and an invoice already taken by an earlier
- * visit cannot be counted again by a later one — otherwise two visits sharing a
+ * visit cannot be counted again by a later one - otherwise two visits sharing a
  * booking would add the same money to the album twice.
  */
 export interface VisitMoney {
@@ -352,7 +359,7 @@ const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`;
  * THE PHOTOGRAPHS A JOB RECORDED, WITH THE KIND IT RECORDED THEM AS.
  *
  * `framesOfVisit` prefers stage media, and stage media carries `kind: 'photo'`
- * — the moment it was taken is not on it. The before/during/after distinction
+ * - the moment it was taken is not on it. The before/during/after distinction
  * exists ONLY on the job, and was therefore discarded for every visit whose
  * stages carried any media at all. That is why no visit could show a
  * comparison: not missing data, shadowed data.
@@ -371,7 +378,7 @@ function shotsOfVisit(visit: Visit, car: CarPicture) {
 function framesOfVisit(visit: Visit, car: CarPicture) {
   /* `stages` and `stage.media` are REQUIRED by the type and not by Firestore.
      A sealed visit is an immutable historical record, so a document written
-     before either field existed is still exactly as it was — and reading one
+     before either field existed is still exactly as it was - and reading one
      unguarded threw, which took down the whole History room rather than
      costing that visit its photographs. §19.1: an absence is a state, never a
      crash. Nothing here invents a photograph; it just survives not finding
@@ -410,19 +417,19 @@ export function toHome(
   /** The car the customer chose, when they chose one (`?car=`). */
   selectedId?: string,
   /**
-   * THE STUDIO'S SOONEST OPENING — design 03 and 05.
+   * THE STUDIO'S SOONEST OPENING - design 03 and 05.
    *
    * Passed in rather than computed: it depends on every other customer's
    * bookings, and a projection may not read a database (ARCHITECTURE §1). The
    * page loads it from the same occupancy the Booking Service accepts against,
    * so a day named here cannot be a day the writer then refuses. Absent when
-   * the studio cannot be reached — an invented opening is a customer told to
+   * the studio cannot be reached - an invented opening is a customer told to
    * come on a day the bays are full.
    */
   opening?: { date: string; time: string } | null,
 ): HomeModel | null {
   /* THE CAR THE CUSTOMER IS LOOKING AT. `leadCar` decides for them on first
-     arrival — the one that needs attention — and the garage rail lets them
+     arrival - the one that needs attention - and the garage rail lets them
      say otherwise. An unknown id falls back rather than showing nothing. */
   const car = (selectedId && picture.cars.find(c => c.vehicle.id === selectedId))
     ?? leadCar(picture);
@@ -438,7 +445,7 @@ export function toHome(
    * `homeStateCopy` builds the hero out of the proposal itself in exactly two
    * situations: the `warranty_expiring` state, and the steady states where
    * `proposalApplies`. In both, `state.line` IS `proposal.headline` and
-   * `state.note` IS `proposal.reason` — so the hero is already saying what
+   * `state.note` IS `proposal.reason` - so the hero is already saying what
    * needs attention and why, in the largest type on the screen, above a
    * primary action the same proposal resolved.
    *
@@ -458,8 +465,8 @@ export function toHome(
   /**
    * THE SAME IDEA, FOR THE VISIT THAT IS COMING.
    *
-   * `homeStateCopy` builds the hero out of `read.agreed` in exactly one state —
-   * `booked` — where the Display reads "Requested" or "Booked in" and the line
+   * `homeStateCopy` builds the hero out of `read.agreed` in exactly one state -
+   * `booked` - where the Display reads "Requested" or "Booked in" and the line
    * under it is already "Regular Wash, 27 July 2026 at 09:00." A NEXT VISIT
    * section repeating that sentence is the screen saying one fact twice, which
    * is the habit `heroOwnsTheProposal` exists to prevent.
@@ -468,7 +475,7 @@ export function toHome(
    * day either is reworded, string equality would silently stop matching and
    * the duplication would come back unnoticed.
    *
-   * It stays when the hero is about something else — a car in the studio that
+   * It stays when the hero is about something else - a car in the studio that
    * ALSO has a visit booked for next week is two facts, and the second one is
    * not on the screen anywhere else.
    */
@@ -483,7 +490,7 @@ export function toHome(
       plate: car.vehicle.registrationNumber,
       photo: car.vehicle.photo ?? car.vehicle.photos?.[0],
     },
-    /* THE STATE, FROM THE ENGINE — not from a hand-rolled condition here.
+    /* THE STATE, FROM THE ENGINE - not from a hand-rolled condition here.
        `lib/os/ownership` resolves 11 states in a documented precedence; this
        used to be five branches over booking status alone, which meant a lapsed
        membership, a refused visit, a dormant car and an expiring warranty were
@@ -504,7 +511,7 @@ export function toHome(
        Home answers four questions and nothing else: what is happening,
        is the car all right, what can I do now, what is coming. */
 
-    /* THE ENGINE'S OUTPUT, KEPT — see the note on HomeModel. */
+    /* THE ENGINE'S OUTPUT, KEPT - see the note on HomeModel. */
     protections: [
       ...protections.map(p => ({
         id: p.id,
@@ -542,7 +549,7 @@ export function toHome(
       return {
         headline: holding ? 'Protected' : PROTECTION_TITLE[worst.kind],
         layers: protections.map(p => PROTECTION_TITLE[p.kind]),
-        /* §14.4 — a date when it is far off, a countdown only when the number
+        /* §14.4 - a date when it is far off, a countdown only when the number
            is small enough to act on. "Everything's holding" is the honest
            thing to say when nothing needs doing, and saying it in days would
            invent an urgency that is not there. */
@@ -561,12 +568,12 @@ export function toHome(
 
     /* THE ONE SENTENCE, VERBATIM FROM `os/truth`.
        Suppressed in the two cases where the engine's answer is one Home has
-       already given in larger type — a car in the studio, or one booked in —
+       already given in larger type - a car in the studio, or one booked in -
        and in the quiet fallbacks, which are the engine saying it has nothing
        to add. Everything else is what the customer opened the app to learn.
 
        AND SUPPRESSED WHEN THE HERO IS ALREADY PRESENTING THE PROPOSAL. See
-       `heroOwnsTheProposal` — a car whose ceramic is on its edge had the same
+       `heroOwnsTheProposal` - a car whose ceramic is on its edge had the same
        fact stated three times on one screen, in three wordings. */
     truth: (read.live || read.agreed) ? undefined
       : heroOwnsTheProposal ? undefined
@@ -593,10 +600,10 @@ export function toHome(
 
     /* THE PROPOSAL ENGINE'S OWN REASONING, when the hero is NOT already
        presenting it. `readOwnership` suppresses the proposal entirely while a
-       visit is booked or in flight; this is the second half of the same idea —
+       visit is booked or in flight; this is the second half of the same idea -
        a proposal the hero has already spoken does not get a second section of
        its own. Nothing here decides anything; it is carried. */
-    /* THE SOONEST THE STUDIO CAN TAKE IT — design 03 and 05, and only while
+    /* THE SOONEST THE STUDIO CAN TAKE IT - design 03 and 05, and only while
        nothing is booked and nothing is in flight. A customer whose visit is on
        Thursday does not need to be told the studio is free on Thursday, and a
        customer whose car is on a bay needs the bay, not a calendar. */
@@ -614,11 +621,11 @@ export function toHome(
       href: `${hrefForDestination({ to: 'studio' })}?arrange=1&cat=${encodeURIComponent(read.proposal.serviceCategory)}`,
     } : undefined,
 
-    /* THE VISIT THAT IS COMING — `read.agreed`, which IS `nextVisitOf`, the
+    /* THE VISIT THAT IS COMING - `read.agreed`, which IS `nextVisitOf`, the
        same booking the hero and the Vehicle room and the Studio all name. Not
        one in progress: that is the state at the top of the screen. And not one
        whose day has passed, which is what made three lapsed requests read as
-       this week's plans. §18.1 — nothing ahead, nothing drawn. */
+       this week's plans. §18.1 - nothing ahead, nothing drawn. */
     next: (() => {
       const b = read.agreed;
       if (!b || heroOwnsTheVisit) return undefined;
@@ -630,7 +637,7 @@ export function toHome(
       };
     })(),
 
-    /* ITS LIFE — one photograph and one fact, not a log. The album is where
+    /* ITS LIFE - one photograph and one fact, not a log. The album is where
        a life is read; this is what makes a customer want to open it. */
     life: visits.length > 0 ? {
       photo: latestFrames[0]?.url ?? framesOfVisit(visits[0], car)[0]?.url,
@@ -639,14 +646,14 @@ export function toHome(
     } : undefined,
 
     /* THE CONCIERGE LOG, ON ITS OWN CONDITION.
-       It was nested inside `life`, which requires a SEALED VISIT — so a car
+       It was nested inside `life`, which requires a SEALED VISIT - so a car
        with a membership confirmed and a coating applied but no completed
        visit computed its entries and could never show them. Two of the demo
        customer's four cars were in exactly that position. The two facts are
        unrelated: a life is a record of visits, a log is what the studio has
        already told you, and either can exist without the other.
 
-       Three on Home — enough to give the record meaning, short of becoming
+       Three on Home - enough to give the record meaning, short of becoming
        the timeline the album already is. The palette takes twelve of the same
        list; neither re-derives anything. */
     record: read.log.slice(0, 3).map(e => ({
@@ -659,7 +666,7 @@ export function toHome(
        document, which is not the same question: a subscription can carry that
        status and have run past its end date, and Home would go on offering
        "10 washes remaining this cycle" on a cycle that had ended. `os/club`
-       resolves the five states — none, pending, active, grace, lapsed — and it
+       resolves the five states - none, pending, active, grace, lapsed - and it
        is the only thing entitled to. Home still shows the club only where it
        showed it before, so the composition is unchanged. */
     membership: read.club.state === 'active'
@@ -670,8 +677,8 @@ export function toHome(
         }
       : undefined,
 
-    /* THE CARS ARE THE NAVIGATION. Each carries its own state — the same word
-       its own room would use — and tapping one makes Home that car's home. */
+    /* THE CARS ARE THE NAVIGATION. Each carries its own state - the same word
+       its own room would use - and tapping one makes Home that car's home. */
     garage: picture.cars.length > 1
       ? {
           cars: picture.cars.map(c => ({
@@ -685,7 +692,7 @@ export function toHome(
         }
       : undefined,
 
-    /* Filled by the page — a projection reads nothing (ARCHITECTURE §1). */
+    /* Filled by the page - a projection reads nothing (ARCHITECTURE §1). */
     forSale: [],
     marketHref: hrefForDestination({ to: 'cars' }),
   };
@@ -694,7 +701,7 @@ export function toHome(
 
 
 /**
- * §15.2 — the membership, in the shape every other protection takes. Its term
+ * §15.2 - the membership, in the shape every other protection takes. Its term
  * is dated with grace, which is the shape `Term` already gives a membership.
  */
 /**
@@ -712,7 +719,7 @@ function membershipAsProtection(
   return [{
     id: `membership_${sub.id}`,
     label: PROTECTION_TITLE.membership,
-    /* What remains is washes, not days — §14.3's balance shape in words. */
+    /* What remains is washes, not days - §14.3's balance shape in words. */
     term: left === 0 ? termWords(term, now) : `${left} washes left`,
     remaining: club.washesTotal > 0 ? left / club.washesTotal : 0,
     tone: TONE[healthOf(term, now)],
@@ -721,7 +728,7 @@ function membershipAsProtection(
 
 /**
  * §12.3 forbids a primary car, so this is not one. It is the car the STUDIO has
- * touched most recently — the first position in the strip, which any car can
+ * touched most recently - the first position in the strip, which any car can
  * occupy and none holds.
  */
 export function leadCar(picture: CustomerPicture): CarPicture | undefined {
@@ -754,14 +761,14 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
             ? 'Fully protected'
             : `${PROTECTION_TITLE[worst.kind]}, ${termWords(worst.term, now).toLowerCase()}`,
         relationship: sinceWords(car),
-        /* §17.1 — the car is the inbox, so the collection carries the mark and
+        /* §17.1 - the car is the inbox, so the collection carries the mark and
            the car's own room carries the doorway. Nothing here is a message. */
         news: !!noticeOf(picture, car, now),
         href: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
       };
     }),
     /* OPENS THE SHEET. Pointing at `/studio` alone landed the customer in the
-       room and left them to find the control — the same half-step the Vehicle
+       room and left them to find the control - the same half-step the Vehicle
        room's "change or cancel" made. An invitation should complete the act it
        names. */
     beginHref: `${hrefForDestination({ to: 'studio' })}?arrange=1`,
@@ -779,15 +786,15 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
     })),
 
     /**
-     * THE RECORD, UNDER THE COLLECTION — design screen 1h.
+     * THE RECORD, UNDER THE COLLECTION - design screen 1h.
      *
      * Every sealed visit across every car, newest first, as one list. The
      * album at `/history` is per car and stays that way; this is the studio's
      * relationship with the customer rather than with one vehicle, which is
      * why the car's name is part of each line.
      *
-     * Money comes from `moneyOfVisits` — the SAME reader the album totals
-     * with — so a figure here can never disagree with the figure on the visit
+     * Money comes from `moneyOfVisits` - the SAME reader the album totals
+     * with - so a figure here can never disagree with the figure on the visit
      * it links to. That disagreement is a bug this codebase has already had
      * once (see the note on `moneyOfVisits`) and it is not being reopened for
      * a summary list.
@@ -827,20 +834,20 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
 /**
  * AN UNREAD NOTIFICATION, RESOLVED TO THE SURFACE THAT OWNS IT.
  *
- * §17.1 — "A list of notifications is the same mistake as a list of documents.
+ * §17.1 - "A list of notifications is the same mistake as a list of documents.
  * State changes surface as state. The car is the inbox." So there is no inbox
  * and this builds none: it returns AT MOST ONE unread record per car, as a mark
  * on the car it belongs to, and the mark is a doorway to the object rather than
  * a message to be processed.
  *
- * §17.3 — "A notification is a doorway. It opens the exact surface it is about
- * — never the home screen, never a generic list." Which surface that is depends
+ * §17.3 - "A notification is a doorway. It opens the exact surface it is about
+ * - never the home screen, never a generic list." Which surface that is depends
  * on the state of the object NOW, not on the state it was in when the push went
  * out. `navigation/resolve.notificationHref` is the WRITE-time resolver and it
  * is right at the moment it runs; by the time the customer taps, the visit it
  * addressed may have been sealed under a different id, or never sealed at all.
  * Resolved against the picture here for that reason, using the same readers
- * every other room uses — `liveOf`, the sealed visit, `isUpcoming`.
+ * every other room uses - `liveOf`, the sealed visit, `isUpcoming`.
  *
  * WHERE THERE IS NO OWNING SURFACE, THERE IS NO SIGNAL. Ten of the nineteen
  * customer notifications in production are about a booking that was completed
@@ -867,7 +874,7 @@ function surfaceOf(
   if (live && live.id === n.bookingId) {
     return hrefForDestination({ to: 'visit', visitId: live.id });
   }
-  /* The sealed record carries its own id, which is NOT the booking's — a
+  /* The sealed record carries its own id, which is NOT the booking's - a
      notification written during the visit addresses the booking. */
   const sealed = visitsOf(car).find(v => v.bookingId === n.bookingId);
   if (sealed) return hrefForDestination({ to: 'visit', visitId: sealed.id });
@@ -888,7 +895,7 @@ export function noticeOf(
   for (const n of picture.notifications) {
     if (n.read === true) continue;
     /* A membership notice belongs to the club, not to any one car, and is not
-       carried here — the Membership room is its own surface. */
+       carried here - the Membership room is its own surface. */
     if (!n.bookingId || !mine.has(n.bookingId)) continue;
     const href = surfaceOf(n, picture, car, now);
     if (href) return { id: n.id, title: n.title, href };
@@ -907,7 +914,7 @@ export function unmappableOf(picture: CustomerPicture, car: CarPicture, now = ne
 /* ── VEHICLE ─────────────────────────────────────────────────────────────── */
 
 /**
- * §11.4's regions are authored per photograph — only whoever looked at the
+ * §11.4's regions are authored per photograph - only whoever looked at the
  * image knows where its wheels are. Nothing records them yet, so a real
  * photograph carries none and the car cannot be asked about itself. The screen
  * is whole without the interaction (§18.1) and this is the one place that has
@@ -941,7 +948,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
    *
    * This built a list keyed by region and dropped anything without one, which
    * threw away insurance, the pollution certificate, the registration and the
-   * FASTag — six of the ten kinds. The survivors were then drawn only as marks
+   * FASTag - six of the ten kinds. The survivors were then drawn only as marks
    * on the photograph, positioned by `regionsFor()`, which returns nothing
    * because no photograph has ever had its regions authored. Between the two,
    * a car with seven live protections showed none of them in its own room.
@@ -952,7 +959,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
    */
   const layers: VehicleProtection[] = protections
     /* THE CLUB IS NOT A LAYER ON THE CAR. §15.2 places a membership among the
-       protections, and Home does exactly that — but it belongs to the person
+       protections, and Home does exactly that - but it belongs to the person
        and to `os/club`, and listing it in the car's own room would be the same
        fact in a second place under a different owner. */
     .filter(p => p.kind !== 'membership')
@@ -961,15 +968,15 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     region: REGION_OF[p.kind],
     label: PROTECTION_TITLE[p.kind],
     term: termWords(p.term, now),
-    /* §14.2 — the design draws each layer as a proportion of its own term,
+    /* §14.2 - the design draws each layer as a proportion of its own term,
        which is a number this projection was already computing for Home and
        throwing away here. Undefined for a term that does not deplete, and the
        room draws no bar rather than a full one. */
     remaining: remainingOf(p, now),
-    /* One definition, from the engine — never re-derived per screen. */
+    /* One definition, from the engine - never re-derived per screen. */
     measurement: measurementOf(p),
     tone: TONE[p.health],
-    /* §14.6 — the file where one exists. Nothing writes `document` yet, so
+    /* §14.6 - the file where one exists. Nothing writes `document` yet, so
        this is undefined throughout; the room draws no control for it. */
     documentHref: p.document ? p.document.url : undefined,
   }));
@@ -977,14 +984,14 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
   /**
    * THE CAR'S NEXT VISIT.
    *
-   * The room named the car's STATE — "Booked in" — and then said nothing about
+   * The room named the car's STATE - "Booked in" - and then said nothing about
    * when, what for, or how to change it. A customer looking at their own car
    * had to go to the Studio, find the visit among every other car's, and work
    * out which one was this one's. The booking already belongs to this car;
    * this is the room that should say so.
    *
    * `nextVisitOf` is the same reader Home, the Studio and the ownership engine
-   * use, so the car cannot disagree with itself — or with Home — about which
+   * use, so the car cannot disagree with itself - or with Home - about which
    * visit is the one in hand. It was `liveBooking`, which answered a different
    * question and sometimes named a different booking.
    */
@@ -992,13 +999,13 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
   const next = nextVisitOf(car, now);
 
   /**
-   * THE CAR IN ONE LINE — "Phantom Black · matte wrap · 2023" (design 1d).
+   * THE CAR IN ONE LINE - "Phantom Black · matte wrap · 2023" (design 1d).
    *
    * Assembled from what the owner has actually told us and nothing else. Each
    * part is optional, so this is a line of one, two or three facts, or absent.
    * `category` and `color` are the legacy descriptors: they were written by
    * pickers the photograph replaced, and this is the first surface to read
-   * them since — a fact already stored is not a fact worth asking for twice.
+   * them since - a fact already stored is not a fact worth asking for twice.
    */
   const descriptor = [
     car.vehicle.color,
@@ -1009,7 +1016,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
   /**
    * WHAT THE STUDIO STANDS BEHIND, AND UNTIL WHEN.
    *
-   * The furthest-out dated term among the car's protections. §14.6 — a
+   * The furthest-out dated term among the car's protections. §14.6 - a
    * warranty is a promise with an end, so the room says the end rather than
    * the word "covered". A car whose protections are all perpetual or all
    * balances has no date to give, and the tile is simply not drawn.
@@ -1026,7 +1033,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     descriptor,
     warranty: furthest ? `Active to ${monthYear(furthest)}` : undefined,
     /* Grouped in the Indian convention, because that is how the number is
-       read aloud here — 41,208 and not 41208. */
+       read aloud here - 41,208 and not 41208. */
     odometer: typeof car.vehicle.odometer === 'number'
       ? `${car.vehicle.odometer.toLocaleString('en-IN')} km`
       : undefined,
@@ -1036,10 +1043,10 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
           service: next.serviceName,
           /* The day in the customer's terms, and the hour as booked. */
           when: `${longDate(next.scheduledDate)}${next.scheduledTime ? ` at ${next.scheduledTime}` : ''}`,
-          /* §16 — pending is not the same promise as confirmed, and a customer
+          /* §16 - pending is not the same promise as confirmed, and a customer
              who is waiting on the studio should be told they are. */
           settled: next.status === 'confirmed',
-          /* Straight at THIS visit's sheet — the same address Home's NEXT
+          /* Straight at THIS visit's sheet - the same address Home's NEXT
              VISIT now uses, so one booking has one destination. Every upcoming
              visit is by definition pending or confirmed, which is exactly the
              set `firestore.rules` lets the customer change, so the room can
@@ -1048,18 +1055,18 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
         }
       : undefined,
     /* WHILE THE CAR IS ACTUALLY HERE, there is nothing to arrange and nothing
-       to change — there is work to watch. Inviting a booking under the word
+       to change - there is work to watch. Inviting a booking under the word
        "In care" is the room contradicting itself in the space of one screen.
-       §5.4 — the live account is a takeover reached from the car, so this is
+       §5.4 - the live account is a takeover reached from the car, so this is
        the car pointing at it. */
     followHref: live
       ? hrefForDestination({ to: 'visit', visitId: live.id })
       : undefined,
-    /* Arranging for THIS car, from this car — the Studio's sheet opens with
+    /* Arranging for THIS car, from this car - the Studio's sheet opens with
        the category unset but the room already knows whose visit it is. */
     arrangeHref: `${hrefForDestination({ to: 'studio' })}?arrange=1`,
     since: sinceWords(car, 'With AutoModz since').replace(/^with/, 'With'),
-    /* §17.1 — the car IS the inbox. One unread thing about this car, as a
+    /* §17.1 - the car IS the inbox. One unread thing about this car, as a
        doorway to the object it is about. Never a feed, never a body. */
     notice: noticeOf(picture, car, now),
     /* Carries the car. Without it, following History from the second car in a
@@ -1067,7 +1074,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     historyHref: hrefForDestination({ to: 'history.car', vehicleId: car.vehicle.id }),
     protections: layers,
 
-    /* THE CAR'S MEDIA, month by month — `os/moment`, connected. The old
+    /* THE CAR'S MEDIA, month by month - `os/moment`, connected. The old
        Garage carried this for the selected car; the car has its own room now,
        so it lives here. The engine derives the frames from the jobs; nothing
        is re-derived. */
@@ -1103,19 +1110,19 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
 /* ── HISTORY ─────────────────────────────────────────────────────────────── */
 
 /**
- * A car's history. §16 — sealed visits only, and the papers they handed over.
+ * A car's history. §16 - sealed visits only, and the papers they handed over.
  * The catalogue argument is gone: nothing here may consult it (see `visitsOf`).
  */
 export function toHistory(car: CarPicture, invoices: Invoice[] = []): HistoryModel {
   const visits = visitsOf(car);
 
-  /* THE STANDING. §16.1 calls History "a series of transformations" — but a
+  /* THE STANDING. §16.1 calls History "a series of transformations" - but a
      series has a shape, and the room showed none of it: a customer scrolled
      photographs with no idea how many visits there had been, how long the car
      had been cared for here, or what the record added up to. The facts were
      all already in hand and none of them were said.
 
-     Summed from the SEALED amounts (§16.2 — never recomputed from today's
+     Summed from the SEALED amounts (§16.2 - never recomputed from today's
      price list), so this total is the sum of what was actually settled. */
   const oldest = visits[visits.length - 1];
   /* THE SUM OF WHAT EACH VISIT ACTUALLY SAYS. It summed the sealed amounts
@@ -1139,7 +1146,7 @@ export function toVisit(
   car: CarPicture,
   invoices: Invoice[] = [],
 ): HistoryVisit {
-  /* WHAT IT COST, AND THE PAPER BEHIND IT — `moneyOfVisits`, the same reader
+  /* WHAT IT COST, AND THE PAPER BEHIND IT - `moneyOfVisits`, the same reader
      the album totals with, run over the same list in the same order so a visit
      opened on its own cannot be paired with a different invoice than the one
      the album counted for it. This used to match the invoice here, privately,
@@ -1161,7 +1168,7 @@ export function toVisit(
     photo: cover ? { url: cover.url, description: `${car.vehicle.name}, finished at AutoModz` } : undefined,
     /* GUARDED, LIKE `framesOfVisit` ABOVE, AND FOR THE SAME REASON. A sealed
        visit is immutable, so a record written before one of these fields
-       existed still has no value for it — and an unguarded read here does not
+       existed still has no value for it - and an unguarded read here does not
        lose one visit's detail, it throws inside a `.map` over EVERY visit and
        takes the whole History room down to the error boundary. Found by
        rendering a record with a stage from an older schema. */
@@ -1172,12 +1179,12 @@ export function toVisit(
       description: `${car.vehicle.name} at AutoModz`,
       caption: f.caption,
     })),
-    /* §16.2 — what it promised, as captured at seal. Never recomputed. */
+    /* §16.2 - what it promised, as captured at seal. Never recomputed. */
     promised: (visit.termsCaptured ?? []).map(t => ({
       label: PROTECTION_TITLE[t.kind],
       term: termWords(t.term).toLowerCase(),
     })),
-    /* §16 — the amount as SEALED, not as the price list reads today, and ONLY
+    /* §16 - the amount as SEALED, not as the price list reads today, and ONLY
        where the sealed amount is the answer. Where an invoice exists the
        receipt owns the money; carrying both invited the screen to add them up
        or to show whichever it reached first. One figure, one source. */
@@ -1198,7 +1205,7 @@ export function toVisit(
 
     /* THE RECEIPT, INLINE. The figures already existed and lived one tap away
        at `/invoice/[id]`, so the customer had to leave the record of the work
-       to learn what the work cost. Carried verbatim from the invoice — nothing
+       to learn what the work cost. Carried verbatim from the invoice - nothing
        here recomputes a total, and the paper remains reachable for whoever
        wants the document itself. */
     receipt: invoice ? {
@@ -1229,7 +1236,7 @@ export function toVisit(
     documents: invoice
       ? [{
           /* Its own share token, so the paper opens for whoever holds the
-             link — the same token the studio sends. */
+             link - the same token the studio sends. */
           label: invoice.paymentStatus === 'paid'
             ? `Receipt · ${invoice.invoiceNumber}`
             : `Invoice · ${invoice.invoiceNumber}`,
@@ -1249,7 +1256,7 @@ export function toVisit(
 /* ── STUDIO ──────────────────────────────────────────────────────────────── */
 
 /**
- * THE LIVE VISIT. Null unless the car is actually here — a countdown to a
+ * THE LIVE VISIT. Null unless the car is actually here - a countdown to a
  * moment that has passed is worse than none. Every value is `os/stay`'s.
  */
 export function toLiveVisit(
@@ -1285,7 +1292,7 @@ export function toLiveVisit(
     frames,
     hero: stay.latestPhoto ?? car.vehicle.photo,
     backHref: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
-    /* §20.1 — a way to reach a human, on the screen a customer is most likely
+    /* §20.1 - a way to reach a human, on the screen a customer is most likely
        to want one. The message names the car, so the studio does not have to
        ask which one it is about. */
     messageHref: waLink(
@@ -1354,7 +1361,7 @@ export function toStudio(
 
   return {
     place: 'Maninagar · Ahmedabad',
-    /* §4.5 — the absence of news is good news and should look like it. */
+    /* §4.5 - the absence of news is good news and should look like it. */
     presence: here ? 'Your car is here' : 'Your car is with you',
     visitHref: here ? hrefForDestination({ to: 'vehicle' }) : undefined,
     voice:
@@ -1369,12 +1376,12 @@ export function toStudio(
     address: COMPANY.address,
     directionsHref: COMPANY.mapsUrl,
     /* §6.3's primary action opens the booking flow in place. It used to be an
-       outbound WhatsApp link, because there was no in-app booking surface —
+       outbound WhatsApp link, because there was no in-app booking surface -
        the most important control in the product handed the customer to another
        application. There is one now. */
     /* MADE PLAIN AT THE BOUNDARY. `StudioScreen` is a client component, and
        these three are the only things in any projection handed to a renderer
-       as whole Firestore documents — the booking flow wants the Service
+       as whole Firestore documents - the booking flow wants the Service
        objects themselves. Those documents carry `Timestamp` CLASS instances
        (`Service.createdAt`, `Vehicle.createdAt`, `Subscription.createdAt` and
        friends), and React refuses to serialise a class instance across the
@@ -1384,7 +1391,7 @@ export function toStudio(
        `ownership` and this file all sort on `createdAt?.toMillis?.()`, which
        with optional chaining would quietly return 0 for a converted value and
        break every ordering in the product without raising anything. */
-    /* Design 06 → 07 — one address per service, resolved here because a
+    /* Design 06 → 07 - one address per service, resolved here because a
        renderer builds none (ARCHITECTURE §1). The car is the lead one, so a
        customer with a single car never has to answer "which car" twice. */
     estimate: estimate ? toCarriedEstimate(estimate) : null,
@@ -1401,7 +1408,7 @@ export function toStudio(
       services: plainValue(picture.catalogue) as Service[],
       vehicles: plainValue(picture.cars.map(c => c.vehicle)) as Vehicle[],
       membership: (plainValue(picture.subscription ?? null) ?? null) as Subscription | null,
-      /* WHERE THE STUDIO MAY COLLECT FROM — the same list the settings room
+      /* WHERE THE STUDIO MAY COLLECT FROM - the same list the settings room
          shows, from the same read, so the two cannot disagree about which
          address is the default and therefore which chip is pre-selected. */
       addresses: picture.addresses.map(a => ({
@@ -1416,15 +1423,15 @@ export function toStudio(
       addAddressHref: hrefForDestination({ to: 'profile.panel', panel: 'addresses' }),
     },
 
-    /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE — `upcomingOf`, the same
+    /* EVERY VISIT THE CUSTOMER MAY STILL CHANGE - `upcomingOf`, the same
        reader every other room uses, so "Your visits" cannot list a visit the
        car's own room has stopped believing in.
 
        TWO THINGS CHANGED HERE. It filtered on status alone, so a request the
        studio never actioned sat in this list for ever under a heading that
        says these are your visits, offering "Move it" and "Cancel the visit"
-       for a day that had already gone. And the list came out in GARAGE order —
-       27 July, then 28 July, then 24 July — because it walked the cars and
+       for a day that had already gone. And the list came out in GARAGE order -
+       27 July, then 28 July, then 24 July - because it walked the cars and
        concatenated. Sorted across every car now, soonest first, by the one
        comparator; the answer to "when is my next visit" is the top row.
 
@@ -1448,10 +1455,10 @@ export function toStudio(
 /* ── SCOPE & QUOTE ───────────────────────────────────────────────────────── */
 
 /**
- * SCREEN 07 — how much of the car, and what that costs.
+ * SCREEN 07 - how much of the car, and what that costs.
  *
  * NO PRICE IS COMPUTED HERE. The coverages and extras are WORDED from the
- * catalogue — a label, a detail line and the figure the catalogue carries —
+ * catalogue - a label, a detail line and the figure the catalogue carries -
  * and the estimate itself comes from the server, which runs `priceVisit`. A
  * projection that added up a scope and an add-on would be a second pricing
  * path with no test between it and the customer's money.
@@ -1465,8 +1472,8 @@ export function toScopeQuote(
   if (!service) return null;
 
   /* The car named in the address, or the one the customer is most likely to
-     mean. A quote is FOR a car — the studio prices a bonnet, not an abstraction
-     — so with no car at all there is nothing to quote and the room says so. */
+     mean. A quote is FOR a car - the studio prices a bonnet, not an abstraction
+     - so with no car at all there is nothing to quote and the room says so. */
   const car = (vehicleId ? picture.cars.find(c => c.vehicle.id === vehicleId) : undefined)
     ?? leadCar(picture);
   if (!car) return null;
@@ -1495,7 +1502,7 @@ export function toScopeQuote(
       recommendedWith: a.recommendedWith ?? [],
     })),
     /* The date screen, which the estimate id is appended to. Built by the
-       resolver — a screen that assembled this would be a second route table. */
+       resolver - a screen that assembled this would be a second route table. */
     nextHrefBase: hrefForDestination({ to: 'studio.arrange' }),
     backHref: hrefForDestination({ to: 'studio' }),
   };
@@ -1504,7 +1511,7 @@ export function toScopeQuote(
 /* ── READY · PAY · RATE ──────────────────────────────────────────────────── */
 
 /**
- * SCREEN 13 — what the visit came to, and how to settle it.
+ * SCREEN 13 - what the visit came to, and how to settle it.
  *
  * NOTHING IS ADDED UP HERE. The lines come from the booking's stored
  * breakdown, which `priceVisit` produced and a mid-visit approval updated; the
@@ -1535,7 +1542,7 @@ export function toSettle(args: {
     : args.payment?.status ?? 'unpaid';
 
   /* THE LINES ARE THE STORED WORKING. A booking made before breakdowns existed
-     falls back to the one thing it does carry — the service and its total —
+     falls back to the one thing it does carry - the service and its total -
      rather than inventing a decomposition of a figure nobody itemised. */
   const bd = b.breakdown;
   const lines: SettleLine[] = bd
@@ -1564,7 +1571,7 @@ export function toSettle(args: {
     paymentWord: PAYMENT_WORD[status],
     paymentLine: PAYMENT_LINE[status],
     /* Offered only when there is something to pay AND nothing already with the
-       studio to confirm — a second link against a credit they are checking is
+       studio to confirm - a second link against a credit they are checking is
        how one visit ends up with two payments to reconcile. */
     payable_now: args.money.payable > 0 && status !== 'submitted',
     awaitingConfirmation: status === 'submitted',
@@ -1586,14 +1593,14 @@ export function toSettle(args: {
 /* ── MID-VISIT APPROVAL ──────────────────────────────────────────────────── */
 
 /**
- * SCREEN 12 — what the studio found, and what it changes.
+ * SCREEN 12 - what the studio found, and what it changes.
  *
  * Every figure is read from the STORED approval, which the server froze when
  * it asked. Nothing is recomputed: the customer taps a total, and the total
  * they tapped is the total that is applied.
  *
  * `requestedByEmployeeId` is on the record and is deliberately absent from
- * this model. §2.2 — no individual is ever named on a customer surface, and
+ * this model. §2.2 - no individual is ever named on a customer surface, and
  * the design's own "requester identity" line is answered by the studio, not by
  * a person.
  */
@@ -1674,7 +1681,7 @@ export function spokenHour(time?: string): string | null {
   return min === 0 ? `${h12} ${suffix}` : `${h12}:${m[2]} ${suffix}`;
 }
 
-/** "Wednesday 12 February" — the day named, because a confirmation is read once. */
+/** "Wednesday 12 February" - the day named, because a confirmation is read once. */
 function fullDay(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
@@ -1683,7 +1690,7 @@ function fullDay(iso: string): string {
   return `${weekday} ${d} ${MONTHS[m - 1]}`;
 }
 
-/** "Thu 12 Feb" — the compact form, for a chip. */
+/** "Thu 12 Feb" - the compact form, for a chip. */
 export function shortDay(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
@@ -1707,7 +1714,7 @@ function whenWords(b: Booking): string {
   return hour ? `${start} at ${hour}` : start;
 }
 
-/** "2 days in the bay" / "4 hours in the studio" — the same wording as screen 07. */
+/** "2 days in the bay" / "4 hours in the studio" - the same wording as screen 07. */
 export function bayWords(minutes: number): string {
   if (!Number.isFinite(minutes) || minutes <= 0) return 'To be confirmed';
   if (minutes < WORK_DAY_MIN) {
@@ -1751,7 +1758,7 @@ function standingWord(b: Booking): string {
 }
 
 /**
- * SCREEN 09 — BOOKED.
+ * SCREEN 09 - BOOKED.
  *
  * Every figure comes from the stored booking, which the Booking Service wrote
  * from its own arithmetic. Nothing is recomputed here, so this screen cannot
@@ -1775,10 +1782,10 @@ export function toBooked(
         .filter(Boolean).join(DOT);
 
   /* HOW THE CAR GETS THERE. The legs are what the customer actually chose, and
-     the address is the SNAPSHOT stored on the booking — never the saved
+     the address is the SNAPSHOT stored on the booking - never the saved
      address as it stands today, which they may have edited since. */
   const collection = b.pickupRequired && b.dropRequired
-    ? `We collect it and bring it back${b.pickupAddress ? ` — ${b.pickupAddress}` : ''}.`
+    ? `We collect it and bring it back${b.pickupAddress ? ` - ${b.pickupAddress}` : ''}.`
     : b.pickupRequired
       ? `We collect it${b.pickupAddress ? ` from ${b.pickupAddress}` : ''}. You collect it from the studio.`
       : b.dropRequired
@@ -1865,7 +1872,7 @@ function lockedWords(reason: string): string {
 }
 
 /**
- * SCREEN 10 — MANAGE BOOKING.
+ * SCREEN 10 - MANAGE BOOKING.
  *
  * `openings` is passed in rather than computed, because it depends on every
  * other customer's bookings and this file may not read a database (§1). The
@@ -1905,7 +1912,7 @@ export function toManageBooking(
     moveable: window.allowed,
     moveBlockedBecause: window.allowed ? undefined : lockedWords(window.reason),
     cancellable: canCancel,
-    /* A booking may be cancellable while it may no longer be MOVED — inside
+    /* A booking may be cancellable while it may no longer be MOVED - inside
        the last day the studio has prepared for a slot, but the customer may
        still withdraw. Two rules, two answers, never one control for both. */
     cancelBlockedBecause: canCancel ? undefined : lockedWords(
@@ -1940,8 +1947,8 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
   /**
    * THE SAME ENGINE THE MEMBERSHIP ROOM READS.
    *
-   * This asked `subscription ? …` — any subscription, whatever had become of
-   * it — and then derived the wording from the raw document. A customer whose
+   * This asked `subscription ? …` - any subscription, whatever had become of
+   * it - and then derived the wording from the raw document. A customer whose
    * Silver membership had been CANCELLED was told, on this screen,
    *
    *     Silver member.
@@ -1954,13 +1961,13 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
   const club = clubOf(picture, now);
 
   /**
-   * THE ONE QUIET LINE — design screen 1l, "You — and the one quiet line".
+   * THE ONE QUIET LINE - design screen 1l, "You - and the one quiet line".
    *
    * The person's room says one thing about their car and only while something
    * is actually happening to it. §5.2 bars the car's DETAILS from this room,
    * not the fact that the studio currently has it: a customer who opens their
    * own room while their car is on a bay and is told nothing has to go and
-   * look. It is a doorway (§17.3), never a status board — one sentence, and
+   * look. It is a doorway (§17.3), never a status board - one sentence, and
    * absent the moment the work ends.
    */
   const lead = leadCar(picture);
@@ -1975,7 +1982,7 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
   return {
     name: user.name || 'You',
     reachedAt: [user.email, user.phone].filter(Boolean).join(DOT),
-    /* "Gold · since 2023" — and just "Gold" when no membership carries a
+    /* "Gold · since 2023" - and just "Gold" when no membership carries a
        start date, rather than the dangling "Gold · since" a template with an
        empty tail produces. */
     standing: club.state !== 'none'
@@ -1997,8 +2004,8 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
       lines: membershipLines(club),
       action: { label: 'What it includes', href: hrefForDestination({ to: 'membership' }) },
     } : undefined,
-    /* THE SURFACES NOW EXIST, so the controls return. Each opened `/you` —
-       the address it was already on — and was omitted rather than left inert.
+    /* THE SURFACES NOW EXIST, so the controls return. Each opened `/you` -
+       the address it was already on - and was omitted rather than left inert.
        The three sheet-backed ones are addressed (`?panel=`), so each is
        linkable and closed by the back button. */
     details: {
@@ -2038,7 +2045,7 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
         href: hrefForDestination({ to: 'profile.panel', panel: 'delete' }) },
     },
     /* ── DESIGN SCREEN 19'S OWN ROWS ─────────────────────────────────
-       Each one opens a surface that exists. §10.5 — if there is no
+       Each one opens a surface that exists. §10.5 - if there is no
        destination there is no control, which is why each is conditional on
        the thing behind it rather than always drawn and sometimes inert. */
     papers: picture.invoices.length > 0 ? {
@@ -2062,7 +2069,7 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
         href: hrefForDestination({ to: 'profile.panel', panel: 'addresses' }) },
     },
     /* CONSENT IS PER CAR, so the row exists only when there is a car to
-       decide about — an empty garage has no record to publish. */
+       decide about - an empty garage has no record to publish. */
     ...(cars.length > 0 ? {
       consentCars: cars.map(c => ({
         id: c.vehicle.id,
@@ -2077,15 +2084,15 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
     },
     support: {
       line: 'Something not right?',
-      /* Was `COMPANY.mapsUrl` — "Talk to us" opened Google Maps. The studio's
+      /* Was `COMPANY.mapsUrl` - "Talk to us" opened Google Maps. The studio's
          actual channel is WhatsApp. */
-      action: { label: 'Talk to us', href: waLink('Hello AutoModz —') },
+      action: { label: 'Talk to us', href: waLink('Hello AutoModz -') },
     },
   };
 }
 
 /**
- * §15.3's first three facts. THE FOURTH — "what it has been worth" — is not
+ * §15.3's first three facts. THE FOURTH - "what it has been worth" - is not
  * here, and its absence is deliberate: it must be the honest cumulative saving
  * from settled visits, and nothing records that yet. A plausible number would
  * be the one figure §15.3 says decides renewal, invented.
@@ -2095,11 +2102,11 @@ function membershipLines(club: ClubModel): string[] {
   /* The state is the engine's, so the third line cannot claim a renewal the
      Membership room has already said will not happen. `healthOf` was being
      asked here as a second opinion on a lifecycle `clubModel` had already
-     resolved — and it answered "healthy" for a cancelled plan, because a
+     resolved - and it answered "healthy" for a cancelled plan, because a
      cancellation is not a date. */
   /* NO DATE MEANS NO DATE, NOT AN EMPTY SPACE WHERE ONE WOULD BE.
      Every branch interpolated `when` unguarded, so a membership with no known
-     renewal — a lapsed one, most often — was shown the sentence
+     renewal - a lapsed one, most often - was shown the sentence
 
          Lapsed .
 
@@ -2126,7 +2133,7 @@ function membershipLines(club: ClubModel): string[] {
 export function toMembership(picture: CustomerPicture, now = new Date()): MembershipModel {
   /* THE ENGINE DECIDES. `os/club` already owns the state, the cycle's
      arithmetic and the one true sentence under the card. This used to recompute
-     `remaining` and the health locally — a second implementation of the same
+     `remaining` and the health locally - a second implementation of the same
      membership maths, which is exactly what §22.2 forbids. */
   const club = clubOf(picture, now);
   const sub = picture.subscription;
@@ -2134,7 +2141,7 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
   const history = picture.subscriptions.map(s => ({
     id: s.id,
     plan: `${s.plan} member`,
-    period: `${longDate(s.startDate)} — ${longDate(s.endDate)}`,
+    period: `${longDate(s.startDate)} - ${longDate(s.endDate)}`,
     status: s.status,
   }));
 
@@ -2151,17 +2158,17 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
     held: true,
     tier: `${club.plan} member`,
     /**
-     * WHOSE CARD IT IS — design screen 1i.
+     * WHOSE CARD IT IS - design screen 1i.
      *
      * A membership card with no name on it is a receipt. The holder's name and
      * the year they joined are what make it theirs, and both were already in
      * the picture and never asked for. The number is the subscription's own id,
-     * shortened and cased — not a new identifier minted for a screen, which
+     * shortened and cased - not a new identifier minted for a screen, which
      * would be a second identity for one membership.
      */
     holder: picture.user.name || undefined,
     memberNo: sub.id.slice(-4).toUpperCase(),
-    /* The year the relationship started, from the EARLIEST membership held —
+    /* The year the relationship started, from the EARLIEST membership held -
        a customer on their third year should not read "since 2026" because the
        current subscription began in January. Every date here is optional in
        practice (a membership created by the studio at the counter may carry
@@ -2171,7 +2178,7 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
       .filter((d): d is string => typeof d === 'string' && d.length >= 4)
       .sort()[0]
       ?.slice(0, 4),
-    /* §15.3 #2 — the engine's own count, not a second subtraction. */
+    /* §15.3 #2 - the engine's own count, not a second subtraction. */
     remaining: club.washesLeft === 0
       ? 'No washes left this cycle'
       : `${club.washesLeft} of ${club.washesTotal} washes left this cycle`,
@@ -2179,14 +2186,14 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
     term: health === 'lapsed'
       ? `Lapsed ${longDate(sub.endDate)}`
       : `Renews ${longDate(sub.endDate)}`,
-    /* §14.4 — a countdown only when the number is small enough to act on. */
+    /* §14.4 - a countdown only when the number is small enough to act on. */
     countdown: days !== null && days >= 0 && days <= 30
       ? `${days} day${days === 1 ? '' : 's'} left in this cycle`
       : undefined,
     awaitingPayment: club.awaitingPayment,
     tone: TONE[health],
     benefits: plan?.perks,
-    /* The benefit is used, not admired — a wash that is already paid for is
+    /* The benefit is used, not admired - a wash that is already paid for is
        booked like any other, with the category chosen. Only when there is one
        left and the membership is actually in force. */
     bookWashHref: club.state === 'active' && club.washesLeft > 0

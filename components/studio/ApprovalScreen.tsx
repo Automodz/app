@@ -1,6 +1,6 @@
 'use client';
 /**
- * WE FOUND SOMETHING — design screen 12.
+ * WE FOUND SOMETHING - design screen 12.
  *
  * The only screen in the product where a customer agrees to spend more money
  * after their car is already on a bay. Everything about it is shaped by that.
@@ -15,7 +15,7 @@
  *                     decisions and the price does not say which
  *
  * ── AND WHAT IT NEVER SHOWS ──────────────────────────────────────────────
- * Who found it. §2.2 — no individual is ever named on a customer surface. The
+ * Who found it. §2.2 - no individual is ever named on a customer surface. The
  * studio found it; the studio is asking.
  *
  * ── DECLINING IS A FIRST-CLASS ANSWER ────────────────────────────────────
@@ -46,13 +46,13 @@ export interface ApprovalModel {
   priceDelta: string;
   /** "+2 hours · same day" */
   timeDelta: string;
-  /** "₹43,622" — what the visit becomes. */
+  /** "₹43,622" - what the visit becomes. */
   newTotal: string;
   /** What it stands at now, so the delta can be checked. */
   currentTotal: string;
   /** Absent while it still stands. Set once it is answered or has run out. */
   settled?: string;
-  /** "Until 6:20 pm" — when the request retires itself. */
+  /** "Until 6:20 pm" - when the request retires itself. */
   standsUntil?: string;
   visitHref: string;
 }
@@ -100,13 +100,13 @@ export function ApprovalScreen({ model }: { model: ApprovalModel }) {
       <OfflineNote />
 
       {/* MOVED UP FROM THE FOOT OF THE PAGE. It was a `quiet` Action after
-          everything else, which is a footer link and not an escape route — a
+          everything else, which is a footer link and not an escape route - a
           way out you reach by scrolling past the whole screen is one the
           customer has already given up looking for. One idiom, at the top,
           in every room. */}
       {/* One header: the way back, the eyebrow and the Display, at one
           scale. These five drew the same three elements by hand and disagreed
-          on the size — 28, 29 and 30 — which nobody chose. */}
+          on the size - 28, 29 and 30 - which nobody chose. */}
       <RoomHeader
         parent={{ href: model.visitHref, name: 'The visit' }}
         eyebrow={model.eyebrow}
@@ -225,7 +225,7 @@ function ChangeRow(
         fontFamily: 'var(--font-mono)',
         fontSize: strong ? 15 : 12.5,
         color: quiet ? color.ink3 : color.champagne,
-        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
       }}>
         {value}
       </span>

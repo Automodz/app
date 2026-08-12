@@ -5,15 +5,15 @@
  * Source: docs/AUTOMODZ-OS.md §2.1, §3.1, §3.2, §4.3, §5.5, §11.2, §11.3,
  *         §11.4, §11.5, §14.2, §14.4, §14.6, §17.1, §17.3, §18.4, §21.1,
  *         §21.5, §21.6
- *         design "AutoModz App.dc.html" — screen 1d
+ *         design "AutoModz App.dc.html" - screen 1d
  *
  * ── WHAT THIS SCREEN IS ──────────────────────────────────────────────────
- * §2.1 — the car is the subject of the product, and this is the one room
+ * §2.1 - the car is the subject of the product, and this is the one room
  * where it is the subject of the screen too. The design opens on the
  * photograph at half the height of the display, with nothing over it but the
  * plate, the name and one line of description, and then states, in order:
  *
- *   the protection ledger — every layer, as a proportion of its term
+ *   the protection ledger - every layer, as a proportion of its term
  *   what the studio stands behind, and how far the car has gone
  *   the album
  *
@@ -22,7 +22,7 @@
  * notice and the one action at the foot.
  *
  * ── THE PHOTOGRAPH IS NOT DRAWN HERE ─────────────────────────────────────
- * §11.3 — a `VehicleRendering` is handed in. This screen never imports
+ * §11.3 - a `VehicleRendering` is handed in. This screen never imports
  * `next/image`, never positions a mark, and never learns what medium is
  * showing the car. See components/vehicle/renderer.ts for why that boundary
  * is drawn where it is; the design changed the composition around the
@@ -47,7 +47,7 @@ import {
 
 export interface VehicleProtection {
   id: string;
-  /** §11.4 — where on the car it is, when the medium can locate it. */
+  /** §11.4 - where on the car it is, when the medium can locate it. */
   region?: RegionId;
   label: string;
   tone: StateTone;
@@ -62,8 +62,8 @@ export interface VehicleProtection {
   /**
    * IS `remaining` A MEASUREMENT OR A CATEGORY?
    *
-   * `measured` — a real fraction between a recorded `since` and a dated term.
-   * `estimated` — no trustworthy start date, so the engine falls back to a
+   * `measured` - a real fraction between a recorded `since` and a dated term.
+   * `estimated` - no trustworthy start date, so the engine falls back to a
    * health bucket (0.8 / 0.2 / 0.05 / 0). Eight legacy protections are in that
    * state and no date may be invented for them.
    *
@@ -71,7 +71,7 @@ export interface VehicleProtection {
    * screen does with it is a design decision this model does not make.
    */
   measurement?: 'measured' | 'estimated';
-  /** §14.6 — the file, where one exists. */
+  /** §14.6 - the file, where one exists. */
   documentHref?: string;
 }
 
@@ -94,7 +94,7 @@ export interface VehicleModel {
   descriptor?: string;
   state: string;
   since: string;
-  /** §14.6 — the furthest date the studio stands behind, already worded. */
+  /** §14.6 - the furthest date the studio stands behind, already worded. */
   warranty?: string;
   /** The owner's own number, grouped for reading. Absent until they give it. */
   odometer?: string;
@@ -114,7 +114,7 @@ export interface VehicleModel {
   arrangeHref: string;
 }
 
-/** §3.3 — the state's own tone. One warm family, and nothing else. */
+/** §3.3 - the state's own tone. One warm family, and nothing else. */
 const TONE: Record<StateTone, string> = {
   assent: color.champagne,
   caution: color.amber,
@@ -130,7 +130,7 @@ export function VehicleScreen(
     protections, notice, media, editHref, declareHref, next, followHref, arrangeHref,
   } = model;
 
-  /* §11.4 — which region the customer is asking about. `null` is the resting
+  /* §11.4 - which region the customer is asking about. `null` is the resting
      state and the only state the screen has to be whole in, because a medium
      that cannot locate its regions never leaves it. */
   const [focus, setFocus] = useState<RegionId | null>(null);
@@ -162,7 +162,7 @@ export function VehicleScreen(
       </div>
 
       {/* ── THE PHOTOGRAPH ──────────────────────────────────────────────
-          §11.2 — the largest element on the screen, and the design fixes it
+          §11.2 - the largest element on the screen, and the design fixes it
           at just over half the display so the ledger below is on the same
           screen as the car it describes. That co-presence is the point: this
           room is the car AND its condition, not one then the other. */}
@@ -184,7 +184,7 @@ export function VehicleScreen(
           mark={region => (
             <button
               type="button"
-              aria-label={`${REGION_NAME[region.id]} — ${
+              aria-label={`${REGION_NAME[region.id]} - ${
                 protections.find(p => p.region === region.id)?.term ?? 'no record'
               }`}
               aria-pressed={focus === region.id}
@@ -208,7 +208,7 @@ export function VehicleScreen(
           )}
         />
 
-        {/* §21.1 — the scrim, top and bottom. The words below are `over`. */}
+        {/* §21.1 - the scrim, top and bottom. The words below are `over`. */}
         <span
           aria-hidden
           style={{
@@ -218,7 +218,7 @@ export function VehicleScreen(
           }}
         />
 
-        {/* Identity, over the photograph. §5.5 — the plate is identity, not
+        {/* Identity, over the photograph. §5.5 - the plate is identity, not
             jargon, so it is set in mono and named first. */}
         <div
           style={{
@@ -249,12 +249,12 @@ export function VehicleScreen(
         }}
       >
         {/* ── WHAT IS HAPPENING TO IT ─────────────────────────────────
-            §5.3 #2 — the present tense, always. The car's own room saying
+            §5.3 #2 - the present tense, always. The car's own room saying
             nothing about the car's state while it sits at rest was the exact
             silence §11.1 exists to prevent; only the WAY IN to the live
             account is conditional, never the state itself.
 
-            §5.4 — the live visit is a takeover reached from the car, so while
+            §5.4 - the live visit is a takeover reached from the car, so while
             there is one this pane is lit, breathing and pressable. */}
         <Pane
           tone={followHref ? 'lit' : 'plain'}
@@ -276,7 +276,7 @@ export function VehicleScreen(
           {followHref ? <Pulse /> : null}
         </Pane>
 
-        {/* §17.1 — the car IS the inbox. One unread thing, as a doorway to
+        {/* §17.1 - the car IS the inbox. One unread thing, as a doorway to
             the object it is about (§17.3). Never a feed, never a count. */}
         {notice ? (
           <Pane
@@ -295,7 +295,7 @@ export function VehicleScreen(
         ) : null}
 
         {/* ── THE PROTECTION LEDGER ───────────────────────────────────
-            §14.2 — every layer, in the customer's words, as a proportion of
+            §14.2 - every layer, in the customer's words, as a proportion of
             its own term. One pane, because these are one fact about the car
             rather than several facts of the same kind (§10.2).
 
@@ -354,7 +354,7 @@ export function VehicleScreen(
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)', color: TONE[p.tone],
-                        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+                        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
                       }}
                     >
                       {value}
@@ -365,7 +365,7 @@ export function VehicleScreen(
             </div>
           </Pane>
         ) : declareHref ? (
-          /* §18.4 — a car with nothing recorded is invited to say what
+          /* §18.4 - a car with nothing recorded is invited to say what
              protects it, rather than shown an empty ledger. */
           <Pane style={{ padding: `${space.gap + 2}px ${space.gap + 4}px` }}>
             <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: color.ink2 }}>
@@ -381,7 +381,7 @@ export function VehicleScreen(
         ) : null}
 
         {/* ── THE TWO STANDING FIGURES ────────────────────────────────
-            Warranty and odometer. Either may be absent — a car with neither
+            Warranty and odometer. Either may be absent - a car with neither
             draws no row at all rather than two tiles of dashes. */}
         {warranty || odometer ? (
           <div
@@ -410,7 +410,7 @@ export function VehicleScreen(
 
         {/* ── THE ALBUM ───────────────────────────────────────────────
             One line: how much of this car's life the studio has photographed,
-            and the way into it. §4.3 — depth of one. */}
+            and the way into it. §4.3 - depth of one. */}
         <Pane
           as={Link}
           {...{ href: historyHref }}
@@ -429,7 +429,7 @@ export function VehicleScreen(
         </Pane>
 
         {/* ── WHAT IS COMING ──────────────────────────────────────────
-            §16 — pending is not the same promise as confirmed, and a customer
+            §16 - pending is not the same promise as confirmed, and a customer
             waiting on the studio is told they are waiting. */}
         {next ? (
           <Pane
@@ -450,7 +450,7 @@ export function VehicleScreen(
             {next.manageHref ? <Chevron /> : null}
           </Pane>
         ) : !followHref ? (
-          /* §18.1 — nothing booked is an invitation, and the invitation IS the
+          /* §18.1 - nothing booked is an invitation, and the invitation IS the
              act: a line saying "nothing booked" with no way to book one is the
              product noticing a gap and leaving it. */
           <Pane
@@ -472,7 +472,7 @@ export function VehicleScreen(
         ) : null}
 
         {/* ── THE RELATIONSHIP, AND THE TWO QUIET CONTROLS ────────────
-            §2.1 — time with the studio, never a tally of transactions. */}
+            §2.1 - time with the studio, never a tally of transactions. */}
         <section
           aria-labelledby="veh-more"
           style={{ marginTop: space.gap, display: 'flex', flexDirection: 'column', gap: space.line }}

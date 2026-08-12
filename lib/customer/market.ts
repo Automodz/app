@@ -1,16 +1,16 @@
 /**
  * THE MARKETPLACE, SHAPED FOR SCREENS.
  *
- * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1 — "Engines decide. Projections
+ * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1 - "Engines decide. Projections
  * shape. Renderers draw."
  *
  * The engine (`os/market`) decides what is public and what matches; this turns
  * those decisions into sentences and addresses. Every href comes from
- * `navigation/resolve` — a projection that types `/cars/${id}` is a second copy
+ * `navigation/resolve` - a projection that types `/cars/${id}` is a second copy
  * of the route table, which is the defect the palette was just rebuilt to
  * remove.
  *
- * Money is `formatCurrency` from `lib/utils` — the one money helper in the
+ * Money is `formatCurrency` from `lib/utils` - the one money helper in the
  * product. There is no second price format here.
  */
 import type { CarListing, SellRequest, Vehicle, Visit } from '@/lib/types';
@@ -48,14 +48,14 @@ export interface MarketFilter {
 
 export interface MarketModel {
   cars: MarketCard[];
-  /** The filter rows, already addressed. §6.4 — each is a real URL. */
+  /** The filter rows, already addressed. §6.4 - each is a real URL. */
   fuels: MarketFilter[];
   budgets: MarketFilter[];
   /** What was asked, so the controls can show their own state. */
   query: MarketQuery;
   /** How many listings exist at all, regardless of the question. */
   stock: number;
-  /** Whether a filter is narrowing the list — an empty result means two
+  /** Whether a filter is narrowing the list - an empty result means two
    *  different things, and the screen must say the right one. */
   filtered: boolean;
   sellHref: string;
@@ -78,7 +78,7 @@ export function toMarket(
   const saved = new Set(savedIds);
   const stock = listings.filter(c => c.active === true).length;
 
-  /* Every filter is an ADDRESS, built here rather than in the renderer — a
+  /* Every filter is an ADDRESS, built here rather than in the renderer - a
      screen that assembles `/cars?fuel=…` is a second copy of the route table
      (ARCHITECTURE §1), and it is also what stops the controls being links. */
   const to = (patch: Partial<MarketQuery>) =>
@@ -112,7 +112,7 @@ export interface ListingFact { label: string; value: string }
 
 export interface ListingModel {
   /**
-   * THE CAR'S RECORD WITH US — screen 17, and the one place a private record
+   * THE CAR'S RECORD WITH US - screen 17, and the one place a private record
    * crosses into public. `null` unless the OWNER has explicitly consented; see
    * lib/os/consent.ts for why the decision lives there and not here. A screen
    * holding `null` cannot leak a count, because it has no count.
@@ -141,7 +141,7 @@ export function toListing(
   /**
    * The car in the owner's garage, when this listing is for one of ours, plus
    * what the studio has done to it. Absent for a trade-in the studio never
-   * touched — and absent is the safe default, because `publicHistoryOf`
+   * touched - and absent is the safe default, because `publicHistoryOf`
    * answers `null` for anything it is not explicitly permitted to publish.
    */
   record?: {
@@ -163,7 +163,7 @@ export function toListing(
     price: formatCurrency(c.price),
     photos: (c.photos ?? []).map((p, i) => ({
       url: p.url,
-      /* §21.6 — a real accessible name. "image 1" tells a blind customer
+      /* §21.6 - a real accessible name. "image 1" tells a blind customer
          nothing about the car they are being offered. */
       alt: `${c.title}, photograph ${i + 1} of ${c.photos.length}`,
     })),
@@ -172,12 +172,14 @@ export function toListing(
       { label: 'Driven', value: kmWord(c.kmDriven) },
       { label: 'Fuel', value: FUEL_WORD[c.fuel] ?? c.fuel },
       { label: 'Gearbox', value: TRANSMISSION_WORD[c.transmission] ?? c.transmission },
-      /* The COUNT of previous keepers — not `os/ownership`, which is about how
-         a customer's own car is cared for. Same word, unrelated meaning. */
-      { label: 'Owners', value: ownerWord(c.ownership) },
+      /* The COUNT of previous keepers - not `os/ownership`, which is about how
+         a customer's own car is cared for. Same word, unrelated meaning.
+         Absent when the studio was never told, rather than a row reading
+         "undefinedth owner" (§18.1). */
+      ...(ownerWord(c.ownership) ? [{ label: 'Owners', value: ownerWord(c.ownership) }] : []),
       ...(c.color ? [{ label: 'Colour', value: c.color }] : []),
     ],
-    /* §15.7 — an empty description is absent, never an empty heading. The
+    /* §15.7 - an empty description is absent, never an empty heading. The
        registration number is deliberately NOT projected: it is admin-only on
        the type, and publishing it hands a stranger the car's identity. */
     description: c.description?.trim() || undefined,
@@ -207,7 +209,7 @@ export interface SellOffer {
   id: string;
   car: string;
   when: string;
-  /** "Received" / "We've been in touch" / "Closed" — never the stored word. */
+  /** "Received" / "We've been in touch" / "Closed" - never the stored word. */
   state: string;
   photos: number;
 }
@@ -222,7 +224,7 @@ export interface SellModel {
 /**
  * A lead's status, said the way the customer would say it.
  *
- * §21.8 — `new` and `contacted` are the studio's words for its own queue. To
+ * §21.8 - `new` and `contacted` are the studio's words for its own queue. To
  * the person waiting, the meaningful distinction is whether anyone has picked
  * it up yet.
  */

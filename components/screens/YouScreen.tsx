@@ -4,13 +4,13 @@
  *
  * Source: docs/AUTOMODZ-OS.md §2.2, §3.1, §3.5, §5.1, §5.2, §8.2, §8.3, §8.6,
  *         §9.5, §10.4, §15.2, §15.3, §15.6, §17.3, §18.1, §21.1, §21.3, §21.6
- *         design "AutoModz App.dc.html" — screen 1l
+ *         design "AutoModz App.dc.html" - screen 1l
  *
- * §5.2 — Profile is about "the person", and holds "name, contact, how they are
+ * §5.2 - Profile is about "the person", and holds "name, contact, how they are
  * reached, devices, sign-out".
  *
  * ── THE MONOGRAM, AND WHY §2.2 DOES NOT FORBID IT ────────────────────────
- * This file used to state: "no hero, no avatar and no monogram", citing §2.2 —
+ * This file used to state: "no hero, no avatar and no monogram", citing §2.2 -
  * "no individual is ever named on any customer surface." That reading was too
  * wide, and the design corrects it.
  *
@@ -23,7 +23,7 @@
  *
  * ── ONE LINE ABOUT THE CAR, AND ONLY WHILE IT IS TRUE ────────────────────
  * §5.2 says this room holds nothing about the car. The design puts exactly one
- * sentence here — "Ceramic curing · ready today, 6:20 pm" — and it earns its
+ * sentence here - "Ceramic curing · ready today, 6:20 pm" - and it earns its
  * place by being a DOORWAY (§17.3) rather than a detail: it exists only while
  * the studio physically has the car, says one thing, and opens the live visit.
  * The moment the work ends it is gone. That is state surfacing as state
@@ -31,14 +31,14 @@
  *
  * ── ROWS, NOW ────────────────────────────────────────────────────────────
  * This screen used to argue against rows: "a settings list is a pile of
- * switches the customer has to audit." The design uses rows, and it is right —
+ * switches the customer has to audit." The design uses rows, and it is right -
  * the sentences-with-links form made eight administrative entries read as
  * eight paragraphs of prose, which is harder to scan, not easier. What the old
  * note was actually protecting against is kept: there are no icons, no boxes
  * around each row, and no toggles for things that are not toggles.
  *
- * §10.4 — there is NO primary control. Identity is not a task. Sign-out is
- * quiet, alone, at the end (§15.6 — leaving is easy and not defended).
+ * §10.4 - there is NO primary control. Identity is not a task. Sign-out is
+ * quiet, alone, at the end (§15.6 - leaving is easy and not defended).
  */
 import { color, space, TARGET_MIN } from '@/design';
 import { OfflineNote } from '@/components/system';
@@ -54,32 +54,32 @@ export interface YouEntry {
 }
 
 export interface YouModel {
-  /** §5.2 — the person's name. The one Display (§9.5). */
+  /** §5.2 - the person's name. The one Display (§9.5). */
   name: string;
-  /** §5.2 — how they are reached. One line, mono, never a form. */
+  /** §5.2 - how they are reached. One line, mono, never a form. */
   reachedAt: string;
   /** "Gold · since 2023". Absent for a customer who holds no membership. */
   standing?: string;
   /**
-   * §17.3 — the one quiet line. Present ONLY while the studio has the car,
+   * §17.3 - the one quiet line. Present ONLY while the studio has the car,
    * and it opens the live visit. See the note above.
    */
   state?: { line: string; href: string };
   /**
    * How many cars they own. A fact about the PERSON's ownership, not about any
-   * car — §5.2's "never anything about the car" bars a car's state from this
+   * car - §5.2's "never anything about the car" bars a car's state from this
    * room, not the customer's own count of them.
    */
   garage: YouEntry;
   /**
-   * §15.3 — what a member must always know: that they have one and which tier,
+   * §15.3 - what a member must always know: that they have one and which tier,
    * what remains, when it renews, and what it has been worth. The fourth is
    * "the one most products omit and the one that decides renewal".
-   * §18.1 — no membership, nothing shown. Never an invitation to buy one.
+   * §18.1 - no membership, nothing shown. Never an invitation to buy one.
    */
   membership?: { lines: readonly string[]; action: { label: string; href: string } };
   /**
-   * §10.5 — "If there is no destination yet, there is no control yet."
+   * §10.5 - "If there is no destination yet, there is no control yet."
    * Each of these opens a real surface: the preference sheet, the referral
    * sheet, and the published privacy policy.
    */
@@ -88,16 +88,16 @@ export interface YouModel {
   privacy?: YouEntry;
   /** Editing name and phone. */
   details?: YouEntry;
-  /** Terms of service — published, and required for an App Store listing. */
+  /** Terms of service - published, and required for an App Store listing. */
   terms?: YouEntry;
-  /** §5.1.1(v) — deleting the account, in-app, with nothing to request. */
+  /** §5.1.1(v) - deleting the account, in-app, with nothing to request. */
   deletion?: YouEntry;
-  /** §20.1 — a way to reach a human. */
+  /** §20.1 - a way to reach a human. */
   support: YouEntry;
   /* ── DESIGN SCREEN 19's OWN ROWS ────────────────────────────────────── */
   /** "UPI · okhdfc" when one is saved, and an invitation when none is. */
   payment?: YouEntry;
-  /** "2 saved" — where the studio collects from. */
+  /** "2 saved" - where the studio collects from. */
   addresses?: YouEntry;
   /** The papers a customer may want: invoices and warranties. */
   papers?: YouEntry;
@@ -120,7 +120,7 @@ export function YouScreen({
 }: {
   model: YouModel;
   /**
-   * §5.2, §15.6 — plainly worded, not defended. An ACTION, not an href: this
+   * §5.2, §15.6 - plainly worded, not defended. An ACTION, not an href: this
    * was `signOutHref: '/auth/login'`, which navigated to the sign-in page and
    * left the session intact.
    */
@@ -139,7 +139,7 @@ export function YouScreen({
   /* The administrative end, as one list. Ordered by how often it is opened,
      which is the opposite of how it is usually ordered.
 
-     Each row carries its SENTENCE under its name. §8.6 — a fact is a line of
+     Each row carries its SENTENCE under its name. §8.6 - a fact is a line of
      text, and "One car lives here." is the fact; "Your garage" is only the
      door. Dropping the sentence for a tidier list would be tidying away the
      information and keeping the furniture. */
@@ -153,7 +153,7 @@ export function YouScreen({
       <OfflineNote />
 
       {/* ── IDENTITY ────────────────────────────────────────────────────
-          §21.6 — the one top-level heading. The monogram beside it, not over
+          §21.6 - the one top-level heading. The monogram beside it, not over
           a photograph: see the note at the top of this file. */}
       <header style={{ display: 'flex', alignItems: 'center', gap: space.gap }}>
         <span
@@ -185,7 +185,7 @@ export function YouScreen({
       </header>
 
       {/* ── THE ONE QUIET LINE ──────────────────────────────────────────
-          §17.3 — a doorway. It exists only while the work does. */}
+          §17.3 - a doorway. It exists only while the work does. */}
       {state ? (
         <Pane
           tone="warm"
@@ -205,7 +205,7 @@ export function YouScreen({
       ) : null}
 
       {/* ── HOW THEY ARE REACHED ────────────────────────────────────────
-          §5.2. One line, mono, never a form — editing it is a row below. */}
+          §5.2. One line, mono, never a form - editing it is a row below. */}
       <Pane style={{ marginTop: space.gap, padding: `${space.line + 2}px ${space.gap + 2}px` }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: color.ink2 }}>
           {reachedAt}
@@ -214,7 +214,7 @@ export function YouScreen({
 
       {/* ── THE MEMBERSHIP ──────────────────────────────────────────────
           §15.3's facts, as lines, with the room behind them one tap away.
-          §18.1 — silence when there is none; a room about the person is not a
+          §18.1 - silence when there is none; a room about the person is not a
           place to sell one. */}
       {membership ? (
         <Pane
@@ -246,7 +246,7 @@ export function YouScreen({
       ) : null}
 
       {/* ── EVERYTHING ELSE ─────────────────────────────────────────────
-          Rows. No boxes, no icons — each is a name and a way onward, and the
+          Rows. No boxes, no icons - each is a name and a way onward, and the
           whole row is the target (§21.3). */}
       <section
         aria-labelledby="you-account"
@@ -290,12 +290,12 @@ export function YouScreen({
                 <span style={{ fontSize: 14.5, color: color.ink }}>Quiet mode</span>
                 <Label style={{ fontSize: 10, letterSpacing: '0.14em' }}>{model.quiet.line}</Label>
               </span>
-              {/* §21.6 — the word carries the state, not only the shape. */}
+              {/* §21.6 - the word carries the state, not only the shape. */}
               <span style={{
-                /* Yields rather than crushing the label beside it — see
+                /* Yields rather than crushing the label beside it - see
                    `Value` in components/os/parts. */
                 fontFamily: 'var(--font-mono)', fontSize: 12,
-                marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+                marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
                 color: quietOn ? color.champagne : color.ink3,
               }}>
                 {quietOn ? 'ON' : 'OFF'}
@@ -305,7 +305,7 @@ export function YouScreen({
         </div>
       </section>
 
-      {/* §20.1 — a way to reach a human, and the studio's own number beside
+      {/* §20.1 - a way to reach a human, and the studio's own number beside
           it rather than behind it. The design puts the number ON the row,
           because a number you can read is faster than a link you must open. */}
       <section
@@ -347,8 +347,8 @@ export function YouScreen({
         </button>
 
         {/* DELETING THE ACCOUNT sits below signing out and last of all. Not
-            hidden — Apple 5.1.1(v) and plain decency both require it to be
-            findable — but furthest from the top, because it is the one act
+            hidden - Apple 5.1.1(v) and plain decency both require it to be
+            findable - but furthest from the top, because it is the one act
             here that cannot be undone. */}
         {deletion ? (
           <Link
@@ -366,7 +366,7 @@ export function YouScreen({
 
       {/* The studio's mark at the foot, barely there. The design closes the
           person's room with the wordmark the way a letter closes with a
-          signature — it says who is holding all this. */}
+          signature - it says who is holding all this. */}
       <span
         aria-hidden
         className="am-display"

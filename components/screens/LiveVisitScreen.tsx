@@ -4,12 +4,12 @@
  *
  * Source: reference/customer-old/app/app/visit/[id]/page.tsx
  *         docs/AUTOMODZ-OS.md §13.2, §19.2 · ARCHITECTURE §1
- *         design "AutoModz App.dc.html" — screen 1g, "live, without noise"
+ *         design "AutoModz App.dc.html" - screen 1g, "live, without noise"
  *
  * The completed visit is a record and lives in `VisitScreen`. This is the car
  * HERE, now, and the surface has to say so while it changes.
  *
- * §13.2 — a live visit is a takeover: it earns the whole surface and the
+ * §13.2 - a live visit is a takeover: it earns the whole surface and the
  * navigation stands down. Everything on it is `os/stay`'s derivation; not one
  * value is computed here.
  *
@@ -17,14 +17,14 @@
  * The design's own title for this screen. Four things are on it: what is being
  * done, the bay, the acts in order, and two ways to reach the studio. There is
  * no progress percentage, no ETA counting down by the second, no activity
- * feed. §19.2 — one honest line about time, or nothing at all. A customer
+ * feed. §19.2 - one honest line about time, or nothing at all. A customer
  * watching their car being worked on wants to know it is being worked on;
  * everything beyond that is the product performing busyness.
  *
  * ── THE TIMELINE IS DRAWN HERE, NOT BY `Timeline` ────────────────────────
  * The system `Timeline` is a horizontal rail of steps. The design's is
  * vertical, with a lit dot on the current act and a hairline running between
- * them — it reads as a record accruing rather than as progress being made,
+ * them - it reads as a record accruing rather than as progress being made,
  * which is the difference between a workshop and a delivery tracker. §22.2 is
  * satisfied by there being ONE of each: the rail for horizontal steps, this
  * for the visit's own ledger.
@@ -47,7 +47,7 @@ export interface LiveVisitModel {
   id: string;
   /** The car this is happening to. */
   vehicleName: string;
-  /** The act, in the customer's words — `os/visit`'s ACT_TITLE. */
+  /** The act, in the customer's words - `os/visit`'s ACT_TITLE. */
   word: string;
   /** The studio's sentence when it left one, else the act's own line. */
   line: string;
@@ -59,22 +59,22 @@ export interface LiveVisitModel {
   acts: readonly { label: string; done: boolean; current: boolean }[];
   /** The evidence, as far as it exists. */
   frames: readonly LiveVisitFrame[];
-  /** The newest photograph of any kind — what the stage shows. */
+  /** The newest photograph of any kind - what the stage shows. */
   hero?: string;
   /** Back to the car. */
   backHref: string;
   /** The studio, reachable. §20.1 */
   messageHref?: string;
   /**
-   * A QUESTION THE STUDIO IS WAITING ON — design screen 12.
+   * A QUESTION THE STUDIO IS WAITING ON - design screen 12.
    *
    * Surfaced HERE as well as in a push, because a notification that was missed
    * is a car held on a bay for a day over a question nobody asked out loud.
-   * §17.1 — state changes surface as state, on the surface that owns the fact.
+   * §17.1 - state changes surface as state, on the surface that owns the fact.
    */
   approval?: { line: string; href: string };
   /**
-   * WHERE THE VISIT IS SETTLED — design screen 13.
+   * WHERE THE VISIT IS SETTLED - design screen 13.
    *
    * Present only once the car is ready AND something is outstanding. A "Pay"
    * control on a car still being worked on asks for money against unfinished
@@ -97,7 +97,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         position: 'relative',
         minHeight: '100svh',
         background: 'transparent',
-        /* A takeover carries no dock, so it reserves only the safe area — but
+        /* A takeover carries no dock, so it reserves only the safe area - but
            it still needs room for its own two controls at the foot. */
         paddingBottom: `calc(${space.movement}px + env(safe-area-inset-bottom, 0px))`,
         paddingTop: `calc(${stack.top} + ${space.gap}px)`,
@@ -109,7 +109,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
       <LiveRefresh />
 
       {/* THE ONLY EXIT, AND NOW AT THE TOP. A takeover carries no dock, so
-          this control was the whole of the way out — and it sat at the foot
+          this control was the whole of the way out - and it sat at the foot
           of a long page, below the photographs and the settle. One idiom, in
           the same place in every room. */}
       <div style={{ paddingInline: INSET, maxWidth: MEASURE + INSET * 2, marginInline: 'auto', width: '100%' }}>
@@ -128,7 +128,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         }}
       >
         {/* ── WHAT IS BEING DONE ────────────────────────────────────────
-            §9.5 — the one Display. The label above it names the visit and the
+            §9.5 - the one Display. The label above it names the visit and the
             car, which is the only place either appears on this screen. */}
         <Statement eyebrow={dotted(vehicleName, 'in the studio')} lit>
           {service}
@@ -158,7 +158,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
 
         {/* ── THE BAY ───────────────────────────────────────────────────
             The newest photograph of any kind, with the studio's own sentence
-            under it. §13.2 — the evidence is the point of a live visit; a
+            under it. §13.2 - the evidence is the point of a live visit; a
             status word with no picture behind it is a claim. */}
         {hero ? (
           <div
@@ -186,7 +186,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
             />
             {/* The one live mark in the product: a breathing point of amber
                 and three words. Never a red dot, never the word "LIVE" in a
-                pill — this is a workshop, not a broadcast. */}
+                pill - this is a workshop, not a broadcast. */}
             <span
               className="am-glass"
               style={{
@@ -218,7 +218,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
 
         {/* ── THE ACTS ──────────────────────────────────────────────────
             In order, with the current one lit and the ones ahead at rest.
-            §19.2 — the timing line hangs off the CURRENT act, because that is
+            §19.2 - the timing line hangs off the CURRENT act, because that is
             the only act a time can honestly be given for. */}
         <Pane
           as="section"
@@ -311,6 +311,9 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
                     src={f.url}
                     alt={f.caption ?? `${vehicleName} during this visit`}
                     loading="lazy"
+                    /* The same rule every other customer photograph wears -
+                       a frame that does not arrive is composed, not reported. */
+                    className="am-photo"
                     style={{
                       width: 108, height: 108, objectFit: 'cover', display: 'block',
                       border: '1px solid rgba(255,255,255,0.07)',
@@ -323,7 +326,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         ) : null}
 
         {/* ── THE TWO WAYS OUT ──────────────────────────────────────────
-            Neither is a commitment, so neither is filled. §20.1 — a way to
+            Neither is a commitment, so neither is filled. §20.1 - a way to
             reach a human, on the screen where a customer is most likely to
             want one. */}
         {/* SETTLING, once the car is actually ready and something is owed.
@@ -354,13 +357,14 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
             <img
               src={viewed.url}
               alt={viewed.caption ?? `${vehicleName} during this visit`}
+              className="am-photo"
               style={{ width: '100%', borderRadius: radius.pane, display: 'block' }}
             />
             {viewed.caption ? (
               <p style={{ margin: 0, fontSize: 13.5, color: color.ink2 }}>{viewed.caption}</p>
             ) : null}
             {/* A BUTTON, because it goes nowhere. This was a `<Link href="#">`
-                with `preventDefault` — a control that announces itself to a
+                with `preventDefault` - a control that announces itself to a
                 screen reader as a link to the top of the page, and which a
                 middle-click opens in a new tab. Closing is an action. */}
             <button

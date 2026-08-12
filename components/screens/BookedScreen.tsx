@@ -1,5 +1,5 @@
 /**
- * BOOKED — design screen 09.
+ * BOOKED - design screen 09.
  *
  * The screen a customer lands on the moment they commit. It exists to do one
  * thing: state plainly what the studio now holds, so that nobody has to go
@@ -7,7 +7,7 @@
  *
  * ── WHAT THIS SCREEN MAY NOT DO ──────────────────────────────────────────
  * It renders. It holds no data, fetches nothing, builds no address and does no
- * arithmetic — every value below, including the estimate and the calendar
+ * arithmetic - every value below, including the estimate and the calendar
  * link, arrives already decided by `toBooked` (ARCHITECTURE §1).
  *
  * It is a SERVER component: it holds no state and handles no event, so there
@@ -34,7 +34,7 @@ export interface BookedRow {
 }
 
 export interface BookedModel {
-  /** "The bay is yours" — or the honest weaker sentence while it is a request. */
+  /** "The bay is yours" - or the honest weaker sentence while it is a request. */
   headline: string;
   /** "CONFIRMED" · "AWAITING THE STUDIO" */
   standing: string;
@@ -45,7 +45,7 @@ export interface BookedModel {
    *
    * The pane is lit and breathing ONLY then. A cancelled or expired visit that
    * pulses is the screen saying something is happening while its own headline
-   * says it is not — and the pulse is the product's entire vocabulary for
+   * says it is not - and the pulse is the product's entire vocabulary for
    * "this is happening now" (§17.1).
    */
   holds: boolean;
@@ -55,7 +55,7 @@ export interface BookedModel {
   collection: string;
   /** Work · In the bay · Back to you · Estimate. */
   rows: BookedRow[];
-  /** Absent while the studio has not accepted — there is no bay to add yet. */
+  /** Absent while the studio has not accepted - there is no bay to add yet. */
   calendarHref?: string;
   manageHref: string;
   /** Why the booking can no longer be changed here, when it cannot. */
@@ -73,11 +73,11 @@ export function BookedScreen({ model }: { model: BookedModel }) {
   return (
     <Screen top={space.gap}>
       <OfflineNote />
-      {/* Arranged in the Studio, opened again from a notification — so the
+      {/* Arranged in the Studio, opened again from a notification - so the
           way out is the Studio, not whatever was on screen a moment ago. */}
       {/* One header: the way back, the eyebrow and the Display, at one
           scale. These five drew the same three elements by hand and disagreed
-          on the size — 28, 29 and 30 — which nobody chose. */}
+          on the size - 28, 29 and 30 - which nobody chose. */}
       <RoomHeader eyebrow={standing} lit={holds && !awaiting}>{headline}</RoomHeader>
 
       <Pane
@@ -111,7 +111,7 @@ export function BookedScreen({ model }: { model: BookedModel }) {
               key={r.label}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-                /* See `Value` in components/os/parts — a value that will not
+                /* See `Value` in components/os/parts - a value that will not
                    yield breaks the car's name one word per line. */
                 flexWrap: 'wrap',
                 gap: space.line, paddingBlock: space.line,
@@ -129,7 +129,7 @@ export function BookedScreen({ model }: { model: BookedModel }) {
                 style={{
                   fontFamily: 'var(--font-mono)', fontSize: 12.5,
                   color: color.champagne, textAlign: 'right',
-                  marginLeft: 'auto', overflowWrap: 'anywhere',
+                  marginLeft: 'auto', overflowWrap: 'break-word',
                 }}
               >
                 {r.value}

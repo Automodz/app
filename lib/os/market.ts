@@ -1,20 +1,20 @@
 /**
- * THE MARKET ENGINE — what a listing is, and which ones answer a question.
+ * THE MARKET ENGINE - what a listing is, and which ones answer a question.
  *
  * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1
  *
  * Pure, like every engine here: no React, no routes, no Firestore. It decides
- * two things and nothing else — whether a listing may be shown at all, and
+ * two things and nothing else - whether a listing may be shown at all, and
  * which of them match what somebody asked for.
  *
- * A NOTE ON THE WORD "OWNERSHIP". `CarListing.ownership` is a COUNT — first
- * owner, second owner — and has nothing to do with `lib/os/ownership`, which
+ * A NOTE ON THE WORD "OWNERSHIP". `CarListing.ownership` is a COUNT - first
+ * owner, second owner - and has nothing to do with `lib/os/ownership`, which
  * resolves how a customer's own car is being cared for. Two different things
  * that share an English word; they must never be wired to each other.
  */
 import type { CarListing, CarListingStatus, CarFuel, CarTransmission } from '@/lib/types';
 
-/** What a customer may filter by. Every field optional — absent means "any". */
+/** What a customer may filter by. Every field optional - absent means "any". */
 export interface MarketQuery {
   /** Free text over make, model and title. */
   query?: string;
@@ -27,7 +27,7 @@ export interface MarketQuery {
 /**
  * May this listing be shown to a customer at all?
  *
- * `active` is the studio's switch — a withdrawn car must disappear from the
+ * `active` is the studio's switch - a withdrawn car must disappear from the
  * list AND from its own address, or an old link keeps selling a car that is no
  * longer for sale. Sold and reserved cars stay visible while active, because
  * "sold" is information a buyer wants (it shows the studio moves stock) and
@@ -42,7 +42,7 @@ export const isBuyable = (c: CarListing): boolean =>
 /**
  * The word shown over a listing's photograph.
  *
- * `available` returns undefined — the ordinary case wears no badge, because a
+ * `available` returns undefined - the ordinary case wears no badge, because a
  * badge on everything is a badge on nothing (§15.7, absence is silence).
  */
 export const statusWord = (s: CarListingStatus): string | undefined =>
@@ -96,7 +96,7 @@ export const BUDGETS: readonly { label: string; upto: number }[] = [
 
 /**
  * The fuels offered as one-tap filters, taken from the stored union rather than
- * typed out — a filter for a fuel no listing can hold is a control that can
+ * typed out - a filter for a fuel no listing can hold is a control that can
  * only ever return nothing.
  */
 export const FUELS: readonly CarFuel[] = ['petrol', 'diesel', 'cng', 'electric'];
@@ -113,8 +113,14 @@ export const TRANSMISSION_WORD: Record<CarTransmission, string> = {
   manual: 'Manual', automatic: 'Automatic',
 };
 
-/** "1st owner", "2nd owner" — the count on the listing, never a care state. */
-export const ownerWord = (n: number): string => {
+/** "1st owner", "2nd owner" - the count on the listing, never a care state. */
+export const ownerWord = (n: number | null | undefined): string => {
+  /* A LISTING WITH NO OWNER COUNT SAID "undefinedth owner" TO A BUYER.
+     The suffix table has no branch for "we were not told", and `${undefined}`
+     is a string like any other. §19.1 and §18.1 between them: an absence is a
+     state, and nothing is drawn for nothing - so this answers empty and the
+     caller drops the row rather than printing a word nobody wrote. */
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 1) return '';
   const suffix = n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th';
   return `${n}${suffix} owner`;
 };

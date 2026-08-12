@@ -5,10 +5,10 @@
  * Source: docs/AUTOMODZ-OS.md §2.1, §2.2, §2.5, §3.1, §3.2, §3.5, §4.1,
  *         §4.3, §4.5, §5.2, §5.4, §6.3, §8.2, §8.3, §8.4, §8.6, §9.5,
  *         §10.4, §18.1, §21.1, §21.6, §21.7, §22.1
- *         design "AutoModz App.dc.html" — screen 1e, "What we do to cars"
+ *         design "AutoModz App.dc.html" - screen 1e, "What we do to cars"
  *
  * ── WHAT THIS SCREEN IS ──────────────────────────────────────────────────
- * §5.2 — Studio is about "AutoModz the place", and holds "what the studio is
+ * §5.2 - Studio is about "AutoModz the place", and holds "what the studio is
  * and can do, credentials, services, hours, location, arranging a visit". It
  * never holds "a staff roster, any named individual".
  *
@@ -24,7 +24,7 @@
  *     shelf label; it is the honest opening of the conversation the old rule
  *     wanted to protect, and it lets a customer know whether to start it.
  *   - Withholding it did not make the product feel premium. It made the one
- *     question every customer arrives with — what does this cost — the one
+ *     question every customer arrives with - what does this cost - the one
  *     question the studio would not answer, which reads as evasion, not craft.
  *   - §22.1 is untouched: money is still computed on the server. This renders
  *     a catalogue the projection handed it and calculates nothing.
@@ -59,20 +59,20 @@ import {
 
 export interface StudioPhoto {
   url: string;
-  /** §21.6 — an image that carries meaning carries a description. */
+  /** §21.6 - an image that carries meaning carries a description. */
   description: string;
 }
 
 export interface StudioModel {
   place: string;
   /**
-   * WHERE IS MY CAR — the studio saying whether your car is with it. §4.5:
+   * WHERE IS MY CAR - the studio saying whether your car is with it. §4.5:
    * "the absence of news is good news and should look like it".
    */
   presence: string;
-  /** §5.4 — the live account, while there is one to follow. */
+  /** §5.4 - the live account, while there is one to follow. */
   visitHref?: string;
-  /** §2.2 — the studio's own words about how it works, unsigned. */
+  /** §2.2 - the studio's own words about how it works, unsigned. */
   voice: string;
   /** The work, mid-flight. No people. */
   work?: StudioPhoto;
@@ -87,19 +87,19 @@ export interface StudioModel {
   photo?: StudioPhoto;
   arrangeHref?: string;
   /**
-   * WHERE CHOOSING A SERVICE GOES — design 06 → 07, keyed by service id.
+   * WHERE CHOOSING A SERVICE GOES - design 06 → 07, keyed by service id.
    *
    * A scope screen has to know which service AND which car, and a renderer may
    * not build an address (ARCHITECTURE §1). The projection resolves one per
    * service so the pane is a plain link.
    */
   serviceHref: Record<string, string>;
-  /** The menu, the cars and the standing — everything arranging a visit needs. */
+  /** The menu, the cars and the standing - everything arranging a visit needs. */
   booking: {
     services: Service[];
     vehicles: Vehicle[];
     membership: Subscription | null;
-    /** Design screen 08 — where the studio may collect from. */
+    /** Design screen 08 - where the studio may collect from. */
     addresses: AddressChoice[];
     /** ₹ per leg, from the pricing engine. Never a figure typed in a screen. */
     legFee: string;
@@ -118,7 +118,7 @@ export interface StudioModel {
   /**
    * WHAT THE CUSTOMER WAS QUOTED, when they arrived from the scope screen.
    *
-   * Read on the server from the estimate's own document — never rebuilt from a
+   * Read on the server from the estimate's own document - never rebuilt from a
    * query string, which would make the figure on the sheet a client value and
    * therefore not a price at all.
    */
@@ -129,7 +129,7 @@ export interface StudioVisitRow {
   id: string;
   service: string;
   vehicleName: string;
-  /** "Wed 12 February at 9:00 am" — worded by the projection. */
+  /** "Wed 12 February at 9:00 am" - worded by the projection. */
   when: string;
   /** The studio's word for where it stands. */
   standing: string;
@@ -138,7 +138,7 @@ export interface StudioVisitRow {
 
 /**
  * The floor, in the studio's currency. A price is stored in rupees and read
- * here in the Indian grouping — ₹45,000, never ₹45000 and never 45K.
+ * here in the Indian grouping - ₹45,000, never ₹45000 and never 45K.
  */
 const floorPrice = (rupees: number) => `from ₹${Math.round(rupees).toLocaleString('en-IN')}`;
 
@@ -190,7 +190,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillCategory, estimate?.id]);
 
-  /* §5.2 — the catalogue, in the studio's own order. The one marked `popular`
+  /* §5.2 - the catalogue, in the studio's own order. The one marked `popular`
      is the warm pane: at most one thing on a screen is asking (§3.2), and this
      is the studio's recommendation rather than a merchandising banner. */
   const services = booking.services.filter(s => s.active !== false);
@@ -201,7 +201,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
       <OfflineNote />
 
       {/* ── WHERE MY CAR IS ─────────────────────────────────────────────
-          §9.5 — the one Display. §21.7 — it changes without the customer
+          §9.5 - the one Display. §21.7 - it changes without the customer
           acting, so it is announced politely rather than in silence. */}
       <Statement eyebrow={place} lit={Boolean(visitHref)}>
         <span aria-live="polite">{presence}</span>
@@ -226,10 +226,10 @@ export function StudioScreen({ model }: { model: StudioModel }) {
 
       {/* ── THE CATALOGUE ───────────────────────────────────────────────
           Screen 1e. Each service is one pane: what it is, what it starts at,
-          and what it does to the car — in that order, because the price is
+          and what it does to the car - in that order, because the price is
           the question and the description is the answer to it.
 
-          The whole pane arranges the visit. §4.3 — depth of one; a "Book"
+          The whole pane arranges the visit. §4.3 - depth of one; a "Book"
           control on each row would be a shop, and this is a menu of work. */}
       {services.length > 0 ? (
         <section
@@ -270,7 +270,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
                       display: 'flex', justifyContent: 'space-between',
                       alignItems: 'baseline', gap: space.line,
                       /* A service name long enough to wrap must not be squeezed
-                         by the price beside it — see `Value` in os/parts. */
+                         by the price beside it - see `Value` in os/parts. */
                       flexWrap: 'wrap',
                     }}
                   >
@@ -278,7 +278,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)', fontSize: 12,
-                        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+                        marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
                         color: s.id === featured?.id ? color.champagne : 'rgba(232,217,190,0.8)',
                       }}
                     >
@@ -305,14 +305,14 @@ export function StudioScreen({ model }: { model: StudioModel }) {
       ) : null}
 
       {/* ── ARRANGING A VISIT ───────────────────────────────────────────
-          §10.4 — "the thing this screen exists to let you do — at most one."
+          §10.4 - "the thing this screen exists to let you do - at most one."
           The only filled control in the room. */}
       <div style={{ marginTop: space.gap }}>
         <Action onClick={() => setArranging(true)}>Arrange a visit</Action>
       </div>
 
       {/* ── THE VISITS ALREADY ARRANGED ─────────────────────────────────
-          §18.1 — nothing booked, nothing here. The invitation above is the
+          §18.1 - nothing booked, nothing here. The invitation above is the
           empty state; a second empty card would be the same silence twice. */}
       {manageable.length > 0 ? (
         <section
@@ -324,7 +324,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: space.line }}>
             {manageable.map(v => (
-              /* THE WHOLE ROW IS THE DOOR (§21.3, §4.3 — depth of one). It was
+              /* THE WHOLE ROW IS THE DOOR (§21.3, §4.3 - depth of one). It was
                  a pane with a small "Change or cancel" link inside it, which
                  made the target the words rather than the visit. */
               <Pane
@@ -355,7 +355,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
       ) : null}
 
       {/* ── THE WORK ────────────────────────────────────────────────────
-          §8.4 — full-bleed, while the words around it stay in the gutter. One
+          §8.4 - full-bleed, while the words around it stay in the gutter. One
           photograph, not a gallery: what the place does, shown once. */}
       {work ? (
         <div
@@ -378,7 +378,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
       ) : null}
 
       {/* ── WHO IS CARING FOR IT ────────────────────────────────────────
-          §2.2 — the studio's voice, unsigned. No heading above it: a heading
+          §2.2 - the studio's voice, unsigned. No heading above it: a heading
           would label the studio's own words as a section, and §3.5 removes
           anything that only restates what its content already says. */}
       <section style={{ marginTop: space.rest / 2 }}>
@@ -389,8 +389,8 @@ export function StudioScreen({ model }: { model: StudioModel }) {
       </section>
 
       {/* ── WHAT MAKES IT SO ────────────────────────────────────────────
-          §5.2 credentials. Stacked lines, never badges in a row — a badge row
-          is somebody else's brand doing the talking. §18.1 — with none stated,
+          §5.2 credentials. Stacked lines, never badges in a row - a badge row
+          is somebody else's brand doing the talking. §18.1 - with none stated,
           nothing appears. */}
       {credentials.length > 0 ? (
         <section
@@ -409,7 +409,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
       ) : null}
 
       {/* ── WHEN IT IS OPEN, AND WHERE ──────────────────────────────────
-          §8.6 — facts, so lines of text. The way to the door hangs off the
+          §8.6 - facts, so lines of text. The way to the door hangs off the
           address rather than standing alone in a row of buttons. */}
       <Pane style={{ marginTop: space.rest / 2, padding: `${space.gap + 2}px ${space.gap + 4}px` }}>
         <p style={{ margin: 0, fontSize: 14.5, color: color.ink }}>{hours}</p>
@@ -421,7 +421,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
         </div>
       </Pane>
 
-      {/* The place itself, at the foot — the room you are standing in, shown
+      {/* The place itself, at the foot - the room you are standing in, shown
           once you have read what happens in it. */}
       {photo ? (
         <div
@@ -449,7 +449,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
         </div>
       ) : null}
 
-      {/* THE VISIT ITSELF — screen 1f, as a sheet over this room. */}
+      {/* THE VISIT ITSELF - screen 1f, as a sheet over this room. */}
       <BookingFlow
         open={arranging}
         onClose={() => setArranging(false)}

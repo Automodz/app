@@ -1,6 +1,6 @@
 'use client';
 /**
- * READY · PAY · RATE — design screen 13.
+ * READY · PAY · RATE - design screen 13.
  *
  * The handover. Three things happen here and they are deliberately not one
  * flow: the customer reads what the visit came to, settles it, and says how it
@@ -10,7 +10,7 @@
  * ── EVERY FIGURE IS THE STUDIO'S ─────────────────────────────────────────
  * Nothing here adds up. The line items, the discount, the total and the amount
  * payable all arrive from the projection, which reads the studio's own
- * records. The Pay control sends a BOOKING ID and nothing else — the server
+ * records. The Pay control sends a BOOKING ID and nothing else - the server
  * resolves what is owed and builds the UPI link from its own figure, so there
  * is no number on this screen that a browser could change.
  *
@@ -60,7 +60,7 @@ export interface SettleModel {
   methodHref: string;
   /** Absent when this visit has no sealed record to rate. */
   visitId?: string;
-  /** Set once the customer has rated it — a visit is rated once. */
+  /** Set once the customer has rated it - a visit is rated once. */
   rated?: string;
   photosHref?: string;
   recordHref: string;
@@ -70,7 +70,7 @@ export interface SettleModel {
 
 const REFUSAL: Record<string, string> = {
   'nothing-to-pay': 'There is nothing outstanding on this visit.',
-  'upi-not-configured': 'The studio is not taking UPI in the app just now — settle at the counter.',
+  'upi-not-configured': 'The studio is not taking UPI in the app just now - settle at the counter.',
   'reference-invalid': 'That reference does not look right. It is the long code on your bank’s receipt.',
   'already-paid': 'This one is already settled.',
   'already-rated': 'You have already rated this visit.',
@@ -112,7 +112,7 @@ export function SettleScreen({ model }: { model: SettleModel }) {
       const { payment, link } = await res.json() as { payment: { id: string }; link: string };
       setPaymentId(payment.id);
       /* The UPI application takes over from here. On a desktop browser nothing
-         will happen, which is why the reference field appears regardless — a
+         will happen, which is why the reference field appears regardless - a
          customer who paid from another device can still tell us. */
       window.location.href = link;
     } catch {
@@ -171,10 +171,10 @@ export function SettleScreen({ model }: { model: SettleModel }) {
     <Screen top={space.gap}>
       <OfflineNote />
       {/* Settling is something done TO a visit, so the visit is where
-          this goes — `recordHref` is that address. */}
+          this goes - `recordHref` is that address. */}
       {/* One header: the way back, the eyebrow and the Display, at one
           scale. These five drew the same three elements by hand and disagreed
-          on the size — 28, 29 and 30 — which nobody chose. */}
+          on the size - 28, 29 and 30 - which nobody chose. */}
       <RoomHeader
         parent={{ href: model.recordHref, name: 'The visit' }}
         eyebrow={model.eyebrow}
@@ -212,7 +212,7 @@ export function SettleScreen({ model }: { model: SettleModel }) {
               <span style={{
                 fontFamily: 'var(--font-mono)', fontSize: 12.5,
                 color: color.ink2,
-                marginLeft: 'auto', textAlign: 'right', overflowWrap: 'anywhere',
+                marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
               }}>
                 {l.value}
               </span>
@@ -258,7 +258,12 @@ export function SettleScreen({ model }: { model: SettleModel }) {
             <a
               href={model.methodHref}
               className="am-tap am-label"
-              style={{ color: color.amber, letterSpacing: '0.16em', flexShrink: 0, textDecoration: 'none' }}
+              style={{
+                /* §21.3 - a 15px control is not a control. The visual size
+                   stays; the target is the floor the constitution sets. */
+                display: 'inline-flex', alignItems: 'center',
+                minHeight: TARGET_MIN, paddingInline: space.breath,
+                marginRight: -space.breath, color: color.amber, letterSpacing: '0.16em', flexShrink: 0, textDecoration: 'none' }}
             >
               Change
             </a>
@@ -317,7 +322,7 @@ export function SettleScreen({ model }: { model: SettleModel }) {
           {model.rated || ratedNow ? (
             <Pane style={{ padding: `${space.gap}px ${space.gap + 2}px` }}>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: color.ink2 }}>
-                {model.rated ?? 'Thank you — that reaches the studio, not a public page.'}
+                {model.rated ?? 'Thank you - that reaches the studio, not a public page.'}
               </p>
             </Pane>
           ) : (
