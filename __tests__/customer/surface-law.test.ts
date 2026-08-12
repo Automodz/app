@@ -448,17 +448,25 @@ describe('a photograph that does not arrive composes rather than reports', () =>
     expect(rule).toMatch(/font-size: 0/);
   });
 
-  it('and every customer photograph wears it', () => {
-    const withImages = CUSTOMER_FILES.filter(f => /<Image\b/.test(codeOf(f)));
+  it('and every customer photograph goes through the primitive or wears it', () => {
+    /**
+     * STRICTER THAN IT WAS. This counted `className="am-photo"`, which was the
+     * best rule available while every screen drew its own `<img>` and the only
+     * shared thing was a CSS class. `Photograph` now owns all three states —
+     * absent, ready, failed — so the rule is no longer "wears a class" but
+     * "goes through the primitive", with the class still accepted for the
+     * screens that have not been migrated yet.
+     *
+     * `Photograph.tsx` itself is exempt because it IS the implementation.
+     */
+    const withImages = CUSTOMER_FILES
+      .filter(f => f !== 'components/os/Photograph.tsx')
+      .filter(f => /<Image\b|<img\b/.test(codeOf(f)));
     for (const file of withImages) {
       const src = codeOf(file);
-      /* Both element kinds: `next/image` AND the plain `<img>` the live visit
-         uses for a frame it does not want optimised. Every one of them must
-         wear the rule — counted as "no photograph is unmarked", not as an
-         exact tally, since a file may legitimately hold more of one than the
-         other. */
       const photos = (src.match(/<Image\b/g) ?? []).length + (src.match(/<img\b/g) ?? []).length;
-      const marked = (src.match(/className="am-photo"/g) ?? []).length;
+      const marked = (src.match(/className="am-photo"/g) ?? []).length
+        + (src.match(/<Photograph\b/g) ?? []).length;
       expect({ file, unmarked: Math.max(0, photos - marked) })
         .toEqual({ file, unmarked: 0 });
     }

@@ -510,6 +510,10 @@ export function VehicleScreen(
                     src={f.url}
                     alt={f.caption ?? `${name}, photographed at the studio`}
                     loading="lazy"
+                    /* The one rule every customer photograph wears: a frame
+                       that does not arrive is composed, and its alt text never
+                       lays the album out. */
+                    className="am-photo"
                     style={{
                       width: '100%', aspectRatio: '1', objectFit: 'cover',
                       borderRadius: radius.chip, display: 'block',

@@ -165,7 +165,9 @@ export function SellForm({ garage }: { garage: { id: string; name: string }[] })
                   and the optimiser would refuse it. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.url} alt="" width={72} height={54}
-                style={{ objectFit: 'cover', borderRadius: radius.chip }} />
+                style={{ objectFit: 'cover', borderRadius: radius.chip }}
+                    className="am-photo"
+                  />
               <button
                 type="button"
                 onClick={() => setPhotos(list => list.filter(x => x.path !== p.path))}
