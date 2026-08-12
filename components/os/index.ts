@@ -14,6 +14,9 @@ export type { DialProps } from './Dial';
 
 export { Screen } from './Screen';
 
+export { Photograph } from './Photograph';
+export type { PhotographProps, PhotographState } from './Photograph';
+
 export { RoomHeader, Back } from './RoomHeader';
 export type { RoomHeaderProps } from './RoomHeader';
 
