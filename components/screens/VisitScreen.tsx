@@ -45,6 +45,7 @@ import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
 import { Back } from '@/components/os/RoomHeader';
+import { hrefForDestination } from '@/navigation/resolve';
 import { BeforeAfter } from '@/components/visit/BeforeAfter';
 import type { HistoryVisit } from './HistoryScreen';
 /* Deep import — this is a SERVER component and the barrel pulls a dozen
@@ -64,7 +65,19 @@ function Row({ label, value, tone = 'ink3' }: { label: string; value: string; to
   );
 }
 
-export function VisitScreen({ visit }: { visit: HistoryVisit }) {
+export function VisitScreen(
+  { visit, carId }: {
+    visit: HistoryVisit;
+    /**
+     * WHICH CAR THIS VISIT BELONGS TO, resolved by `historyContextOf`.
+     *
+     * Without it the control that leaves this address went to the generic
+     * record, which then showed whichever car the product defaulted to — so a
+     * customer reading the BMW's visit could leave into the Kia's history.
+     */
+    carId?: string;
+  },
+) {
   const {
     when, title, photo, did, photos = [], promised = [],
     comparison, receipt, settled, documents = [], shareHref,
@@ -99,7 +112,7 @@ export function VisitScreen({ visit }: { visit: HistoryVisit }) {
           top: `calc(${stack.top} + ${space.line}px)`, left: INSET,
         }}
       >
-        <Back over />
+        <Back over parent={carId ? { href: hrefForDestination({ to: 'history.car', vehicleId: carId }), name: 'Your visits' } : undefined} />
       </div>
 
       {/* §16.3 — the car as it was finished. */}

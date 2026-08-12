@@ -1,6 +1,7 @@
 import { HistoryScreen } from '@/components/screens/HistoryScreen';
+import { ChooseCar } from '@/components/screens/ChooseCar';
 import { ServerRoom, NoCar } from '@/components/screens/ServerRoom';
-import { toHistory, leadCar } from '@/lib/customer/project';
+import { historyContextOf, toHistory, toGarage } from '@/lib/customer/project';
 
 /**
  * A customer's own room is never static. `cookies()` already forces this, but
@@ -9,20 +10,29 @@ import { toHistory, leadCar } from '@/lib/customer/project';
  */
 export const dynamic = 'force-dynamic';
 
-
-/** `/history` — the album. §18.1: a car with no completed visits shows none. */
+/**
+ * `/history` — the album. §18.1: a car with no completed visits shows none.
+ *
+ * The subject is resolved by `historyContextOf` and nowhere else. This route
+ * used to fall back to `leadCar` whenever `?car=` was absent, so a customer
+ * with two cars could be shown the wrong one's visits under the right one's
+ * name, with nothing on screen to say the subject had changed.
+ */
 export default async function HistoryPage(
   { searchParams }: { searchParams: Promise<{ car?: string }> },
 ) {
-  const { car: wanted } = await searchParams;
+  const { car } = await searchParams;
   return (
     <ServerRoom>
       {picture => {
-        const car = (wanted && picture.cars.find(c => c.vehicle.id === wanted))
-          || leadCar(picture);
-        return car
-          ? <HistoryScreen model={toHistory(car, picture.invoices)} />
-          : <NoCar />;
+        const ctx = historyContextOf(picture, { car });
+        if (ctx.kind === 'none') return <NoCar />;
+        /* Several cars and nothing naming one: ask (§19.1 — an absence of
+           context is a state, not a licence to choose). */
+        if (ctx.kind === 'choose') {
+          return <ChooseCar model={toGarage(picture)} because="whose record to open" />;
+        }
+        return <HistoryScreen model={toHistory(ctx.car, picture.invoices)} />;
       }}
     </ServerRoom>
   );

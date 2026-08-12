@@ -740,6 +740,93 @@ const attention = (car: CarPicture): number => {
   return Math.max(millis(car.vehicle.createdAt), ...car.bookings.map(b => millis(b.createdAt)), 0);
 };
 
+/* ── THE RECORD'S CONTEXT ────────────────────────────────────────────────── */
+
+/**
+ * WHICH CAR THE RECORD IS ABOUT — asked once, by every address that shows one.
+ *
+ * `/history`, `/history?car=<id>` and `/history/<visitId>` each resolved this
+ * for themselves, and the three answers did not agree. The album fell back to
+ * `leadCar` whenever the query was absent, so a customer who had opened the
+ * BMW's record and then followed a link without the car saw the Kia's visits
+ * under the same heading — silently, with nothing on screen to say the subject
+ * had changed. And a visit page never learned which car it belonged to at all,
+ * so it had no context to hand back to the control that leaves it.
+ *
+ * OWNERSHIP IS BY `vehicleId`, ALWAYS. A registration number is a label a
+ * customer can retype and two people can share; it has never been ownership
+ * evidence in this product and is not one here.
+ */
+export type HistoryContext =
+  /** One sealed visit, and the car it belongs to. */
+  | { kind: 'visit'; car: CarPicture; visit: Visit }
+  /** The car is on the bay right now — a different surface entirely (§13.2). */
+  | { kind: 'live'; car: CarPicture; bookingId: string }
+  /** Arranged but not yet arrived; the id in the address is a booking's. */
+  | { kind: 'booked'; car: CarPicture; bookingId: string }
+  /** The album for one car. */
+  | { kind: 'album'; car: CarPicture }
+  /**
+   * MORE THAN ONE CAR AND NOTHING SAYING WHICH.
+   *
+   * `leadCar` is a real product default and stays the answer for a customer
+   * with one car. With several, guessing is how the wrong car's history gets
+   * shown under the right car's name, so the room asks instead.
+   */
+  | { kind: 'choose'; cars: readonly CarPicture[] }
+  /** No car at all. */
+  | { kind: 'none' };
+
+/**
+ * Resolve the record's subject from the address and the picture.
+ *
+ * `visitId` is the path segment when there is one; `car` is `?car=`. Both are
+ * untrusted input and neither is used as anything but a lookup key.
+ */
+export function historyContextOf(
+  picture: CustomerPicture,
+  route: { visitId?: string; car?: string } = {},
+  now = new Date(),
+): HistoryContext {
+  const byId = (id?: string) =>
+    (id ? picture.cars.find(c => c.vehicle.id === id) : undefined);
+
+  /* A VISIT ID NAMES ITS OWN CAR. Searched across the customer's cars only —
+     the picture IS the ownership boundary, so a visit that is not in it is not
+     theirs and simply is not found. */
+  if (route.visitId) {
+    for (const car of picture.cars) {
+      if (toLiveVisit(picture, car, route.visitId, now)) {
+        return { kind: 'live', car, bookingId: route.visitId };
+      }
+    }
+    for (const car of picture.cars) {
+      const visit = visitsOf(car).find(v => v.id === route.visitId);
+      if (visit) return { kind: 'visit', car, visit };
+    }
+    /* Every notification written before events existed addresses a BOOKING id
+       here. The booking's car is the context. */
+    const found = findBooking(picture, route.visitId);
+    if (found) return { kind: 'booked', car: found.car, bookingId: route.visitId };
+  }
+
+  const named = byId(route.car);
+  if (named) return { kind: 'album', car: named };
+
+  if (picture.cars.length === 0) return { kind: 'none' };
+  if (picture.cars.length === 1) return { kind: 'album', car: picture.cars[0] };
+
+  /* An unknown or absent `?car=` with several cars: ask, never guess. */
+  return { kind: 'choose', cars: picture.cars };
+}
+
+/**
+ * The car a context is about, when it is about one. The address that a Back
+ * control should carry is built from this and nothing else.
+ */
+export const carOfContext = (ctx: HistoryContext): CarPicture | undefined =>
+  ('car' in ctx ? ctx.car : undefined);
+
 /* ── GARAGE ──────────────────────────────────────────────────────────────── */
 
 export function toGarage(picture: CustomerPicture, now = new Date()): GarageModel {
