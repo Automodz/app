@@ -103,3 +103,67 @@ describe('the pipeline this was written against', () => {
     expect(config).toMatch(/img-src[^;]*https:\/\/res\.cloudinary\.com/);
   });
 });
+
+/**
+ * AND THE FRAME AROUND IT HAS TO BE A FRAME.
+ *
+ * Reported from a phone on production: the NOW room drew one enormous blurred
+ * photograph over the whole screen, with the dock floating on top of it and
+ * every pane beneath it gone.
+ *
+ * `Photograph` fills its frame with `position: absolute; inset: 0`, which
+ * anchors to the nearest POSITIONED ancestor. The film-strip frame in
+ * `HomeScreen` set a width, a height and `overflow: hidden` but no `position`,
+ * so the photograph climbed past it — past every other static ancestor — to the
+ * initial containing block, and covered the viewport. `sizes="104px"` had
+ * already told `next/image` to fetch a 104px-wide source, so the escape
+ * upscaled it about fourfold: hence a wallpaper, and hence a blurred one.
+ *
+ * `overflow: hidden` does NOT clip it, which is why the frame looked complete.
+ * Only a positioning context does.
+ *
+ * This is the whole class, not the one instance: every frame that holds a
+ * filling photograph must establish the context that photograph is measured
+ * against. A wrapper may do it with an inline `position`, or by being a
+ * primitive that positions itself (`Hero`, which is `position: relative`).
+ */
+describe('every filling photograph is anchored to its own frame', () => {
+  const { readdirSync, statSync } = require('fs') as typeof import('fs');
+  const { join } = require('path') as typeof import('path');
+
+  const sources = (dir: string): string[] =>
+    readdirSync(dir).flatMap(e => {
+      const p = join(dir, e);
+      return statSync(p).isDirectory() ? sources(p)
+        : /\.tsx$/.test(p) ? [p] : [];
+    });
+
+  /** Primitives that establish a positioning context for whatever they hold. */
+  const POSITIONS_ITSELF = /<(Hero)\b/;
+
+  it('no call site lets one escape to the viewport', () => {
+    const escapees: string[] = [];
+
+    for (const file of [...sources('components'), ...sources('app')]) {
+      if (file.endsWith('Photograph.tsx')) continue;
+      const lines = readFileSync(file, 'utf8').split('\n');
+
+      lines.forEach((line, i) => {
+        if (!line.includes('<Photograph')) return;
+
+        /* A fixed-size photograph is in flow and needs no context. */
+        const call = lines.slice(i, i + 10).join(' ');
+        if (/fill=\{false\}/.test(call)) return;
+
+        /* Walk back to the frame that holds it. */
+        const above = lines.slice(Math.max(0, i - 30), i).join('\n');
+        const anchored = /position: *'(relative|absolute|fixed)'/.test(above)
+          || POSITIONS_ITSELF.test(above);
+
+        if (!anchored) escapees.push(`${file}:${i + 1}`);
+      });
+    }
+
+    expect(escapees).toEqual([]);
+  });
+});

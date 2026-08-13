@@ -475,6 +475,14 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               href={live.href}
               className="am-tap"
               style={{
+                /* POSITIONED, BECAUSE THE PHOTOGRAPH INSIDE IS NOT.
+                   `Photograph` fills its frame with `position: absolute;
+                   inset: 0`, which anchors to the nearest POSITIONED ancestor.
+                   This frame had none, so the photograph climbed past it to the
+                   initial containing block and covered the whole screen —
+                   upscaled from the 104px source `sizes` had asked for, so it
+                   arrived as a blurred wallpaper painted over the room. */
+                position: 'relative',
                 flex: '0 0 auto', width: 104, height: 104,
                 borderRadius: radius.chip, overflow: 'hidden',
                 textDecoration: 'none', background: ground.awaiting,
