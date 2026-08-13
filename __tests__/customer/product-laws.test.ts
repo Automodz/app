@@ -479,6 +479,40 @@ describe('an expired promise is never dressed as a live one', () => {
 
 /* ── NOTHING FAKE ────────────────────────────────────────────────────────── */
 
+describe('a customer never reads an internal word', () => {
+  it('NO CUSTOMER MODEL IS HANDED A RAW STATUS ENUM', () => {
+    /* The Club's record listed every membership with `status: s.status`, so a
+       membership the studio had not taken payment for appeared as the
+       lowercase word "pending" beside four sentences of the product's own
+       English. §21.8 — the customer's word, never the internal one.
+
+       Narrow on purpose: `status: x.status` INSIDE a model literal is the
+       defect. Passing `{ status: approval.status }` to an ENGINE is not — the
+       engine's whole job is to read the enum — so the pattern is the
+       assignment shape and not the identifier. */
+    const project = codeOf('lib/customer/project.ts');
+    const offenders = project.split('\n')
+      .filter(l => /\bstatus:\s*[a-zA-Z]+\.status\s*,?\s*$/.test(l))
+      .map(l => l.trim());
+    expect(offenders).toEqual([]);
+  });
+
+  it('and the Club’s own record reads through the word map', () => {
+    expect(codeOf('lib/customer/project.ts'))
+      .toMatch(/status: MEMBERSHIP_WORD\[s\.status\]/);
+  });
+
+  it('and every lifecycle the customer can see has a word map', () => {
+    for (const [file, map] of [
+      ['lib/os/membership.ts', 'MEMBERSHIP_WORD'],
+      ['lib/os/puc.ts', 'PUC_STATUS_WORD'],
+    ] as const) {
+      expect({ file, map, has: codeOf(file).includes(`export const ${map}`) })
+        .toEqual({ file, map, has: true });
+    }
+  });
+});
+
 describe('every control the customer is offered actually does something', () => {
   it('no customer surface hands the product off to WhatsApp as its only act', () => {
     /* A `wa.me` link is a legitimate SECONDARY way to reach a person. It is

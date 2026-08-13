@@ -26,6 +26,7 @@ import type { CarPicture, CustomerPicture } from './source';
 import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst, isUpcoming } from './ownership';
 import { DOT } from '@/design';
 import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
+import { MEMBERSHIP_WORD } from '@/lib/os/membership';
 import {
   changeWindowOf, bookingTransition, scheduledEpochMs, approvalHasExpired,
   CHANGE_WINDOW_HOURS, STUDIO_UTC_OFFSET_MIN,
@@ -2461,11 +2462,18 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
   const club = clubOf(picture, now);
   const sub = picture.subscription;
 
+  /* §21.8 — the CUSTOMER's word, never the internal one. This printed the raw
+     enum, so a membership the studio had not yet taken payment for appeared in
+     the record as the lowercase word "pending" beside four sentences of the
+     product's own English. `MEMBERSHIP_WORD` is the one vocabulary, shared
+     with the studio's own screen.
+
+     The dash is an em dash, as it is everywhere else in the product. */
   const history = picture.subscriptions.map(s => ({
     id: s.id,
     plan: `${s.plan} member`,
-    period: `${longDate(s.startDate)} - ${longDate(s.endDate)}`,
-    status: s.status,
+    period: `${longDate(s.startDate)} — ${longDate(s.endDate)}`,
+    status: MEMBERSHIP_WORD[s.status] ?? s.status,
   }));
 
   if (club.state === 'none' || !sub) {
