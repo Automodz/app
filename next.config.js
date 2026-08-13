@@ -148,6 +148,18 @@ const nextConfig = {
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(self), payment=(), interest-cohort=()' },
         { key: 'X-DNS-Prefetch-Control', value: 'on' },
+        /* WHICH COMMIT IS ACTUALLY LIVE.
+           A deploy is only verified if the thing answering can say what it is,
+           and nothing in the rendered HTML carries the build. Twelve
+           characters of the commit — the same slice `lib/server/report.ts`
+           tags an error report with, so a report and the deploy that produced
+           it name the same thing. Not a secret: it is a public repository's
+           commit hash, and it is what makes `scripts/verify-production.mjs`
+           able to say "this deploy" rather than "a deploy". */
+        {
+          key: 'X-AutoModz-Release',
+          value: (process.env.VERCEL_GIT_COMMIT_SHA ?? 'local').slice(0, 12),
+        },
       ],
     }];
   },

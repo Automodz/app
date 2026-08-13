@@ -25,10 +25,9 @@
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { authedFetch } from '@/lib/clientSession';
 import { color, space, radius, imageSizes } from '@/design';
-import { Screen, Pane, Label, Rail, Action, RoomHeader } from '@/components/os';
+import { Screen, Pane, Label, Rail, Action, RoomHeader, Photograph } from '@/components/os';
 import { OfflineNote, useOnline } from '@/components/system';
 
 export interface ApprovalModel {
@@ -131,14 +130,11 @@ export function ApprovalScreen({ model }: { model: ApprovalModel }) {
                 position: 'relative', aspectRatio: '4 / 3',
                 borderRadius: radius.card, overflow: 'hidden',
               }}>
-                <Image
+                <Photograph
                   src={p.url}
                   alt={p.caption}
-                  fill
                   sizes={model.photos.length === 1 ? imageSizes.inMeasure : imageSizes.half}
-                  style={{ objectFit: 'cover' }}
-                className="am-photo"
-          />
+                />
               </div>
               <figcaption style={{ marginTop: space.breath }}>
                 <Label style={{ fontSize: 9, letterSpacing: '0.16em' }}>{p.caption}</Label>

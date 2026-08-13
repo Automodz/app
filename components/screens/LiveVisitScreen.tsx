@@ -30,12 +30,11 @@
  * for the visit's own ledger.
  */
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { color, space, INSET, MEASURE, radius, stack, imageSizes } from '@/design';
 import { dotted } from '@/design';
 import { Modal, OfflineNote, LiveRefresh } from '@/components/system';
-import { Pane, Label, Statement, Pulse, Action, Back } from '@/components/os';
+import { Pane, Label, Statement, Pulse, Action, Back, Photograph } from '@/components/os';
 
 export interface LiveVisitFrame {
   id: string;
@@ -168,15 +167,17 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
               boxShadow: '0 24px 50px -24px rgba(0,0,0,0.95)',
             }}
           >
-            <Image
-              src={hero}
-              alt={`${vehicleName}, in the studio`}
-              width={780} height={392}
-              sizes={imageSizes.inMeasure}
-            className="am-photo"
-              priority
-              style={{ width: '100%', height: 196, objectFit: 'cover', display: 'block' }}
-            />
+            {/* Through the primitive. The frame owns the height, so a
+                photograph that will not load says so inside it and the
+                composition around it does not move. */}
+            <span style={{ position: 'relative', display: 'block', height: 196 }}>
+              <Photograph
+                src={hero}
+                alt={`${vehicleName}, in the studio`}
+                sizes={imageSizes.inMeasure}
+                priority
+              />
+            </span>
             <span
               aria-hidden
               style={{
@@ -307,18 +308,18 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={f.url}
-                    alt={f.caption ?? `${vehicleName} during this visit`}
-                    loading="lazy"
-                    /* The same rule every other customer photograph wears -
-                       a frame that does not arrive is composed, not reported. */
-                    className="am-photo"
+                  <span
                     style={{
-                      width: 108, height: 108, objectFit: 'cover', display: 'block',
+                      position: 'relative', display: 'block', width: 108, height: 108,
                       border: '1px solid rgba(255,255,255,0.07)',
                     }}
-                  />
+                  >
+                    <Photograph
+                      src={f.url}
+                      alt={f.caption ?? `${vehicleName} during this visit`}
+                      sizes="108px"
+                    />
+                  </span>
                 </button>
               ))}
             </div>
@@ -354,12 +355,13 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
         {viewed ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: space.gap }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={viewed.url}
-              alt={viewed.caption ?? `${vehicleName} during this visit`}
-              className="am-photo"
-              style={{ width: '100%', borderRadius: radius.pane, display: 'block' }}
-            />
+            <span style={{ position: 'relative', display: 'block', width: '100%', aspectRatio: '4 / 3' }}>
+              <Photograph
+                src={viewed.url}
+                alt={viewed.caption ?? `${vehicleName} during this visit`}
+                sizes={imageSizes.inMeasure}
+              />
+            </span>
             {viewed.caption ? (
               <p style={{ margin: 0, fontSize: 13.5, color: color.ink2 }}>{viewed.caption}</p>
             ) : null}

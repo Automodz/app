@@ -40,8 +40,7 @@ import { REGION_NAME } from '@/components/vehicle';
 import { OfflineNote } from '@/components/system';
 import { Back } from '@/components/os/RoomHeader';
 import {
-  Pane, Label, Rail, Pulse, Chevron, Meter, Action, Stat,
-} from '@/components/os';
+  Pane, Label, Rail, Pulse, Chevron, Meter, Action, Stat, Photograph } from '@/components/os';
 
 /* ── What the car needs to be true ───────────────────────────────────── */
 
@@ -534,20 +533,21 @@ export function VehicleScreen(
               {month.frames.map(f => {
                 const tile = (
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={f.url}
-                    alt={f.caption ?? `${name}, photographed at the studio`}
-                    loading="lazy"
-                    /* The one rule every customer photograph wears: a frame
-                       that does not arrive is composed, and its alt text never
-                       lays the album out. */
-                    className="am-photo"
+                  <span
                     style={{
-                      width: '100%', aspectRatio: '1', objectFit: 'cover',
-                      borderRadius: radius.chip, display: 'block',
+                      position: 'relative', display: 'block',
+                      width: '100%', aspectRatio: '1',
+                      borderRadius: radius.chip, overflow: 'hidden',
                       border: '1px solid rgba(255,255,255,0.07)',
                     }}
-                  />
+                  >
+                    <Photograph
+                      src={f.url}
+                      alt={f.caption ?? `${name}, photographed at the studio`}
+                      sizes="(max-width: 700px) 33vw, 160px"
+                      radius={radius.chip}
+                    />
+                  </span>
                 );
                 return f.visitHref ? (
                   <Link key={f.id} href={f.visitHref} className="am-tap">{tile}</Link>

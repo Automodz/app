@@ -20,8 +20,8 @@
  * state: that makes them work with the back button, survive a reload, and
  * render identically on the server.
  */
-import Image from 'next/image';
 import Link from 'next/link';
+import { Photograph } from '@/components/os/Photograph';
 import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
@@ -211,14 +211,7 @@ function Card({ car }: { car: MarketCard }) {
     >
       <div style={{ position: 'relative', aspectRatio: '16 / 10' }}>
         {car.photo ? (
-          <Image
-            src={car.photo}
-            alt={car.title}
-            fill
-            sizes={imageSizes.inMeasure}
-            className="am-photo"
-            style={{ objectFit: 'cover' }}
-          />
+          <Photograph src={car.photo} alt={car.title} sizes={imageSizes.inMeasure} />
         ) : (
           /* §15.7 — a car with no photograph is silent, not a broken frame.
              §11.5's composed absence: a field lit from above, never a grey box. */

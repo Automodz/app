@@ -1270,22 +1270,19 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* ── A PHOTOGRAPH THAT DOES NOT ARRIVE ───────────────────────────────────
-   §11.5 — an absence is composed, never reported. A failed `next/image` puts
-   its ALT TEXT on screen at body size, and on a full-bleed hero that is a
-   sentence sprawled across the composition beside a browser glyph:
+   `.am-photo` STOOD HERE — `color: transparent; font-size: 0`, so a failed
+   image could not sprawl its alt text across the composition.
 
-       [x] BMW M340i xDrive Sport, finished at AutoModz
+   It hid the TEXT and not the browser's own broken-image glyph, because that
+   is replaced content rather than text. A car whose photograph 404s therefore
+   drew a torn-page icon in the car chooser, in the middle of the room — found
+   by LOOKING at a render, with every geometric assertion passing.
 
-   The alt attribute stays — it is what a screen reader reads, and hiding the
-   RENDERED text does not touch the accessible name. What is left is the
-   frame's own ground, which every one of these surfaces already paints.
-
-   A class rather than an inline style because the surfaces that need it are
-   server components, and `onError` is not available to them. */
-.am-photo {
-  color: transparent;
-  font-size: 0;
-}
+   `components/os/Photograph.tsx` owns all three states now — absent, ready and
+   failed — and every customer photograph goes through it, so there is nothing
+   left for a class to do. The rule is gone rather than kept "just in case": a
+   class nobody wears is a class the next screen will wear INSTEAD of using the
+   primitive, which is how the product got here. */
 
 /* ── THE PRESS ───────────────────────────────────────────────────────────
    §7.3 `tick` (120ms) is "acknowledgement — a press, a toggle", and until

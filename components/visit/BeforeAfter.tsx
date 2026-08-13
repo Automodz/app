@@ -29,8 +29,8 @@
  * position in `aria-valuenow`, driven by the arrow keys as well as a finger.
  */
 import { useCallback, useRef, useState } from 'react';
-import Image from 'next/image';
 import { color, space, radius, HAIRLINE, imageSizes, type as typeScale } from '@/design';
+import { Photograph } from '@/components/os/Photograph';
 
 export interface BeforeAfterProps {
   before: string;
@@ -75,27 +75,13 @@ export function BeforeAfter({ before, after, subject }: BeforeAfterProps) {
       >
         {/* AFTER underneath, whole. The finished car is the ground state — a
             customer who never touches this sees the result, not the damage. */}
-        <Image
-          src={after}
-          alt={`${subject}, finished`}
-          fill
-          sizes={imageSizes.fullBleed}
-          style={{ objectFit: 'cover' }}
-        className="am-photo"
-          />
+        <Photograph src={after} alt={`${subject}, finished`} sizes={imageSizes.fullBleed} />
 
         {/* BEFORE on top, clipped to the seam. `inset` rather than width, so
             the image inside never reflows — it is revealed, not resized, and
             the two halves stay in register at every position. */}
         <div style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - at}% 0 0)` }}>
-          <Image
-            src={before}
-            alt={`${subject}, on arrival`}
-            fill
-            sizes={imageSizes.fullBleed}
-            style={{ objectFit: 'cover' }}
-          className="am-photo"
-          />
+          <Photograph src={before} alt={`${subject}, on arrival`} sizes={imageSizes.fullBleed} />
         </div>
 
         {/* THE SEAM. A hairline, and the only ornament here (§3.4). */}

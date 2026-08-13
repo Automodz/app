@@ -16,9 +16,8 @@
  * there, so it looks like it.
  */
 import Link from 'next/link';
-import Image from 'next/image';
-import { color, space, radius, ground } from '@/design';
-import { Screen, RoomHeader, Label, Chevron } from '@/components/os';
+import { color, space, radius } from '@/design';
+import { Screen, RoomHeader, Label, Chevron , Photograph } from '@/components/os';
 import { hrefForDestination } from '@/navigation/resolve';
 import type { GarageModel } from './GarageScreen';
 
@@ -59,24 +58,19 @@ export function ChooseCar(
               padding: space.gap, minHeight: 84,
             }}
           >
+            {/* THROUGH THE PRIMITIVE, which is what tells a photograph that
+                FAILED apart from one that was never taken. The class-only path
+                hid the alt TEXT and not the browser's own broken-image glyph,
+                so a car whose photograph 404s showed a torn-page icon in the
+                chooser — a browser's error mark, in the middle of the room. */}
             <span
               aria-hidden
               style={{
                 position: 'relative', flexShrink: 0,
                 width: 64, height: 64, borderRadius: radius.chip,
-                overflow: 'hidden', background: ground.awaiting,
               }}
             >
-              {v.photo ? (
-                <Image
-                  src={v.photo}
-                  alt=""
-                  fill
-                  sizes={'64px'}
-                  className="am-photo"
-                  style={{ objectFit: 'cover' }}
-                />
-              ) : null}
+              <Photograph src={v.photo} alt="" sizes="64px" radius={radius.chip} />
             </span>
 
             <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>

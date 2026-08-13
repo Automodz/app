@@ -26,8 +26,8 @@
  * That is position, not rank: §16.2 makes every completed visit equally
  * permanent.
  */
-import Image from 'next/image';
 import Link from 'next/link';
+import { Photograph } from '@/components/os/Photograph';
 import { space, MEASURE, photoSize, stack, imageSizes } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
@@ -160,17 +160,14 @@ function Visit({ visit, newest, vehicle }: {
           </div>
         }
       >
-        {photo ? (
-          <Image
-            src={photo.url}
-            alt={photo.description}
-            fill
-            priority={newest}
-            sizes={imageSizes.fullBleed}
-            className="am-photo"
-            style={{ objectFit: 'cover' }}
-          />
-        ) : null}
+        {/* THROUGH THE PRIMITIVE — absent, ready and failed are three states
+            and the class-only path could only express two. */}
+        <Photograph
+          src={photo?.url}
+          alt={photo?.description ?? ''}
+          priority={newest}
+          sizes={imageSizes.fullBleed}
+        />
       </Hero>
     </Link>
   );

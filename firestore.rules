@@ -114,14 +114,31 @@ service cloud.firestore {
       //    addresses (`/vehicle?car=<id>`, `/history?car=<id>`), so they are
       //    in browser history, in screenshots and in any shared link.
       //
-      //    The server allocates the id now (/api/vehicle → addCar), so a
-      //    browser cannot name the document it creates and cannot name
-      //    somebody else's. Admin keeps its write for the studio's own
-      //    Vehicle-360 corrections.
+      //    THE FIX IS `allow create: if false` — the server allocates the id
+      //    (/api/vehicle → addCar), so a browser cannot name the document it
+      //    creates and therefore cannot name somebody else's. That one line is
+      //    what closes it: an UPDATE cannot squat, because Firestore only
+      //    calls a write an update when the document already exists, which
+      //    means the server put it there.
+      //
+      //    So the owner keeps exactly one write, and it is the one that must
+      //    be theirs: PERMISSION TO PUBLISH THIS CAR'S RECORD. `lib/os/
+      //    consent.ts` is explicit that the studio has no way in there at all
+      //    — an admin who could consent on a customer's behalf would defeat
+      //    the point of asking — so consent cannot be moved behind a staff
+      //    door, and it is narrowed by key rather than by trust.
+      //
+      //    Everything else about the car — its name, its plate, its odometer —
+      //    goes through /api/vehicle, where the duplicate-plate check lives.
       match /vehicles/{vehicleId} {
         allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
         allow create: if false;
-        allow update, delete: if request.auth != null && isAdmin();
+        allow update: if request.auth != null &&
+          (isAdmin() ||
+           (request.auth.uid == userId &&
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['publicHistoryConsent', 'updatedAt'])));
+        allow delete: if request.auth != null && isAdmin();
 
         // Vehicle service history (written by admin, readable by owner/admin)
         match /serviceHistory/{recordId} {

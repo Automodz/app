@@ -17,8 +17,8 @@
  * keep their address — the link somebody pasted last week still opens — but the
  * form is replaced by a sentence and the rest of the stock.
  */
-import Image from 'next/image';
 import Link from 'next/link';
+import { Photograph } from '@/components/os/Photograph';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/design';
 import { Heading, Text, Button, OfflineNote } from '@/components/system';
@@ -92,14 +92,9 @@ export function ListingScreen(
                 background: color.surface,
               }}
             >
-              <Image
-                src={p.url}
-                alt={p.alt}
-                fill
-                sizes={imageSizes.inMeasure}
-            className="am-photo"
-                style={{ objectFit: 'cover' }}
-              />
+              {/* Through the primitive — a listing photograph that 404s is a
+                  fault a buyer must not be shown as a browser glyph. */}
+              <Photograph src={p.url} alt={p.alt} sizes={imageSizes.inMeasure} />
             </div>
           ))}
         </div>
@@ -256,8 +251,7 @@ export function ListingScreen(
                     background: color.surface,
                   }}>
                     {c.photo ? (
-                      <Image src={c.photo} alt="" fill sizes="88px" className="am-photo"
-                        style={{ objectFit: 'cover' }} />
+                      <Photograph src={c.photo} alt="" sizes="88px" />
                     ) : null}
                   </div>
                   <div style={{ minWidth: 0 }}>

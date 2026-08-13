@@ -30,7 +30,6 @@
  * There is no back control. §6.2 — the navigation is persistent and predictable,
  * and `/history/[id]` lights the History slot, which is the way back.
  */
-import Image from 'next/image';
 import {
   color, space, INSET, MEASURE, column, stack, imageSizes,
 } from '@/design';
@@ -45,6 +44,7 @@ import { Text } from '@/components/system/Text';
 import { Button } from '@/components/system/Button';
 import { OfflineNote } from '@/components/system/OfflineNote';
 import { Back } from '@/components/os/RoomHeader';
+import { Photograph } from '@/components/os/Photograph';
 import { hrefForDestination } from '@/navigation/resolve';
 import { BeforeAfter } from '@/components/visit/BeforeAfter';
 import type { HistoryVisit } from './HistoryScreen';
@@ -129,15 +129,7 @@ export function VisitScreen(
         }
       >
         {photo ? (
-          <Image
-            src={photo.url}
-            alt={photo.description}
-            fill
-            priority
-            sizes={imageSizes.fullBleed}
-            className="am-photo"
-            style={{ objectFit: 'cover' }}
-          />
+          <Photograph src={photo.url} alt={photo.description} priority sizes={imageSizes.fullBleed} />
         ) : null}
       </Hero>
 
@@ -164,14 +156,7 @@ export function VisitScreen(
       {photos.map(p => (
         <figure key={p.url} style={{ margin: 0, paddingTop: space.movement }}>
           <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3' }}>
-            <Image
-              src={p.url}
-              alt={p.description}
-              fill
-              sizes={imageSizes.fullBleed}
-            className="am-photo"
-              style={{ objectFit: 'cover' }}
-            />
+            <Photograph src={p.url} alt={p.description} sizes={imageSizes.fullBleed} />
           </div>
           {p.caption ? (
             <figcaption style={{ ...column, marginTop: space.line }}>

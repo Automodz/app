@@ -42,7 +42,6 @@
  * This component holds none and fetches none.
  */
 import { useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { color, space, INSET, imageSizes } from '@/design';
@@ -52,8 +51,7 @@ import { BookingFlow } from '@/components/studio/BookingFlow';
 import type { CarriedEstimate, AddressChoice } from '@/components/studio/BookingFlow';
 import { OfflineNote } from '@/components/system';
 import {
-  Screen, Pane, Label, Statement, DISPLAY, Rail, Action, Pulse, Chevron,
-} from '@/components/os';
+  Screen, Pane, Label, Statement, DISPLAY, Rail, Action, Pulse, Chevron, Photograph } from '@/components/os';
 
 /* ── What the Studio needs to be true ──────────────────────────────────── */
 
@@ -366,14 +364,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
             overflow: 'hidden',
           }}
         >
-          <Image
-            src={work.url}
-            alt={work.description}
-            fill
-            sizes={imageSizes.fullBleed}
-            style={{ objectFit: 'cover' }}
-          className="am-photo"
-          />
+          <Photograph src={work.url} alt={work.description} sizes={imageSizes.fullBleed} />
         </div>
       ) : null}
 
@@ -431,14 +422,7 @@ export function StudioScreen({ model }: { model: StudioModel }) {
             height: 220, overflow: 'hidden', borderRadius: 0,
           }}
         >
-          <Image
-            src={photo.url}
-            alt={photo.description}
-            fill
-            sizes={imageSizes.fullBleed}
-            style={{ objectFit: 'cover' }}
-          className="am-photo"
-          />
+          <Photograph src={photo.url} alt={photo.description} sizes={imageSizes.fullBleed} />
           <span
             aria-hidden
             style={{

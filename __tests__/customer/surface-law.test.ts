@@ -441,21 +441,37 @@ describe('a photograph that does not arrive composes rather than reports', () =>
    * "BMW M340i xDrive Sport, finished at AutoModz" - beside a browser glyph.
    * The attribute stays, because that is what a screen reader reads.
    */
-  it('the rule exists and hides only the rendered text', () => {
+  it('THE PRIMITIVE OWNS THE RULE, and the class it replaced is gone', () => {
+    /* `.am-photo` hid the alt TEXT and not the browser's broken-image glyph,
+       which is replaced content. The primitive keeps the same two
+       declarations on the image it renders AND says the failure, so the class
+       has nothing left to do — and a class nobody wears is one the next screen
+       will wear instead of using the primitive. */
+    const photograph = readFileSync('components/os/Photograph.tsx', 'utf8');
+    expect(photograph).toMatch(/fontSize: 0, color: 'transparent'/);
+    expect(photograph).toMatch(/state === 'failed'/);
+    expect(photograph).toMatch(/Photograph unavailable/);
+
     const css = readFileSync('app/globals.css', 'utf8');
-    const rule = css.slice(css.indexOf('.am-photo'), css.indexOf('.am-photo') + 120);
-    expect(rule).toMatch(/color: transparent/);
-    expect(rule).toMatch(/font-size: 0/);
+    expect(css).not.toMatch(/^\.am-photo\s*\{/m);
   });
 
   it('and every customer photograph goes through the primitive or wears it', () => {
     /**
-     * STRICTER THAN IT WAS. This counted `className="am-photo"`, which was the
-     * best rule available while every screen drew its own `<img>` and the only
-     * shared thing was a CSS class. `Photograph` now owns all three states —
-     * absent, ready, failed — so the rule is no longer "wears a class" but
-     * "goes through the primitive", with the class still accepted for the
-     * screens that have not been migrated yet.
+     * STRICTER AGAIN, AND THE CLASS NO LONGER COUNTS.
+     *
+     * `.am-photo` sets `color: transparent; font-size: 0`, which hides the alt
+     * TEXT a failed image collapses to. It does NOT hide the browser's own
+     * broken-image glyph, because that is replaced content and not text — so a
+     * car whose photograph 404s drew a torn-page icon in the car chooser, in
+     * the middle of the room. Found by LOOKING at the render; every geometric
+     * assertion passed.
+     *
+     * `Photograph` owns all three states — absent, ready, failed — and says
+     * the third rather than letting the browser draw it. The three screens
+     * that still wore the class alone (the chooser, the record's hero and the
+     * garage's lead tile) go through the primitive now, so the class is no
+     * longer an accepted substitute for anything.
      *
      * `Photograph.tsx` itself is exempt because it IS the implementation.
      */
@@ -465,8 +481,7 @@ describe('a photograph that does not arrive composes rather than reports', () =>
     for (const file of withImages) {
       const src = codeOf(file);
       const photos = (src.match(/<Image\b/g) ?? []).length + (src.match(/<img\b/g) ?? []).length;
-      const marked = (src.match(/className="am-photo"/g) ?? []).length
-        + (src.match(/<Photograph\b/g) ?? []).length;
+      const marked = (src.match(/<Photograph\b/g) ?? []).length;
       expect({ file, unmarked: Math.max(0, photos - marked) })
         .toEqual({ file, unmarked: 0 });
     }

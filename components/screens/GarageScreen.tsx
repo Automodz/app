@@ -41,14 +41,13 @@
  * ── DATA ─────────────────────────────────────────────────────────────────
  * This component holds none and fetches none.
  */
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { CarForm } from '@/components/garage/CarForm';
 import { color, space, radius, imageSizes, TARGET_MIN } from '@/design';
 import { OfflineNote } from '@/components/system';
 import {
-  Screen, Pane, Label, Statement, Rail, Chevron, Action, Value,
+  Screen, Pane, Label, Statement, Rail, Chevron, Action, Value, Photograph,
 } from '@/components/os';
 
 /* ── What the collection needs to be true ─────────────────────────────── */
@@ -190,14 +189,15 @@ export function GarageScreen({ model }: { model: GarageModel }) {
           }}
         >
           {lead.photo ? (
-            <Image
+            /* THROUGH THE PRIMITIVE. The composed absence below is still this
+               screen's own — it is the lit field §11.5 asks for — and the
+               primitive owns the other two states, including the failure the
+               class-only path could not express. */
+            <Photograph
               src={lead.photo}
               alt={`${lead.name}, photographed at AutoModz`}
-              fill
               priority
               sizes={imageSizes.inMeasure}
-            className="am-photo"
-              style={{ objectFit: 'cover' }}
             />
           ) : (
             /* §11.5 — the composed absence. A field lit from above: enough

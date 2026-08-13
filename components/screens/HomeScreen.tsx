@@ -38,7 +38,6 @@
  * ── DATA ─────────────────────────────────────────────────────────────────
  * This component holds none and fetches none.
  */
-import Image from 'next/image';
 import Link from 'next/link';
 import { useOpenPalette } from '@/navigation/Palette';
 import {
@@ -50,6 +49,7 @@ import { OfflineNote } from '@/components/system';
 import type { Tone } from '@/components/system';
 import {
   Screen, Pane, Dial, Unit, Label, Statement, Rail, Pulse, Chevron, Action, Row, Value,
+  Photograph,
 } from '@/components/os';
 
 /* ── What Home needs to be true ──────────────────────────────────────────
@@ -481,27 +481,18 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                 border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {/* THROUGH THE PRIMITIVE. This hid a failed photograph with an
+                  `onError` that set `visibility: hidden` — which works, and
+                  was a fourth implementation of a rule the product already
+                  owns in one place. `Photograph` composes the absence, SAYS
+                  the failure rather than hiding it, and keeps the alt text out
+                  of the layout in all three states. */}
+              <Photograph
                 src={f.url}
                 alt={f.caption ?? `${vehicle.name} in the studio`}
-                loading="lazy"
-                width={104}
-                height={104}
-                /* The browser's own broken-image glyph is the last thing left
-                   of a photograph that did not arrive, and §11.5 is explicit
-                   that an absence is composed rather than reported. Hidden,
-                   not removed: the request still fails in the network log,
-                   where the studio can see it. */
-                onError={e => { e.currentTarget.style.visibility = 'hidden'; }}
-                style={{
-                  width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-                  /* The alt text is kept - it is what a screen reader reads -
-                     but it is never allowed to lay the strip out. */
-                  fontSize: 0, color: 'transparent',
-                }}
-              className="am-photo"
-                />
+                sizes="104px"
+                radius={radius.chip}
+              />
             </Link>
           ))}
         </div>
@@ -692,13 +683,10 @@ export function HomeScreen({ model }: { model: HomeModel }) {
             >
               {life.photo ? (
                 <>
-                  <Image
+                  <Photograph
                     src={life.photo}
                     alt={`${vehicle.name} at ${studio.name}`}
-                    fill
                     sizes={imageSizes.half}
-            className="am-photo"
-                    style={{ objectFit: 'cover' }}
                   />
                   {/* §21.1 - the scrim is solved for the worst image, and the
                       words below are `over`, never `over2`. */}
@@ -844,10 +832,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               >
                 {c.photo ? (
                   <span style={{ position: 'relative', display: 'block', height: 126 }}>
-                    <Image
-                      src={c.photo} alt={c.title} fill sizes="232px" className="am-photo"
-                      style={{ objectFit: 'cover' }}
-                    />
+                    <Photograph src={c.photo} alt={c.title} sizes="232px" />
                   </span>
                 ) : null}
                 <span

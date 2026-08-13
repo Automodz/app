@@ -129,8 +129,37 @@ const CERT = {
       name: 'Mine', registrationNumber: 'GJ01ZZ9998',
     })));
 
-  ok('CANNOT edit the car they DO own from a browser',
+  ok('CANNOT rename the car they DO own — the plate check lives on the server',
     await denied(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), { name: 'Renamed' })));
+
+  ok('CANNOT change its plate either',
+    await denied(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), {
+      registrationNumber: 'GJ01CD5678',
+    })));
+
+  /* CONSENT IS THE OWNER'S ALONE — `lib/os/consent.ts` is explicit that the
+     studio has no way in, so this one field cannot move behind a staff door. */
+  ok('CAN grant permission to publish their car’s record',
+    await allowed(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), {
+      publicHistoryConsent: { granted: true, grantedAt: new Date() },
+      updatedAt: new Date(),
+    })));
+
+  ok('  …and revoke it',
+    await allowed(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), {
+      publicHistoryConsent: { granted: false, revokedAt: new Date() },
+      updatedAt: new Date(),
+    })));
+
+  ok('  …but cannot smuggle another field alongside it',
+    await denied(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), {
+      publicHistoryConsent: { granted: true }, name: 'Renamed too', updatedAt: new Date(),
+    })));
+
+  ok('and CANNOT consent on another customer’s car',
+    await denied(() => updateDoc(doc(db, 'users', 'custB', 'vehicles', 'carB'), {
+      publicHistoryConsent: { granted: true }, updatedAt: new Date(),
+    })));
 
   ok('and so carB’s record stays unreadable to them',
     await denied(() => getDocs(query(collection(db, 'visits'), where('vehicleId', '==', 'carB')))));

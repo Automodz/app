@@ -312,6 +312,33 @@ describe('the customer never writes authoritative state', () => {
     }
   });
 
+  it('A VEHICLE ID IS NOT AN OWNERSHIP CLAIM ANYBODY MAY STAKE', () => {
+    /* `ownsVehicle()` asks whether a document EXISTS at
+       `users/{me}/vehicles/{thatId}`, and protections, visits and declarations
+       all read it. While a browser could CHOOSE that id, squatting another
+       customer's was a claim over their car's whole record — and vehicle ids
+       travel in the customer's own addresses.
+
+       `allow create: if false` is the line that closes it. An UPDATE cannot
+       squat: Firestore only calls a write an update when the document already
+       exists, which means the server put it there. */
+    const at = rules.indexOf('match /vehicles/{vehicleId}');
+    expect(at).toBeGreaterThan(-1);
+    const block = rules.slice(at, rules.indexOf('match /', at + 10));
+    expect(block).toMatch(/allow create: if false;/);
+    expect(block).toMatch(/allow delete: if request\.auth != null && isAdmin\(\);/);
+  });
+
+  it('but CONSENT stays the owner’s, because it cannot be anyone else’s', () => {
+    /* `lib/os/consent.ts` is explicit that the studio has no way in — an admin
+       who could consent on a customer's behalf would defeat the point of
+       asking. So the one owner-writable field is named, and only that one. */
+    const at = rules.indexOf('match /vehicles/{vehicleId}');
+    const block = rules.slice(at, rules.indexOf('match /', at + 10));
+    expect(block).toMatch(/hasOnly\(\['publicHistoryConsent', 'updatedAt'\]\)/);
+    expect(codeOf('lib/services/vehicles.ts')).toMatch(/export const setPublicHistoryConsent/);
+  });
+
   it('the money words appear in no client-writable rule', () => {
     /* `amount`, `total`, `paid` — a rule that mentions one is a rule trying to
        validate arithmetic, which rules cannot do. */

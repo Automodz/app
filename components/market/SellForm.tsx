@@ -12,6 +12,7 @@
  * write cannot guarantee that.
  */
 import { useState } from 'react';
+import { Photograph } from '@/components/os/Photograph';
 import { authedFetch, currentUid } from '@/lib/clientSession';
 import { useRouter } from 'next/navigation';
 import { color, space, radius, HAIRLINE } from '@/design';
@@ -164,10 +165,9 @@ export function SellForm({ garage }: { garage: { id: string; name: string }[] })
                   not in the configured remote patterns until the page reloads,
                   and the optimiser would refuse it. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt="" width={72} height={54}
-                style={{ objectFit: 'cover', borderRadius: radius.chip }}
-                    className="am-photo"
-                  />
+              <span style={{ position: 'relative', display: 'block', width: 72, height: 54 }}>
+                <Photograph src={p.url} alt="" sizes="72px" radius={radius.chip} />
+              </span>
               <button
                 type="button"
                 onClick={() => setPhotos(list => list.filter(x => x.path !== p.path))}
