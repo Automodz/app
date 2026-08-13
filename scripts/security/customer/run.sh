@@ -8,8 +8,11 @@
 #
 #   ./scripts/security/customer/run.sh
 #
-# No dev server is needed: this is about the rules, not about the routes (the
-# service's own decisions are covered by __tests__/protection/service.test.ts).
+# It then boots a throwaway dev server against the same emulators and runs the
+# API matrix — the half `npx jest` cannot reach: the session cookie, the CSRF
+# guard on it, staff authorisation read from a real profile, and the Admin SDK
+# writing against real Firestore semantics.
+#
 # Nothing touches the real project — the id is `demo-automodz`, and
 # firebase-tools refuses to reach live services for a `demo-` id.
 set -euo pipefail
@@ -17,7 +20,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
 WORK="${TMPDIR:-/tmp}/automodz-customer-emu"
-PORT_FS=8085 PORT_AUTH=9099
+PORT_FS=8085 PORT_AUTH=9099 PORT_APP=3199
 
 # firebase-tools 15 needs a JDK 21+; the repo's default may be older
 if ! java -version 2>&1 | grep -qE '"(2[1-9]|[3-9][0-9])'; then
@@ -44,10 +47,19 @@ cat > "$WORK/firebase.json" <<JSON
 JSON
 
 export GCLOUD_PROJECT=demo-automodz
+export FIREBASE_ADMIN_PROJECT_ID=demo-automodz
+export NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-automodz
+export FIREBASE_ADMIN_CLIENT_EMAIL=test@demo-automodz.iam.gserviceaccount.com
+export FIREBASE_ADMIN_PRIVATE_KEY="$(sed 's/$/\\n/' "$WORK/fake.pem" | tr -d '\n')"
 export FIRESTORE_EMULATOR_HOST=127.0.0.1:$PORT_FS
 export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:$PORT_AUTH
+# Cloudinary signing is pure local crypto — these let /api/media/* answer
+# without ever reaching Cloudinary.
+export CLOUDINARY_CLOUD_NAME=demo-cloud
+export CLOUDINARY_API_KEY=000000000000000
+export CLOUDINARY_API_SECRET=not-a-real-secret
 
-cleanup() { kill $EMU_PID 2>/dev/null || true; }
+cleanup() { kill $EMU_PID $APP_PID 2>/dev/null || true; }
 trap cleanup EXIT
 
 firebase emulators:start --only auth,firestore --project demo-automodz \
@@ -57,3 +69,9 @@ until curl -sfo /dev/null "http://127.0.0.1:$PORT_FS/" && curl -sfo /dev/null "h
 
 node "$WORK/seed.js"
 node "$WORK/rules.js"
+
+( cd "$ROOT" && npx next dev -p $PORT_APP >"$WORK/app.log" 2>&1 ) &
+APP_PID=$!
+until curl -sfo /dev/null "http://127.0.0.1:$PORT_APP/"; do sleep 1; done
+
+API_ORIGIN="http://127.0.0.1:$PORT_APP" node "$WORK/api.js"

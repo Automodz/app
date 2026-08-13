@@ -109,6 +109,35 @@ const CERT = {
   ok('CANNOT delete the ceramic warranty the STUDIO captured at seal',
     await denied(() => deleteDoc(doc(db, 'protections', 'carA_ceramic'))));
 
+  /* ── THE OWNERSHIP PRIMITIVE ITSELF ───────────────────────────────── */
+  /* `ownsVehicle()` asks whether a document EXISTS at
+     `users/{me}/vehicles/{thatId}`, and three collections read it. While a
+     browser could choose that id, squatting another customer's was an
+     ownership claim over their car's entire record. */
+  ok('CANNOT squat another customer’s vehicle id in their own garage',
+    await denied(() => setDoc(doc(db, 'users', 'custA', 'vehicles', 'carB'), {
+      name: 'Not my car', registrationNumber: 'GJ01CD5678',
+    })));
+
+  ok('  …nor create a car at ANY id of their choosing',
+    await denied(() => setDoc(doc(db, 'users', 'custA', 'vehicles', 'anything'), {
+      name: 'Mine', registrationNumber: 'GJ01ZZ9999',
+    })));
+
+  ok('  …nor with addDoc, which is the same write with a generated id',
+    await denied(() => addDoc(collection(db, 'users', 'custA', 'vehicles'), {
+      name: 'Mine', registrationNumber: 'GJ01ZZ9998',
+    })));
+
+  ok('CANNOT edit the car they DO own from a browser',
+    await denied(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), { name: 'Renamed' })));
+
+  ok('and so carB’s record stays unreadable to them',
+    await denied(() => getDocs(query(collection(db, 'visits'), where('vehicleId', '==', 'carB')))));
+
+  ok('CAN still read their own car',
+    await allowed(() => getDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'))));
+
   /* ── THE CLUB ─────────────────────────────────────────────────────── */
   ok('CAN read their own membership',
     await allowed(() => getDocs(query(collection(db, 'subscriptions'), where('userId', '==', 'custA')))));

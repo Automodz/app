@@ -48,9 +48,29 @@ const db = () => {
   return adminDb;
 };
 
-/** One plate, one shape — so two spellings of one car cannot both exist. */
+/**
+ * THE PLATE AS IT IS STORED — uppercase, whitespace collapsed, trimmed.
+ *
+ * The customer's own spacing survives, because "GJ01 AB 8539" is how a plate
+ * is read aloud and printed, and the product shows it back to them.
+ */
 export const normalisePlate = (s: string) =>
   (s ?? '').toUpperCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * THE PLATE AS IT IS COMPARED — every space removed.
+ *
+ * "GJ01AB8539" and "GJ01 AB 8539" are one car, and the duplicate check missed
+ * that: it compared the STORED form, so a customer who typed their plate a
+ * second time with different spacing got a second record — two histories for
+ * one car, which is the exact thing the check exists to prevent. Found by the
+ * end-to-end matrix, which normalised one and not the other by accident.
+ *
+ * `lib/services/vehicles.ts` already had this rule as `normReg`, for the
+ * studio's Vehicle-360. Two normalisers that disagree is one too many, so
+ * matching is written once, here, and display keeps its spaces.
+ */
+export const plateKey = (s: string) => (s ?? '').toUpperCase().replace(/\s+/g, '');
 
 /**
  * WHAT A CUSTOMER MAY SAY ABOUT THEIR OWN CAR.
@@ -105,7 +125,25 @@ function validate(input: CarIntent | null): CleanCar {
   };
 }
 
-/** A field the customer emptied is REMOVED, not left standing at its old value. */
+/**
+ * `undefined` IS A VALUE THE FORM PRODUCES AND FIRESTORE REFUSES.
+ *
+ * The car form has optional fields — the odometer, the year, the colour — and
+ * leaving one blank means "there isn't one". Firestore rejects `undefined`
+ * outright on a write, so the key must simply not be there. On an UPDATE the
+ * same absence means something stronger — "remove what was there" — which is
+ * `FieldValue.delete()`, and that is the difference between a car that never
+ * had an odometer and one whose owner took it back.
+ *
+ * Both halves used to live in `lib/services/vehicles.ts` beside the client
+ * write. Only the delete half came across with the move, so the first real
+ * request through the new door was refused by Firestore for a car with no
+ * year — found by the end-to-end matrix, which is the only thing that talks to
+ * a real database.
+ */
+const forCreate = (c: CleanCar) =>
+  Object.fromEntries(Object.entries(c).filter(([, v]) => v !== undefined));
+
 const withRemovals = (c: CleanCar) => ({
   name: c.name,
   registrationNumber: c.registrationNumber,
@@ -132,8 +170,9 @@ export async function addCar(uid: string, input: CarIntent | null): Promise<CarR
 
   /* A customer with two records for one car has two histories for one car. */
   const existing = await garage.get();
+  const wanted = plateKey(clean.registrationNumber);
   if (existing.docs.some(d =>
-    normalisePlate((d.data() as Partial<Vehicle>).registrationNumber ?? '') === clean.registrationNumber)) {
+    plateKey((d.data() as Partial<Vehicle>).registrationNumber ?? '') === wanted)) {
     throw new VehicleError('registration-taken', 409);
   }
 
@@ -141,7 +180,7 @@ export async function addCar(uid: string, input: CarIntent | null): Promise<CarR
      That single line is what closes the squatting hole. */
   const ref = garage.doc();
   await ref.set({
-    ...clean,
+    ...forCreate(clean),
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
@@ -163,9 +202,10 @@ export async function correctCar(
   if (!snap.exists) throw new VehicleError('not-found', 404);
 
   const siblings = await db().collection(`users/${uid}/vehicles`).get();
+  const wanted = plateKey(clean.registrationNumber);
   if (siblings.docs.some(d =>
     d.id !== id
-    && normalisePlate((d.data() as Partial<Vehicle>).registrationNumber ?? '') === clean.registrationNumber)) {
+    && plateKey((d.data() as Partial<Vehicle>).registrationNumber ?? '') === wanted)) {
     throw new VehicleError('registration-taken', 409);
   }
 

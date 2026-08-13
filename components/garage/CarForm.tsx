@@ -44,8 +44,12 @@ const REFUSAL: Record<string, string> = {
   'not-configured': 'The studio cannot be reached just now. Try again shortly.',
 };
 
-/** One plate, one shape — so two spellings of the same car cannot both exist. */
+/** The plate as it is STORED — the customer's own spacing survives. */
 const normPlate = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim();
+
+/** The plate as it is COMPARED — "GJ01AB8539" and "GJ01 AB 8539" are one car.
+ *  The same rule the server uses (`lib/server/vehicleService.plateKey`). */
+const plateKey = (s: string) => s.toUpperCase().replace(/\s+/g, '');
 
 /**
  * WHAT THE FORM NEEDS OF A CAR — not a whole `Vehicle`.
@@ -96,7 +100,7 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
   }, [open, editing]);
 
   const duplicate = (p: string) =>
-    vehicles.some(v => v.id !== editing?.id && normPlate(v.registrationNumber) === p);
+    vehicles.some(v => v.id !== editing?.id && plateKey(v.registrationNumber) === plateKey(p));
 
   const save = async () => {
     /* NOT `user` FROM THE STORE. The Garage renders on the SERVER and mounts no
