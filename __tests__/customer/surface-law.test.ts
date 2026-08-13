@@ -441,6 +441,20 @@ describe('a photograph that does not arrive composes rather than reports', () =>
    * "BMW M340i xDrive Sport, finished at AutoModz" - beside a browser glyph.
    * The attribute stays, because that is what a screen reader reads.
    */
+  it('THE CAR’S HERO — the largest element in the product — says its failure', () => {
+    /* It was the last raw `<Image>` on a customer surface. A car whose
+       photograph 404s collapsed it to the ALT TEXT at 16px in full ink,
+       sprawled across half the display. It cannot use the primitive — the
+       cover box is bespoke, because the region marks live in the
+       photograph's own coordinates — so it borrows the vocabulary. */
+    const src = readFileSync('components/vehicle/photograph.tsx', 'utf8');
+    expect(src).toMatch(/onError=\{\(\) => setFailed\(true\)\}/);
+    expect(src).toMatch(/fontSize: 0, color: 'transparent'/);
+    expect(src).toMatch(/Photograph unavailable/);
+    /* And the composed absence is still a DIFFERENT state from the failure. */
+    expect(src).toMatch(/if \(!url \|\| failed\)/);
+  });
+
   it('THE PRIMITIVE OWNS THE RULE, and the class it replaced is gone', () => {
     /* `.am-photo` hid the alt TEXT and not the browser's broken-image glyph,
        which is replaced content. The primitive keeps the same two

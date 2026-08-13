@@ -44,9 +44,10 @@
  * the whole viewport on the Vehicle screen today, and hard-coding that would
  * be this file learning where it is being used.
  */
+import { useState } from 'react';
 import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ground, scrim, duration, curve, imageSizes } from '@/design';
+import { color, ground, scrim, duration, curve, imageSizes } from '@/design';
 import { inReadingOrder } from './renderer';
 import type { RenderedRegion, RenderingProps, VehicleRendering } from './renderer';
 
@@ -95,21 +96,53 @@ export function photograph(source: PhotographSource): VehicleRendering {
   function Surface({ focus, priority, mark }: RenderingProps) {
     const still = useReducedMotion();
     const at = focus ? regions.find(r => r.id === focus) : undefined;
+    /**
+     * §11.5 — AND A PHOTOGRAPH THAT WILL NOT LOAD IS NOT ONE THAT WAS NEVER
+     * TAKEN.
+     *
+     * This was the last raw `<Image>` on a customer surface, and it was the
+     * largest element in the product: a car whose hero 404s collapsed the
+     * image to its ALT TEXT at 16px in full ink — "Kia Seltos, photographed at
+     * AutoModz" sprawled across half the display. Every geometric assertion
+     * passed; the box was the right size and the words were inside it.
+     *
+     * `components/os/Photograph` cannot be used here because the cover box is
+     * bespoke — the marks live in the photograph's own coordinates and that is
+     * the whole reason this renderer exists — so it borrows the primitive's
+     * VOCABULARY instead: the same composed ground, and the same sentence.
+     */
+    const [failed, setFailed] = useState(false);
 
-    if (!url) {
+    if (!url || failed) {
       /* §11.5 — "composed, not defaulted… it reads as awaiting the first
          visit." Never a grey box, never a placeholder silhouette. There is no
          cover space to build and nothing to ask about, so this branch is the
          composition and nothing else. */
       return (
         <div
-          aria-hidden
           style={{
             position: 'absolute',
             inset: 0,
             background: ground.awaiting,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
-        />
+        >
+          {failed ? (
+            /* SAID, NOT HIDDEN — a photograph that exists and will not load is
+               a fault the studio needs to know about, and dressing it as "not
+               photographed yet" is how a broken asset stays broken. The same
+               words `Photograph` uses, because there is one vocabulary. */
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 9.5,
+                letterSpacing: '0.16em', textTransform: 'uppercase',
+                color: color.ink3,
+              }}
+            >
+              Photograph unavailable
+            </span>
+          ) : null}
+        </div>
       );
     }
 
@@ -132,10 +165,17 @@ export function photograph(source: PhotographSource): VehicleRendering {
             fill
             priority={priority}
             sizes={imageSizes.fullBleed}
+            onError={() => setFailed(true)}
             /* `contain`, not `cover` — the box is already the photograph's
                shape, so there is nothing left to crop. Using `cover` here
                would re-introduce the very crop this box exists to remove. */
-            style={{ objectFit: 'contain' }}
+            style={{
+              objectFit: 'contain',
+              /* The alt text is kept — it is what a screen reader reads — and
+                 never allowed to lay the screen out if the image collapses to
+                 it. The same two declarations the primitive sets. */
+              fontSize: 0, color: 'transparent',
+            }}
           />
 
           {/* The recession. One element, always mounted, opacity-driven.
