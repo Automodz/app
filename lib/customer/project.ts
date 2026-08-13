@@ -2306,10 +2306,23 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
   return {
     name: user.name || 'You',
     reachedAt: [user.email, user.phone].filter(Boolean).join(DOT),
-    /* "Gold · since 2023" - and just "Gold" when no membership carries a
-       start date, rather than the dangling "Gold · since" a template with an
-       empty tail produces. */
-    standing: club.state !== 'none'
+    /**
+     * "Gold · since 2023" — and just "Gold" when no membership carries a start
+     * date, rather than the dangling "Gold · since" a template with an empty
+     * tail produces.
+     *
+     * ONLY WHILE IT ACTUALLY HOLDS. This read `state !== 'none'`, so a
+     * membership the studio had not yet taken payment for put the word GOLD
+     * in the customer's own identity line — the tier asserted beside their
+     * name, three lines above a card saying "waiting on the studio to confirm
+     * it". The same rule the certificate follows: nothing is `active` before
+     * somebody at the studio has said so.
+     *
+     * `lapsed` keeps it too, deliberately: a membership that ran out last week
+     * is still what this person's standing WAS, and the card below says so.
+     * What is refused is claiming a tier that was never granted.
+     */
+    standing: club.state !== 'none' && club.state !== 'pending'
       ? [
           club.plan,
           picture.subscriptions

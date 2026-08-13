@@ -497,6 +497,17 @@ describe('a customer never reads an internal word', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('AND NO TIER IS CLAIMED BEFORE THE STUDIO GRANTS IT', () => {
+    /* A membership the studio had not taken payment for put the word GOLD in
+       the customer's own identity line — the tier asserted beside their name,
+       three lines above a card saying "waiting on the studio to confirm it".
+       The same rule the certificate follows. */
+    const toYou = codeOf('lib/customer/project.ts');
+    const body = toYou.slice(toYou.indexOf('export function toYou'));
+    expect(body.slice(0, body.indexOf('\n}')))
+      .toMatch(/standing: club\.state !== 'none' && club\.state !== 'pending'/);
+  });
+
   it('and the Club’s own record reads through the word map', () => {
     expect(codeOf('lib/customer/project.ts'))
       .toMatch(/status: MEMBERSHIP_WORD\[s\.status\]/);
