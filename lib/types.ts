@@ -1357,7 +1357,14 @@ export const MEMBERSHIP_PLANS: MembershipPlanConfig[] = [
     price: 1499,
     washesPerMonth: 4,
     label: 'Silver',
-    color: '#9CA3AF',
+    /* THE TIER'S OWN METAL. Dead for a long time — nothing read it, and
+       Platinum was a violet, which is not a metal. It is read now, by the
+       membership cards, so each tier is tinted with the thing it is named
+       after: neutral grey, the studio's warm gold, and a cooler, brighter
+       white for platinum. Three metals the eye can actually tell apart —
+       silver and platinum are both greys, so the difference between them has
+       to be temperature rather than lightness. */
+    color: '#C0C5CB',
     perks: [
       '4 Regular Washes / month',
       '10% off on all other services',
@@ -1369,7 +1376,7 @@ export const MEMBERSHIP_PLANS: MembershipPlanConfig[] = [
     price: 2999,
     washesPerMonth: 8,
     label: 'Gold',
-    color: '#EAB308',
+    color: '#E0A45C',
     perks: [
       '8 Premium Washes / month',
       '15% off on all other services',
@@ -1382,7 +1389,7 @@ export const MEMBERSHIP_PLANS: MembershipPlanConfig[] = [
     price: 5999,
     washesPerMonth: 16,
     label: 'Platinum',
-    color: '#A78BFA',
+    color: '#DDE3EA',
     perks: [
       '16 Detail SPA Washes / month',
       '20% off on all other services',

@@ -24,7 +24,6 @@ import { MapPin, Phone, Navigation, Droplets } from 'lucide-react';
 import { formatCurrency, getDurationLabel } from '@/lib/utils';
 import SlideToAction from '@/components/ui/SlideToAction';
 import Wordmark from '@/components/ui/Wordmark';
-import BeforeAfterSlider from '@/components/ui/BeforeAfterSlider';
 import WhatsAppFloat from '@/components/ui/WhatsAppFloat';
 import SmoothScroll from '@/components/home/SmoothScroll';
 import { MEDIA } from '@/lib/media';
@@ -46,6 +45,20 @@ const poster = {
   chapter: 'clamp(27px, 5.5vw, 44px)',
   mark: 'clamp(76px, 15vw, 132px)',
 } as const;
+
+/**
+ * A membership tier's metal, at a given strength.
+ *
+ * `MEMBERSHIP_PLANS[].color` is one hex per tier — silver, gold, platinum —
+ * and a card needs the same metal at three different weights: a wash across
+ * the face, a hairline on the edge, a sheen that travels on hover. So it is
+ * taken apart here rather than three more constants being invented for it.
+ */
+const metal = (hex: string, a: number) => {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.replace(/./g, c => c + c) : h, 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
 
 /** The mono voice for kickers, prices and the footer. */
 const label = (size: number, tone: string = color.ink3) => ({
@@ -145,7 +158,11 @@ export function LandingScreen({ prices }: LandingProps) {
      regardless of the preference. */
   return (
     <MotionConfig reducedMotion="user">
-    <div className="relative" style={{ overflowX: 'clip', background: color.paper }}>
+    {/* NO BACKGROUND OF ITS OWN. `body` is already `--bg`, and this painted
+        the same near-black OVER the ambient field — a positioned element in
+        DOM order after it — so mounting the field changed nothing until this
+        came off. No room paints its own ground either; see `os/Screen`. */}
+    <div className="relative" style={{ overflowX: 'clip' }}>
       <SmoothScroll />
 
       {/* ── brand intro: wordmark under a light sweep, then fade ── */}
@@ -201,24 +218,13 @@ export function LandingScreen({ prices }: LandingProps) {
         )}
       </AnimatePresence>
 
-      {/* ── ambient stage: two neutral lights, fixed behind everything ── */}
+      {/* ── the grain. The LIGHT is the application's own ─────────────────
+          Two neutral WHITE lights used to be mounted here, which is why the
+          landing read as flat black while every room behind the door is lit
+          amber and champagne. `CustomerChrome` now mounts the same `Ambient`
+          field here that it mounts in a room, so this is the one thing that
+          was ever local to the landing: the grain over it. */}
       <div aria-hidden className="fixed inset-0 z-0 pointer-events-none">
-        <div
-          className="absolute"
-          style={{
-            top: '-12%', right: '-8%', width: '55vw', height: '55vw', maxWidth: 900, maxHeight: 900,
-            background: `radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 62%)`,
-            filter: 'blur(60px)',
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            bottom: '-18%', left: '-10%', width: '50vw', height: '50vw', maxWidth: 800, maxHeight: 800,
-            background: `radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 65%)`,
-            filter: 'blur(70px)',
-          }}
-        />
         <div className="absolute inset-0 noise-overlay" style={{ opacity: 0.5 }} />
       </div>
 
@@ -379,12 +385,20 @@ export function LandingScreen({ prices }: LandingProps) {
                     it — and it is never allowed to lay the page out. */}
                 <Image
                   src={MEDIA.hero.homepage}
-                  alt="Close-up of freshly detailed paintwork"
+                  alt="A finished car on the floor at AutoModz, Maninagar"
                   fill
                   priority
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
-                  style={{ fontSize: 0, color: 'transparent' }}
+                  style={{
+                    fontSize: 0, color: 'transparent',
+                    /* THE CROP IS DIRECTED, NOT CENTRED. The photograph is
+                       719x1599 and this frame is 4:3, so `cover` keeps about a
+                       third of its height — and centred, that third is the
+                       empty ceiling. Pulled down, it lands on the car and the
+                       brand wall behind it, which is the half worth showing. */
+                    objectPosition: 'center 68%',
+                  }}
                 />
               </div>
               <div
@@ -647,17 +661,26 @@ export function LandingScreen({ prices }: LandingProps) {
                 aspectRatio: '1.586',
                 padding: INSET,
                 borderRadius: radius.sheet,
-                // the card face: near-black metal, soft top light, hairline edge
-                background: `radial-gradient(120% 120% at 20% 0%, ${color.surface} 0%, ${color.paper} 100%)`,
-                border: `${HAIRLINE}px solid ${color.edge}`,
+                /* THE CARD IS MADE OF THE METAL IT IS NAMED AFTER.
+                   All three faces were the same near-black, so Silver, Gold
+                   and Platinum were told apart only by the word printed on
+                   them. The tier's own metal now lights the face from the top
+                   left and catches the edge — at a tenth of an opacity,
+                   because §3.3 allows colour that IS the information and this
+                   is the tier itself, not a decoration of it. */
+                background:
+                  `radial-gradient(120% 120% at 20% 0%, ${metal(p.color, 0.13)} 0%, transparent 58%),`
+                  + ` radial-gradient(120% 120% at 20% 0%, ${color.surface} 0%, ${color.paper} 100%)`,
+                border: `${HAIRLINE}px solid ${metal(p.color, 0.22)}`,
                 boxShadow: elevation.float.shadow,
               }}
             >
-              {/* brushed-metal sheen — travels across the face on hover */}
+              {/* brushed-metal sheen — travels across the face on hover, in the
+                  tier's own metal rather than in plain white */}
               <div
                 aria-hidden
                 className="absolute inset-0 pointer-events-none transition-transform duration-[1200ms] ease-out -translate-x-1/3 group-hover:translate-x-1/3"
-                style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.08) 45%, transparent 60%)' }}
+                style={{ background: `linear-gradient(115deg, transparent 30%, ${metal(p.color, 0.14)} 45%, transparent 60%)` }}
               />
               <div aria-hidden className="absolute inset-0 noise-overlay pointer-events-none" style={{ opacity: 0.35 }} />
               <div className="flex items-start justify-between">
@@ -678,7 +701,11 @@ export function LandingScreen({ prices }: LandingProps) {
                 )}
               </div>
               <div>
-                <span className="block" style={{ fontFamily: typeScale.display.family, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: color.ink }}>
+                {/* THE TITLE IN ITS OWN METAL. The most direct reading of the
+                    tier: the word "Gold" is gold. All three metals are light
+                    against the card's near-black, so this costs nothing in
+                    legibility — measured against §21.1's floor. */}
+                <span className="block" style={{ fontFamily: typeScale.display.family, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: p.color }}>
                   {p.label}
                 </span>
                 <div className="flex items-end justify-between" style={{ gap: space.line, marginTop: space.hair + 2 }}>
@@ -701,17 +728,36 @@ export function LandingScreen({ prices }: LandingProps) {
 
       {/* ═══ 04 BEFORE / AFTER ═══ */}
       <Chapter id="gallery">
-        <SectionHead index={4} kicker="THE DIFFERENCE" title="Drag. See for yourself." />
+        <SectionHead index={4} kicker="THE DIFFERENCE" title="See for yourself." />
         <motion.div {...reveal} className="relative mx-auto" style={{ maxWidth: breakpoint.wide - INSET * 22 }}>
           <div className="relative" style={{ borderRadius: radius.stage, padding: space.breath, ...glass() }}>
-            <BeforeAfterSlider
-              before={MEDIA.beforeAfter.ceramic.before}
-              after={MEDIA.beforeAfter.ceramic.after}
-              dirtBefore
-              showLabels={false}
-              beforeFilter="saturate(0.5) brightness(0.82) contrast(0.94) sepia(0.18) blur(0.4px)"
-              afterFilter="saturate(1.18) contrast(1.1) brightness(1.04)"
-              alt="The same car — dirty before, detailed after"
+            {/* ── THE STUDIO'S OWN FILM ────────────────────────────────────
+                This was a before/after drag over the SAME stock photograph
+                twice, the second copy CSS-filtered to look dirty — the section
+                asked the customer to see the difference and then showed them a
+                filter. The studio has a commercial; it is the real thing.
+
+                `muted` is what makes `autoPlay` legal on every mobile browser,
+                and it is also the right behaviour: §7.4 permits ambient motion,
+                and sound that starts by itself is not ambient. `playsInline`
+                stops iOS taking it fullscreen. No controls, because there is
+                nothing to control — it loops.
+
+                `poster` is the first frame's job, so the glass is never a
+                black rectangle while the file arrives, and `preload="metadata"`
+                keeps 2.7MB off the critical path of a page most people reach
+                on a phone. */}
+            <video
+              src={MEDIA.video.commercial}
+              poster={MEDIA.hero.homepage}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              aria-label="AutoModz at work — a short film of the studio"
+              className="block w-full"
+              style={{ borderRadius: radius.sheet, aspectRatio: '16/9', objectFit: 'cover' }}
             />
           </div>
         </motion.div>

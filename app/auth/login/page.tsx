@@ -34,12 +34,10 @@
 import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { COMPANY } from '@/lib/company';
-import { MEDIA } from '@/lib/media';
 import { linkEmployeeRole } from '@/lib/services/auth';
 import { getUserProfile, stashReferralCode, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
 import { claimReferral } from '@/lib/services/referrals';
@@ -49,7 +47,7 @@ import { GoogleMark } from '@/components/auth/GoogleMark';
 import { Passage } from '@/components/auth/Passage';
 import { Text, Loading, OfflineNote, useOnline } from '@/components/system';
 import {
-  color, scrim, space, radius, INSET, type as typeScale,
+  color, space, radius, INSET, type as typeScale,
   duration, curve, TARGET_MIN, HAIRLINE,
 } from '@/design';
 import { isInAppBrowser, currentUserAgent } from '@/lib/browser';
@@ -198,7 +196,9 @@ function Door() {
     <main
       style={{
         minHeight: '100svh',
-        background: color.paper,
+        /* Same rule as the door it stands in for: `body` is the ground, and
+           painting paper here would black out the field for exactly as long as
+           this is on screen — which is the one moment it would be noticed. */
         display: 'grid',
         placeItems: 'center',
       }}
@@ -490,8 +490,6 @@ function Login() {
     }
   };
 
-  const passing = phase !== 'waiting';
-
   return (
     <MotionConfig reducedMotion="user">
       <main
@@ -499,7 +497,9 @@ function Login() {
           position: 'relative',
           overflow: 'hidden',
           minHeight: '100svh',
-          background: color.paper,
+          /* No ground of its own — `body` is `--bg` and the ambient field sits
+             on it. Painting paper here would cover the field, which is the
+             whole of what makes this the same room as everything behind it. */
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -509,44 +509,16 @@ function Login() {
           paddingInline: INSET,
         }}
       >
-        {/* ── THE CAR ──────────────────────────────────────────────────────
-            The subject of the whole product, present at the first address a
-            customer sees. §11.5 — never a grey box: this screen used to be
-            exactly that. It leans in slightly while the session opens, which
-            is the room acknowledging the press at a scale a spinner cannot. */}
-        <motion.div
-          aria-hidden
-          initial={{ scale: 1.06, opacity: 0 }}
-          animate={{ scale: passing ? 1.04 : 1, opacity: 1 }}
-          transition={{
-            opacity: { duration: duration.scene / 1000, ease: curve.ease },
-            scale: { duration: duration.morph / 1000, ease: curve.ease },
-          }}
-          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-        >
-          <Image
-            src={MEDIA.surfaces.studio}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            style={{ objectFit: 'cover', objectPosition: 'center 42%' }}
-          />
-          {/* §11.2 — the scrim floor is not a suggestion. Type sits on this,
-              so the photograph is held down to where ink is unambiguous. */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background:
-                `linear-gradient(to bottom,`
-                + ` rgba(10,11,13,${scrim.photo + 0.12}) 0%,`
-                + ` rgba(10,11,13,${scrim.photoFloor - 0.19}) 26%,`
-                + ` rgba(10,11,13,${scrim.photoFloor - 0.13}) 54%,`
-                + ` rgba(10,11,13,${scrim.photo + 0.32}) 100%)`,
-            }}
-          />
-        </motion.div>
+        {/* ── THE ROOM, NOT A PHOTOGRAPH OF ONE ────────────────────────────
+            A full-bleed stock supercar used to sit here under a four-stop
+            scrim. It was a good photograph and it was the wrong one: it made
+            the door look like a landing page for a different product, and
+            every actual room on the other side of it is the application's own
+            lit near-black. So the door now stands in the same room it opens
+            onto — the `Ambient` field `CustomerChrome` mounts — and the glass
+            panel below has the same thing to refract that it has everywhere
+            else. The photograph of a car belongs where a car is the subject;
+            here the subject is the way in. */}
 
         <span style={{ position: 'relative', paddingBlock: space.breath }}>
           <Wordmark height={13} variant="white" />

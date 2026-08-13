@@ -250,7 +250,7 @@ describe('the light theme cannot reach inside a room', () => {
    */
   it('and it reaches every customer surface, dock or no dock', () => {
     const chrome = codeOf('navigation/CustomerChrome.tsx');
-    expect(chrome).toMatch(/isCustomerSurface\(pathname\)\s*\?\s*<><RoomTheme \/>\{children\}<\/>/);
+    expect(chrome).toMatch(/isCustomerSurface\(pathname\)\s*\?\s*<><RoomTheme \/>[\s\S]{0,40}\{children\}<\/>/);
 
     /* The predicate itself, on the addresses that were broken. */
     expect(isCustomerSurface('/cars')).toBe(true);
@@ -260,6 +260,42 @@ describe('the light theme cannot reach inside a room', () => {
     /* And every room, so the two answers can never disagree. */
     for (const r of ['/', '/studio', '/garage', '/membership', '/you', '/history', '/vehicle']) {
       expect({ r, customer: isCustomerSurface(r) }).toEqual({ r, customer: true });
+    }
+  });
+
+  /**
+   * AND THE LIGHT TRAVELS WITH THE PALETTE.
+   *
+   * Half of "the room" is the palette and the other half is the field, and
+   * only the first half was reaching these surfaces. The door and the public
+   * landing took `RoomTheme` and stopped — so they were the room's near-black
+   * with none of the room's amber, which is the difference between the studio
+   * and a black page. They are the first two things anybody sees.
+   *
+   * A surface also cannot paint its own ground, or it covers the field it was
+   * just given: `Ambient` is fixed at `z-index: 0` and a positioned element
+   * later in the DOM with an opaque background sits straight on top of it.
+   * That is why mounting the field alone changed nothing until the landing's
+   * and the door's own `background: color.paper` came off — `body` is already
+   * `--bg`, and no room paints its own ground either (`os/Screen`).
+   */
+  it('and so does the field, on the same surfaces', () => {
+    const chrome = codeOf('navigation/CustomerChrome.tsx');
+    /* Both non-room branches: the customer surface, and the signed-out home. */
+    expect(chrome).toMatch(/isCustomerSurface\(pathname\)\s*\?\s*<><RoomTheme \/><Ambient \/>/);
+    expect(chrome).toMatch(/!signedIn && pathname === HOME\) return <><RoomTheme \/><Ambient \/>/);
+    /* Three lights, one field — mounted once, never per screen. */
+    expect(chrome.match(/<Ambient \/>/g)).toHaveLength(3);
+  });
+
+  it('and nothing under that field paints its own ground over it', () => {
+    for (const f of ['components/screens/LandingScreen.tsx', 'app/auth/login/page.tsx']) {
+      /* `color.paper` may still be used — the landing's intro splash is meant
+         to be opaque. What may not exist is a root that fills itself with it. */
+      expect({ f, opaqueRoot: /minHeight: '100svh',[\s\S]{0,80}background: color\.paper/.test(codeOf(f)) })
+        .toEqual({ f, opaqueRoot: false });
+      expect({ f, opaqueRoot: /overflowX: 'clip', background: color\.paper/.test(codeOf(f)) })
+        .toEqual({ f, opaqueRoot: false });
     }
   });
 

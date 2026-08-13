@@ -45,8 +45,15 @@ export function CustomerChrome(
      drawn in the room's palette like everything else. So they get the room's
      light and nothing more. See `isCustomerSurface`. */
   if (!roomFor(pathname)) {
+    /* THE LIGHT COMES WITH THE PALETTE, because half of it is not a palette.
+       These addresses took `RoomTheme` and stopped there, so they were the
+       room's near-black WITHOUT the room's field — and the difference is not
+       subtle: every actual room is lit amber and champagne from two corners,
+       and these read as flat black beside them. The door and the landing are
+       the first two things anybody sees, so they were the two surfaces least
+       able to afford looking like a different product. */
     return isCustomerSurface(pathname)
-      ? <><RoomTheme />{children}</>
+      ? <><RoomTheme /><Ambient />{children}</>
       : <>{children}</>;
   }
 
@@ -55,7 +62,7 @@ export function CustomerChrome(
      whose four slots all lead to a sign-in wall is four dead ends. Same
      reasoning as above: nothing is mounted, not hidden — except the light,
      because the landing is the customer's product too. */
-  if (!signedIn && pathname === HOME) return <><RoomTheme />{children}</>;
+  if (!signedIn && pathname === HOME) return <><RoomTheme /><Ambient />{children}</>;
 
   return (
     <NavigationProvider>

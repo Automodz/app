@@ -20,20 +20,47 @@ const u = (id: string, w = 1600) =>
 
 export const MEDIA = {
   hero: {
-    /** LC1 homepage photo hero - freshly detailed paintwork close-up */
-    homepage: u('photo-1617531653332-bd46c24f2068', 1800),
+    /**
+     * THE STUDIO ITSELF, which is the point.
+     *
+     * This was a stock red BMW on Unsplash — a good photograph of somebody
+     * else's car in somebody else's showroom, at the one address that is
+     * supposed to say what AutoModz is. It is now the studio's own floor: the
+     * wordmark on the mezzanine, the LLumar, XPEL, Garware and Kovalent walls,
+     * and a car that was actually finished here.
+     *
+     * It is a PHONE-SHAPED photograph (719x1599) in a 4:3 frame, so the crop
+     * is art-directed at the call site rather than left to centre — see
+     * `LandingScreen`, which pulls it down onto the car.
+     */
+    homepage: '/hero/studio.jpg',
     /** bright silver supercar; reads on light + dark */
     studio: u('photo-1544829099-b9a0c07fad1a', 2200),
     alt: u('photo-1618843479313-40f8afb4b4d8', 2200),
   },
 
+  /**
+   * THE FOUR DISCIPLINES, PHOTOGRAPHED HERE.
+   *
+   * Resampled to 1800px and re-encoded on the way in: the masters are 2752px
+   * PNGs at ~7.7MB each, which is 31MB of repository and deployment for four
+   * cards that are never drawn wider than half a laptop. `next/image` still
+   * re-encodes per request; this is only about what the deploy carries.
+   */
   services: {
-    ppf: u('photo-1618843479313-40f8afb4b4d8', 1800),      // grey AMG GT R, studio-lit bodywork
-    ceramic: u('photo-1580273916550-e323be2ae537', 1800),  // glossy coated luxury car
-    coating: u('photo-1601362840469-51e4d8d58785', 1800),  // buffing / polishing pad
-    washing: u('photo-1520340356584-f9917d1eea6f', 1800),  // foam wash
-    detailing: u('photo-1600661653561-629509216228', 1800),// hand polishing a panel
+    ppf: '/services/ppf.jpg',
+    ceramic: '/services/ceramic.jpg',
+    /** The "Detailing & Polish" card — `coating` is that discipline's key. */
+    coating: '/services/detailing.jpg',
+    washing: '/services/washing.jpg',
+    /** The same discipline as `coating`, so it is the same photograph. */
+    detailing: '/services/detailing.jpg',
     interior: u('photo-1503736334956-4c8f8e92946d', 1800), // interior detail
+  },
+
+  video: {
+    /** The studio's own commercial. Looped, muted, on the landing (§7.4). */
+    commercial: '/video/commercial.mp4',
   },
 
   surfaces: {
