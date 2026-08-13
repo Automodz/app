@@ -381,7 +381,20 @@ export async function decideMembership(
     let supersededId: string | undefined;
     for (const other of siblings) {
       if (other.id === id) continue;
-      if (other.status !== 'active') continue;
+      /**
+       * ACTIVE — because a customer with two running memberships has two wash
+       * allowances.
+       *
+       * AND PENDING — because the studio has just answered this customer's
+       * question, and any other open request is now a question nobody will
+       * ask again. `mayJoin` refuses a second open request going forward, but
+       * PRODUCTION ALREADY HOLDS TWO for one customer (a Silver and a
+       * Platinum, both asked for on 11 August, from before that rule existed).
+       * Closing them here makes the invariant self-healing rather than needing
+       * a migration — and a request left `pending` for ever is one the nightly
+       * job nags the studio about every single day.
+       */
+      if (other.status !== 'active' && other.status !== 'pending') continue;
       const step = membershipTransition(other.status, 'cancelled', 'studio');
       if (!step.ok) continue;
       tx.update(db().collection(SUBSCRIPTIONS).doc(other.id), {
@@ -389,7 +402,7 @@ export async function decideMembership(
         adminNotes: `Superseded by ${id}`,
         updatedAt: FieldValue.serverTimestamp(),
       });
-      supersededId = other.id;
+      if (other.status === 'active') supersededId = other.id;
     }
 
     /**

@@ -390,6 +390,13 @@ service cloud.firestore {
     //    grants free washes and a standing discount. Activation also has to
     //    close any other membership the customer holds in the SAME commit,
     //    which rules cannot do: a client write would leave two running.
+    //    READ widened from admin to STAFF, deliberately. The walk-in kiosk
+    //    reads a customer's membership to know whether their wash is already
+    //    paid for (`components/intake/WalkInFlow`), and it only worked because
+    //    the shared tablet rides the owner's admin session. A technician on
+    //    their own device is allowed into `/admin/walkin` and would have been
+    //    refused — the counter has to be able to see what the customer in
+    //    front of them is owed.
     match /subscriptions/{subId} {
       allow read: if request.auth != null &&
         (resource.data.userId == request.auth.uid || isStaff());

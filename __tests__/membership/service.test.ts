@@ -325,6 +325,35 @@ describe('who may put a customer in the Club', () => {
     expect(sub(first)).toMatchObject({ amountPaid: SILVER.price, plan: 'Silver' });
   });
 
+  it('ACTIVATING ONE CLOSES EVERY OTHER OPEN REQUEST for that customer', async () => {
+    /* `mayJoin` refuses a second open request going forward — but production
+       already holds two for one customer, from before that rule existed. The
+       studio has just answered the question; a second open request is one
+       nobody will ask again, and the nightly job would nag about it daily. */
+    const first = (await joinMembership('u1', { plan: 'Silver', paymentMethod: 'upi' }, NOW)).subscriptionId;
+    /* A second, as the old code allowed — written straight into the store. */
+    store.set('subscriptions/legacy-pending', {
+      userId: 'u1', plan: 'Platinum', status: 'pending',
+      startDate: TODAY, endDate: '2026-09-11', washesTotal: 16, washesUsed: 0,
+    });
+
+    await decideMembership('staff', { subscriptionId: first, decision: 'activate' }, NOW);
+
+    expect(sub('legacy-pending')).toMatchObject({
+      status: 'cancelled', adminNotes: `Superseded by ${first}`,
+    });
+    expect(sub(first).status).toBe('active');
+  });
+
+  it('but REFUSING one leaves the others alone — nothing was answered', async () => {
+    const first = (await joinMembership('u1', { plan: 'Silver', paymentMethod: 'upi' }, NOW)).subscriptionId;
+    store.set('subscriptions/legacy-pending', {
+      userId: 'u1', plan: 'Platinum', status: 'pending', endDate: '2026-09-11',
+    });
+    await decideMembership('staff', { subscriptionId: first, decision: 'reject' }, NOW);
+    expect(sub('legacy-pending').status).toBe('pending');
+  });
+
   it('a decision that is neither, or on nothing, is refused', async () => {
     const id = await pending();
     expect(await failure(() => decideMembership('staff', { subscriptionId: id, decision: 'maybe' }, NOW)))
