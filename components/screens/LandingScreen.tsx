@@ -1,6 +1,6 @@
 'use client';
 /**
- * THE LANDING — the public face, before there is a session.
+ * THE LANDING - the public face, before there is a session.
  *
  * Behaviour is the old `/` verbatim (reference/customer-old/app/page.tsx):
  * the same eleven sections, the same anchors, the same live minimum prices,
@@ -49,7 +49,7 @@ const poster = {
 /**
  * A membership tier's metal, at a given strength.
  *
- * `MEMBERSHIP_PLANS[].color` is one hex per tier — silver, gold, platinum —
+ * `MEMBERSHIP_PLANS[].color` is one hex per tier - silver, gold, platinum -
  * and a card needs the same metal at three different weights: a wash across
  * the face, a hairline on the edge, a sheen that travels on hover. So it is
  * taken apart here rather than three more constants being invented for it.
@@ -71,7 +71,7 @@ const label = (size: number, tone: string = color.ink3) => ({
 /**
  * One reveal, used everywhere on this page.
  *
- * It ran at `duration.morph` — 620ms — which is the token §7.5 reserves for a
+ * It ran at `duration.morph` - 620ms - which is the token §7.5 reserves for a
  * PHOTOGRAPH CARRYING BETWEEN TWO SURFACES, not for a paragraph arriving on
  * scroll. `move` is what §7.3 defines for "an element changing place or
  * state", and at 280ms the same motion reads as immediate rather than as
@@ -87,7 +87,7 @@ const reveal = {
   transition: { duration: duration.move / 1000, ease: curve.ease },
 };
 
-/** One material (§10.2) — the system's surface over whatever is behind it. */
+/** One material (§10.2) - the system's surface over whatever is behind it. */
 const glass = (): React.CSSProperties => ({
   background: `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)`,
   backdropFilter: 'blur(24px) saturate(1.4)',
@@ -103,7 +103,75 @@ const NAV = [
   { label: 'Contact', href: '#contact' },
 ] as const;
 
-const TRUST = ['PPF EXPERTS', 'CERAMIC SPECIALISTS', '500+ VEHICLES PROTECTED', 'SINCE 2025'] as const;
+/**
+ * THE HOOK.
+ *
+ * "The art of the finish" is a category line - any detailer in any city could
+ * run it, and a line anyone could run is a line nobody repeats. What follows
+ * is built to be repeatable, which is the only property that matters in a
+ * tagline somebody is meant to become habitual to.
+ *
+ * ── WHY THIS ONE ────────────────────────────────────────────────────────────
+ * Every service on this page exists for ONE outcome, and it is not "shine".
+ * PPF, ceramic and correction all do the same job from different angles: they
+ * hold a car at the condition it was in the day it was handed over. That is
+ * also the thing an owner actually feels - nobody is nostalgic about gloss,
+ * they are nostalgic about the first week.
+ *
+ * So the promise is the hook, not the craft. Three words, a full stop, no
+ * adjective, and it is a claim the studio can be held to.
+ *
+ * It is also ALREADY the studio's voice: the detailing card on this page
+ * says "day-one depth back", written long before this line existed. Taking
+ * the phrase the product already reaches for and putting it at the top is how
+ * a tagline ends up sounding inevitable rather than applied.
+ *
+ * The sub-line carries the differentiator and nothing else. It was two lines
+ * of specification; a hook followed by a paragraph is a hook nobody finishes.
+ */
+const HOOK = { first: 'Forever', second: 'day one' } as const;
+const SUBHOOK = 'PPF, ceramic and detailing — every panel photographed.';
+
+/**
+ * THE PROOF STRIP.
+ *
+ * This was five mono claims in a row - "PPF EXPERTS", "CERAMIC SPECIALISTS" -
+ * wrapped so that "SINCE 2025" fell onto a line of its own. Two of them were
+ * adjectives about the studio rather than facts about it, and an adjective is
+ * not proof; the other three were facts printed at the same weight as the
+ * adjectives, so nothing stood out.
+ *
+ * Kept: only what is measurable, and only what this page already claims
+ * elsewhere. "Up to 12 yr warranty" is the PPF card's own figure and
+ * `lib/catalog`'s. Nothing here is invented, and there is deliberately NO
+ * rating number - `lib/reviews` is marked scaffold, so the Google cell is a
+ * link to the real thing and says nothing this studio has not earned.
+ */
+const PROOF = [
+  { value: '500+', caption: 'Cars protected' },
+  { value: '12 yr', caption: 'Longest warranty' },
+  { value: '2025', caption: 'Studio established' },
+] as const;
+
+/**
+ * ONE SHEET DIVIDED, NOT FOUR BOXES PLACED SIDE BY SIDE.
+ *
+ * So the hairlines are seams BETWEEN cells and never an outline around each -
+ * and which edges are seams depends on how many columns there are. At two
+ * columns the strip is 2x2 and the lower pair needs a top seam; at four it is
+ * a single row and that same seam would be a line drawn through the middle of
+ * nothing. Inline styles cannot answer a media query, so the SIDES are
+ * Tailwind (which can) and the colour is the token (which Tailwind should not
+ * be asked to duplicate).
+ */
+const SEAMS = [
+  '',
+  'border-l',
+  'border-t lg:border-t-0 lg:border-l',
+  'border-l border-t lg:border-t-0',
+] as const;
+const seam = (i: number) => SEAMS[i] ?? '';
+const seamColour: React.CSSProperties = { borderColor: color.edge, borderStyle: 'solid', borderWidth: 0 };
 
 const MEMBER_BENEFITS = ['MONTHLY PREMIUM WASHES', 'PRIORITY BOOKING', 'MEMBER PRICING'] as const;
 
@@ -141,7 +209,7 @@ export function LandingScreen({ prices }: LandingProps) {
   }, []);
 
   /* The open/closed pill is the visitor's clock, not ours, so it is computed
-     after mount — rendering it on the server would state Ahmedabad's hour to
+     after mount - rendering it on the server would state Ahmedabad's hour to
      someone reading in another one, and would differ from the hydrated value. */
   useEffect(() => {
     const h = new Date().getHours();
@@ -150,7 +218,7 @@ export function LandingScreen({ prices }: LandingProps) {
 
   const book = () => router.push('/auth/login');
 
-  /* WCAG 2.3.3 — motion respects the OS setting. `MotionConfig` applies it
+  /* WCAG 2.3.3 - motion respects the OS setting. `MotionConfig` applies it
      to every animation in this tree, which the CSS rules in globals.css
      could never do: they silence three named CSS animations, and every
      animation on this page is framer-motion. This is the one address every
@@ -159,8 +227,8 @@ export function LandingScreen({ prices }: LandingProps) {
   return (
     <MotionConfig reducedMotion="user">
     {/* NO BACKGROUND OF ITS OWN. `body` is already `--bg`, and this painted
-        the same near-black OVER the ambient field — a positioned element in
-        DOM order after it — so mounting the field changed nothing until this
+        the same near-black OVER the ambient field - a positioned element in
+        DOM order after it - so mounting the field changed nothing until this
         came off. No room paints its own ground either; see `os/Screen`. */}
     <div className="relative" style={{ overflowX: 'clip' }}>
       <SmoothScroll />
@@ -244,7 +312,7 @@ export function LandingScreen({ prices }: LandingProps) {
           }}
         >
           <Wordmark height="clamp(16px, 4.6vw, 20px)" variant="white" />
-          {/* §21.3 — 44px is the floor whatever the type size is. These were
+          {/* §21.3 - 44px is the floor whatever the type size is. These were
               10px labels in a 15px box: three links a finger cannot reliably
               hit, on the first screen anybody sees. The visual size is
               unchanged; only the target grew. */}
@@ -272,7 +340,7 @@ export function LandingScreen({ prices }: LandingProps) {
               borderRadius: radius.chip,
               paddingInline: space.gap,
               paddingBlock: space.line,
-              /* WAS `TARGET_MIN - space.hair`, which is 40px — the floor,
+              /* WAS `TARGET_MIN - space.hair`, which is 40px - the floor,
                  shaved. §21.3 does not have a discount for the header. */
               minHeight: TARGET_MIN,
               border: 0,
@@ -321,14 +389,14 @@ export function LandingScreen({ prices }: LandingProps) {
                 color: color.over,
               }}
             >
-              The art of<br />
-              <span style={{ color: color.ink3 }}>the finish.</span>
+              {HOOK.first}<br />
+              <span style={{ color: color.ink3 }}>{HOOK.second}</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: duration.move / 1000, ease: curve.ease }}
-              className="max-w-md mx-auto lg:mx-0"
+              className="max-w-md lg:max-w-xl mx-auto lg:mx-0"
               style={{
                 fontFamily: typeScale.body.family,
                 fontSize: typeScale.body.size,
@@ -337,7 +405,7 @@ export function LandingScreen({ prices }: LandingProps) {
                 marginTop: space.line,
               }}
             >
-              PPF, ceramic and correction &mdash; photographed panel by panel, tracked live from your phone.
+              {SUBHOOK}
             </motion.p>
 
             {/* primary conversion: slide to book */}
@@ -381,8 +449,8 @@ export function LandingScreen({ prices }: LandingProps) {
               <div className="relative w-full max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }}>
                 {/* §11.5 APPLIES HERE TOO. A hero that will not load collapsed
                     to its ALT TEXT at 16px in full ink, across the first thing
-                    anybody sees. The attribute stays — a screen reader needs
-                    it — and it is never allowed to lay the page out. */}
+                    anybody sees. The attribute stays - a screen reader needs
+                    it - and it is never allowed to lay the page out. */}
                 <Image
                   src={MEDIA.hero.homepage}
                   alt="A finished car on the floor at AutoModz, Maninagar"
@@ -394,7 +462,7 @@ export function LandingScreen({ prices }: LandingProps) {
                     fontSize: 0, color: 'transparent',
                     /* THE CROP IS DIRECTED, NOT CENTRED. The photograph is
                        719x1599 and this frame is 4:3, so `cover` keeps about a
-                       third of its height — and centred, that third is the
+                       third of its height - and centred, that third is the
                        empty ceiling. Pulled down, it lands on the car and the
                        brand wall behind it, which is the half worth showing. */
                     objectPosition: 'center 68%',
@@ -461,38 +529,87 @@ export function LandingScreen({ prices }: LandingProps) {
       <section aria-label="Why owners trust AutoModz" className="relative z-10" style={{ paddingInline: INSET }}>
         <motion.div
           {...reveal}
-          className="mx-auto flex items-center justify-center flex-wrap"
+          className="mx-auto relative overflow-hidden grid grid-cols-2 lg:grid-cols-4"
           style={{
             maxWidth: breakpoint.wide - INSET * 8,
             borderRadius: radius.card,
-            paddingInline: space.gap + space.hair,
-            paddingBlock: space.gap,
-            columnGap: space.rest / 2 + space.hair,
-            rowGap: space.breath,
             ...glass(),
           }}
         >
+          {/* THE GLOSS. One specular band across the top of the sheet - §3.4,
+              light is the ornament - plus a soft pool under the first cell so
+              the strip is lit from a direction rather than evenly filled. This
+              is what makes it read as a polished surface instead of a box. */}
+          <div
+            aria-hidden
+            className="absolute inset-x-0 top-0 pointer-events-none"
+            style={{ height: HAIRLINE, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.38) 50%, transparent)' }}
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(120% 180% at 12% -40%, rgba(255,255,255,0.10) 0%, transparent 58%)' }}
+          />
+
+          {PROOF.map((p, i) => (
+            <div
+              key={p.value}
+              className={`relative flex flex-col items-center justify-center text-center ${seam(i)}`}
+              style={{
+                paddingBlock: space.gap + space.hair,
+                paddingInline: space.line,
+                gap: space.hair,
+                ...seamColour,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: typeScale.display.family,
+                  fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em',
+                  color: color.over, lineHeight: 1,
+                }}
+              >
+                {p.value}
+              </span>
+              <span style={{ ...label(9, color.ink3), letterSpacing: '0.18em' }}>
+                {p.caption.toUpperCase()}
+              </span>
+            </div>
+          ))}
+
+          {/* The fourth cell is the only one that is not a number, because the
+              honest version of a rating on this page is the rating itself -
+              `lib/reviews` is scaffold, so no score is printed here. */}
           <a
             href={COMPANY.googleReviewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:opacity-80 inline-flex items-center"
-            style={{ ...label(9.5, color.ink), minHeight: TARGET_MIN, gap: space.hair }}
+            className={`am-tap relative flex flex-col items-center justify-center text-center hover:opacity-80 ${seam(3)}`}
+            style={{
+              paddingBlock: space.gap + space.hair,
+              paddingInline: space.line,
+              gap: space.hair,
+              minHeight: TARGET_MIN,
+              textDecoration: 'none',
+              ...seamColour,
+            }}
           >
-            &#9733;&#9733;&#9733;&#9733;&#9733; <span style={{ color: color.ink3 }}>ON GOOGLE</span>
-          </a>
-          {TRUST.map(t => (
-            <span key={t} className="inline-flex items-center" style={{ ...label(9.5, color.ink3), gap: space.rest / 2 + space.hair }}>
-              <span aria-hidden style={{ color: color.ink3, opacity: 0.5 }}>&middot;</span>
-              {t}
+            <span className="inline-flex items-center" style={{ gap: space.hair + 2, color: color.over }}>
+              <GoogleG size={iconSize.inline - 2} />
+              <span style={{ fontFamily: typeScale.display.family, fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                Google
+              </span>
             </span>
-          ))}
+            <span style={{ ...label(9, color.ink3), letterSpacing: '0.18em' }}>
+              RATED BY OWNERS &rarr;
+            </span>
+          </a>
         </motion.div>
       </section>
 
       {/* ═══ 01 SERVICES ═══ */}
       <Chapter id="services">
-        <SectionHead index={1} kicker="THE CRAFT" title="Four disciplines. One standard." />
+        <SectionHead index={1} kicker="THE CRAFT" title="Four disciplines, One standard" />
         <div className="grid sm:grid-cols-2 mx-auto" style={{ gap: space.gap, maxWidth: breakpoint.wide - INSET * 8 }}>
           {SERVICE_ORDER.map(cat => {
             const s = SERVICES[cat];
@@ -505,9 +622,17 @@ export function LandingScreen({ prices }: LandingProps) {
                 {...reveal}
                 onClick={book}
                 whileHover={{ y: -4 }}
-                className={`group relative overflow-hidden cursor-pointer ${featured ? 'sm:col-span-2' : ''}`}
+                className="group relative overflow-hidden cursor-pointer"
                 style={{
-                  minHeight: featured ? 400 : 340,
+                  /* FOUR EQUAL CARDS, 2x2.
+                     PPF used to span both columns and stand 60px taller, which
+                     made the grid 1 + 2 + 1 - and the fourth card sat alone
+                     beside a hole the width of a card. The layout was drawing
+                     attention to an empty space rather than to the service.
+                     "Most popular" is still said, by the badge, which is what
+                     a badge is for; the composition no longer has to carry it
+                     at the cost of a broken row. */
+                  minHeight: 340,
                   borderRadius: radius.stage,
                   border: `${HAIRLINE}px solid ${color.edge}`,
                   boxShadow: elevation.float.shadow,
@@ -585,7 +710,7 @@ export function LandingScreen({ prices }: LandingProps) {
 
       {/* ═══ 02 MARKETPLACE ═══ */}
       <Chapter id="cars">
-        <SectionHead index={2} kicker="MARKETPLACE" title="Cars, kept honest." />
+        <SectionHead index={2} kicker="MARKETPLACE" title="Cars, kept honest" />
         <div className="grid sm:grid-cols-2 mx-auto" style={{ gap: space.gap, maxWidth: breakpoint.wide - INSET * 16 }}>
           {[
             { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: MEDIA.fallbacks.car },
@@ -634,7 +759,7 @@ export function LandingScreen({ prices }: LandingProps) {
 
       {/* ═══ 03 MEMBERSHIP ═══ */}
       <Chapter id="membership">
-        <SectionHead index={3} kicker="MEMBERSHIP" title="Protect your car, all year." />
+        <SectionHead index={3} kicker="MEMBERSHIP" title="Protect your car, all year" />
         <motion.div
           {...reveal}
           className="flex items-center justify-center flex-wrap mx-auto"
@@ -665,7 +790,7 @@ export function LandingScreen({ prices }: LandingProps) {
                    All three faces were the same near-black, so Silver, Gold
                    and Platinum were told apart only by the word printed on
                    them. The tier's own metal now lights the face from the top
-                   left and catches the edge — at a tenth of an opacity,
+                   left and catches the edge - at a tenth of an opacity,
                    because §3.3 allows colour that IS the information and this
                    is the tier itself, not a decoration of it. */
                 background:
@@ -675,7 +800,7 @@ export function LandingScreen({ prices }: LandingProps) {
                 boxShadow: elevation.float.shadow,
               }}
             >
-              {/* brushed-metal sheen — travels across the face on hover, in the
+              {/* brushed-metal sheen - travels across the face on hover, in the
                   tier's own metal rather than in plain white */}
               <div
                 aria-hidden
@@ -704,7 +829,7 @@ export function LandingScreen({ prices }: LandingProps) {
                 {/* THE TITLE IN ITS OWN METAL. The most direct reading of the
                     tier: the word "Gold" is gold. All three metals are light
                     against the card's near-black, so this costs nothing in
-                    legibility — measured against §21.1's floor. */}
+                    legibility - measured against §21.1's floor. */}
                 <span className="block" style={{ fontFamily: typeScale.display.family, fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: p.color }}>
                   {p.label}
                 </span>
@@ -728,12 +853,20 @@ export function LandingScreen({ prices }: LandingProps) {
 
       {/* ═══ 04 BEFORE / AFTER ═══ */}
       <Chapter id="gallery">
-        <SectionHead index={4} kicker="THE DIFFERENCE" title="See for yourself." />
-        <motion.div {...reveal} className="relative mx-auto" style={{ maxWidth: breakpoint.wide - INSET * 22 }}>
+        <SectionHead index={4} kicker="THE DIFFERENCE" title="See for yourself" />
+        {/* THE FRAME IS THE FILM'S WIDTH, because the film is PORTRAIT.
+            This was capped at a landscape measure and the video inside it was
+            a 16/9 box on `object-fit: cover` - so a 720x998 film was being
+            filled into a wide frame and everything above and below the middle
+            band was thrown away. That is the crop.
+            Now the cap is a portrait one: the glass hugs the film instead of
+            the film being cut to fit the glass. On a phone the column is
+            narrower than this anyway, so one value serves both. */}
+        <motion.div {...reveal} className="relative mx-auto" style={{ maxWidth: 520 }}>
           <div className="relative" style={{ borderRadius: radius.stage, padding: space.breath, ...glass() }}>
             {/* ── THE STUDIO'S OWN FILM ────────────────────────────────────
                 This was a before/after drag over the SAME stock photograph
-                twice, the second copy CSS-filtered to look dirty — the section
+                twice, the second copy CSS-filtered to look dirty - the section
                 asked the customer to see the difference and then showed them a
                 filter. The studio has a commercial; it is the real thing.
 
@@ -741,7 +874,7 @@ export function LandingScreen({ prices }: LandingProps) {
                 and it is also the right behaviour: §7.4 permits ambient motion,
                 and sound that starts by itself is not ambient. `playsInline`
                 stops iOS taking it fullscreen. No controls, because there is
-                nothing to control — it loops.
+                nothing to control - it loops.
 
                 `poster` is the first frame's job, so the glass is never a
                 black rectangle while the file arrives, and `preload="metadata"`
@@ -755,9 +888,21 @@ export function LandingScreen({ prices }: LandingProps) {
               muted
               playsInline
               preload="metadata"
-              aria-label="AutoModz at work — a short film of the studio"
+              aria-label="AutoModz at work - a short film of the studio"
               className="block w-full"
-              style={{ borderRadius: radius.sheet, aspectRatio: '16/9', objectFit: 'cover' }}
+              style={{
+                borderRadius: radius.sheet,
+                /* THE FILM SIZES THE FRAME, not the other way round.
+                   This was a 16/9 box with `object-fit: cover`, which happens
+                   to match this file and would silently crop the next one -
+                   `cover` fills the box and throws away whatever does not fit.
+                   `height: auto` lets the element take the video's OWN ratio,
+                   so the frame is always exactly the film's shape and there is
+                   nothing left to crop. `contain` is belt-and-braces for the
+                   moment before metadata arrives. */
+                height: 'auto',
+                objectFit: 'contain',
+              }}
             />
           </div>
         </motion.div>
@@ -765,7 +910,7 @@ export function LandingScreen({ prices }: LandingProps) {
 
       {/* ═══ 05 CONTACT ═══ */}
       <Chapter id="contact">
-        <SectionHead index={5} kicker="CONTACT" title="Bring it by. We&rsquo;ll take it from here." />
+        <SectionHead index={5} kicker="CONTACT" title="Bring it by, We&rsquo;ll take it from there." />
         <div className="mx-auto" style={{ maxWidth: MEASURE_WIDE }}>
           <motion.div {...reveal} className="overflow-hidden" style={{ borderRadius: radius.stage, ...glass() }}>
             <div className="relative" style={{ height: 176 }}>
@@ -809,7 +954,7 @@ export function LandingScreen({ prices }: LandingProps) {
                     {/* The window the pill is computed from (9 ≤ h < 21), stated
                         in the customer's words. It is deliberately NOT
                         `COMPANY.hours`, which is the booking day (09:00–19:00)
-                        — showing that beside a pill derived from a different
+                        - showing that beside a pill derived from a different
                         window would make the two disagree in the last two
                         hours of every evening. */}
                     {openNow ? 'OPEN' : 'CLOSED'} &middot; 9 AM – 9 PM
@@ -817,7 +962,7 @@ export function LandingScreen({ prices }: LandingProps) {
                 )}
               </div>
 
-              {/* four ways in — every path a customer actually uses */}
+              {/* four ways in - every path a customer actually uses */}
               <div className="grid grid-cols-2" style={{ gap: space.breath + 2, marginTop: space.rest / 2 - space.hair }}>
                 {[
                   { label: 'CALL', icon: <Phone size={iconSize.inline - 3} />, href: telLink() },
@@ -906,7 +1051,7 @@ function ChapterSeam() {
 function SectionHead({ index, kicker, title, sub }: { index: number; kicker: string; title: string; sub?: string }) {
   return (
     <div className="relative text-center mx-auto" style={{ maxWidth: MEASURE_WIDE, marginBottom: space.rest + space.gap }}>
-      {/* the chapter number, ghosted behind the head — the editorial page mark.
+      {/* the chapter number, ghosted behind the head - the editorial page mark.
           Static (not a reveal) so its centering transform is never clobbered by
           an animated one, and so the page mark is always present. */}
       <span
