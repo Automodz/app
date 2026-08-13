@@ -559,6 +559,18 @@ describe('every control the customer is offered actually does something', () => 
     }
   });
 
+  it('A PHOTOGRAPH IS ONLY OFFERED WHERE IT CAN BE SENT', () => {
+    /* Without the media keys `/api/media/sign` answers 503, so a customer who
+       taps "Choose a photograph", picks one from their phone and presses send
+       is told it would not upload. That is a control that does not work.
+       Read on the SERVER and handed to the form, so it corrects itself the
+       moment the keys are set. */
+    expect(codeOf('lib/server/cloudinary.ts')).toMatch(/export const canAcceptPhotographs/);
+    expect(readFileSync('app/vehicle/puc/page.tsx', 'utf8'))
+      .toMatch(/canAttach=\{canAcceptPhotographs\(\)\}/);
+    expect(codeOf('components/protection/PucForm.tsx')).toMatch(/\{canAttach \? \(/);
+  });
+
   it('nothing is parked, and nothing is a placeholder', () => {
     /* Word boundaries, or `setOdometer` reports itself as a TODO. */
     const offenders = CUSTOMER.filter(f => /\bTODO\b|\bFIXME\b|\bXXX\b|coming soon|not implemented/i.test(codeOf(f)));

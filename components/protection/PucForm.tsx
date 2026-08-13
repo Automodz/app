@@ -64,8 +64,12 @@ const SIGNED_OUT = 'Your session has expired. Sign in again and we’ll keep thi
 const UNKNOWN = 'That didn’t send. Your connection, most likely — try again.';
 
 export function PucForm(
-  { vehicleId, title, note, submit }:
-  { vehicleId: string; title: string; note: string; submit: string },
+  { vehicleId, title, note, submit, canAttach = true }:
+  {
+    vehicleId: string; title: string; note: string; submit: string;
+    /** Whether this deployment can accept a photograph. See the page. */
+    canAttach?: boolean;
+  },
 ) {
   const router = useRouter();
 
@@ -210,6 +214,11 @@ export function PucForm(
             control paints its own "Choose File" button in the browser's chrome
             and reads as a grey box dropped into the room. §22.2 — one
             implementation of anything. */}
+        {/* §10.5 — offered only where it can be sent. A deployment with no
+            media keys answers 503 to every upload, so the field is absent
+            rather than present and always failing. The certificate's FACTS
+            are what the studio checks; the photograph only makes it easier. */}
+        {canAttach ? (
         <div>
           <Label style={{ letterSpacing: '0.14em' }}>
             A photograph of it (optional)
@@ -241,6 +250,7 @@ export function PucForm(
             </p>
           ) : null}
         </div>
+        ) : null}
 
         <Field
           label="Anything we should know (optional)"

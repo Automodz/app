@@ -1,6 +1,7 @@
 import { PucScreen } from '@/components/screens/PucScreen';
 import { ServerRoom, NoCar } from '@/components/screens/ServerRoom';
 import { toPuc, leadCar } from '@/lib/customer/project';
+import { canAcceptPhotographs } from '@/lib/server/cloudinary';
 
 /**
  * A customer's own room is never static. `cookies()` already forces this, but
@@ -31,7 +32,10 @@ export default async function VehiclePucPage(
         const car = (wanted && picture.cars.find(c => c.vehicle.id === wanted))
           || leadCar(picture);
         if (!car) return <NoCar />;
-        return <PucScreen model={toPuc(car, picture)} />;
+        /* §10.5 — the photograph is offered only where it can actually be
+           sent. A deployment with no media keys answers 503 to every upload,
+           and a control that always fails is not a control. */
+        return <PucScreen model={toPuc(car, picture)} canAttach={canAcceptPhotographs()} />;
       }}
     </ServerRoom>
   );

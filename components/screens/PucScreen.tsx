@@ -134,7 +134,18 @@ const TONE: Record<StateTone, string> = {
   lapsed: color.ink3,
 };
 
-export function PucScreen({ model }: { model: PucModel }) {
+export function PucScreen(
+  { model, canAttach = true }:
+  {
+    model: PucModel;
+    /**
+     * Whether this deployment can accept a photograph at all. Read on the
+     * server from the media configuration — §10.5, a control that always
+     * fails is not a control.
+     */
+    canAttach?: boolean;
+  },
+) {
   const { car, plate, state, line, tone, standing, pending, refused, record, declare, askHref } = model;
 
   return (
@@ -285,6 +296,7 @@ export function PucScreen({ model }: { model: PucModel }) {
             title={declare.title}
             note={declare.note}
             submit={declare.submit}
+            canAttach={canAttach}
           />
         ) : null}
 
