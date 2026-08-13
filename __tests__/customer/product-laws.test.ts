@@ -87,6 +87,25 @@ describe('the 44px floor has no discounts', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('AND A MINIMUM A PARENT MAY SHRINK IS NOT A MINIMUM', () => {
+    /* The landing's review link carried `minHeight: TARGET_MIN` and measured
+       42px: it sits in a flex column that shrinks its items on the cross axis.
+       Every control that states the floor inside a flex parent must also
+       refuse to shrink. */
+    const landing = codeOf('components/screens/LandingScreen.tsx');
+    const targets = [...landing.matchAll(/minHeight: TARGET_MIN[^}]*/g)].map(m => m[0]);
+    expect(targets.length).toBeGreaterThan(2);
+  });
+
+  it('and the marketing photography keeps its alt text out of the layout', () => {
+    /* §11.5 applies to the first thing anybody sees, too. A hero that will not
+       load collapsed to 16px of ink across the composition. */
+    const landing = codeOf('components/screens/LandingScreen.tsx');
+    const images = (landing.match(/<Image\b/g) ?? []).length;
+    const guarded = (landing.match(/fontSize: 0, color: 'transparent'/g) ?? []).length;
+    expect({ images, guarded }).toEqual({ images, guarded: images });
+  });
+
   it('and the token itself is 44', () => {
     const grid = codeOf('design/grid.ts');
     expect(grid).toMatch(/TARGET_MIN\s*=\s*44/);

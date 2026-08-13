@@ -373,6 +373,10 @@ export function LandingScreen({ prices }: LandingProps) {
                   1800px file landing on a 390px phone, and the fixed ratio
                   reserves the box so nothing shifts when it arrives. */}
               <div className="relative w-full max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }}>
+                {/* §11.5 APPLIES HERE TOO. A hero that will not load collapsed
+                    to its ALT TEXT at 16px in full ink, across the first thing
+                    anybody sees. The attribute stays — a screen reader needs
+                    it — and it is never allowed to lay the page out. */}
                 <Image
                   src={MEDIA.hero.homepage}
                   alt="Close-up of freshly detailed paintwork"
@@ -380,6 +384,7 @@ export function LandingScreen({ prices }: LandingProps) {
                   priority
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
+                  style={{ fontSize: 0, color: 'transparent' }}
                 />
               </div>
               <div
@@ -419,7 +424,12 @@ export function LandingScreen({ prices }: LandingProps) {
                       fontFamily: typeScale.whisper.family,
                       fontSize: typeScale.whisper.size,
                       color: color.over2,
-                      display: 'inline-flex', alignItems: 'center', minHeight: TARGET_MIN,
+                      display: 'inline-flex', alignItems: 'center',
+                      /* `minHeight` alone measured 42px: the link sits in a
+                         flex column that shrinks its items on the cross axis,
+                         and a minimum a parent may shrink is not a minimum.
+                         `flexShrink: 0` is what actually holds §21.3's floor. */
+                      minHeight: TARGET_MIN, flexShrink: 0,
                     }}
                   >
                     Read reviews from real owners &rarr;
@@ -511,6 +521,7 @@ export function LandingScreen({ prices }: LandingProps) {
                   fill
                   sizes={imageSizes.fullBleed}
                   className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]"
+                  style={{ fontSize: 0, color: 'transparent' }}
                 />
                 {/* editorial overlay: type sits on the photograph, no inner card */}
                 <div
@@ -575,7 +586,14 @@ export function LandingScreen({ prices }: LandingProps) {
                   boxShadow: elevation.float.shadow,
                 }}
               >
-                <Image src={t.img} alt={t.title} fill sizes={imageSizes.fullBleed} className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]" />
+                <Image
+                  src={t.img}
+                  alt={t.title}
+                  fill
+                  sizes={imageSizes.fullBleed}
+                  className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]"
+                  style={{ fontSize: 0, color: 'transparent' }}
+                />
                 <div
                   aria-hidden
                   className="absolute inset-0"
