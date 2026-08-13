@@ -87,11 +87,10 @@ describe('the 44px floor has no discounts', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('AND A MINIMUM A PARENT MAY SHRINK IS NOT A MINIMUM', () => {
-    /* The landing's review link carried `minHeight: TARGET_MIN` and measured
-       42px: it sits in a flex column that shrinks its items on the cross axis.
-       Every control that states the floor inside a flex parent must also
-       refuse to shrink. */
+  it('and every control that states the floor also refuses to shrink', () => {
+    /* Belt and braces. A control that is 44px only while its parent happens
+       to be a block is one refactor away from being 40 — and the landing's
+       sections have been recomposed more than once. */
     const landing = codeOf('components/screens/LandingScreen.tsx');
     const targets = [...landing.matchAll(/minHeight: TARGET_MIN[^}]*/g)].map(m => m[0]);
     expect(targets.length).toBeGreaterThan(2);

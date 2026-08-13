@@ -425,10 +425,12 @@ export function LandingScreen({ prices }: LandingProps) {
                       fontSize: typeScale.whisper.size,
                       color: color.over2,
                       display: 'inline-flex', alignItems: 'center',
-                      /* `minHeight` alone measured 42px: the link sits in a
-                         flex column that shrinks its items on the cross axis,
-                         and a minimum a parent may shrink is not a minimum.
-                         `flexShrink: 0` is what actually holds §21.3's floor. */
+                      /* §21.3's floor, stated. `flexShrink: 0` is belt and
+                         braces: this link sits in a block today, but the
+                         section around it is a reveal that has been recomposed
+                         more than once, and a control that is 44px only while
+                         its parent stays a block is one bad refactor from
+                         being 40. */
                       minHeight: TARGET_MIN, flexShrink: 0,
                     }}
                   >
