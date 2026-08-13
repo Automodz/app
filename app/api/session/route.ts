@@ -76,6 +76,38 @@ export async function POST(req: Request) {
      */
     const code = (err as { code?: string }).code ?? 'unknown';
     console.error('[session] refused', code, (err as Error)?.message);
+
+    /**
+     * A REVOKED KEY IS THE STUDIO'S FAULT, NOT THE CUSTOMER'S.
+     *
+     * Measured in production, 2026-08-13: every `POST /api/session` answered
+     * 401 with `app/invalid-credential` — "invalid_grant: Invalid JWT
+     * Signature", the Admin SDK failing to get an OAuth2 access token because
+     * the service-account key had been revoked. Google verifies a token's
+     * signature locally, so a FORGED token is refused before any of this; only
+     * a GENUINE one gets as far as a call that needs the studio's own
+     * credentials. The 401 was therefore reserved, precisely, for the customers
+     * who had done everything right.
+     *
+     * The check above already answers 503 for a service account that is ABSENT.
+     * A service account that is present and no longer works is the same
+     * condition — the studio cannot mint cookies for anybody — and it belongs
+     * in the same branch. The door reads 503 as `unavailable`, which is the one
+     * result that keeps the customer's credential instead of signing them out
+     * and says "the studio is not reachable" instead of implying they are not
+     * welcome. And a 503 in the platform log is a broken deployment rather than
+     * a stream of ordinary refusals nobody is paged for.
+     *
+     * `app/` is the Admin SDK's prefix for faults in its OWN configuration, as
+     * against the `auth/` codes that describe a token. Matching the prefix
+     * rather than the one code covers the neighbours — an expired, disabled or
+     * wrong-project service account — which fail the same way for the same
+     * reason. NOTE that this cannot be fixed from here: only a new key in
+     * `FIREBASE_ADMIN_PRIVATE_KEY` restores sign-in.
+     */
+    if (code.startsWith('app/')) {
+      return NextResponse.json({ error: 'auth-unavailable', reason: code }, { status: 503 });
+    }
     return NextResponse.json({ error: 'invalid-token', reason: code }, { status: 401 });
   }
 }

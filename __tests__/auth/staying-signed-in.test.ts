@@ -138,7 +138,31 @@ describe('a failure to open the session does not destroy the session', () => {
 
   it('a misconfigured studio is not the customer’s fault either', () => {
     const open = login.slice(login.indexOf('async function openServerSession'));
-    expect(open).toMatch(/res\.status === 503\) return \{ result: 'unavailable'/);
+    expect(open).toMatch(/if \(res\.status === 503\) \{[\s\S]{0,140}result: 'unavailable'/);
+  });
+
+  /**
+   * THE FAILURE THAT WAS ACTUALLY HAPPENING, AND THE ONE 401 IT DID NOT DESERVE.
+   *
+   * Measured in production 2026-08-13: every `POST /api/session` answered 401
+   * `app/invalid-credential` — "invalid_grant: Invalid JWT Signature", the
+   * Admin SDK unable to get an access token because the service-account key had
+   * been revoked. A forged token never reaches that call: signature checking is
+   * local and refuses it first. So the 401 was reserved, exactly, for customers
+   * who had done everything right — and it signed them out for it.
+   */
+  it('a service-account key that no longer works answers 503, not 401', () => {
+    const route = liveCodeOf('app/api/session/route.ts');
+    /* `app/` is the Admin SDK's prefix for faults in its own configuration, as
+       against `auth/` codes that describe a token. */
+    expect(route).toMatch(/if \(code\.startsWith\('app\/'\)\)[\s\S]{0,160}status: 503/);
+    /* And a token fault still refuses, so a forgery is not excused by this. */
+    expect(route).toMatch(/error: 'invalid-token', reason: code \}, \{ status: 401 \}/);
+  });
+
+  it('and the door shows WHICH part of the studio is broken, not a generic 503', () => {
+    const open = login.slice(login.indexOf('async function openServerSession'));
+    expect(open).toMatch(/status === 503[\s\S]{0,140}code: body\?\.reason/);
   });
 
   /**

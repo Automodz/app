@@ -166,11 +166,15 @@ async function openServerSession(): Promise<SessionOutcome> {
     }
     /* No response at all is the network, not a verdict on the customer. */
     if (!res) return { result: 'offline', code: 'session/unreachable' };
-    if (res.status === 503) return { result: 'unavailable', code: 'session/no-admin-credentials' };
     /* The route's own reason — `auth/id-token-expired`, `auth/argument-error`,
-       `auth/user-disabled`. A body that is not JSON is a proxy or an edge
-       answering instead of the route, which the status is the honest name for. */
+       `auth/user-disabled`, and on a 503 the `app/…` code naming which part of
+       the studio's own configuration is broken. A body that is not JSON is a
+       proxy or an edge answering instead of the route, which the status is the
+       honest name for. */
     const body = await res.json().catch(() => null) as { reason?: string } | null;
+    if (res.status === 503) {
+      return { result: 'unavailable', code: body?.reason ?? 'session/no-admin-credentials' };
+    }
     return { result: 'refused', code: body?.reason ?? `session/http-${res.status}` };
   };
 
