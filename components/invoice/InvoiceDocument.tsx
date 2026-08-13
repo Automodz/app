@@ -152,9 +152,18 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
         <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
           {BUSINESS.address} · +91 {BUSINESS.phone}
         </div>
+        {/* §21.3 — 44px is the floor whatever the type size is. This was a
+            12px line with a 19px box, which is a tap target the width of a
+            sentence and the height of one line. The words are unchanged. */}
         <a href={BUSINESS.googleReviewUrl} target="_blank" rel="noreferrer"
-          style={{ display: 'inline-block', marginTop: 10, fontSize: 12, fontWeight: 600, color: '#17181A', borderBottom: '1px solid #17181A', textDecoration: 'none' }}>
-          Happy with the work? Leave us a Google review
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            minHeight: 44, marginTop: 6, paddingInline: 4,
+            fontSize: 12, fontWeight: 600, color: '#17181A', textDecoration: 'none',
+          }}>
+          <span style={{ borderBottom: '1px solid #17181A' }}>
+            Happy with the work? Leave us a Google review
+          </span>
         </a>
       </div>
     </div>

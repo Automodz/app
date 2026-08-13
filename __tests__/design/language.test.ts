@@ -8,7 +8,7 @@
  */
 import { readFileSync } from 'fs';
 import {
-  color, scrim, contrastFloor, reducedMotion, type as typeScale, space, TARGET_MIN,
+  color, scrim, contrastFloor, fill, reducedMotion, type as typeScale, space, TARGET_MIN,
 } from '@/design';
 
 /** WCAG 2.1 relative luminance. */
@@ -92,25 +92,39 @@ describe('§21.1 — a filled control holds its contrast at every point', () => 
      decoration but never text; the shipped control uses two SOLID stops down
      the same ramp instead.
 
-     Read out of the component rather than restated here, so the assertion
-     cannot drift away from what actually renders. */
-  const button = readFileSync('components/system/Button.tsx', 'utf8');
-  /* The DECLARATION only — the prose above it names the rejected values, and
-     matching those would assert the bug rather than the fix. */
-  const primary = button.slice(button.indexOf('primary: {'), button.indexOf('forward:'));
+     READ OUT OF THE PALETTE, not out of a component. Both `Button` and
+     `Action` carried their own copy of these three literals — so the product's
+     single filled control was written in two places and could drift apart, and
+     this assertion only ever watched one of them. `design/colors.fill` is the
+     one place now, which is also the only place a contrast rule can be
+     enforced for every caller at once. */
+  const palette = readFileSync('design/colors.ts', 'utf8');
+  const declared = palette.slice(palette.indexOf('export const fill = {'));
 
   it('the primary fill is opaque, not an alpha wash over the room', () => {
-    expect(primary).toContain('linear-gradient');
-    expect(primary).not.toMatch(/background:[^,]*rgba\(/);
+    expect(fill.amber).toContain('linear-gradient');
+    expect(fill.amber).not.toMatch(/rgba\(/);
+    expect(fill.champagne).not.toMatch(/rgba\(/);
+    expect(declared).toContain('linear-gradient');
   });
 
-  it('its label clears AA against both ends of the gradient', () => {
-    const stops = [...primary.matchAll(/#([0-9A-Fa-f]{6})/g)].map(m => `#${m[1]}`);
-    /* Two gradient stops, then the label colour. */
-    expect(stops.length).toBeGreaterThanOrEqual(3);
-    const [hi, lo, label] = stops;
-    for (const fill of [hi, lo]) {
-      expect(ratio(hex(label), hex(fill))).toBeGreaterThanOrEqual(contrastFloor.normalText);
+  it('its label clears AA against both ends of BOTH ramps', () => {
+    for (const ramp of [fill.amber, fill.champagne]) {
+      const stops = [...ramp.matchAll(/#([0-9A-Fa-f]{6})/g)].map(m => `#${m[1]}`);
+      expect(stops).toHaveLength(2);
+      for (const stop of stops) {
+        expect({ ramp, stop, r: ratio(hex(fill.on), hex(stop)) })
+          .toEqual({ ramp, stop, r: expect.any(Number) });
+        expect(ratio(hex(fill.on), hex(stop))).toBeGreaterThanOrEqual(contrastFloor.normalText);
+      }
+    }
+  });
+
+  it('and both primitives read it rather than restating it', () => {
+    for (const f of ['components/system/Button.tsx', 'components/os/parts.tsx']) {
+      const src = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      expect({ f, literal: /#[0-9A-Fa-f]{6}/.test(src) }).toEqual({ f, literal: false });
+      expect({ f, reads: /\bfill\./.test(src) }).toEqual({ f, reads: true });
     }
   });
 });

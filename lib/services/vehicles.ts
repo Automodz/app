@@ -1,45 +1,37 @@
 import {
-  collection, doc, addDoc, updateDoc, deleteDoc, deleteField,
-  getDocs, serverTimestamp, query, where, writeBatch,
+  collection, doc, getDocs, query, where, serverTimestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Vehicle } from '../types';
 
 /**
- * `undefined` IS A VALUE THE FORM CAN PRODUCE AND FIRESTORE CANNOT STORE.
+ * `addVehicle`, `updateVehicle` and `deleteVehicle` STOOD HERE, and all three
+ * wrote to `users/{uid}/vehicles/{id}` from a browser.
  *
- * The car form has optional fields — the odometer, the year — and clearing one
- * means "remove this", not "write nothing". Firestore rejects `undefined`
- * outright on a write, so a customer emptying their odometer would have got a
- * failed save with no explanation. On a create the key is simply dropped; on
- * an update it becomes `deleteField()`, which is the difference between a car
- * that never had an odometer and one whose owner took it back.
+ * That looked safe — a customer writing under their own uid — and it was the
+ * worst hole in the product. `ownsVehicle()` in `firestore.rules` is the
+ * ownership primitive for protections, visits and declarations, and it asks
+ * only whether a document EXISTS at that path. So a customer who knew another
+ * customer's vehicle id could create a document at that id under their own uid
+ * and read the other car's protections, its whole service history with the
+ * studio's stage notes and photographs, and its declared certificates.
+ * Squatting an id was an ownership claim — and vehicle ids travel in the
+ * customer's own addresses, so they are neither secret nor hard to come by.
+ *
+ * `/api/vehicle` (POST · PATCH) is the door, and the SERVER allocates the id,
+ * which is the line that actually closes it: a browser cannot name the
+ * document it creates, so it cannot name somebody else's.
+ *
+ * `forCreate` / `forUpdate` went with them — the "a cleared field is removed"
+ * rule lives in `lib/server/vehicleService.ts` now, beside the write it
+ * governs.
  */
-const forCreate = <T extends object>(v: T) =>
-  Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined));
-
-const forUpdate = <T extends object>(v: T) =>
-  Object.fromEntries(
-    Object.entries(v).map(([k, x]) => [k, x === undefined ? deleteField() : x]),
-  );
-
-export const addVehicle = async (uid: string, v: Omit<Vehicle, 'id' | 'createdAt'>) => {
-  const r = await addDoc(collection(db, 'users', uid, 'vehicles'), {
-    ...forCreate(v), createdAt: serverTimestamp(),
-  });
-  return r.id;
-};
 
 export const getVehicles = async (uid: string): Promise<Vehicle[]> => {
   const snap = await getDocs(collection(db, 'users', uid, 'vehicles'));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Vehicle));
 };
 
-export const updateVehicle = (uid: string, vid: string, data: Partial<Vehicle>) =>
-  updateDoc(doc(db, 'users', uid, 'vehicles', vid), forUpdate(data));
-
-export const deleteVehicle = (uid: string, vid: string) =>
-  deleteDoc(doc(db, 'users', uid, 'vehicles', vid));
 /* ── Vehicle 360 — everything ever done to one car, keyed by VEHICLE ID ──
    These read by `vehicleId`, never by registration. A plate is a display
    snapshot: mistyped, reissued, transferred between cars. Joining on one put a

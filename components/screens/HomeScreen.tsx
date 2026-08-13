@@ -894,10 +894,15 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: color.ink2 }}>
             {studio.address}
           </p>
-          <div style={{ display: 'flex', gap: space.breath, marginTop: space.line }}>
-            <Action href={studio.directions} quiet style={{ fontSize: 13.5 }}>Directions</Action>
-            <Action href={studio.call} quiet style={{ fontSize: 13.5 }}>Call</Action>
-            <Action href={studio.message} quiet style={{ fontSize: 13.5 }}>WhatsApp</Action>
+          {/* THREE CONTROLS ON ONE ROW DO NOT FIT A 375px PHONE. `Action` is
+              `width: 100%` and shrinks, so the third was pushed past the
+              gutter — "WhatsApp" ran off the right edge of the smallest
+              display the product supports. They wrap now, which is what a row
+              of equals should always have done. */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: space.breath, marginTop: space.line }}>
+            <Action href={studio.directions} quiet style={{ fontSize: 13.5, flex: '1 1 8rem' }}>Directions</Action>
+            <Action href={studio.call} quiet style={{ fontSize: 13.5, flex: '1 1 6rem' }}>Call</Action>
+            <Action href={studio.message} quiet style={{ fontSize: 13.5, flex: '1 1 8rem' }}>WhatsApp</Action>
           </div>
         </Pane>
       </section>

@@ -6,8 +6,21 @@
  * page files would be two places for the design to drift and, worse, two places
  * to forget to update the date.
  *
- * A server component: there is nothing interactive here, so it ships no
- * JavaScript at all.
+ * ── AND IT IS NOT A DEAD END ─────────────────────────────────────────────
+ * It had three links at the FOOT — Privacy, Terms, AutoModz — which is the
+ * exact idiom the navigation law suite condemned everywhere else: "a control
+ * you reach by scrolling past everything is not an escape route, it is a
+ * footer." A customer who opened Terms from You had to use the browser's own
+ * back button, and a stranger sent the link had nothing at all.
+ *
+ * So it carries the ONE back control, with an explicit parent — the same
+ * `publicParent` rule an invoice and a chapter already use, because these
+ * three surfaces share the same problem: they are read by people who may have
+ * no session, no history and no room to return to. `?from=` when the product
+ * itself put it there; `/` otherwise, which answers for both readers.
+ *
+ * That costs one small client island on two otherwise static pages. A dead end
+ * costs more.
  */
 import Link from 'next/link';
 import type { LegalSection } from '@/lib/legal';
@@ -19,15 +32,19 @@ import type { LegalSection } from '@/lib/legal';
    all. */
 import { Heading } from '@/components/system/Heading';
 import { Text } from '@/components/system/Text';
+import { Back } from '@/components/os/RoomHeader';
+import { publicParent } from '@/navigation/resolve';
 import { color, space, INSET, MEASURE, TARGET_MIN, type as typeScale } from '@/design';
 
 export function LegalPage({
-  title, lead, sections, updated,
+  title, lead, sections, updated, from,
 }: {
   title: string;
   lead: string;
   sections: LegalSection[];
   updated: string;
+  /** Where the product sent them from, when the product sent them. */
+  from?: string;
 }) {
   return (
     <main
@@ -40,6 +57,7 @@ export function LegalPage({
       }}
     >
       <article style={{ maxWidth: MEASURE + INSET * 2, marginInline: 'auto', width: '100%' }}>
+        <Back parent={publicParent(from)} style={{ marginBottom: space.line }} />
         <Heading level="display">{title}</Heading>
         <Text role="body" tone="ink2" style={{ marginTop: space.line, maxWidth: MEASURE }}>
           {lead}

@@ -169,8 +169,8 @@ describe('privacy and terms are published', () => {
   const legal = readFileSync('lib/legal.ts', 'utf8');
 
   it('both exist at stable public addresses', () => {
-    expect(privacy).toMatch(/export default function PrivacyPage/);
-    expect(terms).toMatch(/export default function TermsPage/);
+    expect(privacy).toMatch(/export default async function PrivacyPage/);
+    expect(terms).toMatch(/export default async function TermsPage/);
   });
 
   it('neither requires a session', () => {

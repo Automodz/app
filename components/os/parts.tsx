@@ -12,7 +12,7 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
-import { color, space, radius, TARGET_MIN, type as typeScale } from '@/design';
+import { color, fill, space, radius, TARGET_MIN, type as typeScale } from '@/design';
 
 /* ── THE LABEL ───────────────────────────────────────────────────────────
    Mono, uppercase, widely tracked. Every piece of metadata in the design is
@@ -296,17 +296,11 @@ export function Action(
     textAlign: 'center',
     textDecoration: 'none',
     border: quiet ? '1px solid rgba(255,255,255,0.08)' : 'none',
-    /* OPAQUE STOPS, NOT ALPHA. The design draws these as amber and champagne
-       at 92%→64% alpha over the room, and at the weak end that composites to
-       #926C3E - 4.12:1 against the label, under §21.1's floor. Solid stops
-       down the same ramps look the same and hold their contrast wherever the
-       control lands: amber 10.10:1 → 7.21:1, champagne 14.02:1 → 8.94:1. */
-    background: quiet
-      ? 'rgba(255,255,255,0.05)'
-      : tone === 'amber'
-        ? 'linear-gradient(160deg, #E8B072, #D0904A)'
-        : 'linear-gradient(160deg, #E8D9BE, #E0A45C)',
-    color: quiet ? color.ink : '#100C06',
+    /* The two ramps, from the palette. They were written here as literals -
+       a primitive being the second place a colour lives (§22.4). See
+       `design/colors.fill` for why they are opaque stops rather than alpha. */
+    background: quiet ? 'rgba(255,255,255,0.05)' : fill[tone],
+    color: quiet ? color.ink : fill.on,
     boxShadow: quiet
       ? undefined
       : `0 24px 50px -22px rgba(224,164,92,0.8), inset 0 1px 0 rgba(255,255,255,0.4)`,

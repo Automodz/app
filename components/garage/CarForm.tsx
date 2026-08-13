@@ -5,11 +5,19 @@
  * Source: reference/customer-old/components/os/CarForm.tsx
  *         docs/AUTOMODZ-OS-ARCHITECTURE.md §1, §6
  *
- * WRITES THROUGH THE EXISTING SERVICES. `addVehicle` and `updateVehicle` in
- * `lib/services/vehicles` are unchanged and unwrapped — this is a form, not a
- * second data layer. Every validation rule below is ported from the old form,
- * including the duplicate-plate check, because a customer with two records for
- * one car has two histories for one car.
+ * WRITES THROUGH `/api/vehicle`, AND THE ID IS NOT ITS TO CHOOSE.
+ *
+ * It used to call `addVehicle` / `updateVehicle`, which wrote to Firestore
+ * directly at `users/{uid}/vehicles/{id}` — and because the rules allowed a
+ * customer to write anywhere under their own uid, a browser could CREATE a
+ * document at any id it liked. `ownsVehicle()` is the ownership primitive for
+ * protections, visits and declarations, so squatting another customer's
+ * vehicle id was an ownership claim over their car's whole record.
+ *
+ * The server allocates the id now. The checks below survive as the CUSTOMER's
+ * copy — a mistake answered in the field rather than by a round trip — and the
+ * server runs the same ones, including the duplicate plate, because a customer
+ * with two records for one car has two histories for one car.
  *
  * It is a CLIENT ISLAND. The Garage renders on the server and stays there; only
  * this needs a browser session, so only this carries one. That is why it lives
@@ -19,14 +27,22 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import { addVehicle, updateVehicle } from '@/lib/services/vehicles';
-import { currentUid } from '@/lib/clientSession';
+import { authedFetch } from '@/lib/clientSession';
 import type { Vehicle } from '@/lib/types';
 import { BottomSheet, Heading, Text, Button } from '@/components/system';
 import {
   color, space, INSET, MEASURE, HAIRLINE, TARGET_MIN, radius,
   type as typeScale,
 } from '@/design';
+
+/** Every way the studio can refuse, in the customer's words. */
+const REFUSAL: Record<string, string> = {
+  'name-required': 'The car needs a name — “Mercedes-AMG C 43”.',
+  'registration-required': 'The registration, as it reads on the plate.',
+  'registration-taken': 'That car is already in your garage.',
+  'not-found': 'We could not find that car in your garage.',
+  'not-configured': 'The studio cannot be reached just now. Try again shortly.',
+};
 
 /** One plate, one shape — so two spellings of the same car cannot both exist. */
 const normPlate = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim();
@@ -106,38 +122,46 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
     setBusy(true);
     setError(null);
     try {
-      const uid = await currentUid();
-      if (!uid) {
-        setError('Your session has expired. Sign in again and we’ll keep this.');
+      /* An emptied field must REMOVE the number, not leave the old one
+         standing — the server deletes what arrives empty. Anything
+         unparseable is treated as empty: a car whose odometer reads "about
+         40k" has no odometer. */
+      const res = await authedFetch('/api/vehicle', {
+        method: editing ? 'PATCH' : 'POST',
+        body: JSON.stringify({
+          ...(editing ? { vehicleId: editing.id } : {}),
+          name: name.trim(),
+          registrationNumber: p,
+          year,
+          odometer,
+        }),
+      });
+
+      if (res.status === 401) {
+        setError('Your session has expired. Sign in again and we\u2019ll keep this.');
         return;
       }
-      /* An emptied field must REMOVE the number, not leave the old one
-         standing — so the key is written as `undefined` rather than omitted,
-         and `updateVehicle` deletes it. Anything unparseable is treated as
-         empty: a car whose odometer reads "about 40k" has no odometer. */
-      const digits = (s: string) => {
-        const n = Number(s.replace(/[^\d]/g, ''));
-        return Number.isFinite(n) && n > 0 ? n : undefined;
-      };
-      const data = {
-        name: name.trim(),
-        registrationNumber: p,
-        odometer: digits(odometer),
-        year: digits(year),
-      };
-      if (editing) {
-        await updateVehicle(uid, editing.id, data);
-        updateVehicleInStore(editing.id, data);
-      } else {
-        const id = await addVehicle(uid, data as Omit<Vehicle, 'id' | 'createdAt'>);
-        addVehicleToStore({ ...data, id } as Vehicle);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: '' })) as { error?: string };
+        if (body.error === 'registration-taken') {
+          setPlateErr('That car is already in your garage.');
+        } else {
+          setError(REFUSAL[body.error ?? ''] ?? 'That didn\u2019t save. Your connection, most likely — try again.');
+        }
+        return;
       }
+
+      const saved = await res.json() as { vehicleId: string; name: string; registrationNumber: string };
+      const data = { name: saved.name, registrationNumber: saved.registrationNumber };
+      if (editing) updateVehicleInStore(editing.id, data);
+      else addVehicleToStore({ ...data, id: saved.vehicleId } as Vehicle);
+
       onClose();
       /* The Garage renders on the server, so the new car only appears once the
          server has been asked again. */
       router.refresh();
     } catch {
-      setError('That didn’t save. Your connection, most likely — try again.');
+      setError('That didn\u2019t save. Your connection, most likely — try again.');
     } finally {
       setBusy(false);
     }

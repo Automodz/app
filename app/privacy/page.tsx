@@ -18,9 +18,13 @@ export const metadata: Metadata = {
  * without signing in, and so does anyone deciding whether to sign up. No
  * session, no `force-dynamic` — it prerenders.
  */
-export default function PrivacyPage() {
+export default async function PrivacyPage(
+  { searchParams }: { searchParams: Promise<{ from?: string }> },
+) {
+  const { from } = await searchParams;
   return (
     <LegalPage
+      from={from}
       title="Privacy"
       lead="What we hold about you, why we hold it, and how to remove it."
       sections={PRIVACY}

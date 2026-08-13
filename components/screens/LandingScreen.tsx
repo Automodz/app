@@ -238,13 +238,20 @@ export function LandingScreen({ prices }: LandingProps) {
           }}
         >
           <Wordmark height="clamp(16px, 4.6vw, 20px)" variant="white" />
+          {/* §21.3 — 44px is the floor whatever the type size is. These were
+              10px labels in a 15px box: three links a finger cannot reliably
+              hit, on the first screen anybody sees. The visual size is
+              unchanged; only the target grew. */}
           <nav className="hidden md:flex items-center" style={{ gap: space.rest / 2 + space.hair }}>
             {NAV.map(n => (
               <a
                 key={n.href}
                 href={n.href}
                 className="transition-colors"
-                style={{ ...label(10, color.ink3), letterSpacing: '0.14em' }}
+                style={{
+                  ...label(10, color.ink3), letterSpacing: '0.14em',
+                  display: 'inline-flex', alignItems: 'center', minHeight: TARGET_MIN,
+                }}
               >
                 {n.label.toUpperCase()}
               </a>
@@ -259,7 +266,9 @@ export function LandingScreen({ prices }: LandingProps) {
               borderRadius: radius.chip,
               paddingInline: space.gap,
               paddingBlock: space.line,
-              minHeight: TARGET_MIN - space.hair,
+              /* WAS `TARGET_MIN - space.hair`, which is 40px — the floor,
+                 shaved. §21.3 does not have a discount for the header. */
+              minHeight: TARGET_MIN,
               border: 0,
               cursor: 'pointer',
             }}
@@ -406,7 +415,12 @@ export function LandingScreen({ prices }: LandingProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline-offset-2 hover:underline"
-                    style={{ fontFamily: typeScale.whisper.family, fontSize: typeScale.whisper.size, color: color.over2 }}
+                    style={{
+                      fontFamily: typeScale.whisper.family,
+                      fontSize: typeScale.whisper.size,
+                      color: color.over2,
+                      display: 'inline-flex', alignItems: 'center', minHeight: TARGET_MIN,
+                    }}
                   >
                     Read reviews from real owners &rarr;
                   </a>
@@ -614,7 +628,7 @@ export function LandingScreen({ prices }: LandingProps) {
                 padding: INSET,
                 borderRadius: radius.sheet,
                 // the card face: near-black metal, soft top light, hairline edge
-                background: `radial-gradient(120% 120% at 20% 0%, ${color.surface} 0%, #101114 55%, ${color.paper} 100%)`,
+                background: `radial-gradient(120% 120% at 20% 0%, ${color.surface} 0%, ${color.paper} 100%)`,
                 border: `${HAIRLINE}px solid ${color.edge}`,
                 boxShadow: elevation.float.shadow,
               }}
@@ -709,7 +723,7 @@ export function LandingScreen({ prices }: LandingProps) {
                     className="flex items-start"
                     style={{ fontFamily: typeScale.body.family, fontSize: typeScale.data.size, lineHeight: 1.55, color: color.ink2, gap: space.hair + 2, marginTop: space.hair }}
                   >
-                    <MapPin size={iconSize.inline - 3} className="mt-0.5 shrink-0" /> {COMPANY.address}
+                    <MapPin size={iconSize.inline - 3} style={{ marginTop: 2, flexShrink: 0 }} /> {COMPANY.address}
                   </p>
                 </div>
                 {openNow !== null && (

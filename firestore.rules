@@ -96,9 +96,32 @@ service cloud.firestore {
       }
 
       // Vehicles subcollection
+      // ── A CAR IN A GARAGE — and the ownership primitive itself ────────
+      //    THIS IS THE MOST CONSEQUENTIAL RULE IN THE FILE, and it read as
+      //    obviously safe: a customer writing under their own uid.
+      //
+      //    `ownsVehicle()` asks one question — does a document exist at
+      //    `users/{me}/vehicles/{thatId}` — and three collections read it:
+      //    protections, visits and declarations. So while a browser could
+      //    CHOOSE the id it was creating, a customer who knew another
+      //    customer's vehicle id could write an empty document at that id
+      //    under their own uid and immediately read that car's protections,
+      //    its whole service history with the studio's stage notes and
+      //    photographs, and its declared certificates. Squatting an id was an
+      //    ownership claim.
+      //
+      //    Vehicle ids are not secret: they travel in the customer's own
+      //    addresses (`/vehicle?car=<id>`, `/history?car=<id>`), so they are
+      //    in browser history, in screenshots and in any shared link.
+      //
+      //    The server allocates the id now (/api/vehicle → addCar), so a
+      //    browser cannot name the document it creates and cannot name
+      //    somebody else's. Admin keeps its write for the studio's own
+      //    Vehicle-360 corrections.
       match /vehicles/{vehicleId} {
         allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-        allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        allow create: if false;
+        allow update, delete: if request.auth != null && isAdmin();
 
         // Vehicle service history (written by admin, readable by owner/admin)
         match /serviceHistory/{recordId} {

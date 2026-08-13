@@ -39,7 +39,7 @@ import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import {
   color, radius, space, type as typeScale,
-  duration, easing, TARGET_MIN, STROKE,
+  duration, easing, TARGET_MIN, STROKE, fill,
 } from '@/design';
 
 /** An href that leaves the application, and so must stay a plain anchor. */
@@ -92,8 +92,11 @@ const TIER: Record<ButtonTier, CSSProperties> = {
    * contrast, so it may carry decoration but never text.
    */
   primary: {
-    background: 'linear-gradient(160deg, #E8B072, #D0904A)',
-    color: '#100C06',
+    /* THE SAME RAMP `Action` USES, from the one place it is written. Both
+       primitives carried their own copy of these three literals — two places
+       for the product's single filled control to drift apart (§22.4). */
+    background: fill.amber,
+    color: fill.on,
     boxShadow: '0 24px 50px -22px rgba(224,164,92,0.8), inset 0 1px 0 rgba(255,255,255,0.4)',
   },
   forward: { background: 'transparent', color: color.amber },

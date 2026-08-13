@@ -56,10 +56,13 @@ export default function RatingCard({ invoiceId, customerName, customerPhone }: {
       <p className="text-center mb-3" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--chrome)' }}>
         How did we do?
       </p>
+      {/* §21.3 — the star stays 30px and the TARGET clears 44. A rating
+          control a finger misses is a rating nobody leaves. */}
       <div className="flex justify-center gap-2 mb-2">
         {[1, 2, 3, 4, 5].map(r => (
           <button key={r} onClick={() => pick(r)} aria-label={`${r} stars`}
-            className="p-1.5 transition-transform active:scale-90">
+            className="transition-transform active:scale-90 inline-flex items-center justify-center"
+            style={{ minWidth: 44, minHeight: 44 }}>
             <Star size={30}
               fill={r <= rating ? 'var(--warning)' : 'transparent'}
               style={{ color: r <= rating ? 'var(--warning)' : 'var(--steel)' }} />

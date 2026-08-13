@@ -198,4 +198,22 @@ export const ground = {
   awaiting: `radial-gradient(120% 80% at 50% 30%, ${color.surface} 0%, ${color.paper} 70%)`,
 } as const;
 
-
+/**
+ * THE ONE FILLED CONTROL, AS TWO RAMPS.
+ *
+ * `Action` is the only element in the product filled with light rather than
+ * lit by it. The design draws it in amber and champagne at 92%→64% alpha over
+ * the room, and at the weak end that composites to #926C3E — 4.12:1 against
+ * the label, under §21.1's floor. These are the same ramps as OPAQUE stops, so
+ * they hold their contrast wherever the control lands: amber 10.10:1 → 7.21:1,
+ * champagne 14.02:1 → 8.94:1.
+ *
+ * They lived inside `components/os/parts.tsx`, which made a primitive the
+ * second place a colour was written. §22.4 — no raw colour outside `design/`.
+ */
+export const fill = {
+  amber: 'linear-gradient(160deg, #E8B072, #D0904A)',
+  champagne: 'linear-gradient(160deg, #E8D9BE, #E0A45C)',
+  /** The ink ON a filled control. Near-black, warm, never pure. */
+  on: '#100C06',
+} as const;

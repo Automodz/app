@@ -26,7 +26,7 @@
  * values; they do not live here.
  */
 
-export { color, scrim, ground, contrastFloor, HAIRLINE } from './colors';
+export { color, scrim, ground, contrastFloor, fill, HAIRLINE } from './colors';
 export type { StateTone } from './colors';
 
 export { type, fontFamily } from './typography';

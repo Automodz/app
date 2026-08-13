@@ -14,9 +14,13 @@ export const metadata: Metadata = {
 };
 
 /** Public and static — same reasoning as the privacy policy. */
-export default function TermsPage() {
+export default async function TermsPage(
+  { searchParams }: { searchParams: Promise<{ from?: string }> },
+) {
+  const { from } = await searchParams;
   return (
     <LegalPage
+      from={from}
       title="Terms"
       lead="How we arrange visits, take payment, and hold a warranty."
       sections={TERMS}
