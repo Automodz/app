@@ -11,12 +11,20 @@
  *
  * The reported failure — sign in, come back, "We could not open your studio.
  * Please sign in again." — is therefore STILL UNDIAGNOSED. These assertions
- * cover three things that are correct on their own merits and that make the
+ * cover four things that are correct on their own merits and that make the
  * failure survivable and diagnosable, and they claim nothing about its cause.
  *
- *   1  THE TOKEN IS ALWAYS FRESH. A cached ID token lives an hour and refreshes
- *      only near expiry, so a device that slept through that boundary offers an
- *      expired one. Forcing removes a whole class of failure for one round trip.
+ *   1  A STALE TOKEN NEVER ENDS A SIGN-IN, AND NOBODY ELSE PAYS FOR IT. This
+ *      file used to assert the opposite — "always force a refresh" — and the
+ *      opposite was itself a fault: a mandatory round trip to Google wedged
+ *      into the one second between the credential being granted and the studio
+ *      being handed it. The cached token goes first; the forced refresh happens
+ *      where staleness is known, because the server named it.
+ *
+ *   4  A FAILURE SAYS WHICH FAILURE IT WAS. `/api/session` answers with a
+ *      reason and the door used to discard it, so every cause arrived as one
+ *      sentence. The reason now reaches the console always and the screen under
+ *      `?debug=1`, and the customer's sentence still carries no code.
  *
  *   2  A FAILURE DOES NOT DESTROY THE SESSION. Every failure used to end in
  *      `signOut`, so a dropped connection or a studio with no Admin credentials
@@ -41,15 +49,46 @@ const keeper = liveCodeOf('components/auth/SessionKeeper.tsx');
 const layout = liveCodeOf('app/layout.tsx');
 const you = liveCodeOf('components/screens/YouRoom.tsx');
 
-describe('the ID token handed to the server is always fresh', () => {
-  it('the door forces a refresh before minting a cookie', () => {
-    /* Not a proven fix for the reported bug — see the header. It removes the
-       expired-cached-token failure, which is real but is not that bug. */
-    expect(login).toMatch(/getIdToken\(true\)/);
-    expect(login).not.toMatch(/getIdToken\(\s*\)/);
+describe('a stale ID token is recovered from, without a round trip for everyone else', () => {
+  /**
+   * THIS USED TO ASSERT THE OPPOSITE, AND THE OPPOSITE WAS THE BUG.
+   *
+   * The rule was "the door forces a refresh before minting a cookie", defended
+   * by the header above as removing a real class of failure for one round trip.
+   * The round trip is the problem. `getIdToken(true)` is a mandatory call to
+   * `securetoken.googleapis.com` placed in the one second between Google
+   * granting a credential and the studio being handed it — and a customer who
+   * loses it there is told "we signed you in, but could not open your studio",
+   * which is exactly what was reported from production.
+   *
+   * The guarantee that was actually wanted is not "always forced", it is "a
+   * stale token never ends the sign-in". So: the cached token first, and the
+   * forced refresh only where staleness is KNOWN — the server names it.
+   */
+  it('the door offers the cached token first', () => {
+    const open = login.slice(login.indexOf('async function openServerSession'));
+    expect(open).toMatch(/exchange\(false\)/);
   });
 
-  it('so does the silent recovery', () => {
+  it('and forces a refresh only when the server says the token expired', () => {
+    const open = login.slice(login.indexOf('async function openServerSession'));
+    expect(login).toMatch(/STALE_TOKEN = 'auth\/id-token-expired'/);
+    expect(open).toMatch(
+      /result === 'refused' && [\s\S]{0,40}code === STALE_TOKEN[\s\S]{0,40}exchange\(true\)/,
+    );
+  });
+
+  it('the retry is bounded — a second refusal is not exchanged again', () => {
+    /* `exchange(true)` is returned, not looped over. A studio refusing every
+       token must not become an unbounded run at Google's rate limits. */
+    const open = login.slice(login.indexOf('async function openServerSession'));
+    expect(open.match(/exchange\(true\)/g)?.length).toBe(1);
+  });
+
+  it('the silent recovery still forces, because there the token really is old', () => {
+    /* Different path, different truth: `SessionKeeper` runs for a customer
+       whose fourteen-day cookie has lapsed, whose cached token may be an hour
+       old, and who is not waiting on a popup. Forcing costs them nothing. */
     expect(keeper).toMatch(/idToken\(true\)/);
   });
 
@@ -63,22 +102,71 @@ describe('the ID token handed to the server is always fresh', () => {
 
 /* THIS is the part that made the reported failure hurt, whatever causes it. */
 describe('a failure to open the session does not destroy the session', () => {
-  it('only an outright refusal signs the customer out', () => {
-    const guard = login.slice(login.indexOf('const result = await openServerSession()'));
+  it('only an outright refusal signs the customer out — the returning customer', () => {
+    const guard = login.slice(login.indexOf('const { result, code } = await openServerSession()'));
     const branch = guard.slice(0, guard.indexOf('enter(href)'));
     /* The sign-out must sit inside the `refused` branch and nowhere else. */
     expect(branch).toMatch(/if \(result === 'refused'\)[\s\S]{0,120}signOut/);
   });
 
+  /**
+   * THE DOOR'S OWN COPY OF THE RULE, WHICH IT DID NOT OBEY.
+   *
+   * The rule was stated one screen above `handleGoogle` and enforced only on
+   * the returning-customer path. `handleGoogle` signed out on EVERY non-`ok`
+   * result — so a phone that dropped its connection for the second between
+   * Google answering and the studio being asked threw away a credential that
+   * had just been granted, and sent the customer back through Google.
+   */
+  it('only an outright refusal signs the customer out — the sign-in itself', () => {
+    const start = login.indexOf('const { result: session, code } = await openServerSession()');
+    expect(start).toBeGreaterThan(-1);
+    const branch = login.slice(start, login.indexOf('setUser(profile)', start));
+    expect(branch).toMatch(/if \(session === 'refused'\)[\s\S]{0,120}signOut/);
+    /* And nowhere else in that branch. */
+    expect(branch.match(/signOut/g)?.length).toBe(1);
+  });
+
   it('a dead network is reported as a network, not as a rejection', () => {
-    expect(login).toMatch(/'offline'/);
     const open = login.slice(login.indexOf('async function openServerSession'));
     /* No response object at all means the fetch never landed. */
-    expect(open).toMatch(/if \(!res\) return 'offline'/);
+    expect(open).toMatch(/if \(!res\) return \{ result: 'offline'/);
+    /* And a token that could not be refreshed is the same failure, one hop
+       earlier — Google unreachable, not the studio refusing anybody. */
+    expect(open).toMatch(/result: 'offline',\s*code: \(err as \{ code\?: string \}\)\?\.code/);
   });
 
   it('a misconfigured studio is not the customer’s fault either', () => {
-    expect(login).toMatch(/503 \? 'unavailable'/);
+    const open = login.slice(login.indexOf('async function openServerSession'));
+    expect(open).toMatch(/res\.status === 503\) return \{ result: 'unavailable'/);
+  });
+
+  /**
+   * AND THE FAILURE NAMES ITSELF.
+   *
+   * `/api/session` answers `{ error, reason }` and says at length why: the
+   * code is what makes a customer's screenshot actionable. The door threw it
+   * away, so a production sign-in failure arrived as one sentence with nothing
+   * in it to tell an expired token from a revoked one from a service account
+   * for the wrong project — the same hole `authFault` was built to close on
+   * the Google half of the door, left open on the studio's half.
+   */
+  it('the studio’s reason travels with the verdict', () => {
+    const open = login.slice(login.indexOf('async function openServerSession'));
+    expect(open).toMatch(/body\?\.reason \?\? `session\/http-\$\{res\.status\}`/);
+  });
+
+  it('and reaches the console on every environment, and `?debug=1` on screen', () => {
+    /* Both callers, so a failure is diagnosable wherever it happens. */
+    expect(login.match(/console\.error\('\[session\]'/g)?.length).toBe(2);
+    expect(login.match(/setDiagnostic\(code\)/g)?.length).toBe(2);
+  });
+
+  it('but never as a slug shown to a customer who did not ask for one', () => {
+    /* `showDiagnostic` is the one gate, and the sentence itself carries no
+       code. §20.2 — a customer is told what happened, not what broke. */
+    expect(login).toMatch(/showDiagnostic && diagnostic/);
+    expect(login).toMatch(/params\.get\('debug'\) === '1'/);
   });
 });
 

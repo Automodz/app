@@ -87,49 +87,96 @@ const safeDest = (redirect: string | null): string | null =>
 /** `'offline'` is the network failing, which says nothing about the customer. */
 type SessionResult = 'ok' | 'unavailable' | 'refused' | 'offline';
 
-async function openServerSession(): Promise<SessionResult> {
+/**
+ * AND WHY IT CANNOT JUST BE THAT WORD.
+ *
+ * `/api/session` already answers `{ error, reason }`, and the route says at
+ * length why: the CODE is what makes a customer's screenshot actionable. This
+ * function used to throw it away and return one of four words, so a sign-in
+ * that failed in production arrived as "could not open your studio" and there
+ * was nothing in it to tell an expired token from a revoked one from a service
+ * account for the wrong project. That is the same hole `authFault` was built to
+ * close on the Google half of the door, left open on the studio's half.
+ *
+ * So the reason travels with the verdict. It reaches the console on every
+ * environment and the screen only under `?debug=1`, exactly as the auth code
+ * does — a customer is never shown a slug.
+ */
+interface SessionOutcome {
+  result: SessionResult;
+  /** The reason, for the log and for `?debug=1`. Empty on success. */
+  code: string;
+}
+
+/** The one refusal that is worth spending a second round trip on. */
+const STALE_TOKEN = 'auth/id-token-expired';
+
+async function openServerSession(): Promise<SessionOutcome> {
   const current = auth?.currentUser;
-  if (!current) return 'refused';
-  let idToken: string;
-  try {
-    /**
-     * FORCED, AS A GUARANTEE RATHER THAN AS A FIX.
-     *
-     * I first shipped this claiming `createSessionCookie` refuses an ID token
-     * older than five minutes. That is WRONG, and measured against production:
-     * a token 377 seconds old was accepted with a 200. The five-minute rule in
-     * Firebase's documentation is about `auth_time` and re-authentication for
-     * sensitive operations, not about minting a session cookie.
-     *
-     * The flag stays because it is still the right call, for a smaller reason:
-     * a cached ID token lives an hour, and `getIdToken()` refreshes it only as
-     * it nears expiry. A device that was asleep, offline or backgrounded across
-     * that boundary hands over an expired token and the server correctly
-     * refuses it. Forcing costs one round trip on the one action that decides
-     * whether somebody is signed in.
-     *
-     * It is NOT the explanation for the reported failure. That is still open —
-     * see the note in `SessionKeeper`.
-     */
-    idToken = await current.getIdToken(true);
-  } catch {
-    /* Offline, or Google unreachable. NOT a refusal — see the caller. */
-    return 'offline';
-  }
-  const res = await fetch('/api/session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken }),
-  }).catch(() => null);
-  if (res?.ok) {
-    /* This device has a session now, so `SessionKeeper` may reopen it without
-       sending the customer back through the door. */
-    rememberDevice();
-    return 'ok';
-  }
-  /* No response at all is the network, not a verdict on the customer. */
-  if (!res) return 'offline';
-  return res.status === 503 ? 'unavailable' : 'refused';
+  /* No signed-in user at all: the client SDK lost the credential between the
+     popup closing and this call. It is a refusal in the sense that there is
+     nothing to exchange, and it is worth naming — it is not a server verdict. */
+  if (!current) return { result: 'refused', code: 'session/no-user' };
+
+  /**
+   * THE CACHED TOKEN FIRST, AND THE FORCED ONE ONLY IF IT IS ACTUALLY STALE.
+   *
+   * This forced a refresh unconditionally. The note that defended it conceded
+   * the original reason was wrong — measured against production, a token 377
+   * seconds old minted a cookie fine — and kept the flag for a smaller one: a
+   * device asleep across the hour boundary hands over an expired token.
+   *
+   * That smaller reason does not justify what the flag costs. `getIdToken(true)`
+   * is a mandatory round trip to `securetoken.googleapis.com`, and it sits in
+   * the one second between Google granting a credential and the studio being
+   * handed it. A customer on a weak connection loses the whole sign-in there —
+   * which is precisely the failure that was reported from production, arriving
+   * as "we signed you in, but could not open your studio".
+   *
+   * `getIdToken()` refreshes on its own when the token is near expiry, so the
+   * common case now costs NO network at all. The rare genuinely-stale token is
+   * caught where it is actually known to be stale — the server says so, by
+   * name — and the forced refresh happens then, once. Strictly fewer round
+   * trips than before, and strictly more cases recovered.
+   */
+  const exchange = async (force: boolean): Promise<SessionOutcome> => {
+    let idToken: string;
+    try {
+      idToken = await current.getIdToken(force);
+    } catch (err) {
+      /* Offline, or Google unreachable. NOT a refusal — see the caller. This is
+         `securetoken.googleapis.com`, not this studio: a browser that cannot
+         reach it cannot refresh a token, and the Firebase code that comes back
+         (`auth/network-request-failed`, usually) is the whole diagnosis. */
+      return {
+        result: 'offline',
+        code: (err as { code?: string })?.code ?? 'session/token-unreachable',
+      };
+    }
+    const res = await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    }).catch(() => null);
+    if (res?.ok) {
+      /* This device has a session now, so `SessionKeeper` may reopen it without
+         sending the customer back through the door. */
+      rememberDevice();
+      return { result: 'ok', code: '' };
+    }
+    /* No response at all is the network, not a verdict on the customer. */
+    if (!res) return { result: 'offline', code: 'session/unreachable' };
+    if (res.status === 503) return { result: 'unavailable', code: 'session/no-admin-credentials' };
+    /* The route's own reason — `auth/id-token-expired`, `auth/argument-error`,
+       `auth/user-disabled`. A body that is not JSON is a proxy or an edge
+       answering instead of the route, which the status is the honest name for. */
+    const body = await res.json().catch(() => null) as { reason?: string } | null;
+    return { result: 'refused', code: body?.reason ?? `session/http-${res.status}` };
+  };
+
+  const first = await exchange(false);
+  if (first.result === 'refused' && first.code === STALE_TOKEN) return exchange(true);
+  return first;
 }
 
 /**
@@ -288,7 +335,7 @@ function Login() {
          cookie, so neither is kept waiting on one. */
       const needsCookie = Boolean(auth?.currentUser) && href !== '/admin';
       if (needsCookie) {
-        const result = await openServerSession();
+        const { result, code } = await openServerSession();
         if (cancelled) return;
         if (result !== 'ok') {
           /**
@@ -303,6 +350,8 @@ function Login() {
            * A refusal is the server saying no to this customer: revoked,
            * disabled, forged. That is worth signing out for. Nothing else is.
            */
+          console.error('[session]', result, code);
+          setDiagnostic(code);
           setError(
             result === 'offline'
               ? 'We couldn’t reach the studio. Check your connection and try again.'
@@ -358,19 +407,40 @@ function Login() {
       /* HAND THE SERVER A SESSION IT CAN READ, BEFORE ANYTHING ELSE.
          Awaited, and awaited ahead of `setUser`, so nothing downstream can
          navigate out of this page while the exchange is still in the air. */
-      const session = await openServerSession();
+      const { result: session, code } = await openServerSession();
 
       if (session !== 'ok') {
-        /* 503 means the server has no Firebase Admin credentials — the studio
-           is misconfigured, not the customer. Anything else means the token
-           was refused. Both leave the customer signed out; only the wording
-           differs, and it differs so that whoever is on call can tell them
-           apart from a screenshot. */
-        await signOut(auth);
-        setUser(null);
-        setError(session === 'unavailable'
-          ? 'The studio is not reachable right now. Please try again shortly.'
-          : 'We signed you in, but could not open your studio. Please try again.');
+        /**
+         * THE SAME LAW AS THE EFFECT ABOVE, WHICH THIS USED TO BREAK.
+         *
+         * Every one of these ended in `signOut` — so a customer whose phone
+         * dropped its connection for the one second between Google answering
+         * and `securetoken` being asked for a fresh token was signed out of a
+         * credential that had JUST been granted, and had to go through Google
+         * again. Three sentences up, the effect that handles the returning
+         * customer states the rule plainly: only a refusal destroys a session.
+         * This is the door's own copy of that rule, and it now obeys it.
+         *
+         * The three cases are also genuinely different and were reported as
+         * one. `offline` is this browser failing to reach GOOGLE — the same
+         * failure as `auth/network-request-failed`, and nothing to do with the
+         * studio. `unavailable` is the studio holding no Admin credentials.
+         * `refused` is the server saying no to this token, and only that one
+         * is about the customer.
+         */
+        console.error('[session]', session, code);
+        setDiagnostic(code);
+        if (session === 'refused') {
+          await signOut(auth);
+          setUser(null);
+        }
+        setError(
+          session === 'offline'
+            ? 'We signed you in, but couldn’t reach Google to finish. Check your connection and try again.'
+            : session === 'unavailable'
+              ? 'The studio is not reachable right now. Please try again shortly.'
+              : 'We signed you in, but could not open your studio. Please try again.',
+        );
         return;
       }
 
