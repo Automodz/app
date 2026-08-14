@@ -15,7 +15,7 @@ export const COMPANY = {
   name: 'AutoModz',
   tagline: 'Premium Car Detailing Studio',
   city: 'Ahmedabad',
-  address: 'Bhairavnath Rd, Bhairavnath, Maninagar, Ahmedabad, Gujarat 380028',
+  address: 'Bhairavnath Rd, Maninagar, Ahmedabad, Gujarat 380028',
   /** local display number */
   phone: '9512605088',
   /** E.164 without '+', for wa.me / tel deep links */

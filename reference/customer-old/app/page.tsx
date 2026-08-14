@@ -177,7 +177,7 @@ export default function HomePage() {
             </motion.p>
             <motion.h1 initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.05 }}
               className="font-hero" style={{ fontSize: 'clamp(40px, 8.5vw, 72px)', fontWeight: 800, lineHeight: 0.96, letterSpacing: '-0.03em', color: '#fff' }}>
-              The art of<br /><span style={{ background: 'linear-gradient(100deg, #fff 20%, #ffb27a 55%, #8ea2ff 90%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>the finish.</span>
+              The art of<br /><span style={{ background: 'linear-gradient(100deg, #fff 20%, #ffb27a 55%, #8ea2ff 90%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>the finish</span>
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, ease: EASE, delay: 0.12 }}
               className="font-body mt-3 lg:mt-6 max-w-md mx-auto lg:mx-0" style={{ fontSize: 16.5, lineHeight: 1.65, color: 'rgba(255,255,255,0.62)' }}>
@@ -258,7 +258,7 @@ export default function HomePage() {
       {/* ═══ SERVICES - image cards with glass overlay + price/warranty/duration ═══ */}
       <section id="services" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
         <ChapterSeam />
-        <SectionHead index={1} kicker="THE CRAFT" title="Four disciplines. One standard." />
+        <SectionHead index={1} kicker="THE CRAFT" title="Four disciplines, One standard" />
         <div className="grid sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
           {SERVICE_ORDER.map((cat, i) => {
             const s = SERVICES[cat];
@@ -298,7 +298,7 @@ export default function HomePage() {
       {/* ═══ BUY / SELL - the marketplace, two doors ═══ */}
       <section id="cars" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
         <ChapterSeam />
-        <SectionHead index={2} kicker="MARKETPLACE" title="Cars, kept honest." />
+        <SectionHead index={2} kicker="MARKETPLACE" title="Cars, kept honest" />
         <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
           {[
             { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: MEDIA.fallbacks.car },
@@ -327,7 +327,7 @@ export default function HomePage() {
       {/* ═══ MEMBERSHIP - benefit first, plans second ═══ */}
       <section id="membership" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
         <ChapterSeam />
-        <SectionHead index={3} kicker="MEMBERSHIP" title="Protect your car, all year." />
+        <SectionHead index={3} kicker="MEMBERSHIP" title="Protect your car, all year" />
         <motion.div {...reveal} className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap max-w-2xl mx-auto -mt-4 mb-10">
           {['MONTHLY PREMIUM WASHES', 'PRIORITY BOOKING', 'MEMBER PRICING'].map((b, i, arr) => (
             <span key={b} className="font-mono inline-flex items-center gap-6" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.5)' }}>
@@ -377,7 +377,7 @@ export default function HomePage() {
       {/* ═══ BEFORE / AFTER - visual proof, no labels needed ═══ */}
       <section id="gallery" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
         <ChapterSeam />
-        <SectionHead index={4} kicker="THE DIFFERENCE" title="Drag. See for yourself." />
+        <SectionHead index={4} kicker="THE DIFFERENCE" title="Drag. See for yourself" />
         <motion.div {...reveal} className="relative max-w-3xl mx-auto">
           {/* cinematic frame: bloom under, glass rim around */}
           <div aria-hidden className="absolute -inset-6 pointer-events-none" style={{ background: 'radial-gradient(55% 50% at 50% 60%, rgba(255,140,60,0.08), transparent 70%)', filter: 'blur(24px)' }} />
@@ -397,7 +397,7 @@ export default function HomePage() {
       {/* ═══ CONTACT - closing ═══ */}
       <section id="contact" className="relative z-10 px-6 pt-20 pb-16 md:pt-28 md:pb-24">
         <ChapterSeam />
-        <SectionHead index={5} kicker="CONTACT" title="Bring it by. We’ll take it from here." />
+        <SectionHead index={5} kicker="CONTACT" title="Bring it by, We’ll take it from there." />
         <div className="max-w-2xl mx-auto">
           <motion.div {...reveal} className="rounded-[26px] overflow-hidden" style={glass(0.035)}>
             <div className="relative h-44">

@@ -748,13 +748,13 @@ const attention = (car: CarPicture): number => {
 /* ── THE RECORD'S CONTEXT ────────────────────────────────────────────────── */
 
 /**
- * WHICH CAR THE RECORD IS ABOUT — asked once, by every address that shows one.
+ * WHICH CAR THE RECORD IS ABOUT - asked once, by every address that shows one.
  *
  * `/history`, `/history?car=<id>` and `/history/<visitId>` each resolved this
  * for themselves, and the three answers did not agree. The album fell back to
  * `leadCar` whenever the query was absent, so a customer who had opened the
  * BMW's record and then followed a link without the car saw the Kia's visits
- * under the same heading — silently, with nothing on screen to say the subject
+ * under the same heading - silently, with nothing on screen to say the subject
  * had changed. And a visit page never learned which car it belonged to at all,
  * so it had no context to hand back to the control that leaves it.
  *
@@ -765,7 +765,7 @@ const attention = (car: CarPicture): number => {
 export type HistoryContext =
   /** One sealed visit, and the car it belongs to. */
   | { kind: 'visit'; car: CarPicture; visit: Visit }
-  /** The car is on the bay right now — a different surface entirely (§13.2). */
+  /** The car is on the bay right now - a different surface entirely (§13.2). */
   | { kind: 'live'; car: CarPicture; bookingId: string }
   /** Arranged but not yet arrived; the id in the address is a booking's. */
   | { kind: 'booked'; car: CarPicture; bookingId: string }
@@ -796,7 +796,7 @@ export function historyContextOf(
   const byId = (id?: string) =>
     (id ? picture.cars.find(c => c.vehicle.id === id) : undefined);
 
-  /* A VISIT ID NAMES ITS OWN CAR. Searched across the customer's cars only —
+  /* A VISIT ID NAMES ITS OWN CAR. Searched across the customer's cars only -
      the picture IS the ownership boundary, so a visit that is not in it is not
      theirs and simply is not found. */
   if (route.visitId) {
@@ -1218,7 +1218,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
    */
   /* AND IT MUST STILL HOLD. This read every dated term including LAPSED ones,
      so a Land Rover whose only protection was a pollution certificate that ran
-     out on 30 July was given a tile reading "Active to July 2026" — under a
+     out on 30 July was given a tile reading "Active to July 2026" - under a
      ledger row saying "Lapsed 30 July 2026", on the same screen. Found by
      looking at the rendered room, not by any assertion that existed. The word
      on the tile is "Active to"; a promise that has ended is not one, and a car
@@ -1305,14 +1305,14 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
 
     /* Correcting the car is the Garage's form, addressed. */
     editHref: hrefForDestination({ to: 'garage.edit', vehicleId: car.vehicle.id }),
-    /* `declareHref` STOOD HERE — a `wa.me` link with a sentence typed into it,
+    /* `declareHref` STOOD HERE - a `wa.me` link with a sentence typed into it,
        and the only way the product ever offered to declare anything. It drew an
        empty-ledger pane saying "tell us what protects it", which opened
        WhatsApp and ended there: nothing on the other side wrote a Protection,
        and `declareProtection()` had no caller at all. A control that opens a
        messaging application is not a flow.
        The certificate now has a real one, and the ledger always carries its
-       row — so there is no empty ledger left for an invitation to fill. The
+       row - so there is no empty ledger left for an invitation to fill. The
        way to reach a person survives on the certificate's own screen, where it
        is secondary to the form rather than instead of it (§18.4). */
   };
@@ -1321,7 +1321,7 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
 /* ── THE POLLUTION CERTIFICATE ───────────────────────────────────────────── */
 
 /**
- * The certificate's own room — what stands, what is waiting, what was refused,
+ * The certificate's own room - what stands, what is waiting, what was refused,
  * and every certificate this car has ever had.
  *
  * ── NOTHING HERE IS DERIVED TWICE ────────────────────────────────────────
@@ -1330,8 +1330,8 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
  * disagree about the car in front of them. This only chooses shapes.
  *
  * ── AND NOTHING HERE IS INVENTED ─────────────────────────────────────────
- * A protection with no `since` — every pollution certificate in production is
- * one, because they were seeded rather than declared — prints no issue date
+ * A protection with no `since` - every pollution certificate in production is
+ * one, because they were seeded rather than declared - prints no issue date
  * rather than a guessed one, and a protection with no declaration behind it
  * prints no certificate number. The row simply is not drawn (§18.1).
  */
@@ -1344,7 +1344,7 @@ export function toPuc(car: CarPicture, picture: CustomerPicture, now = new Date(
   const term = held?.term;
 
   /* The declaration the standing protection was created from, when there is
-     one. It is the only place a certificate NUMBER lives — a Protection has
+     one. It is the only place a certificate NUMBER lives - a Protection has
      no field for one and inventing one would be a fact nobody gave us. */
   const behind = held?.declarationId
     ? declarations.find(d => d.id === held.declarationId)
@@ -1353,7 +1353,7 @@ export function toPuc(car: CarPicture, picture: CustomerPicture, now = new Date(
   const standing: PucCertificate | undefined = held
     ? {
         reference: behind?.reference,
-        /* Bare. The row's label is the word for it — a value that repeats its
+        /* Bare. The row's label is the word for it - a value that repeats its
            own label reads as a stammer. */
         issued: held.since ? longDate(held.since) : undefined,
         /* And the word for the end of the term follows the state, so a lapsed
@@ -1405,7 +1405,7 @@ export function toPuc(car: CarPicture, picture: CustomerPicture, now = new Date(
             : TONE.lapsed,
     })),
 
-    /* §10.5 — offered only where the server would accept it. `mayDeclare` is
+    /* §10.5 - offered only where the server would accept it. `mayDeclare` is
        the engine's answer and the same one the service enforces, so the form
        is never drawn for an act that would be refused. */
     declare: mayDeclare(puc)
@@ -1420,9 +1420,9 @@ export function toPuc(car: CarPicture, picture: CustomerPicture, now = new Date(
         }
       : undefined,
 
-    /* §18.4 — a way to reach a person, kept as the alternative it is. */
+    /* §18.4 - a way to reach a person, kept as the alternative it is. */
     askHref: waLink(
-      `Hello AutoModz — this is about the pollution certificate for my ${car.vehicle.name}.`,
+      `Hello AutoModz - this is about the pollution certificate for my ${car.vehicle.name}.`,
     ),
   };
 }
@@ -1620,7 +1620,7 @@ export function toLiveVisit(
        to want one. The message names the car, so the studio does not have to
        ask which one it is about. */
     messageHref: waLink(
-      `Hello AutoModz — about my ${car.vehicle.name} (${car.vehicle.registrationNumber}) in the studio today.`,
+      `Hello AutoModz - about my ${car.vehicle.name} (${car.vehicle.registrationNumber}) in the studio today.`,
     ),
     /* SETTLING, once the car is actually ready. Offered only then and only
        when something is outstanding: a "Pay" control on a car that is still
@@ -1691,10 +1691,8 @@ export function toStudio(
     voice:
       'Every car is inspected in daylight before anything is put on it. '
       + 'Paint is corrected by hand, panel by panel, and nothing is coated until '
-      + 'the surface underneath is right. If a car is not ready, it stays.',
-    does: 'Paint correction and ceramic coating. Paint protection film. Glass and '
-      + 'wheel sealing. Interior deep cleaning and leather care. Wash and '
-      + 'maintenance for cars already protected here.',
+      + 'the surface underneath is right.',
+    does: 'If a car is not ready, it stays.',
     credentials: [],
     hours: `Open ${COMPANY.hours.open} to ${COMPANY.hours.close}, every day.`,
     address: COMPANY.address,
@@ -1882,7 +1880,7 @@ export function toSettle(args: {
 
   const collected = b.dropRequired
     ? 'We are bringing it back to you.'
-    : 'Ready to collect from the studio — Maninagar, Ahmedabad.';
+    : 'Ready to collect from the studio - Maninagar, Ahmedabad.';
 
   return {
     bookingId: b.id,
@@ -1904,13 +1902,13 @@ export function toSettle(args: {
       : 'No payment address saved',
     methodHref: hrefForDestination({ to: 'profile.panel', panel: 'payment' }),
     visitId: args.visit?.id,
-    rated: args.rated ? 'Thank you — the studio has read it.' : undefined,
+    rated: args.rated ? 'Thank you - the studio has read it.' : undefined,
     recordHref: args.visit
       ? hrefForDestination({ to: 'visit', visitId: args.visit.id })
       : hrefForDestination({ to: 'booking', bookingId: b.id }),
     upiUnavailable: args.upiAvailable
       ? undefined
-      : 'The studio is not taking UPI in the app just now — settle at the counter and we will mark it.',
+      : 'The studio is not taking UPI in the app just now - settle at the counter and we will mark it.',
   };
 }
 
@@ -1952,7 +1950,7 @@ export function toApproval(
       : approval.status === 'declined'
         ? 'You skipped this. The visit carries on as booked.'
         : approval.status === 'cancelled'
-          ? 'The studio withdrew this — it turned out not to be needed.'
+          ? 'The studio withdrew this - it turned out not to be needed.'
           : approval.status === 'expired' || expired
             ? 'This request has run out. Call the studio and we will pick it up.'
             : undefined;
@@ -2114,7 +2112,7 @@ export function toBooked(
       ? `We collect it${b.pickupAddress ? ` from ${b.pickupAddress}` : ''}. You collect it from the studio.`
       : b.dropRequired
         ? `Bring it to the studio; we bring it back${b.pickupAddress ? ` to ${b.pickupAddress}` : ''}.`
-        : 'Bring it to the studio — Maninagar, Ahmedabad.';
+        : 'Bring it to the studio - Maninagar, Ahmedabad.';
 
   const rows: BookedRow[] = [
     {
@@ -2307,13 +2305,13 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
     name: user.name || 'You',
     reachedAt: [user.email, user.phone].filter(Boolean).join(DOT),
     /**
-     * "Gold · since 2023" — and just "Gold" when no membership carries a start
+     * "Gold · since 2023" - and just "Gold" when no membership carries a start
      * date, rather than the dangling "Gold · since" a template with an empty
      * tail produces.
      *
      * ONLY WHILE IT ACTUALLY HOLDS. This read `state !== 'none'`, so a
      * membership the studio had not yet taken payment for put the word GOLD
-     * in the customer's own identity line — the tier asserted beside their
+     * in the customer's own identity line - the tier asserted beside their
      * name, three lines above a card saying "waiting on the studio to confirm
      * it". The same rule the certificate follows: nothing is `active` before
      * somebody at the studio has said so.
@@ -2475,7 +2473,7 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
   const club = clubOf(picture, now);
   const sub = picture.subscription;
 
-  /* §21.8 — the CUSTOMER's word, never the internal one. This printed the raw
+  /* §21.8 - the CUSTOMER's word, never the internal one. This printed the raw
      enum, so a membership the studio had not yet taken payment for appeared in
      the record as the lowercase word "pending" beside four sentences of the
      product's own English. `MEMBERSHIP_WORD` is the one vocabulary, shared
@@ -2485,7 +2483,7 @@ export function toMembership(picture: CustomerPicture, now = new Date()): Member
   const history = picture.subscriptions.map(s => ({
     id: s.id,
     plan: `${s.plan} member`,
-    period: `${longDate(s.startDate)} — ${longDate(s.endDate)}`,
+    period: `${longDate(s.startDate)} - ${longDate(s.endDate)}`,
     status: MEMBERSHIP_WORD[s.status] ?? s.status,
   }));
 
