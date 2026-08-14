@@ -33,12 +33,14 @@
  *    light is pointed.
  * ─────────────────────────────────────────────────────────────────────────
  */
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { Transition } from 'framer-motion';
 import {
   color, elevation, radius, space, duration, easing, curve, TARGET_MIN, NAV_GAP,
 } from '@/design';
+import { useAppStore } from '@/lib/store';
 import { useNavigation } from './NavigationProvider';
 import { slots, rooms, HOME, STUDIO, GARAGE, MEMBERSHIP, PROFILE } from './routes';
 
@@ -65,24 +67,51 @@ const GLYPH: Record<string, React.ReactNode> = {
       <path d="M3 10.5h18" />
     </>
   ),
-  /* The studio - a roof. The place, never a tool or a spanner. */
-  [STUDIO]: <path d="M4 9l8-5 8 5v10a1 1 0 01-1 1H5a1 1 0 01-1-1z" />,
-  /* The garage - the car itself, because §11.1 makes the vehicle the spine of
-     the product and the collection is where a customer goes to find one. */
+  /* THE STUDIO - THE CRAFT, NOT THE BUILDING.
+     It was a roof, which is a house: it named the premises when the slot is
+     where a customer goes to have work DONE. This is the polisher over a
+     panel, with the finish coming up beside it - the two things the studio
+     actually sells. The sparkle is one mark, not three: §3.4 keeps light as
+     the ornament, and three would be a sticker. */
+  [STUDIO]: (
+    <>
+      {/* The car, head-on: roof and screen, then the body, then the lamps and
+          the grille between them. */}
+      <path d="M5.4 14.9l1.4-3A2 2 0 018.6 10.7h6.8a2 2 0 011.8 1.2l1.4 3" />
+      <rect x="3.4" y="14.9" width="17.2" height="5" rx="1.8" />
+      <path d="M6 17.1h2.6M15.4 17.1h2.6M10.6 18.1h2.8" />
+      {/* The polisher, resting on the roof, with its lead running off. */}
+      <circle cx="15.9" cy="7.2" r="2.5" />
+      <path d="M17.7 5.4l1.6-1.7" />
+      <path d="M19.3 3.7c1-1 2.2.1 1.4 1.1s.5 1.9 1.3 1.2" />
+      {/* The finish coming up. Two marks, not four - §3.4 keeps light the
+          ornament, and a row of stars is a sticker. */}
+      <path d="M4.6 3.4l.55 1.35L6.5 5.3l-1.35.55L4.6 7.2l-.55-1.35L2.7 5.3l1.35-.55z" />
+      <path d="M8.4 6.6l.4 1 1 .4-1 .4-.4 1-.4-1-1-.4 1-.4z" />
+    </>
+  ),
+  /* THE GARAGE - THE CAR, AND THE PLACE IT IS KEPT.
+     It was the car alone, which is the same subject as every photograph in the
+     product and read as "a car" rather than as "your cars". The roof and the
+     two posts make it a garage; the car stays inside it, because §11.1 keeps
+     the vehicle the spine and the collection is where you go to find one. */
   [GARAGE]: (
     <>
-      <path d="M4 15l1.6-5A2 2 0 017.5 8.6h9A2 2 0 0118.4 10L20 15" />
-      <rect x="3" y="15" width="18" height="4" rx="1.6" />
+      <path d="M3 10.4L12 4.6l9 5.8" />
+      <path d="M4.9 9.6V20M19.1 9.6V20" />
+      <path d="M7.6 16.6l.9-2.6a1.5 1.5 0 011.4-1h4.2a1.5 1.5 0 011.4 1l.9 2.6" />
+      <rect x="7.1" y="16.6" width="9.8" height="2.8" rx="1.1" />
     </>
   ),
   /* You. */
   [PROFILE]: <><circle cx="12" cy="9" r="3.4" /><path d="M5.5 19a6.5 6.5 0 0113 0" /></>,
 };
 
+/** The drawn mark. One 1.4px stroke on a 24 grid, `currentColor` throughout. */
 function Glyph({ path }: { path: string }) {
   return (
     <svg
-      width={18} height={18} viewBox="0 0 24 24" aria-hidden
+      width={22} height={22} viewBox="0 0 24 24" aria-hidden
       fill="none" stroke="currentColor" strokeWidth={1.4}
       strokeLinecap="round" strokeLinejoin="round"
     >
@@ -91,8 +120,62 @@ function Glyph({ path }: { path: string }) {
   );
 }
 
+/**
+ * YOU, AS YOURSELF.
+ *
+ * The one slot that is about a person gets that person's own picture, which is
+ * how every application a customer already uses marks this slot. It is the
+ * same argument `YouScreen` makes at length for the monogram: §2.2 forbids
+ * naming the STUDIO's people, so that confidence attaches to the place rather
+ * than to a technician - the customer is not one of them, and their own face on
+ * their own screen names nobody but themselves.
+ *
+ * The drawn mark stays for everyone the picture fails for: no Google photo, an
+ * account made another way, or a URL that will not load. §11.5 - the absence is
+ * composed, never a broken image and never an empty ring.
+ */
+function Portrait({ src, active }: { src?: string; active: boolean }) {
+  const [failed, setFailed] = useState(false);
+  /* THE SAME THREE STATES `Photograph` OWNS, MARKED THE SAME WAY.
+     It is not that primitive - that one fills a frame and composes absence as
+     a lit plate, which is right for a car and wrong for a 22px slot where the
+     honest absence is the drawn person. But the CONTRACT is the primitive's:
+     absent, ready and failed are three states and none of them is a broken
+     image. `data-photograph` is how the product marks that, so this says it
+     out loud and `surface-law` can read it. */
+  if (!src || failed) {
+    return (
+      <span data-photograph={src ? 'failed' : 'absent'} style={{ display: 'flex' }}>
+        <Glyph path={PROFILE} />
+      </span>
+    );
+  }
+  return (
+    <img
+      data-photograph="ready"
+      src={src}
+      alt=""
+      width={22}
+      height={22}
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      style={{
+        width: 22, height: 22, borderRadius: '50%', objectFit: 'cover',
+        /* Lit the way every other slot is lit - the ring is the state, and the
+           picture inside it never changes. */
+        boxShadow: active ? `0 0 0 1.6px ${color.amber}` : `0 0 0 1.2px ${color.ink3}`,
+        /* An avatar that fails to decode must not collapse to its alt text and
+           push the four names beside it out of position. */
+        fontSize: 0, color: 'transparent',
+      }}
+    />
+  );
+}
+
 export function BottomNavigation() {
   const { activeSlot, navVisible, navigate } = useNavigation();
+  /* The customer's own picture for the one slot that is about them. */
+  const user = useAppStore(st => st.user);
   const still = useReducedMotion();
 
   /* §7.2, §22.2 - one curve, from the tokens. */
@@ -190,18 +273,30 @@ export function BottomNavigation() {
                 transition: `color ${duration.move}ms ${easing.ease}`,
               }}
             >
-              <Glyph path={path} />
+              {/* THE MARK CARRIES THE SLOT, AND THE NAME IS STILL THERE.
+                  Five words under five glyphs is a toolbar; the dock is meant
+                  to disappear into the room. The names came off, the marks came
+                  up from 18 to 22, and the lit one is still the only coloured
+                  thing in the control (§3.3, §6.2 - it always shows where you
+                  are). §21.6 is unharmed: `aria-label` on the link is the
+                  accessible name and it has not moved - a screen reader reads
+                  exactly what it read before. */}
+              {path === PROFILE
+                ? <Portrait src={user?.photoURL} active={active} />
+                : <Glyph path={path} />}
+              {/* Where you are, said without a word. */}
               <span
-                className="am-label"
+                aria-hidden
                 style={{
-                  fontSize: 9,
-                  letterSpacing: '0.14em',
-                  color: 'currentColor',
-                  lineHeight: 1,
+                  width: active ? 14 : 0,
+                  height: 2,
+                  borderRadius: 2,
+                  background: color.amber,
+                  opacity: active ? 1 : 0,
+                  transition: `width ${duration.move}ms ${easing.ease},`
+                    + ` opacity ${duration.move}ms ${easing.ease}`,
                 }}
-              >
-                {room.name}
-              </span>
+              />
             </Link>
           );
         })}

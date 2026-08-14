@@ -58,9 +58,25 @@ const protection: Protection = {
   termsSource: 'captured', createdAt: ts('2026-07-18T09:00:00Z'), updatedAt: ts('2026-07-18T09:00:00Z'),
 };
 
+/**
+ * RELATIVE TO NOW, BECAUSE A MEMBERSHIP EXPIRES.
+ *
+ * These dates were `2026-07-01` to `2026-08-14`, and on 15 August 2026 this
+ * suite began failing on its own: the fixture's membership had lapsed, so the
+ * club card correctly stopped rendering and "Home renders the projected model"
+ * lost its `CLUB`. Nothing in the product had changed.
+ *
+ * A fixture that asserts a LIVE membership has to hold one whatever day it is
+ * run. The protections around it keep their fixed dates on purpose - they are
+ * years out and the copy asserts the year - but a subscription is a month long
+ * and cannot be written down.
+ */
+const day = (offset: number): string =>
+  new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+
 const subscription = {
   id: 'sub1', userId: 'u1', plan: 'Gold', status: 'active',
-  startDate: '2026-07-01', endDate: '2026-08-14', washesTotal: 8, washesUsed: 6,
+  startDate: day(-14), endDate: day(16), washesTotal: 8, washesUsed: 6,
 } as Subscription;
 
 /* A SEALED visit, because the Booking+Job fallback is gone: §16.1 is "every

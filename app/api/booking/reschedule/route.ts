@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (!uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => null) as
-    { bookingId?: string; scheduledDate?: string; scheduledTime?: string } | null;
+    { expectedVersion?: number; bookingId?: string; scheduledDate?: string; scheduledTime?: string } | null;
   const bookingId = typeof body?.bookingId === 'string' ? body.bookingId : '';
   const scheduledDate = typeof body?.scheduledDate === 'string' ? body.scheduledDate : '';
   const scheduledTime = typeof body?.scheduledTime === 'string' ? body.scheduledTime : '';
@@ -57,7 +57,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await rescheduleBookingAuthoritative(
-      uid, bookingId, { scheduledDate, scheduledTime }, { byStaff },
+      uid, bookingId, { scheduledDate, scheduledTime },
+      {
+        byStaff,
+        /* The version the client was looking at. A phone left open while the
+           studio moved this booking is refused, not applied over it. */
+        expectedVersion: typeof body?.expectedVersion === 'number' ? body.expectedVersion : undefined,
+      },
     );
     /* Announced only when something actually moved - a double tap on the same
        slot returns `unchanged` and must not tell the customer twice. */

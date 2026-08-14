@@ -1230,13 +1230,19 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
    Mono, uppercase, widely tracked - how every piece of metadata in the
    design is set. A class rather than a component so a span inside a
    sentence can wear it. */
+/* THE MONO LABEL.
+   It was `--pewter` (0.55 alpha) at 0.24em, and mono capitals at that tracking
+   and that weight are the hardest thing in the product to read - the letters
+   are far enough apart that the eye stops reading a word and starts reading
+   characters. `--silver` is the next step up the same ink spectrum, and the
+   tracking comes back to where capitals still read as words. */
 .am-label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 400;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--pewter);
+  color: var(--silver);
 }
 
 .am-label-lit { color: var(--accent); }

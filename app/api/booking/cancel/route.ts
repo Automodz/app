@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => null) as
-    { bookingId?: string; reason?: string; noShow?: boolean } | null;
+    { expectedVersion?: number; bookingId?: string; reason?: string; noShow?: boolean } | null;
   const bookingId = typeof body?.bookingId === 'string' ? body.bookingId : '';
   if (!bookingId) return NextResponse.json({ error: 'bookingId required' }, { status: 400 });
 
@@ -49,6 +49,11 @@ export async function POST(req: NextRequest) {
     const result = await cancelBookingAuthoritative(uid, bookingId, {
       byStaff,
       reason: typeof body?.reason === 'string' ? body.reason.slice(0, 300) : undefined,
+      /* THE VERSION THE CLIENT WAS LOOKING AT. Optional, because a caller that
+         does not send one simply forgoes the protection - but the customer app
+         always does, so a phone that has been open while the studio moved the
+         booking is refused rather than applied on top. */
+      expectedVersion: typeof body?.expectedVersion === 'number' ? body.expectedVersion : undefined,
       noShow: byStaff ? body?.noShow === true : false,
     });
     return NextResponse.json(result);

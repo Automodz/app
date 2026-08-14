@@ -37,7 +37,6 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { COMPANY } from '@/lib/company';
 import { linkEmployeeRole } from '@/lib/services/auth';
 import { getUserProfile, stashReferralCode, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
 import { claimReferral } from '@/lib/services/referrals';
@@ -215,21 +214,6 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-
-/**
- * WHAT IS BEHIND THE DOOR.
- *
- * A customer who has never signed in has no idea what signing in gets them,
- * and "Continue with Google" does not tell them. Three lines, each naming a
- * thing they will actually find, is the difference between a gate and an
- * invitation - and it is the honest version of the argument the landing page
- * makes at length.
- */
-const BEHIND_THE_DOOR = [
-  ['Your car’s record', 'Every visit, kept in one place.'],
-  ['What’s protected', 'Coating, film, and when cover ends.'],
-  ['One-tap booking', 'We already know your car.'],
-] as const;
 
 function Login() {
   const params = useSearchParams();
@@ -568,7 +552,7 @@ function Login() {
                   tone="ink2"
                   style={{ marginTop: space.line, marginInline: 'auto', maxWidth: 320 }}
                 >
-                  Where your car lives - its care, its protection, its story.
+                  Where your car lives
                 </Text>
 
                 {/* ── THE CONTROL ──────────────────────────────────────────
@@ -633,37 +617,6 @@ function Login() {
                   </Text>
                 )}
 
-                {/* ── WHAT IS BEHIND IT ────────────────────────────────── */}
-                <div
-                  style={{
-                    marginTop: space.rest / 2,
-                    paddingTop: space.gap,
-                    borderTop: `${HAIRLINE}px solid rgba(255,255,255,0.10)`,
-                    display: 'grid',
-                    gap: space.line,
-                    textAlign: 'left',
-                  }}
-                >
-                  {BEHIND_THE_DOOR.map(([title, said]) => (
-                    <div key={title} style={{ display: 'flex', gap: space.line, alignItems: 'baseline' }}>
-                      <span
-                        aria-hidden
-                        style={{
-                          width: 5,
-                          height: 5,
-                          flexShrink: 0,
-                          borderRadius: radius.pill,
-                          background: color.ink3,
-                          transform: 'translateY(-2px)',
-                        }}
-                      />
-                      <span>
-                        <Text role="body" tone="ink" style={{ display: 'block', fontWeight: 600 }}>{title}</Text>
-                        <Text role="whisper" tone="ink3" style={{ display: 'block' }}>{said}</Text>
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </motion.div>
             ) : (
               /* ── THE PASSAGE ────────────────────────────────────────────
@@ -719,9 +672,6 @@ function Login() {
             <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>←</span>
             Back to AutoModz
           </Link>
-          <Text role="whisper" tone="ink3" style={{ maxWidth: 300 }}>
-            {COMPANY.name} · {COMPANY.address}
-          </Text>
         </footer>
       </main>
     </MotionConfig>

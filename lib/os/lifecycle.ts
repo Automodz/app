@@ -165,6 +165,30 @@ export function bookingTransition(
  */
 export const STUDIO_UTC_OFFSET_MIN = 330;
 
+/**
+ * THE STUDIO'S OWN TODAY, AND THE ONLY DEFINITION OF IT.
+ *
+ * `new Date().toISOString().slice(0, 10)` is the UTC date, and the studio is
+ * UTC+5:30 - so between midnight and 05:30 every single morning it names
+ * YESTERDAY. Measured at 02:02 IST on 15 August 2026: the booking sheet
+ * labelled 14 August "Today" and 15 August "Tomorrow", and a customer booking
+ * "today" in those five and a half hours would have asked for a day that had
+ * already gone.
+ *
+ * The product had already solved this twice - `lib/os/puc.ts` and
+ * `lib/os/membership.ts` each carried a private copy of the offset and their
+ * own `studioToday` - and the booking flow, which is the one place a date is
+ * actually CHOSEN, used raw UTC. Three definitions, and the one that mattered
+ * most was the one that was wrong. This is the single definition (§22.2); the
+ * others read it.
+ */
+export const studioDay = (now: Date = new Date()): string =>
+  new Date(now.getTime() + STUDIO_UTC_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
+
+/** The studio's today, shifted by whole days. Used to build a day picker. */
+export const studioDayPlus = (days: number, now: Date = new Date()): string =>
+  studioDay(new Date(now.getTime() + days * 86_400_000));
+
 /** Milliseconds since the epoch for a studio-local date and time. */
 export function scheduledEpochMs(date: string, time?: string): number | null {
   const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date ?? '');

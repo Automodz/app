@@ -510,7 +510,19 @@ describe('a photograph that does not arrive composes rather than reports', () =>
     for (const file of withImages) {
       const src = codeOf(file);
       const photos = (src.match(/<Image\b/g) ?? []).length + (src.match(/<img\b/g) ?? []).length;
-      const marked = (src.match(/<Photograph\b/g) ?? []).length;
+      /**
+       * THE CONTRACT IS THE THREE STATES, NOT THE TAG.
+       *
+       * `<Photograph>` is how almost everything meets it. The dock's portrait
+       * cannot use it - that primitive fills a frame and draws absence as a lit
+       * plate, and the honest absence in a 22px slot is the drawn person mark -
+       * so it composes the same three states itself and MARKS them with
+       * `data-photograph`, which is the attribute the primitive publishes.
+       * Counting the marker as well as the tag keeps the law about the contract
+       * rather than about one implementation of it.
+       */
+      const marked = (src.match(/<Photograph\b/g) ?? []).length
+        + (src.match(/data-photograph="ready"/g) ?? []).length;
       expect({ file, unmarked: Math.max(0, photos - marked) })
         .toEqual({ file, unmarked: 0 });
     }

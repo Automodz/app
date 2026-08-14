@@ -30,6 +30,7 @@
 import type { Declaration, DeclarationStatus, Protection, ProtectionKind } from '@/lib/types';
 import type { LiveProtection } from './protection';
 import type { Health } from './term';
+import { studioDay } from './lifecycle';
 
 /** The one kind this file speaks for. Widening it is a later decision. */
 export const PUC: ProtectionKind = 'puc';
@@ -196,10 +197,15 @@ export function isCalendarDate(iso: unknown): iso is string {
   return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d;
 }
 
-/** Studio-local today, as an ISO date. The studio keeps studio time. */
-const STUDIO_UTC_OFFSET_MIN = 330;
-export const studioToday = (now: Date = new Date()): string =>
-  new Date(now.getTime() + STUDIO_UTC_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
+/**
+ * Studio-local today, as an ISO date. The studio keeps studio time.
+ *
+ * The offset and the arithmetic are `lib/os/lifecycle`'s now - this file kept a
+ * private copy of both, as did `membership`, and the booking flow kept neither
+ * and used raw UTC. One definition; this is the name PUC already published for
+ * it, so its callers are unchanged.
+ */
+export const studioToday = studioDay;
 
 /**
  * THE OUTER BOUND OF A CERTIFICATE'S LIFE.

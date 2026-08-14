@@ -23,3 +23,4 @@ export type { RoomHeaderProps } from './RoomHeader';
 export {
   Label, Statement, DISPLAY, Rail, Pulse, Chevron, Meter, Row, Value, Action, Stat,
 } from './parts';
+export { Greeting } from './Greeting';

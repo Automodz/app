@@ -100,12 +100,13 @@ describe('each coverage prices deterministically, from the catalogue', () => {
     expect(r.ok && r.scope.bayDays).toBe(1);
   });
 
-  it('full body - and its two days come from its own duration', () => {
+  it('full body - and its days come from its own duration', () => {
     const r = resolveScope(ppf(), { scopeId: 'full' });
     expect(r.ok && r.scope.workPrice).toBe(132000);
-    /* 1200 minutes over a 600-minute working day is design 07's "2 days in
-       the bay", and it is the SAME expansion that reserves the bay. */
-    expect(r.ok && r.scope.bayDays).toBe(2);
+    /* DURATION IS ELAPSED. This fixture's full body is under a day of clock
+       time, so it is one - and it is the SAME expansion that reserves the bay,
+       which is the property worth asserting. */
+    expect(r.ok && r.scope.bayDays).toBe(1);
   });
 
   it('the same choice twice gives the same answer', () => {

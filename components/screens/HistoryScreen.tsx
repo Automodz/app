@@ -28,13 +28,12 @@
  */
 import Link from 'next/link';
 import { Photograph } from '@/components/os/Photograph';
-import { space, MEASURE, photoSize, stack, imageSizes } from '@/design';
+import { space, MEASURE, radius, stack, imageSizes } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
    component pulls all of that into the page's client bundle. Measured on
    the legal pages: 167 kB → 108 kB from this change alone. */
-import { Hero } from '@/components/system/Hero';
 import { Heading } from '@/components/system/Heading';
 import { Back } from '@/components/os/RoomHeader';
 import { Text } from '@/components/system/Text';
@@ -132,43 +131,55 @@ function Visit({ visit, newest, vehicle }: {
 }) {
   const { id, when, title, line, photo } = visit;
 
+  /* A CARD, NOT A CHAPTER.
+     Every visit was a full-bleed `Hero` at `min(56svh, 520px)` - the newest
+     one taller still - with the words laid over the photograph. On a phone
+     that is one visit per screen, edge to edge, so a record of eight visits
+     took eight swipes to count and the room never showed that it was a LIST.
+
+     It is a card now: the photograph on top at a fixed plate, the words under
+     it on the same glass the market cards use, inside the page's own gutter so
+     it stops bleeding to the edges. About 200px, so four fit on a phone.
+
+     `Photograph` still composes the absence, so a visit nobody photographed is
+     a quiet lit plate at exactly this height rather than a shorter card. */
   return (
-    <Link href={`/history/${id}`} style={{ display: 'block', textDecoration: 'none' }}>
-      <Hero
-        state={photo ? 'media' : 'awaiting'}
-        band="brief"
-        style={photo ? { height: photoSize.next } : undefined}
-        overlay={
-          <div style={{ maxWidth: MEASURE }}>
-            {/* The car is named once, on the newest visit, so a customer who
-                arrived from the navigation rather than from a car knows whose
-                life this is. §4.4 - it is not repeated after that. */}
-            <Text role="data" tone="over" as="span">
-              {newest ? `${vehicle} · ${when}` : when}
-            </Text>
-            <Heading
-              level={newest ? 'display' : 'title'}
-              tone="over"
-              as={newest ? 'h1' : 'h2'}
-              style={{ marginTop: space.hair }}
-            >
-              {title}
-            </Heading>
-            <Text role="whisper" tone="over" style={{ marginTop: space.breath }}>
-              {line}
-            </Text>
-          </div>
-        }
-      >
-        {/* THROUGH THE PRIMITIVE - absent, ready and failed are three states
-            and the class-only path could only express two. */}
+    <Link
+      href={`/history/${id}`}
+      className="am-tap"
+      style={{
+        display: 'block', textDecoration: 'none',
+        marginInline: INSET, marginTop: space.line,
+        maxWidth: MEASURE, borderRadius: radius.sheet, overflow: 'hidden',
+        border: `${HAIRLINE}px solid ${color.edge}`,
+      }}
+    >
+      <span style={{ position: 'relative', display: 'block', height: 132 }}>
         <Photograph
           src={photo?.url}
           alt={photo?.description ?? ''}
           priority={newest}
-          sizes={imageSizes.fullBleed}
+          sizes={imageSizes.half}
+          radius={0}
         />
-      </Hero>
+      </span>
+      <span
+        className="am-glass"
+        style={{
+          display: 'flex', flexDirection: 'column', gap: space.hair,
+          padding: `${space.gap}px ${space.gap + 2}px`,
+          borderRadius: 0, border: 'none',
+        }}
+      >
+        {/* The car is named once, on the newest visit, so a customer who
+            arrived from the navigation rather than from a car knows whose
+            life this is. §4.4 - it is not repeated after that. */}
+        <Text role="data" tone="ink3" as="span">
+          {newest ? `${vehicle} \u00b7 ${when}` : when}
+        </Text>
+        <Heading level="title" as={newest ? 'h1' : 'h2'}>{title}</Heading>
+        <Text role="whisper" tone="ink2">{line}</Text>
+      </span>
     </Link>
   );
 }

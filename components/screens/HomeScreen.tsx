@@ -1,6 +1,12 @@
-'use client';
 /**
  * NOW - the customer's home.
+ *
+ * ── AND IT IS A SERVER COMPONENT AGAIN ───────────────────────────────────
+ * It carried `'use client'` for one reason: the "Find" control called
+ * `useOpenPalette`. That control is gone - the overflow it stood for lives in
+ * `navigation/Menu`, mounted once by `CustomerChrome` - and with it went the
+ * last hook, handler and animation on this screen. So the room a customer
+ * opens most often now ships no JavaScript of its own.
  *
  * Source: docs/AUTOMODZ-OS.md §3.1, §3.2, §3.5, §4.5, §5.3, §9.5, §14.2,
  *         §14.4, §17.1, §20.3, §21.1, §21.6, §21.7
@@ -38,18 +44,21 @@
  * ── DATA ─────────────────────────────────────────────────────────────────
  * This component holds none and fetches none.
  */
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { useOpenPalette } from '@/navigation/Palette';
 import {
-  color, space, MEASURE, INSET, TARGET_MIN, radius, imageSizes, ground,
+  color, space, MEASURE, INSET, TARGET_MIN, HAIRLINE, radius, imageSizes, ground,
 } from '@/design';
-import { dotted } from '@/design';
+import { dotted, type as typeScale } from '@/design';
 import type { StateTone } from '@/design';
-import { OfflineNote } from '@/components/system';
-import type { Tone } from '@/components/system';
+/* DEEP, NOT THROUGH THE BARREL. This is a server component now, and the
+   barrel drags Radix and framer-motion across the boundary with it -
+   measured at 35% of two pages' JavaScript. See __tests__/polish/bundle. */
+import { OfflineNote } from '@/components/system/OfflineNote';
+import type { Tone } from '@/components/system/tone';
 import {
-  Screen, Pane, Dial, Unit, Label, Statement, Rail, Pulse, Chevron, Action, Row, Value,
-  Photograph,
+  Screen, Pane, Dial, Unit, Label, Rail, Pulse, Chevron, Action, Row, Value,
+  Photograph, Greeting,
 } from '@/components/os';
 
 /* ── What Home needs to be true ──────────────────────────────────────────
@@ -114,7 +123,23 @@ export interface HomeTimelineEvent {
   ahead?: boolean;
 }
 
+/**
+ * SAID, NOT SHOWN.
+ *
+ * The heading a screen reader announces where the screen itself draws
+ * something a screen reader cannot read - here, the phase bar. `display: none`
+ * and `visibility: hidden` would take it out of the accessibility tree too,
+ * which is the opposite of the point; this is the standard clip, and it is
+ * spelled out rather than imported because the product has no other use for it.
+ */
+const SAID_NOT_SHOWN: CSSProperties = {
+  position: 'absolute', width: 1, height: 1, margin: -1, padding: 0,
+  overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap', border: 0,
+};
+
 export interface HomeModel {
+  /** The owner's first name, when the account has one. §2.2 permits it. */
+  owner?: string;
   vehicle: HomeVehicle;
   state: HomeState;
   studio: HomeStudio;
@@ -167,6 +192,18 @@ export interface HomeModel {
  * third hue: `lapsed` is deliberately uncoloured, because a lapsed thing is
  * a fact about the past and not an alarm.
  */
+/**
+ * THE PAGE'S ONE VERTICAL RHYTHM.
+ *
+ * Every top-level block on Home is separated by the same distance, and it was
+ * being written three ways: `space.rest / 2`, `space.gap + space.breath` (the
+ * same 24, spelled differently), and `space.line` - which is HALF of it, and
+ * was what set the advisor pair and the life pair closer to what preceded them
+ * than any other section on the screen. One name, so the rhythm is a decision
+ * rather than an accident of whoever wrote the block.
+ */
+const SECTION = space.rest / 2;
+
 const TONE: Record<StateTone, string> = {
   assent: color.champagne,
   caution: color.amber,
@@ -176,10 +213,9 @@ const TONE: Record<StateTone, string> = {
 
 export function HomeScreen({ model }: { model: HomeModel }) {
   const {
-    vehicle, state, truth, nextAction, live, suggestion, protection, protections,
+    owner, vehicle, state, truth, nextAction, live, suggestion, protection, protections,
     next, life, record, membership, garage, forSale, marketHref, studio, nextOpening,
   } = model;
-  const openPalette = useOpenPalette();
 
   /* THE ONE QUESTION. Everything above the fold is decided by it. */
   const working = Boolean(live && live.acts.length > 0);
@@ -193,7 +229,21 @@ export function HomeScreen({ model }: { model: HomeModel }) {
      At rest: the protection with the least of its term left, which is the one
      the owner would want to know about. §14.2. */
   const done = live ? live.acts.filter(a => a.done).length : 0;
-  const throughVisit = live && live.acts.length ? done / live.acts.length : 0;
+  /**
+   * HOW FAR THROUGH, COUNTING THE STAGE THE CAR IS IN.
+   *
+   * This was `done / acts.length`, and `done` counts only the stages already
+   * finished - so a car that had just been RECEIVED, with its first stage lit
+   * on the floor, read `0%`. A customer whose car is physically in the studio
+   * being told nothing has happened is the reading being wrong, not blunt.
+   *
+   * A stage the studio is standing in has been REACHED, so it counts. Received
+   * is 1 of 5; Ready, which is the last, is 5 of 5. It is also exactly what the
+   * ring now draws - `done` segments lit plus the current one in amber - so the
+   * number and the arc are the same statement and cannot drift apart.
+   */
+  const reached = live ? done + (live.acts.some(a => a.current) ? 1 : 0) : 0;
+  const throughVisit = live && live.acts.length ? reached / live.acts.length : 0;
 
   const depleting = protections.filter(p => typeof p.remaining === 'number');
   const lead = depleting.length
@@ -201,7 +251,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
     : undefined;
 
   return (
-    <Screen top={space.gap}>
+    <Screen top={space.line}>
       {/* ── OFFLINE ─────────────────────────────────────────────────────
           §20.3 - ours or theirs. Everything on this page was rendered on the
           server and is still true; only what happens NEXT is affected. */}
@@ -211,45 +261,50 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           §9.5 - the one Display on this screen, and the label above it names
           the situation the number belongs to. Lit only while work is running:
           amber is the studio, and at rest the studio is not doing anything. */}
-      <header
-        style={{
-          display: 'flex', alignItems: 'flex-start',
-          justifyContent: 'space-between', gap: space.gap,
-        }}
-      >
-        <Statement
-          eyebrow={working ? 'In the studio' : 'Nothing in the studio'}
-          lit={working}
-        >
-          {state.word}
-          <br />
-          {/* ITS OWN LEADING. The Display's `line-height: 1.18` is solved for
-              46px type; inherited by a 19px sub-line it puts half a centimetre
-              of air between the car's name and its plate the moment the pair
-              wraps - which a real car name does at 390px. */}
+      {/* THE FIND CONTROL IS GONE, and nothing replaced it HERE.
+          It named a mechanism rather than an act (§21.8), opened a command
+          palette a customer had no reason to expect, and existed on this one
+          screen - so every other room's extra addresses had nowhere to live.
+          They are all in `navigation/Menu`, which is mounted on every room by
+          `CustomerChrome`, so this header no longer carries a control at all
+          and the composition is just the statement. */}
+      <header style={{ display: 'flex', flexDirection: 'column', gap: space.line }}>
+        {/* WHOSE ROOM THIS IS, before what is happening in it. The screen
+            opened straight onto "In the studio", which is the studio's state
+            and not a greeting - so the one room a customer opens daily never
+            acknowledged them. It sits ABOVE the eyebrow because it is the
+            larger frame: the person first, then their car's situation. */}
+        {owner ? <Greeting name={owner} /> : null}
+
+        {/* THE STAGES LEFT THIS HEADER FOR THE RING.
+            A five-segment bar naming the stages sat here, above a ring saying
+            how far through them the car was - one statement in two shapes,
+            stacked. The ring draws the segments now and names the one underway
+            in its caption, so the header is back to what a header is: whose
+            car, and what is happening to it.
+
+            The heading is the state's word, and it is CLIPPED rather than set
+            in Display type - the reading in the ring is this screen's one
+            Display (§9.5), and setting the same word again above it in 46px
+            type is the redundancy this whole change is removing. A screen
+            reader still gets it, because a screen reader cannot read a ring. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: space.breath }}>
+          <Label lit={working}>
+            {working ? 'In the studio' : 'Nothing in the studio'}
+          </Label>
+          <h1 style={SAID_NOT_SHOWN}>{state.word}</h1>
           <span
             style={{
-              fontSize: 19, color: color.ink3,
-              lineHeight: 1.3, display: 'inline-block',
+              fontFamily: typeScale.title.family,
+              fontSize: typeScale.title.size,
+              fontWeight: typeScale.title.weight,
+              lineHeight: 1.25,
+              color: color.ink,
             }}
           >
             {dotted(vehicle.name, vehicle.plate)}
           </span>
-        </Statement>
-
-        {/* The Desk. It names the act, not the mechanism - §21.8. */}
-        <button
-          type="button"
-          onClick={openPalette}
-          className="am-tap am-label"
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            minHeight: TARGET_MIN, paddingInline: 0, marginTop: 6,
-            letterSpacing: '0.2em',
-          }}
-        >
-          Find
-        </button>
+        </div>
       </header>
 
       {/* THE STATE'S OWN SENTENCE, AND ITS SECOND, QUIETER FACT.
@@ -308,11 +363,19 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               adds no words to the screen and repeats none.
 
           §5.3 - the caption names what the number belongs to. */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: space.rest / 2 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: SECTION }}>
         {working ? (
           <Dial
             fill={throughVisit}
-            caption="through the visit"
+            /* THE STAGES ARE ON THE RING NOW. They were a five-segment bar in
+               the header saying which stage, above a ring saying how far
+               through the stages - one statement drawn twice, in two places,
+               in two shapes. One object. */
+            stages={live?.acts}
+            /* And the caption names the stage the car is in, which is what the
+               bar's lit segment was for. "through the visit" said nothing the
+               ring was not already saying. */
+            caption={live?.acts.find(a => a.current)?.label ?? state.word}
             label={
               `${state.word}. ${Math.round(throughVisit * 100)} percent through the visit`
               + `${state.timing ?? live?.timing ? `. ${state.timing ?? live?.timing}` : ''}`
@@ -363,7 +426,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             gap: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
-            marginTop: space.gap + space.breath, textDecoration: 'none',
+            marginTop: SECTION, textDecoration: 'none',
           }}
           {...{ href: live.href }}
         >
@@ -380,7 +443,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
       ) : truth ? (
         <p
           style={{
-            marginTop: space.gap + space.breath, marginBottom: 0,
+            marginTop: SECTION, marginBottom: 0,
             fontSize: 15, lineHeight: 1.6, color: color.ink2, maxWidth: MEASURE,
           }}
         >
@@ -393,59 +456,6 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           floor has got. It says the same thing the dial does and says it as a
           shape rather than a number, which is what makes the pair readable at
           a glance - and it is the only place the acts are NAMED. */}
-      {working && live && live.acts.length > 0 ? (
-        <Pane
-          style={{
-            marginTop: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
-            display: 'flex', flexDirection: 'column', gap: space.line,
-          }}
-        >
-          <div aria-hidden style={{ display: 'flex', gap: 6 }}>
-            {live.acts.map((a, i) => (
-              <span
-                key={a.label}
-                style={{
-                  flex: 1, minWidth: 0, height: 3, borderRadius: 2,
-                  background: a.done
-                    ? `linear-gradient(90deg, ${color.champagne}, ${color.amber})`
-                    : a.current
-                      ? `linear-gradient(90deg, ${color.amber}, rgba(224,164,92,0.55))`
-                      : 'rgba(255,255,255,0.12)',
-                  /* The first segment leads with champagne and the rest fall
-                     back toward amber, so the strip reads left-to-right as
-                     light arriving rather than as four equal blocks. */
-                  opacity: i === 0 || a.done || a.current ? 1 : 1,
-                }}
-              />
-            ))}
-          </div>
-          {/* EACH NAME UNDER ITS OWN SEGMENT.
-              This was `space-between` on five content-width spans, so a long
-              act ("Looked over") took width from its neighbours and the names
-              stopped lining up with the bars they name - the strip read as
-              compressed on a phone because it WAS. They now share the bars'
-              grid exactly: `flex: 1` and `minWidth: 0`, so a name that needs
-              two lines wraps within its own column instead of pushing the
-              others out of position. */}
-          <div style={{ display: 'flex', gap: 6 }}>
-            {live.acts.map(a => (
-              <span
-                key={a.label}
-                className="am-label"
-                style={{
-                  flex: 1, minWidth: 0, textAlign: 'center',
-                  fontSize: 9, letterSpacing: '0.12em', lineHeight: 1.35,
-                  overflowWrap: 'break-word', hyphens: 'none',
-                  color: a.done || a.current ? color.amber : color.ink3,
-                }}
-              >
-                {a.label}
-              </span>
-            ))}
-          </div>
-        </Pane>
-      ) : null}
-
       {/* ── THE PHOTOGRAPHS, AS THEY ARE TAKEN ──────────────────────────
           While the car is here, the evidence belongs on Home. §13.2 makes the
           live account a takeover reached from here - but a customer should
@@ -454,6 +464,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           the moment the visit ends it is the album's, not Home's. */}
       {working && live && live.frames.length > 0 ? (
         <div
+          className="no-scrollbar"
           style={{
             display: 'flex', gap: space.breath, overflowX: 'auto',
             marginInline: -INSET, paddingInline: INSET,
@@ -517,7 +528,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
             display: 'grid',
             gridTemplateColumns: suggestion && next ? '1fr 1fr' : '1fr',
             gap: space.line,
-            marginTop: space.line,
+            marginTop: SECTION,
           }}
         >
           {suggestion ? (
@@ -570,7 +581,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
       {!working && protections.length > 0 ? (
         <section
           aria-labelledby="home-protection"
-          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+          style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
         >
           <h2 id="home-protection" style={{ margin: 0 }}>
             <Rail>{protection?.headline ?? 'Protection'}</Rail>
@@ -630,14 +641,23 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         as={Link}
         {...{ href: nextAction.href }}
         style={{
-          marginTop: space.rest / 2,
-          padding: `${space.gap + 2}px ${space.gap + 4}px`,
+          /* ONE ROW, AT THE TAP-TARGET FLOOR - the same shape as the rating
+             strip on the landing. It was a stacked label over a mono line
+             inside `space.gap + 2` padding, which made the single control on
+             the screen a block about eighty pixels deep. Laid along one line it
+             says the same two things and §21.3's 44 sets the depth. The
+             38px chevron disc went with it: at this height the disc WAS the
+             height, so the mark stands on its own. */
+          marginTop: SECTION,
+          minHeight: TARGET_MIN,
+          paddingBlock: space.hair,
+          paddingInline: `${space.line}px ${space.gap}px`,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           gap: space.line, textDecoration: 'none',
         }}
       >
-        <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <span style={{ fontSize: 15, color: color.ink }}>{nextAction.label}</span>
+        <span style={{ fontSize: 15, color: color.ink }}>{nextAction.label}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: space.breath, minWidth: 0 }}>
           {next ? (
             <Label style={{ letterSpacing: '0.14em', fontSize: 10 }}>
               Next · {next.when}
@@ -651,16 +671,6 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               {nextOpening.line}
             </Label>
           ) : null}
-        </span>
-        <span
-          aria-hidden
-          style={{
-            width: 38, height: 38, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
           <Chevron tone={color.ink} />
         </span>
       </Pane>
@@ -676,7 +686,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
             display: 'grid',
             gridTemplateColumns: life && membership ? '1fr 1fr' : '1fr',
             gap: space.line,
-            marginTop: space.line,
+            marginTop: SECTION,
           }}
         >
           {life ? (
@@ -747,16 +757,54 @@ export function HomeScreen({ model }: { model: HomeModel }) {
       {record.length > 0 ? (
         <section
           aria-labelledby="home-record"
-          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+          style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
         >
           <h2 id="home-record" style={{ margin: 0 }}><Rail>Recently</Rail></h2>
-          <div>
+          {/* A RECORD, NOT A PARAGRAPH.
+              These were bare `Row`s on the page's own ground - hairline rules
+              between lines of text, no surface, nothing to say they belonged
+              together. Read next to the panes above them they looked like
+              something that had not been designed yet.
+
+              They are on the product's one glass now, and each entry carries a
+              mark on the left: a filled champagne point for the newest and a
+              hollow one for the rest, joined by the rule that runs between
+              them. That is a timeline, which is what a record IS - and it is
+              built from the two things §3.3 already allows a colour to mean. */}
+          <Pane style={{ padding: `${space.breath}px ${space.gap}px` }}>
             {record.map((e, i) => (
-              <Row key={e.id} last={i === record.length - 1} value={<Value tone={color.ink3}>{e.when}</Value>}>
-                {e.line}
-              </Row>
+              <div key={e.id} style={{ display: 'flex', gap: space.line }}>
+                {/* The thread. It runs between the marks rather than past the
+                    last one, so the record ends where the record ends. */}
+                <span
+                  aria-hidden
+                  style={{
+                    position: 'relative', flexShrink: 0, width: 9,
+                    display: 'flex', justifyContent: 'center',
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute', top: 22, bottom: 0, width: HAIRLINE,
+                      background: i === record.length - 1 ? 'transparent' : color.edge,
+                    }}
+                  />
+                  <span
+                    style={{
+                      marginTop: 18, width: 7, height: 7, borderRadius: '50%',
+                      background: i === 0 ? color.champagne : 'transparent',
+                      border: i === 0 ? 'none' : `${HAIRLINE}px solid ${color.ink3}`,
+                    }}
+                  />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <Row last={i === record.length - 1} value={<Value tone={color.ink3}>{e.when}</Value>}>
+                    {e.line}
+                  </Row>
+                </span>
+              </div>
             ))}
-          </div>
+          </Pane>
         </section>
       ) : null}
 
@@ -767,16 +815,26 @@ export function HomeScreen({ model }: { model: HomeModel }) {
       {garage && garage.cars.length > 1 ? (
         <section
           aria-labelledby="home-garage"
-          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+          style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
         >
           <h2 id="home-garage" style={{ margin: 0 }}><Rail>Your cars</Rail></h2>
           <div
+            className="no-scrollbar"
             style={{
               display: 'flex', gap: space.line, overflowX: 'auto',
               /* The gutter is the page's, so the rail bleeds to both edges
                  and the first card still lines up with everything above it. */
               marginInline: -INSET, paddingInline: INSET, paddingBottom: space.breath,
               scrollSnapType: 'x mandatory',
+              /* SNAP INSIDE THE GUTTER, NOT UNDER IT.
+                 The rail bleeds by `-INSET` and pads back by `INSET`, but a
+                 mandatory snap aligns the first card to the SCROLLPORT - the
+                 padding box - so on load it slid left underneath that padding
+                 and the first card sat 20px off the edge of the screen.
+                 Measured in the running page: card left `-20` without this,
+                 `0` with it. `scroll-padding` is what shrinks the snapport to
+                 the gutter, and it is the only thing that does. */
+              scrollPaddingInline: INSET,
             }}
           >
             {garage.cars.map(c => (
@@ -785,26 +843,46 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                  the amber state line and `aria-current`, NOT a warm pane:
                  there is one warm surface on this screen and it is the action.
                  §12.3 - cars are equals, and "current" is a position. */
-              <Pane
+              /* THE CAR, NOT A CARD ABOUT THE CAR.
+                 This was a 200x104 coloured pane with the name written on it -
+                 in a product whose whole argument is that the car is the
+                 subject (§2.1), the customer's own garage was the one strip
+                 that showed no cars. The photograph is in the model and always
+                 was. Same 232 width and same 126 plate as the market strip
+                 below, because two rails of different-sized cards on one
+                 screen read as two designs.
+
+                 `Photograph` composes the absence, so a car with no picture
+                 yet is a quiet lit field at exactly this size rather than a
+                 shorter card that breaks the row. */
+              <Link
                 key={c.id}
-                as={Link}
-                {...{ href: c.href, 'aria-current': c.current ? true : undefined }}
+                href={c.href}
+                aria-current={c.current ? true : undefined}
+                className="am-tap"
                 style={{
-                  flex: '0 0 auto', width: 200, minHeight: 104,
-                  padding: space.gap, textDecoration: 'none',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                  flex: '0 0 auto', width: 232, textDecoration: 'none',
+                  borderRadius: radius.sheet, overflow: 'hidden',
+                  border: `1px solid ${c.current ? 'rgba(224,164,92,0.28)' : 'rgba(255,255,255,0.08)'}`,
                   scrollSnapAlign: 'start',
-                  borderColor: c.current ? 'rgba(224,164,92,0.28)' : undefined,
                 }}
               >
-                <span style={{ fontSize: 15, color: color.ink }}>{c.name}</span>
-                <Label
-                  lit={c.current}
-                  style={{ fontSize: 9.5, letterSpacing: '0.16em' }}
+                <span style={{ position: 'relative', display: 'block', height: 126 }}>
+                  <Photograph src={c.photo} alt={c.name} sizes="232px" radius={0} />
+                </span>
+                <span
+                  className="am-glass"
+                  style={{
+                    display: 'flex', flexDirection: 'column', gap: space.breath,
+                    padding: `${space.gap}px ${space.gap + 2}px`, borderRadius: 0, border: 'none',
+                  }}
                 >
-                  {c.state}
-                </Label>
-              </Pane>
+                  <span style={{ fontSize: 15, color: color.ink }}>{c.name}</span>
+                  <Label lit={c.current} style={{ fontSize: 9.5, letterSpacing: '0.16em' }}>
+                    {c.state}
+                  </Label>
+                </span>
+              </Link>
             ))}
           </div>
         </section>
@@ -816,14 +894,24 @@ export function HomeScreen({ model }: { model: HomeModel }) {
       {forSale.length > 0 ? (
         <section
           aria-labelledby="home-market"
-          style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+          style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
         >
           <h2 id="home-market" style={{ margin: 0 }}><Rail>Cars for sale</Rail></h2>
           <div
+            className="no-scrollbar"
             style={{
               display: 'flex', gap: space.line, overflowX: 'auto',
               marginInline: -INSET, paddingInline: INSET, paddingBottom: space.breath,
               scrollSnapType: 'x mandatory',
+              /* SNAP INSIDE THE GUTTER, NOT UNDER IT.
+                 The rail bleeds by `-INSET` and pads back by `INSET`, but a
+                 mandatory snap aligns the first card to the SCROLLPORT - the
+                 padding box - so on load it slid left underneath that padding
+                 and the first card sat 20px off the edge of the screen.
+                 Measured in the running page: card left `-20` without this,
+                 `0` with it. `scroll-padding` is what shrinks the snapport to
+                 the gutter, and it is the only thing that does. */
+              scrollPaddingInline: INSET,
             }}
           >
             {forSale.map(c => (
@@ -880,7 +968,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           designed for - but they must never have to hunt. */}
       <section
         aria-labelledby="home-studio"
-        style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
+        style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
       >
         <h2 id="home-studio" style={{ margin: 0 }}><Rail>{studio.name}</Rail></h2>
         <Pane style={{ padding: `${space.gap + 2}px ${space.gap + 4}px` }}>

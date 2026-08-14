@@ -324,6 +324,36 @@ export interface Booking {
   serviceBasePrice: number;
   /** Duration of the booked service in minutes, used for capacity calculations */
   serviceDurationMinutes?: number;
+  /**
+   * WHICH BAY THE CAR GOES IN, decided by the server and never by the client.
+   *
+   * Absent on every booking taken under the counting model. `assignBay` treats
+   * an unassigned reservation as holding SOME bay in its group, so old records
+   * keep reserving exactly what they always did and new ones are placed around
+   * them - no migration, and no booking silently loses its slot.
+   */
+  bayId?: string;
+  /** The pool that bay belongs to. Denormalised so a reader need not re-derive. */
+  bayGroup?: 'wash' | 'protection';
+  /**
+   * OPTIMISTIC CONCURRENCY. Incremented on every write.
+   *
+   * A customer's phone can hold a booking on screen for an hour. If the studio
+   * reschedules it in that time, the customer's "cancel" or "move" would be
+   * computed against a booking that no longer exists in that shape. Any
+   * customer-initiated write must carry the version it read; a mismatch is
+   * refused as `stale-write` rather than applied over the studio's decision.
+   */
+  version?: number;
+  /**
+   * WHO LAST DECIDED, and therefore whose decision must not be overwritten.
+   *
+   * `studio` covers both the studio floor and admin - they are one authority
+   * against the customer. Once set to `studio`, a customer may only take the
+   * transitions the state machine still allows them (withdrawing a request);
+   * they may never re-time, re-scope or re-price it.
+   */
+  lastDecidedBy?: 'customer' | 'studio' | 'system';
   pickupDropRequired: boolean;
   pickupDropFee: number;
   /** Granular legs - ₹50 each, either or both (older bookings only have pickupDropRequired) */

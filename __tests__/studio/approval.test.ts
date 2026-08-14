@@ -62,7 +62,11 @@ describe('screen 12 states what changes, and never who found it', () => {
     /* "Same day" and "another day" are different decisions, and the price does
        not say which. */
     expect(toApproval(approval(), NOW).timeDelta).toBe('+2 hours · same day');
+    /* ELAPSED: 900 extra minutes is fifteen hours - one more day in the bay,
+       not two. 2880 is two. */
     expect(toApproval(approval({ timeDeltaMinutes: 900 }), NOW).timeDelta)
+      .toBe('+1 day in the bay');
+    expect(toApproval(approval({ timeDeltaMinutes: 2880 }), NOW).timeDelta)
       .toBe('+2 days in the bay');
     expect(toApproval(approval({ timeDeltaMinutes: 0 }), NOW).timeDelta)
       .toBe('No extra time');

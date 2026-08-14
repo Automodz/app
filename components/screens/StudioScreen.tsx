@@ -47,6 +47,8 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { color, space, INSET, imageSizes } from '@/design';
 import { DOT } from '@/design';
 import type { Service, Subscription, Vehicle } from '@/lib/types';
+import { SERVICES, SERVICE_ORDER } from '@/lib/catalog';
+import { readyWords } from '@/lib/availability';
 import { BookingFlow } from '@/components/studio/BookingFlow';
 import type { CarriedEstimate, AddressChoice } from '@/components/studio/BookingFlow';
 import { OfflineNote } from '@/components/system';
@@ -145,16 +147,10 @@ const floorPrice = (rupees: number) => `from ₹${Math.round(rupees).toLocaleStr
  * Stored as minutes of work; spoken in hours below a working day and in days
  * above it, because "600 minutes" is not a thing anyone says about their car.
  */
-const inTheStudio = (minutes: number): string | undefined => {
-  if (!minutes || minutes <= 0) return undefined;
-  if (minutes < 480) {
-    const h = Math.max(1, Math.round(minutes / 60));
-    return `${h} hour${h === 1 ? '' : 's'} in the studio`;
-  }
-  const d = Math.ceil(minutes / 480);
-  const h = Math.round(minutes / 60);
-  return `${d} day${d === 1 ? '' : 's'} in the studio · ${h} hours of work`;
-};
+/* The one wording, from the engine that owns the reservation. This screen
+   used to divide by 480 while the floor's day is 600 - see `durationWords`. */
+const inTheStudio = (minutes: number): string | undefined =>
+  (minutes > 0 ? readyWords(minutes) : undefined);
 
 export function StudioScreen({ model }: { model: StudioModel }) {
   const {
@@ -193,6 +189,32 @@ export function StudioScreen({ model }: { model: StudioModel }) {
      is the studio's recommendation rather than a merchandising banner. */
   const services = booking.services.filter(s => s.active !== false);
   const featured = services.find(s => s.popular);
+
+  /**
+   * THE CATALOGUE, BY DISCIPLINE.
+   *
+   * It was one flat list of every active service - so a customer looking for a
+   * wash read past three paint-protection tiers to find it, and the studio's
+   * four disciplines, which the landing page states plainly, were invisible
+   * here. This is where the work is actually SOLD; a price list with no
+   * headings makes the reader do the sorting.
+   *
+   * The order is `SERVICE_ORDER`'s, which is the marketing page's order, so a
+   * customer who arrived from the landing meets the same four in the same
+   * sequence. A category with nothing active in it is absent rather than an
+   * empty heading (§19.1 - an absence is a state, not a blank).
+   */
+  const grouped = SERVICE_ORDER
+    .map(cat => ({
+      cat,
+      title: SERVICES[cat].name,
+      items: services.filter(s => s.category === cat),
+    }))
+    .filter(g => g.items.length > 0);
+
+  /* Anything whose category is not one of the four still has to appear - a
+     catalogue entry must never be silently unsellable because of a typo. */
+  const ungrouped = services.filter(s => !SERVICE_ORDER.includes(s.category));
 
   return (
     <Screen top={space.gap}>
@@ -240,8 +262,16 @@ export function StudioScreen({ model }: { model: StudioModel }) {
             </Statement>
           </h2>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: space.line - 1 }}>
-            {services.map(s => {
+          {grouped.map(group => (
+          <div
+            key={group.cat}
+            style={{ display: 'flex', flexDirection: 'column', gap: space.line - 1 }}
+          >
+            {/* THE DISCIPLINE, NAMED. `Rail` is the product's section heading
+                and it is what every other grouped list on a customer surface
+                uses - one idiom (§22.2). */}
+            <h3 style={{ margin: `${space.breath}px 0 0` }}><Rail>{group.title}</Rail></h3>
+            {group.items.map(s => {
               const away = inTheStudio(s.duration);
               return (
                 /* CHOOSING A SERVICE OPENS ITS COVERAGES (design 06 → 07).
@@ -299,6 +329,44 @@ export function StudioScreen({ model }: { model: StudioModel }) {
               );
             })}
           </div>
+          ))}
+
+          {/* A CATALOGUE ENTRY IS NEVER LOST. Anything whose category is not
+              one of the four disciplines still appears, under the studio's own
+              name - a typo in `category` must not make work unsellable. */}
+          {ungrouped.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: space.line - 1 }}>
+              <h3 style={{ margin: `${space.breath}px 0 0` }}><Rail>Also at the studio</Rail></h3>
+              {ungrouped.map(s => (
+                <Pane
+                  key={s.id}
+                  as={serviceHref[s.id] ? Link : 'button'}
+                  {...(serviceHref[s.id]
+                    ? { href: serviceHref[s.id] }
+                    : { onClick: () => setArranging(true) })}
+                  className="am-tap"
+                  style={{
+                    padding: `${space.gap + 1}px ${space.gap + 3}px`,
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'baseline', gap: space.line, flexWrap: 'wrap',
+                    textAlign: 'left', cursor: 'pointer', font: 'inherit', width: '100%',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <span style={{ fontSize: 16, color: color.ink }}>{s.name}</span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 12,
+                      marginLeft: 'auto', textAlign: 'right', overflowWrap: 'break-word',
+                      color: 'rgba(232,217,190,0.8)',
+                    }}
+                  >
+                    {floorPrice(s.price)}
+                  </span>
+                </Pane>
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

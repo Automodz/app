@@ -1,4 +1,5 @@
 import 'server-only';
+import { studioDay } from '@/lib/os/lifecycle';
 /**
  * WHEN THE STUDIO CAN NEXT TAKE THIS WORK.
  *
@@ -49,7 +50,10 @@ export async function nextOpenings(args: {
 
   const limit = args.limit ?? 3;
   const horizon = args.horizonDays ?? 21;
-  const start = args.from ?? new Date().toISOString().slice(0, 10);
+  /* THE STUDIO'S TODAY. This was the UTC date, so before 05:30 IST the server
+     began its search on yesterday - offering a day the customer could not take
+     and disagreeing with the sheet, which had the same bug independently. */
+  const start = args.from ?? studioDay();
   const dates = Array.from({ length: horizon }, (_, i) => addDaysISO(start, i));
 
   try {

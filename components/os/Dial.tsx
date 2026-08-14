@@ -56,6 +56,8 @@ import { color } from '@/design';
    this number, and hard-coding it in two places is how they drift apart. */
 const R = 88;
 const LEN = 2 * Math.PI * R; // ≈ 553
+/** The space between two stage segments. Enough to read as a division. */
+const SEGMENT_GAP = 10;
 
 export interface DialProps {
   /**
@@ -64,6 +66,19 @@ export interface DialProps {
    * wrapping around and drawing a short one.
    */
   fill: number;
+  /**
+   * THE VISIT'S STAGES, DRAWN ON THE RING ITSELF.
+   *
+   * When given, the arc is not one continuous sweep but one segment per stage:
+   * the ones behind lit, the one underway in amber, the rest on the track. It
+   * exists because Home drew the same fact twice - a five-segment bar naming
+   * the stages, and a ring saying how far through them the car was, stacked one
+   * above the other. They are the same statement, so they are one object now.
+   *
+   * `fill` still governs the reading in the middle, and the caller is expected
+   * to derive it from these stages so the ring and the number cannot disagree.
+   */
+  stages?: readonly { label: string; done: boolean; current: boolean }[];
   /**
    * The number itself, already worded - "3h 40m", "82%".
    *
@@ -133,7 +148,7 @@ function readingLength(children: ReactNode): number {
 }
 
 export function Dial({
-  fill, children, caption, size = 250, stroke = 'gradient', ticks = false, label,
+  fill, children, caption, size = 250, stroke = 'gradient', ticks = false, label, stages,
 }: DialProps) {
   const bounded = Math.max(0, Math.min(1, fill));
   const offset = LEN * (1 - bounded);
@@ -175,23 +190,47 @@ export function Dial({
           cx="100" cy="100" r={R} fill="none"
           stroke="rgba(255,255,255,0.07)" strokeWidth={3}
         />
-        {/* The arc. */}
-        <circle
-          className="am-dial-arc"
-          cx="100" cy="100" r={R} fill="none"
-          stroke={
-            stroke === 'amber' ? color.amber
-              : stroke === 'champagne' ? color.champagne
-                : `url(#${id})`
-          }
-          strokeWidth={3}
-          strokeLinecap="round"
-          strokeDasharray={LEN}
-          strokeDashoffset={offset}
-          /* The keyframe animates FROM the full circumference, and the
-             component is the only thing that knows what that is. */
-          style={{ ['--dial-len' as string]: `${LEN}` }}
-        />
+        {/* THE ARC - one sweep, or one segment per stage.
+            A segmented ring is the same circumference divided: each stage owns
+            `LEN / n` of it, less a gap so the divisions read as divisions. The
+            stage underway is amber (the studio working, §3.3); the stages
+            behind it take the gradient; the ones ahead stay on the track, which
+            is drawn beneath all of them anyway. */}
+        {stages && stages.length > 0 ? (
+          stages.map((st, i) => {
+            const slot = LEN / stages.length;
+            const drawn = Math.max(slot - SEGMENT_GAP, 1);
+            if (!st.done && !st.current) return null;
+            return (
+              <circle
+                key={st.label}
+                cx="100" cy="100" r={R} fill="none"
+                stroke={st.current ? color.amber : `url(#${id})`}
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeDasharray={`${drawn} ${LEN - drawn}`}
+                strokeDashoffset={-(i * slot) - SEGMENT_GAP / 2}
+              />
+            );
+          })
+        ) : (
+          <circle
+            className="am-dial-arc"
+            cx="100" cy="100" r={R} fill="none"
+            stroke={
+              stroke === 'amber' ? color.amber
+                : stroke === 'champagne' ? color.champagne
+                  : `url(#${id})`
+            }
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeDasharray={LEN}
+            strokeDashoffset={offset}
+            /* The keyframe animates FROM the full circumference, and the
+               component is the only thing that knows what that is. */
+            style={{ ['--dial-len' as string]: `${LEN}` }}
+          />
+        )}
         {ticks ? (
           <circle
             cx="100" cy="100" r={R - 14} fill="none"

@@ -87,9 +87,14 @@ describe('the live dial holds a measure, not the sentence', () => {
   });
 
   it('it holds how far through the visit the floor has got', () => {
-    /* Three of five acts done. The same number the ARC has always drawn - so
-       the ring and the reading inside it cannot disagree. */
-    expect(dialValue(html())).toBe('60%');
+    /* Three of five acts DONE and a fourth underway, so four of five stages
+       have been reached: 80%. It was 60% - `done / acts.length` - which meant a
+       car that had just been received, with its first stage lit on the floor,
+       read `0%`. A stage the studio is standing in has been reached.
+
+       It is also exactly what the ring draws: `done` segments lit plus the
+       current one in amber. The number and the arc are one statement. */
+    expect(dialValue(html())).toBe('80%');
   });
 
   it('and that reading is short enough for the slot it is in', () => {
@@ -120,7 +125,8 @@ describe('the live dial holds a measure, not the sentence', () => {
        agree with the arc" must never become "change the arc". */
     const screen = codeOf('components/screens/HomeScreen.tsx');
     expect(screen).toMatch(/fill=\{throughVisit\}/);
-    expect(screen).toMatch(/const throughVisit = live && live\.acts\.length \? done \/ live\.acts\.length : 0/);
+    expect(screen).toMatch(/const reached = live \? done \+ \(live\.acts\.some\(a => a\.current\) \? 1 : 0\) : 0/);
+    expect(screen).toMatch(/const throughVisit = live && live\.acts\.length \? reached \/ live\.acts\.length : 0/);
   });
 
   it('a screen reader is told the number AND the timing', () => {
@@ -128,25 +134,40 @@ describe('the live dial holds a measure, not the sentence', () => {
        name, or the one customer who cannot see the pane loses it entirely. */
     const h = html();
     const label = h.match(/aria-label="([^"]*through the visit[^"]*)"/)?.[1] ?? '';
-    expect(label).toContain('60 percent through the visit');
+    expect(label).toContain('80 percent through the visit');
     expect(label).toContain('Running longer than planned');
   });
 });
 
-describe('the act names line up with the bars they name', () => {
-  it('each name shares the segments’ grid instead of taking width from its neighbours', () => {
-    /* `space-between` on five content-width spans let "Looked over" squeeze
-       the four beside it - which is why the strip read as compressed on a
-       phone. Asserted on the rule, since the widths themselves need a
-       browser. */
-    const screen = codeOf('components/screens/HomeScreen.tsx');
-    /* The names' own block: from where they are mapped to the end of the
-       phases pane. Bounded, because the rest of the screen uses
-       `space-between` legitimately and an unbounded slice would read it. */
-    const from = screen.indexOf('live.acts.map(a => (');
-    const strip = screen.slice(from, screen.indexOf('live.frames.length', from));
-    expect(strip).toMatch(/flex: 1, minWidth: 0, textAlign: 'center'/);
-    expect(strip).not.toMatch(/justifyContent: 'space-between'/);
+describe('the stages are drawn once, on the ring', () => {
+  /**
+   * THIS REPLACES "the act names line up with the bars they name".
+   *
+   * That law protected a five-segment bar with a name under each segment, and
+   * the thing it protected is gone: the bar and the ring said the same thing in
+   * two shapes, stacked, so the stages moved ONTO the ring and the bar was
+   * deleted. There is nothing left to line up.
+   *
+   * What has to stay true is the reason the bar existed - the stages are drawn
+   * faithfully, and the one underway is named - so that is what is asserted
+   * now, against the rendered ring rather than against a layout rule.
+   */
+  it('one segment per stage, and only the reached ones are drawn', () => {
+    const h = html();
+    const ring = h.slice(h.indexOf('<svg'), h.indexOf('</svg>'));
+    /* Five acts: three done and one current are drawn, the last is not. */
+    expect((ring.match(/stroke-dasharray/g) ?? []).length).toBe(4);
+    /* The one underway is the studio's amber; the rest take the gradient. */
+    expect((ring.match(/stroke="#E0A45C"/g) ?? []).length).toBe(1);
+  });
+
+  it('the stage underway is named, and the others are not written out', () => {
+    const visible = html().replace(/<[^>]+>/g, '\n');
+    expect(visible).toContain('Final checks');
+    /* The bar used to print every act name on the screen. Only the current
+       one is words now - the rest are segments. */
+    expect(visible).not.toContain('Looked over');
+    expect(visible).not.toContain('Ready');
   });
 });
 

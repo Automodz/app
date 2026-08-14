@@ -9,7 +9,7 @@
  * nothing is invented when the studio has been quiet.
  */
 import type { Booking, Job } from '@/lib/types';
-import { expandIntervals } from '@/lib/availability';
+import { workingIntervals } from '@/lib/availability';
 import {
   ACT_ORDER, ACT_LINE, ACT_TITLE, actFromJobStatus, actIndex, careAct, visitPhase,
   type CareAct,
@@ -119,16 +119,16 @@ export function deriveStay(booking: Booking, job: Job | null, now = new Date()):
  *
  * The studio works 09:00-19:00 and does not run overnight, so wall-clock
  * arithmetic lies: an 8h ceramic taken in at 18:49 is not finished at 02:49.
- * `expandIntervals` (lib/availability) is the one implementation of "spread
- * this duration across working days" - the booking engine already uses it for
- * capacity, and reusing it here means a customer is never promised a time the
- * studio could not possibly deliver.
+ * `workingIntervals` (lib/availability) is the one implementation of "spread
+ * this duration across HOURS SOMEBODY IS WORKING". Note it is NOT the function
+ * that reserves the bay: a bay is held overnight because the car is in it, and
+ * work is not done overnight because nobody is there. Two questions.
  */
 function plannedFinish(arrivedAt: Date, durationMin: number): Date {
   const iso = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const startMin = arrivedAt.getHours() * 60 + arrivedAt.getMinutes();
-  const parts = expandIntervals({ date: iso(arrivedAt), startMin, durationMin });
+  const parts = workingIntervals({ date: iso(arrivedAt), startMin, durationMin });
   const last = parts[parts.length - 1];
   if (!last) return new Date(arrivedAt.getTime() + durationMin * 60000);
   const end = new Date(`${last.date}T00:00:00`);

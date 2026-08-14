@@ -22,15 +22,15 @@ import type { MembershipPlan, MembershipPlanConfig, Subscription } from '@/lib/t
 import { MEMBERSHIP_PLANS } from '@/lib/types';
 import { cycleEnd, isLapsed, washesGrantedBy } from './club';
 import { termState } from './term';
+import { studioDay } from './lifecycle';
 
 /** The plan, or nothing. A name that is not in the catalogue is not a plan. */
 export const planOf = (id: unknown): MembershipPlanConfig | undefined =>
   MEMBERSHIP_PLANS.find(p => p.id === id);
 
 /** Studio-local today. The studio keeps studio time (see `lib/os/lifecycle`). */
-const STUDIO_UTC_OFFSET_MIN = 330;
 export const studioToday = (now: Date = new Date()): string =>
-  new Date(now.getTime() + STUDIO_UTC_OFFSET_MIN * 60_000).toISOString().slice(0, 10);
+  studioDay(now);
 
 /* ── IS THIS MEMBERSHIP STILL STANDING? ──────────────────────────────────── */
 

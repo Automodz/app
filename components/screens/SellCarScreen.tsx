@@ -45,7 +45,12 @@ export function SellCarScreen({ model }: { model: SellModel }) {
       {/* Public, so no dock - this was the second room with no exit of any
           kind. The `quiet` Button it used to be is the caption-shaped
           affordance the marketplace had; one idiom now. */}
-      <Back parent={{ href: model.carsHref, name: 'Cars for sale' }} />
+      {/* NO FORCED PARENT: `parentOf('/dashboard/sell-car')` already answers
+          `{ /cars, 'Cars for sale' }`, so this said the same thing a second
+          time - and an explicit parent also beats the WALK, which meant a
+          customer who arrived from their garage was sent to the marketplace
+          instead of back where they came from. */}
+      <Back />
 
       <Heading level="display" style={{ marginTop: space.gap }}>
         Sell us your car

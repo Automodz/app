@@ -100,7 +100,14 @@ export function Rail({ children }: { children: ReactNode }) {
         aria-hidden
         style={{ width: 44, height: 1, background: 'rgba(232,217,190,0.5)' }}
       />
-      <Label style={{ letterSpacing: '0.28em' }}>{children}</Label>
+      {/* A SECTION HEADING IS THE LOUDEST LABEL, not the quietest.
+          This widened the tracking to 0.28em on top of an already-dim label,
+          so the one thing on the screen whose job is to say WHERE YOU ARE was
+          the least legible text on it. Full ink, and tracking tight enough
+          that the capitals read as a word. */}
+      <Label style={{ letterSpacing: '0.14em', color: 'var(--chrome)', fontSize: 11 }}>
+        {children}
+      </Label>
     </div>
   );
 }

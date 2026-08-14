@@ -518,44 +518,40 @@ export function LandingScreen({ prices }: LandingProps) {
                 className="absolute inset-x-0 top-0"
                 style={{ height: HAIRLINE, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }}
               />
-              {/* rating card */}
-              <div
-                className="absolute flex items-center sm:right-auto"
+              {/* THE RATING STRIP — ONE ROW, NOT A CARD.
+                  It stacked a title over a link inside `space.line` padding,
+                  which made a band about eighty pixels deep sitting across the
+                  bottom of the photograph - a caption competing with its own
+                  picture. Laid out along one line it says exactly the same
+                  thing in a little over half the height. §21.3's 44px floor is
+                  what sets the depth now, and it is the whole strip that is the
+                  tap target rather than a link inside it. */}
+              <a
+                href={COMPANY.googleReviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute flex items-center hover:opacity-90"
                 style={{
                   left: space.gap, right: space.gap, bottom: space.gap,
-                  gap: space.line, borderRadius: radius.card,
-                  paddingInline: space.gap, paddingBlock: space.line,
+                  gap: space.breath + 2, borderRadius: radius.pill,
+                  paddingInline: space.line, paddingBlock: space.hair,
+                  minHeight: TARGET_MIN, textDecoration: 'none',
                   ...glass(),
                 }}
               >
-                <GoogleG />
-                <div>
-                  <p style={{ fontFamily: typeScale.title.family, fontSize: typeScale.data.size, fontWeight: 600, color: color.over }}>
-                    Rated on Google
-                  </p>
-                  <a
-                    href={COMPANY.googleReviewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline-offset-2 hover:underline"
-                    style={{
-                      fontFamily: typeScale.whisper.family,
-                      fontSize: typeScale.whisper.size,
-                      color: color.over2,
-                      display: 'inline-flex', alignItems: 'center',
-                      /* §21.3's floor, stated. `flexShrink: 0` is belt and
-                         braces: this link sits in a block today, but the
-                         section around it is a reveal that has been recomposed
-                         more than once, and a control that is 44px only while
-                         its parent stays a block is one bad refactor from
-                         being 40. */
-                      minHeight: TARGET_MIN, flexShrink: 0,
-                    }}
-                  >
-                    Read reviews from real owners &rarr;
-                  </a>
-                </div>
-              </div>
+                <GoogleG size={iconSize.inline} />
+                <span style={{ fontFamily: typeScale.title.family, fontSize: typeScale.data.size, fontWeight: 600, color: color.over }}>
+                  Rated on Google
+                </span>
+                {/* The invitation, pushed to the far end so the two read as one
+                    line rather than as a heading with a subtitle under it. */}
+                <span
+                  className="ml-auto whitespace-nowrap"
+                  style={{ fontFamily: typeScale.whisper.family, fontSize: typeScale.whisper.size, color: color.over2 }}
+                >
+                  Read reviews &rarr;
+                </span>
+              </a>
             </div>
           </motion.div>
         </div>

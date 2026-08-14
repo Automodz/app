@@ -490,6 +490,10 @@ export function toHome(
   const latestFrames = latest ? framesOfVisit(latest, car) : [];
 
   return {
+    /* WHOSE ROOM THIS IS. The greeting reads the hour on the client - the
+       server does not have the reader's clock - but the NAME comes from here,
+       so it paints with the rest of the room rather than a frame later. */
+    owner: picture.user.name?.trim().split(/\s+/)[0] || undefined,
     vehicle: {
       name: car.vehicle.name,
       plate: car.vehicle.registrationNumber,
@@ -1615,7 +1619,6 @@ export function toLiveVisit(
     })),
     frames,
     hero: stay.latestPhoto ?? car.vehicle.photo,
-    backHref: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
     /* §20.1 - a way to reach a human, on the screen a customer is most likely
        to want one. The message names the car, so the studio does not have to
        ask which one it is about. */

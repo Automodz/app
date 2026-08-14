@@ -163,7 +163,11 @@ describe('Home V1 - one composition', () => {
           href: '/history/b1',
         },
       });
-      expect(h).toContain('Received');
+      /* The STAGE UNDERWAY, not every stage. The five act names used to be
+         printed across a bar in the header; they are segments on the ring now
+         and only the current one is words - see the dial's caption. This
+         fixture's current act is "In care". */
+      expect(h).toContain('In care');
       expect(h).toContain('Expected back this evening');
       expect(h).toContain('On arrival');
       /* Still one primary action. */

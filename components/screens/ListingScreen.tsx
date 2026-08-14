@@ -75,6 +75,15 @@ export function ListingScreen(
             gap: space.breath,
             overflowX: 'auto',
             scrollSnapType: 'x mandatory',
+              /* SNAP INSIDE THE GUTTER, NOT UNDER IT.
+                 The rail bleeds by `-INSET` and pads back by `INSET`, but a
+                 mandatory snap aligns the first card to the SCROLLPORT - the
+                 padding box - so on load it slid left underneath that padding
+                 and the first card sat 20px off the edge of the screen.
+                 Measured in the running page: card left `-20` without this,
+                 `0` with it. `scroll-padding` is what shrinks the snapport to
+                 the gutter, and it is the only thing that does. */
+              scrollPaddingInline: INSET,
             paddingInline: INSET,
             marginTop: space.gap,
           }}

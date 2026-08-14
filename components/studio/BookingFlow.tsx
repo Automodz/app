@@ -30,6 +30,7 @@ import { useRouter } from 'next/navigation';
    restored the persisted session, and no customer room subscribes to make that
    happen. See lib/clientSession.ts. */
 import { authedFetch } from '@/lib/clientSession';
+import { studioDay, studioDayPlus } from '@/lib/os/lifecycle';
 import { washesLeftOf } from '@/lib/os/club';
 import { DOT } from '@/design';
 import { generateTimeSlots } from '@/lib/utils';
@@ -41,25 +42,33 @@ import {
   type as typeScale,
 } from '@/design';
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+/**
+ * THE STUDIO'S CALENDAR, NOT THE BROWSER'S UTC ONE.
+ *
+ * This was `d.toISOString().slice(0, 10)` - the UTC date. The studio is
+ * UTC+5:30, so from midnight until 05:30 every morning it named YESTERDAY:
+ * measured at 02:02 IST on 15 August 2026, this sheet offered "TODAY 14 Aug"
+ * and "TOMORROW 15 Aug", and a customer who tapped Today asked the studio for a
+ * day that had already ended.
+ *
+ * `studioDay` is the product's one definition of the studio's own date, and the
+ * server's scheduler now reads the same one - so the day a customer picks and
+ * the day the bay is reserved for are the same day by construction.
+ */
 
 /** The days a customer may choose from. Fourteen, starting today. */
 const nextDays = (n = 14) =>
-  Array.from({ length: n }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return iso(d);
-  });
+  Array.from({ length: n }, (_, i) => studioDayPlus(i));
 
 const dayLabel = (i: string) =>
   new Date(`${i}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 
 /** Today and tomorrow are named, because that is how anybody books. */
 const dayName = (i: string) => {
-  const today = iso(new Date());
-  const t = new Date(); t.setDate(t.getDate() + 1);
+  const today = studioDay();
+  const tomorrow = studioDayPlus(1);
   if (i === today) return 'Today';
-  if (i === iso(t)) return 'Tomorrow';
+  if (i === tomorrow) return 'Tomorrow';
   return new Date(`${i}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short' });
 };
 
@@ -626,6 +635,19 @@ export function BookingFlow({
                 );
               })}
             </div>
+
+            {/* NO WAY FORWARD IS STILL A STATE, AND IT GETS A SENTENCE.
+                Every day in the horizon full used to leave the customer with a
+                strip of grey chips, no slots, and nothing to do - the sheet
+                simply stopped. §19.1: an absence is a state. The studio is
+                named as the way through, because when the diary is genuinely
+                full a person is the only thing that can help. */}
+            {full.fullDates.length >= nextDays().length ? (
+              <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
+                The bays are booked out for the next two weeks. Message the
+                studio and we&rsquo;ll find you a slot.
+              </Text>
+            ) : null}
 
             {date ? (
               slots.length ? (

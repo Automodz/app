@@ -126,10 +126,17 @@ describe('a leg is priced per leg', () => {
 /* ── multi-day ───────────────────────────────────────────────────────────── */
 
 describe('a bay is held for as long as the work takes', () => {
-  it('a two-day job ends on the second day', () => {
+  /* DURATION IS ELAPSED, so these numbers are clock time, not hours worked.
+     1200 minutes is 20 hours: from 09:00 it ends at 05:00 the next morning, so
+     the bay is held that day and released before opening the day after. The
+     old reading consumed 600 working minutes a day and stretched the same job
+     to two. See `expandIntervals`. */
+  it('a twenty-hour job runs into the next morning, not the next evening', () => {
     /* 1200 minutes from 09:00 spills across the 600-minute working day. */
-    expect(spanEndDate('2026-02-12', DAY_OPEN_MIN, 1200)).toBe('2026-02-13');
-    expect(spanDates('2026-02-12', DAY_OPEN_MIN, 1200))
+    expect(spanEndDate('2026-02-12', DAY_OPEN_MIN, 1200)).toBe('2026-02-12');
+    expect(spanDates('2026-02-12', DAY_OPEN_MIN, 1200)).toEqual(['2026-02-12']);
+    /* Two CALENDAR days is 2880 - the studio's own figure for a Garware Plus. */
+    expect(spanDates('2026-02-12', DAY_OPEN_MIN, 2880))
       .toEqual(['2026-02-12', '2026-02-13']);
   });
 
@@ -140,30 +147,50 @@ describe('a bay is held for as long as the work takes', () => {
   });
 
   it('a three-day job spans three, and the middle day is fully held', () => {
-    const days = expandIntervals({ date: '2026-02-12', startMin: DAY_OPEN_MIN, durationMin: 1800 });
+    /* 4320 elapsed minutes - LLumar Valor. */
+    const days = expandIntervals({ date: '2026-02-12', startMin: DAY_OPEN_MIN, durationMin: 4320 });
     expect(days.map(d => d.date)).toEqual(['2026-02-12', '2026-02-13', '2026-02-14']);
+    /* The middle day is held open to close: the car never leaves the bay. */
     expect(days[1]).toEqual({ date: '2026-02-13', startMin: 540, endMin: 1140 });
-    expect(spanDays(DAY_OPEN_MIN, 1800)).toBe(3);
+    expect(spanDays(DAY_OPEN_MIN, 4320)).toBe(3);
   });
 
   it('a later start pushes the finish into another day', () => {
-    /* A 600-minute job started at 14:00 cannot finish that day. */
-    expect(spanEndDate('2026-02-12', 14 * 60, 600)).toBe('2026-02-13');
+    /* Elapsed: 1200 minutes from 14:00 ends at 10:00 the next morning, so the
+       bay is still held when the studio opens. A job that ends BEFORE opening -
+       600 minutes from 14:00, finishing at midnight - holds nothing the next
+       day, because nothing can be booked at that hour anyway. */
+    expect(spanEndDate('2026-02-12', 14 * 60, 1200)).toBe('2026-02-13');
+    expect(spanEndDate('2026-02-12', 14 * 60, 600)).toBe('2026-02-12');
   });
 });
 
 describe('a multi-day reservation blocks every day it occupies', () => {
-  const occupant = {
+  /**
+   * BOTH BAYS, because the studio has two.
+   *
+   * These asserted a one-bay floor - a single occupant, and `{ washCapacity: 1 }`
+   * with protection hard-coded to 1 in `availability.ts`. The studio runs TWO
+   * protection bays and two wash bays, so one car no longer fills the
+   * discipline and the law being protected here needs both of them taken to
+   * mean anything. The law itself is unchanged and is the one that matters: a
+   * two-day job holds the SECOND day, on which nothing starts.
+   */
+  const inBay = (durationMin: number) => ({
     resource: 'protection' as const,
-    date: '2026-02-12', startMin: DAY_OPEN_MIN, durationMin: 1200,
-  };
+    date: '2026-02-12', startMin: DAY_OPEN_MIN, durationMin,
+  });
+  /* 2880 elapsed minutes - two days, the studio's own figure for a PPF. */
+  const occupant = inBay(2880);
+  const allBays = [inBay(2880), inBay(2880), inBay(2880)];
+  const FLOOR = { washCapacity: 2, protectionCapacity: 3 };
 
   it('the second day is full even though nothing starts on it', () => {
     /* THE FAILURE THIS PREVENTS: a two-day PPF starting Thursday, and a second
        car accepted for Friday morning into a bay that is already occupied. */
     const { fullDates } = computeAvailability(
       ['2026-02-12', '2026-02-13', '2026-02-16'], 'PPF', 600,
-      [occupant], { washCapacity: 1 },
+      allBays, FLOOR,
     );
     expect(fullDates).toContain('2026-02-12');
     expect(fullDates).toContain('2026-02-13');
@@ -173,7 +200,7 @@ describe('a multi-day reservation blocks every day it occupies', () => {
   it('a wash is unaffected - it is a different physical resource', () => {
     const { fullDates } = computeAvailability(
       ['2026-02-12', '2026-02-13'], 'Washing', 60,
-      [occupant], { washCapacity: 1 },
+      allBays, FLOOR,
     );
     expect(fullDates).toEqual([]);
   });

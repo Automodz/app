@@ -32,6 +32,7 @@ import { PaletteProvider } from './Palette';
 import { RoomTransition } from './RoomTransition';
 import { RoomTheme } from './RoomTheme';
 import { StudioBoot, Ambient } from '@/components/system';
+import { Menu } from './Menu';
 import { roomFor, isCustomerSurface, HOME } from './routes';
 
 export function CustomerChrome(
@@ -75,6 +76,11 @@ export function CustomerChrome(
           and the field would visibly jump between rooms. */}
       <Ambient />
       <StudioBoot />
+      {/* THE OVERFLOW, ON EVERY ROOM. The dock has five slots and the product
+          has more places than that; this is where the rest live. Mounted here
+          rather than per screen for the same reason the dock is - a control
+          that exists on one room is a control the customer cannot rely on. */}
+      <Menu />
       {/* The palette is chrome, not a screen. Mounted once here, it answers
           ⌘K at every address in the customer application - see Palette.tsx. */}
       <PaletteProvider>

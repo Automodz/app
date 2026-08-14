@@ -77,7 +77,7 @@ describe('screen 09 - the bay is yours', () => {
 
     const rows = Object.fromEntries(m.rows.map(r => [r.label, r.value]));
     expect(rows.Work).toBe('Full-body PPF');
-    expect(rows['In the bay']).toBe('2 days');
+    expect(rows['In the bay']).toBe('1 day');
     expect(rows.Estimate).toBe('₹1,32,000');
   });
 
@@ -305,7 +305,10 @@ describe('the wording helpers say what a person would say', () => {
   it('the bay is counted in days above a working day and hours below it', () => {
     expect(bayWords(90)).toBe('2 hours');
     expect(bayWords(600)).toBe('1 day');
-    expect(bayWords(960)).toBe('2 days');
+    /* ELAPSED: 960 minutes from opening ends at 01:00, still one day. Two days
+       is 2880 - the studio's own figure for a Garware Plus. */
+    expect(bayWords(960)).toBe('1 day');
+    expect(bayWords(2880)).toBe('2 days');
     expect(bayWords(0)).toBe('To be confirmed');
   });
 });

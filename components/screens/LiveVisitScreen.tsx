@@ -61,7 +61,6 @@ export interface LiveVisitModel {
   /** The newest photograph of any kind - what the stage shows. */
   hero?: string;
   /** Back to the car. */
-  backHref: string;
   /** The studio, reachable. §20.1 */
   messageHref?: string;
   /**
@@ -87,7 +86,7 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
   const viewed = model.frames.find(f => f.id === viewing);
   const {
     vehicleName, word, line, timing, service, acts, frames, hero,
-    backHref, messageHref, approval, settleHref,
+    messageHref, approval, settleHref,
   } = model;
 
   return (
@@ -112,7 +111,21 @@ export function LiveVisitScreen({ model }: { model: LiveVisitModel }) {
           of a long page, below the photographs and the settle. One idiom, in
           the same place in every room. */}
       <div style={{ paddingInline: INSET, maxWidth: MEASURE + INSET * 2, marginInline: 'auto', width: '100%' }}>
-        <Back parent={{ href: backHref, name: 'The car' }} />
+        {/* NO FORCED PARENT. THIS ONE MADE A LOOP.
+            It pointed at the car - `backHref` - and an explicit `parent` beats
+            BOTH the walk and the route table. So a customer who arrived from
+            Now (Follow the visit) was sent to a car they had not come from;
+            that car's Back then read the walk, saw the visit, and sent them
+            straight back. Two addresses, each pointing at the other, for ever.
+
+            The car is also DOWN the hierarchy from here, not up:
+            `parentOf('/history/<id>')` is the record, which goes to the car,
+            which goes to the garage. Naming a descendant as the parent is what
+            turned a chain into a cycle.
+
+            Omitted, `Back` does the right thing on its own - the walk when
+            there is one, the route table when the customer was sent here. */}
+        <Back />
       </div>
 
       <div

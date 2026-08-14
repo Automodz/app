@@ -2,7 +2,7 @@ import { FieldValue, Timestamp, type DocumentReference, type Transaction } from 
 import { adminDb } from './firebaseAdmin';
 import { loadOccupancy, occupancyRange, type Reader } from './occupancy';
 import { decidePrice, applyDiscount } from '@/lib/services/pricing';
-import { computeAvailability, candidateSlots, spanEndDate } from '@/lib/availability';
+import { assignBay, candidateSlots, spanEndDate } from '@/lib/availability';
 import {
   bookingTransition, changeWindowOf, scheduledEpochMs,
   BOOKING_EXPIRED, BOOKING_TERMINAL,
@@ -189,8 +189,71 @@ const assertSlotOpen = async (
   const { occupants, cfg } = await loadOccupancy(reader, rangeStart, rangeEnd, {
     excludeBookingIds: opts.excludeBookingId ? [opts.excludeBookingId] : undefined,
   });
-  const { fullSlots } = computeAvailability([date], category, durationMinutes, occupants, cfg);
-  if ((fullSlots[date] ?? []).includes(time)) throw new BookingError('slot-taken');
+
+  /**
+   * THE BAY IS CHOSEN HERE, INSIDE THE TRANSACTION, OR THERE IS NO BOOKING.
+   *
+   * This asked `computeAvailability` whether the slot was full and then wrote a
+   * booking with no bay on it. Two customers taking the last bay at the same
+   * moment both read "not full" and both were accepted - the transaction
+   * retried on the WRITE, but neither write touched a document the other had
+   * read, so there was nothing to conflict on.
+   *
+   * Assigning names the bay, and the caller writes that name onto the booking
+   * inside this same transaction. The read set now includes the bookings that
+   * occupy the bay, so a concurrent booking of the last one is a genuine
+   * Firestore contention and one of the two retries and is refused.
+   *
+   * The client never sends a bay. It could not be trusted with one: it does not
+   * know what else is on the floor, and the whole point of this function is
+   * that the server decides.
+   */
+  const [h, m] = time.split(':').map(Number);
+  const bay = assignBay(category, date, h * 60 + m, durationMinutes, occupants, cfg);
+  if (!bay) throw new BookingError('slot-taken');
+  return bay;
+};
+
+/**
+ * WHOSE DECISION IS THIS, AND IS THE CALLER LOOKING AT THE CURRENT ONE?
+ *
+ * Two protections, both needed, both applied to every customer-initiated
+ * mutation of an existing booking.
+ *
+ * 1 · AUTHORITY. Studio and admin are ONE authority against the customer.
+ *     Once either has decided something about a booking - confirmed it, moved
+ *     it, re-scoped it - `lastDecidedBy` is `studio`, and a customer may not
+ *     write over it. They keep whatever the STATE MACHINE still grants them,
+ *     which is withdrawing a request; that is checked separately by
+ *     `bookingTransition` and is deliberately not weakened here.
+ *
+ * 2 · STALENESS. A phone can hold a booking on screen for an hour. If the
+ *     studio reschedules in that time, a "cancel" or "move" sent from that
+ *     screen was computed against a booking that no longer exists in that
+ *     shape. A customer write must carry the `version` it read; anything else
+ *     is refused rather than applied on top of a newer decision.
+ *
+ * Staff are exempt from both: they ARE the authority, and the floor cannot be
+ * made to reload a screen before it can move a car.
+ */
+const guardCustomerWrite = (
+  booking: Booking,
+  opts: { byStaff?: boolean; expectedVersion?: number },
+  intent: 'reschedule' | 'cancel',
+): void => {
+  if (opts.byStaff) return;
+
+  if (typeof opts.expectedVersion === 'number'
+      && typeof booking.version === 'number'
+      && opts.expectedVersion !== booking.version) {
+    throw new BookingError('stale-write', 409);
+  }
+
+  /* Withdrawing is the customer's own right and the machine already bounds it.
+     Re-timing something the studio has settled is not. */
+  if (intent === 'reschedule' && booking.lastDecidedBy === 'studio') {
+    throw new BookingError('studio-decided', 409);
+  }
 };
 
 /* ── The one entry point ────────────────────────────────────────────────── */
@@ -347,7 +410,14 @@ const createAppointment = async (
        duration, and reserving the headline would double-book the bay on the
        second day. */
     const duration = estimate?.scope.durationMinutes ?? service.duration ?? 60;
-    await assertSlotOpen(
+    /* AN UNKNOWN DURATION IS NOT A SIXTY-MINUTE ONE. A catalogue entry with no
+       duration used to fall back to 60, which reserves a fraction of what the
+       work needs and double-books the bay behind it. The studio can price a
+       service without timing it; it cannot schedule one. */
+    if (!Number.isFinite(duration) || duration <= 0) {
+      throw new BookingError('service-has-no-duration', 409);
+    }
+    const bay = await assertSlotOpen(
       t as unknown as Reader,
       intent.scheduledDate, intent.scheduledTime, service.category ?? '', duration,
     );
@@ -425,6 +495,11 @@ const createAppointment = async (
       serviceCategory: service.category ?? '',
       serviceBasePrice: service.price,
       serviceDurationMinutes: duration,
+      /* Decided by the server, inside the transaction that reserved it. */
+      bayId: bay.id,
+      bayGroup: bay.group,
+      version: 1,
+      lastDecidedBy: isStaff ? 'studio' : 'customer',
       pickupDropRequired: pickup || drop,
       pickupRequired: pickup,
       dropRequired: drop,
@@ -752,7 +827,7 @@ export interface CancelResult {
 export const cancelBookingAuthoritative = async (
   callerUid: string,
   bookingId: string,
-  opts: { byStaff?: boolean; reason?: string; noShow?: boolean } = {},
+  opts: { byStaff?: boolean; reason?: string; noShow?: boolean; expectedVersion?: number } = {},
 ): Promise<CancelResult> => {
   if (!adminDb) throw new BookingError('not-configured', 503);
   if (!bookingId || typeof bookingId !== 'string') throw new BookingError('bad-booking', 400);
@@ -767,6 +842,7 @@ export const cancelBookingAuthoritative = async (
     if (!opts.byStaff && booking.userId !== callerUid) {
       throw new BookingError('not-yours', 403);
     }
+    guardCustomerWrite(booking, opts, 'cancel');
 
     /* Already cancelled: succeed, restore nothing. The caller asked for a state
        the booking is already in, which is not an error - but crediting a second
@@ -834,6 +910,12 @@ export const cancelBookingAuthoritative = async (
 
     t.update(bookingRef, {
       status: 'cancelled',
+      /* THE BAY IS RELEASED BY THE STATUS, not by clearing the field.
+         `loadOccupancy` only counts live bookings, so a cancelled, rejected or
+         expired one stops occupying the moment its status changes - and keeping
+         `bayId` means the studio can still see where the car WOULD have gone. */
+      version: (booking.version ?? 0) + 1,
+      lastDecidedBy: opts.byStaff ? 'studio' : 'customer',
       cancelledAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
       ...(opts.reason ? { rejectionReason: opts.reason } : {}),
@@ -874,7 +956,7 @@ export const rescheduleBookingAuthoritative = async (
   callerUid: string,
   bookingId: string,
   next: { scheduledDate: string; scheduledTime: string },
-  opts: { byStaff?: boolean; now?: Date } = {},
+  opts: { byStaff?: boolean; now?: Date; expectedVersion?: number } = {},
 ): Promise<RescheduleResult> => {
   if (!adminDb) throw new BookingError('not-configured', 503);
   if (!bookingId || typeof bookingId !== 'string') throw new BookingError('bad-booking', 400);
@@ -893,6 +975,7 @@ export const rescheduleBookingAuthoritative = async (
     if (!opts.byStaff && booking.userId !== callerUid) {
       throw new BookingError('not-yours', 403);
     }
+    guardCustomerWrite(booking, opts, 'reschedule');
 
     /* ── 1 · a settled booking has no slot left to move ──
        A move is not a status change, so the transition table is not the guard
@@ -939,8 +1022,11 @@ export const rescheduleBookingAuthoritative = async (
     /* ── 3 · the destination must be a slot the studio can actually work ──
        The SAME occupancy the availability endpoint offers from, inside this
        transaction, with this booking excluded so it cannot block itself. */
+    /* An old booking taken under the counting model may carry no duration at
+       all; 60 is the only honest fallback for a record that never had one, and
+       it is deliberately NOT applied to new bookings - see `create`. */
     const duration = booking.serviceDurationMinutes ?? 60;
-    await assertSlotOpen(
+    const movedBay = await assertSlotOpen(
       t as unknown as Reader,
       next.scheduledDate, next.scheduledTime, booking.serviceCategory ?? '', duration,
       { excludeBookingId: bookingId },
@@ -954,11 +1040,22 @@ export const rescheduleBookingAuthoritative = async (
       scheduledDate: next.scheduledDate,
       scheduledTime: next.scheduledTime,
       endDate,
+      /* A MOVE RE-ASSIGNS THE BAY. The old one is released by the same write
+         that takes the new one, so a reschedule can never leave a car holding
+         two bays, and the bay it lands in is chosen by the server against the
+         floor as it stands inside this transaction. */
+      bayId: movedBay.id,
+      bayGroup: movedBay.group,
       /* The audit trail. `SEQUENCE` in the calendar export reads this, which is
          what tells an owner's calendar that the new time supersedes the old. */
       rescheduleCount: (booking.rescheduleCount ?? 0) + 1,
       rescheduledAt: FieldValue.serverTimestamp(),
       rescheduledBy: opts.byStaff ? 'studio' : 'customer',
+      /* Every write moves the version, or the staleness guard has nothing to
+         compare against; and it records the authority, so a studio move locks
+         the booking against later customer re-timing. */
+      version: (booking.version ?? 0) + 1,
+      lastDecidedBy: opts.byStaff ? 'studio' : 'customer',
       updatedAt: FieldValue.serverTimestamp(),
     });
 
