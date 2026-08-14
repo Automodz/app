@@ -26,7 +26,7 @@ import SlideToAction from '@/components/ui/SlideToAction';
 import Wordmark from '@/components/ui/Wordmark';
 import WhatsAppFloat from '@/components/ui/WhatsAppFloat';
 import SmoothScroll from '@/components/home/SmoothScroll';
-import { MEDIA } from '@/lib/media';
+import { MEDIA, heroPhoto } from '@/lib/media';
 import { SERVICES, SERVICE_ORDER } from '@/lib/catalog';
 import { COMPANY, waLink, telLink } from '@/lib/company';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
@@ -96,10 +96,24 @@ const glass = (): React.CSSProperties => ({
   boxShadow: elevation.float.shadow,
 });
 
+/**
+ * A card that is a link, animated.
+ *
+ * `motion(Component)` is framer v11's wrapper; it forwards the motion props and
+ * hands everything else - `href`, and so the anchor itself - to `Link`. Defined
+ * once at module scope because calling `motion()` inside render would build a
+ * new component type on every pass and remount the cards.
+ */
+const MotionLink = motion(Link);
+
 const NAV = [
   { label: 'Services', href: '#services' },
   { label: 'Membership', href: '#membership' },
-  { label: 'Gallery', href: '#gallery' },
+  /* GALLERY IS THE MARKETPLACE, not the film. `#gallery` is the id on the
+     before/after chapter, and while that chapter was named "the difference"
+     the nav word "Gallery" pointed at a single looping video - which is not a
+     gallery, and is not what somebody clicking it is looking for. The cars are. */
+  { label: 'Gallery', href: '#cars' },
   { label: 'Contact', href: '#contact' },
 ] as const;
 
@@ -130,7 +144,7 @@ const NAV = [
  * of specification; a hook followed by a paragraph is a hook nobody finishes.
  */
 const HOOK = { first: 'Forever', second: 'day one' } as const;
-const SUBHOOK = 'PPF, ceramic and detailing — every panel photographed.';
+const SUBHOOK = 'PPF, ceramic and detailing - every panel photographed.';
 
 /**
  * THE PROOF STRIP.
@@ -389,7 +403,12 @@ export function LandingScreen({ prices }: LandingProps) {
                 color: color.over,
               }}
             >
-              {HOOK.first}<br />
+              {/* ONE LINE ON A PHONE, TWO ON A LAPTOP.
+                  The break is a `<br>` that is switched off below `lg`, so the
+                  two tones stay exactly as they are and only the wrap changes:
+                  the space before the span is what joins them, and the hook
+                  reads "Forever day one" across a single line. */}
+              {HOOK.first}<br className="hidden lg:block" />{' '}
               <span style={{ color: color.ink3 }}>{HOOK.second}</span>
             </motion.h1>
             <motion.p
@@ -436,39 +455,56 @@ export function LandingScreen({ prices }: LandingProps) {
             className="relative order-1 lg:order-2"
           >
             <div
-              className="relative overflow-hidden"
+              className="relative overflow-hidden mx-auto"
               style={{
                 borderRadius: radius.stage,
                 border: `${HAIRLINE}px solid ${color.edge}`,
                 boxShadow: elevation.takeover.shadow,
+                /* THE FRAME IS THE PHOTOGRAPH'S SHAPE, so the frame hugs the
+                   picture rather than the picture being cut to fit the frame.
+                   The cap is on WIDTH and derived from the height budget and
+                   the file's own proportions - capping the HEIGHT instead left
+                   the box wider than the picture and pillarboxed it inside its
+                   own border. No ratio is written down: `heroPhoto` is a static
+                   import, so these are the real dimensions of the file and a
+                   recrop needs no edit here. */
+                maxWidth: `calc(min(78vh, 660px) * ${heroPhoto.width} / ${heroPhoto.height})`,
               }}
             >
               {/* The LCP element. `priority` preloads it, `sizes` stops a
                   1800px file landing on a 390px phone, and the fixed ratio
                   reserves the box so nothing shifts when it arrives. */}
-              <div className="relative w-full max-h-[52vw] lg:max-h-none" style={{ aspectRatio: '4/3' }}>
-                {/* §11.5 APPLIES HERE TOO. A hero that will not load collapsed
-                    to its ALT TEXT at 16px in full ink, across the first thing
-                    anybody sees. The attribute stays - a screen reader needs
-                    it - and it is never allowed to lay the page out. */}
-                <Image
-                  src={MEDIA.hero.homepage}
-                  alt="A finished car on the floor at AutoModz, Maninagar"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
-                  style={{
-                    fontSize: 0, color: 'transparent',
-                    /* THE CROP IS DIRECTED, NOT CENTRED. The photograph is
-                       719x1599 and this frame is 4:3, so `cover` keeps about a
-                       third of its height - and centred, that third is the
-                       empty ceiling. Pulled down, it lands on the car and the
-                       brand wall behind it, which is the half worth showing. */
-                    objectPosition: 'center 68%',
-                  }}
-                />
-              </div>
+              {/* §11.5 APPLIES HERE TOO. A hero that will not load collapsed
+                  to its ALT TEXT at 16px in full ink, across the first thing
+                  anybody sees. The attribute stays - a screen reader needs
+                  it - and it is never allowed to lay the page out. */}
+              <Image
+                src={heroPhoto}
+                alt="A finished car on the floor at AutoModz, Maninagar"
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="block"
+                style={{
+                  fontSize: 0, color: 'transparent',
+                  /* NOTHING IS CROPPED, AND NOTHING SAYS ITS SHAPE.
+                     This was a 4:3 box on `object-cover` with the crop pulled
+                     down onto the car, which showed about a third of the
+                     photograph and read as a zoom. There is no box now: the
+                     static import carries the file's real width and height, so
+                     `height: auto` gives the picture its own proportions.
+
+                     The WIDTH is definite on purpose. With `width: auto` the
+                     browser has to resolve `sizes` against a box whose size
+                     depends on the image it is choosing - so it gives up and
+                     takes the smallest candidate in the srcset, and the hero
+                     rendered 240px wide. A width the column already knows
+                     breaks that circle. `contain` only matters if the height
+                     cap bites on a short screen; without it that would squash. */
+                  width: '100%',
+                  height: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
               <div
                 aria-hidden
                 className="absolute inset-0"
@@ -607,23 +643,96 @@ export function LandingScreen({ prices }: LandingProps) {
         </motion.div>
       </section>
 
-      {/* ═══ 01 SERVICES ═══ */}
+      {/* ═══ 01 THE DIFFERENCE ═══ */}
+      <Chapter id="gallery">
+        <SectionHead index={1} kicker="THE DIFFERENCE" title="See for yourself" />
+        {/* THE FRAME IS THE FILM'S WIDTH, because the film is PORTRAIT.
+            This was capped at a landscape measure and the video inside it was
+            a 16/9 box on `object-fit: cover` - so a 720x998 film was being
+            filled into a wide frame and everything above and below the middle
+            band was thrown away. That is the crop.
+            Now the cap is a portrait one: the glass hugs the film instead of
+            the film being cut to fit the glass. On a phone the column is
+            narrower than this anyway, so one value serves both. */}
+        <motion.div {...reveal} className="relative mx-auto" style={{ maxWidth: 520 }}>
+          <div className="relative" style={{ borderRadius: radius.stage, padding: space.breath, ...glass() }}>
+            {/* ── THE STUDIO'S OWN FILM ────────────────────────────────────
+                This was a before/after drag over the SAME stock photograph
+                twice, the second copy CSS-filtered to look dirty - the section
+                asked the customer to see the difference and then showed them a
+                filter. The studio has a commercial; it is the real thing.
+
+                `muted` is what makes `autoPlay` legal on every mobile browser,
+                and it is also the right behaviour: §7.4 permits ambient motion,
+                and sound that starts by itself is not ambient. `playsInline`
+                stops iOS taking it fullscreen. No controls, because there is
+                nothing to control - it loops.
+
+                `poster` is the first frame's job, so the glass is never a
+                black rectangle while the file arrives, and `preload="metadata"`
+                keeps 2.7MB off the critical path of a page most people reach
+                on a phone. */}
+            <video
+              src={MEDIA.video.commercial}
+              poster={MEDIA.hero.homepage}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              aria-label="AutoModz at work - a short film of the studio"
+              className="block w-full"
+              style={{
+                borderRadius: radius.sheet,
+                /* THE FILM SIZES THE FRAME, not the other way round.
+                   This was a 16/9 box with `object-fit: cover`, which happens
+                   to match this file and would silently crop the next one -
+                   `cover` fills the box and throws away whatever does not fit.
+                   `height: auto` lets the element take the video's OWN ratio,
+                   so the frame is always exactly the film's shape and there is
+                   nothing left to crop. `contain` is belt-and-braces for the
+                   moment before metadata arrives. */
+                height: 'auto',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
+        </motion.div>
+      </Chapter>
+
+      {/* ═══ 02 SERVICES ═══ */}
       <Chapter id="services">
-        <SectionHead index={1} kicker="THE CRAFT" title="Four disciplines, One standard" />
+        <SectionHead index={2} kicker="THE CRAFT" title="Four disciplines, One standard" />
         <div className="grid sm:grid-cols-2 mx-auto" style={{ gap: space.gap, maxWidth: breakpoint.wide - INSET * 8 }}>
           {SERVICE_ORDER.map(cat => {
             const s = SERVICES[cat];
             const from = prices[s.cat] ?? s.from;
             const featured = s.cat === 'PPF';
+            /* A LINK, NOT AN ARTICLE THAT LISTENS FOR CLICKS.
+                  This was a bare `<article onClick={book}>`, so the only way
+                  in was a `router.push` from a React handler on an element the
+                  browser does not consider clickable. Measured on production:
+                  a click landed on nothing at all when it arrived before
+                  hydration, and any failure to fetch the route's chunk threw
+                  to the error boundary - which is the "something went wrong at
+                  our end" screen that was reported for every service card.
+
+                  An anchor cannot fail that way. It carries a real `href`, so
+                  it works before React has loaded, it is reachable by keyboard
+                  (it had `tabIndex: -1`), it can be opened in a new tab, and
+                  Next prefetches the door. The destination is unchanged: a
+                  visitor picking a service is asking to book, and booking
+                  needs an account, so it still asks them in. */
             return (
-              <motion.article
+              <MotionLink
                 key={cat}
+                href="/auth/login"
                 {...reveal}
                 {...reveal}
-                onClick={book}
                 whileHover={{ y: -4 }}
-                className="group relative overflow-hidden cursor-pointer"
+                className="group relative overflow-hidden cursor-pointer block"
                 style={{
+                  textDecoration: 'none',
                   /* FOUR EQUAL CARDS, 2x2.
                      PPF used to span both columns and stand 60px taller, which
                      made the grid 1 + 2 + 1 - and the fourth card sat alone
@@ -702,19 +811,19 @@ export function LandingScreen({ prices }: LandingProps) {
                     {` · ${getDurationLabel(s.durationMin).toUpperCase()}`}
                   </p>
                 </div>
-              </motion.article>
+              </MotionLink>
             );
           })}
         </div>
       </Chapter>
 
-      {/* ═══ 02 MARKETPLACE ═══ */}
+      {/* ═══ 03 MARKETPLACE ═══ */}
       <Chapter id="cars">
-        <SectionHead index={2} kicker="MARKETPLACE" title="Cars, kept honest" />
+        <SectionHead index={3} kicker="MARKETPLACE" title="Cars, kept honest" />
         <div className="grid sm:grid-cols-2 mx-auto" style={{ gap: space.gap, maxWidth: breakpoint.wide - INSET * 16 }}>
           {[
             { title: 'Buy a car', line: 'Studio-inspected listings with full service history.', cta: 'Browse cars', href: '/cars', img: MEDIA.fallbacks.car },
-            { title: 'Sell your car', line: 'List it in minutes — we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: MEDIA.fallbacks.vehicle },
+            { title: 'Sell your car', line: 'List it in minutes - we photograph and vet every car.', cta: 'Start selling', href: '/dashboard/sell-car', img: MEDIA.fallbacks.vehicle },
           ].map(t => (
             <motion.div key={t.href} {...reveal}>
               <Link
@@ -757,9 +866,9 @@ export function LandingScreen({ prices }: LandingProps) {
         </div>
       </Chapter>
 
-      {/* ═══ 03 MEMBERSHIP ═══ */}
+      {/* ═══ 04 MEMBERSHIP ═══ */}
       <Chapter id="membership">
-        <SectionHead index={3} kicker="MEMBERSHIP" title="Protect your car, all year" />
+        <SectionHead index={4} kicker="MEMBERSHIP" title="Protect your car, all year" />
         <motion.div
           {...reveal}
           className="flex items-center justify-center flex-wrap mx-auto"
@@ -851,62 +960,6 @@ export function LandingScreen({ prices }: LandingProps) {
         </div>
       </Chapter>
 
-      {/* ═══ 04 BEFORE / AFTER ═══ */}
-      <Chapter id="gallery">
-        <SectionHead index={4} kicker="THE DIFFERENCE" title="See for yourself" />
-        {/* THE FRAME IS THE FILM'S WIDTH, because the film is PORTRAIT.
-            This was capped at a landscape measure and the video inside it was
-            a 16/9 box on `object-fit: cover` - so a 720x998 film was being
-            filled into a wide frame and everything above and below the middle
-            band was thrown away. That is the crop.
-            Now the cap is a portrait one: the glass hugs the film instead of
-            the film being cut to fit the glass. On a phone the column is
-            narrower than this anyway, so one value serves both. */}
-        <motion.div {...reveal} className="relative mx-auto" style={{ maxWidth: 520 }}>
-          <div className="relative" style={{ borderRadius: radius.stage, padding: space.breath, ...glass() }}>
-            {/* ── THE STUDIO'S OWN FILM ────────────────────────────────────
-                This was a before/after drag over the SAME stock photograph
-                twice, the second copy CSS-filtered to look dirty - the section
-                asked the customer to see the difference and then showed them a
-                filter. The studio has a commercial; it is the real thing.
-
-                `muted` is what makes `autoPlay` legal on every mobile browser,
-                and it is also the right behaviour: §7.4 permits ambient motion,
-                and sound that starts by itself is not ambient. `playsInline`
-                stops iOS taking it fullscreen. No controls, because there is
-                nothing to control - it loops.
-
-                `poster` is the first frame's job, so the glass is never a
-                black rectangle while the file arrives, and `preload="metadata"`
-                keeps 2.7MB off the critical path of a page most people reach
-                on a phone. */}
-            <video
-              src={MEDIA.video.commercial}
-              poster={MEDIA.hero.homepage}
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              aria-label="AutoModz at work - a short film of the studio"
-              className="block w-full"
-              style={{
-                borderRadius: radius.sheet,
-                /* THE FILM SIZES THE FRAME, not the other way round.
-                   This was a 16/9 box with `object-fit: cover`, which happens
-                   to match this file and would silently crop the next one -
-                   `cover` fills the box and throws away whatever does not fit.
-                   `height: auto` lets the element take the video's OWN ratio,
-                   so the frame is always exactly the film's shape and there is
-                   nothing left to crop. `contain` is belt-and-braces for the
-                   moment before metadata arrives. */
-                height: 'auto',
-                objectFit: 'contain',
-              }}
-            />
-          </div>
-        </motion.div>
-      </Chapter>
 
       {/* ═══ 05 CONTACT ═══ */}
       <Chapter id="contact">

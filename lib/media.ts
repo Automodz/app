@@ -15,6 +15,22 @@
  * in Firebase Storage and flows through lib/services/storage.ts - it is
  * data, not app chrome, and never belongs here.
  */
+/**
+ * THE HERO, IMPORTED RATHER THAN NAMED.
+ *
+ * A string path tells `next/image` nothing about the picture, so a frame using
+ * one has to be told the aspect ratio by hand - and a hand-written ratio is
+ * wrong the moment the file is recropped, which is exactly what happened here.
+ * A static import makes Next read the real width and height off the file at
+ * BUILD time, so the frame is always the photograph's own shape and swapping
+ * the file is the whole of the change.
+ *
+ * It stays in this module because §MEDIA's rule is that no component names an
+ * image; importing one inside a screen would be the same violation as writing
+ * its path there.
+ */
+export { default as heroPhoto } from '../public/hero/studio.jpg';
+
 const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
 
@@ -23,15 +39,16 @@ export const MEDIA = {
     /**
      * THE STUDIO ITSELF, which is the point.
      *
-     * This was a stock red BMW on Unsplash — a good photograph of somebody
+     * This was a stock red BMW on Unsplash - a good photograph of somebody
      * else's car in somebody else's showroom, at the one address that is
      * supposed to say what AutoModz is. It is now the studio's own floor: the
      * wordmark on the mezzanine, the LLumar, XPEL, Garware and Kovalent walls,
      * and a car that was actually finished here.
      *
-     * It is a PHONE-SHAPED photograph (719x1599) in a 4:3 frame, so the crop
-     * is art-directed at the call site rather than left to centre — see
-     * `LandingScreen`, which pulls it down onto the car.
+     * Its SHAPE is deliberately not written down anywhere. It has been recropped
+     * once already, and every place that repeated its dimensions had to be found
+     * and corrected by hand when it was - so the frame reads the shape off the
+     * file instead. `heroPhoto` below is how.
      */
     homepage: '/hero/studio.jpg',
     /** bright silver supercar; reads on light + dark */
@@ -50,7 +67,7 @@ export const MEDIA = {
   services: {
     ppf: '/services/ppf.jpg',
     ceramic: '/services/ceramic.jpg',
-    /** The "Detailing & Polish" card — `coating` is that discipline's key. */
+    /** The "Detailing & Polish" card - `coating` is that discipline's key. */
     coating: '/services/detailing.jpg',
     washing: '/services/washing.jpg',
     /** The same discipline as `coating`, so it is the same photograph. */
