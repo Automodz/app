@@ -2,16 +2,16 @@
  * ROUTE CONFIGURATION
  *
  * Source: docs/AUTOMODZ-OS.md §5.1, §5.2, §5.4, §6.2, §6.3, §12.2, §15.2
- *         design "AutoModz App.dc.html" — the dock, drawn on all twelve screens
+ *         design "AutoModz App.dc.html" - the dock, drawn on all twelve screens
  *
  * ── THE DOCK IS FIVE, AND §6.3 IS SUPERSEDED ────────────────────────────
  * This table used to hold four slots plus a distinct Studio control, because
- * §6.3 read "arranging a visit … earns a permanent, distinct control — NOT A
+ * §6.3 read "arranging a visit … earns a permanent, distinct control - NOT A
  * SLOT AMONG EQUALS." The ratified design draws the dock twelve times and it
  * is five equal slots every time: Now · Car · Studio · Garage · You.
  *
  * The clause is honoured rather than dropped. What §6.3 protects is that
- * arranging a visit is never buried — and a permanent slot of its own, lit in
+ * arranging a visit is never buried - and a permanent slot of its own, lit in
  * amber when you are standing in it, is the strongest form of that promise.
  * What it argued against was a floating-action button, which this is not.
  *
@@ -22,8 +22,8 @@
  *    reaches a car through the Garage. Both readings of §12.2 were defensible,
  *    and this is the one that settles it: a dock slot for "the car" must
  *    answer "which car" in the navigation, and choosing between cars is the
- *    collection's question. The Club, by contrast, is singular — a customer
- *    has one relationship with the studio — so it costs the dock nothing.
+ *    collection's question. The Club, by contrast, is singular - a customer
+ *    has one relationship with the studio - so it costs the dock nothing.
  *
  * 2. HISTORY IS NOT A SLOT. Screen 1h puts the record directly under the
  *    collection, on one scroll. A tab for it was a tab for a list that is
@@ -31,22 +31,22 @@
  *    Studio.
  *
  * ── EVERY ROUTE STILL MAPS TO EXACTLY ONE NAVIGATION ELEMENT ──
- * `activates` is what keeps §6.2 true — "always shows where the customer is" —
+ * `activates` is what keeps §6.2 true - "always shows where the customer is" -
  * even in the rooms that have no slot of their own. Standing in History lights
  * the Garage, because the record is part of the collection (§5.1).
  */
 
-/** §5.1 — the three concepts. The rooms may evolve; these may not. */
+/** §5.1 - the three concepts. The rooms may evolve; these may not. */
 export type Concept = 'car' | 'studio' | 'person';
 
 /**
- * §6.2 — navigation "disappears for exactly one reason: a full-screen takeover
+ * §6.2 - navigation "disappears for exactly one reason: a full-screen takeover
  * that demands the whole surface." §13.2 says the same of a live visit.
  */
 export type Chrome = 'nav' | 'takeover';
 
 export interface Room {
-  /** §6.4 — every surface is addressable. */
+  /** §6.4 - every surface is addressable. */
   path: string;
   /** The customer's word for this room (§5.2). */
   name: string;
@@ -72,38 +72,38 @@ export const PROFILE = '/you';
 export const HISTORY = '/history';
 export const VEHICLE = '/vehicle';
 /**
- * THE CAR'S POLLUTION CERTIFICATE — declared, renewed and read.
+ * THE CAR'S POLLUTION CERTIFICATE - declared, renewed and read.
  *
  * Under `/vehicle` rather than beside it, because it is one fact ABOUT a car
  * and the address should read that way: `roomFor` therefore resolves it to the
  * car's own room by longest match, so the dock lights the Garage exactly as it
  * does while standing in the car, and `parentOf` returns to the car that was
- * walked in from — carrying `?car=`, so a garage of four cars cannot lose
+ * walked in from - carrying `?car=`, so a garage of four cars cannot lose
  * which one this was about.
  */
 export const VEHICLE_PUC = '/vehicle/puc';
 /**
- * A BOOKING'S OWN ADDRESS — design screens 09 and 10.
+ * A BOOKING'S OWN ADDRESS - design screens 09 and 10.
  *
  * These were a bottom sheet at `/studio?manage=<id>`, which gave the two most
- * consequential screens in the product — the confirmation, and the place a
- * customer moves or cancels a visit — no address worth sharing, no back
+ * consequential screens in the product - the confirmation, and the place a
+ * customer moves or cancels a visit - no address worth sharing, no back
  * button of their own, and no way to be reached from a notification. §6.4:
  * every surface is addressable.
  */
 export const BOOKING = '/booking';
 /**
- * A MID-VISIT APPROVAL — design screen 12.
+ * A MID-VISIT APPROVAL - design screen 12.
  *
  * Its own address, because it is reached from a notification and nothing else:
  * the studio finds something, the customer's phone lights up, and the tap has
  * to land on the request itself rather than on a room with a request somewhere
- * inside it (§17.3 — a notification is a doorway).
+ * inside it (§17.3 - a notification is a doorway).
  */
 export const APPROVAL = '/approval';
 
 /**
- * THE MARKETPLACE. Public, unlike every other address above it — `/cars` is
+ * THE MARKETPLACE. Public, unlike every other address above it - `/cars` is
  * readable signed out, because a listing nobody can open is a listing nobody
  * buys. Not rooms: they carry no navigation bar and hold no customer state,
  * so they are absent from `rooms` deliberately.
@@ -132,7 +132,7 @@ export const rooms: Record<string, Room> = {
     name: 'The car',
     concept: 'car',
     chrome: 'nav',
-    /* §12.2 — the car is walked toward from the collection. It held a slot
+    /* §12.2 - the car is walked toward from the collection. It held a slot
        briefly and the ratified design took it back: the Garage IS the way to
        a car, and a dock slot for "the car" has to answer "which one" in the
        navigation, which is the collection's question to ask. Standing in a
@@ -144,7 +144,7 @@ export const rooms: Record<string, Room> = {
     name: 'History',
     concept: 'car',
     chrome: 'nav',
-    // Screen 1h — the record sits under the collection. Standing in it lights
+    // Screen 1h - the record sits under the collection. Standing in it lights
     // the Garage, because you have not left the collection.
     activates: GARAGE,
   },
@@ -161,7 +161,7 @@ export const rooms: Record<string, Room> = {
     concept: 'studio',
     chrome: 'nav',
     /* Arranging a visit is the Studio's, and a booking is what arranging
-       produced — so standing in one lights the Studio rather than adding a
+       produced - so standing in one lights the Studio rather than adding a
        sixth slot for a screen a customer visits twice per visit. */
     activates: STUDIO,
   },
@@ -171,7 +171,7 @@ export const rooms: Record<string, Room> = {
     concept: 'car',
     chrome: 'nav',
     /* It is about the car on the bay, and the car is reached through the
-       Garage — the same place the visit it belongs to lights up. */
+       Garage - the same place the visit it belongs to lights up. */
     activates: GARAGE,
   },
   [MEMBERSHIP]: {
@@ -192,16 +192,16 @@ export const rooms: Record<string, Room> = {
   },
 };
 
-/** §6.2 — the dock, in order. Five, as the design draws it on every screen. */
+/** §6.2 - the dock, in order. Five, as the design draws it on every screen. */
 export const slots: readonly string[] = [HOME, STUDIO, GARAGE, MEMBERSHIP, PROFILE];
 
 /**
- * §6.3 — arranging a visit is the most frequent deliberate act, so it keeps a
+ * §6.3 - arranging a visit is the most frequent deliberate act, so it keeps a
  * permanent control. That control is now the Studio slot itself rather than a
  * separate mark beside the dock; this record is what other code still reads to
  * ask "where does arranging live", and the answer has not changed.
  *
- * §21.6 — the accessible name; §21.8 — the customer's word. It names a PLACE,
+ * §21.6 - the accessible name; §21.8 - the customer's word. It names a PLACE,
  * not an act: tapping it is arrival, not creation, and §5.2 puts "arranging a
  * visit" inside the Studio. A label of "Add" or "New" would describe a
  * transaction, and §2.1 is that the car is the subject, never the transaction.
@@ -226,13 +226,13 @@ export const roomFor = (pathname: string): Room | undefined => {
 /**
  * WHAT KIND OF SURFACE IS THIS?
  *
- * Source: design/colors.ts — "the application is dark because a car
+ * Source: design/colors.ts - "the application is dark because a car
  *         photographed against black reads as a car in a studio"
  *
  * ── WHY THE DEFAULT IS DARK, AND WHY THAT IS THE WHOLE POINT ────────────
  * This started as `isCustomerSurface`: a LIST of customer addresses, with
  * everything not on the list falling through to whatever theme the browser
- * had stored. That answered the bug in front of it and left the trap open —
+ * had stored. That answered the bug in front of it and left the trap open -
  * the default was wrong, so every address anybody adds later is light until
  * somebody remembers this file. It was proven within the hour: a harness
  * route added to look at the rooms rendered white-on-white, for exactly the
@@ -275,7 +275,7 @@ export const surfaceKind = (pathname: string): SurfaceKind => {
 export const isCustomerSurface = (pathname: string): boolean =>
   surfaceKind(pathname) === 'room';
 
-/** §6.2 — is the navigation shown at this address? */
+/** §6.2 - is the navigation shown at this address? */
 export const chromeFor = (pathname: string): Chrome =>
   roomFor(pathname)?.chrome ?? 'nav';
 

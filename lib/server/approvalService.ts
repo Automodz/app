@@ -1,6 +1,6 @@
 import 'server-only';
 /**
- * MID-VISIT APPROVAL — design screen 12.
+ * MID-VISIT APPROVAL - design screen 12.
  *
  * The studio opens a panel, finds something underneath, and the work changes.
  * That is the one moment in this product where a customer agrees to spend more
@@ -21,7 +21,7 @@ import 'server-only';
  * `priceVisit`, and stored. The customer taps a total; that exact total is
  * what the job carries afterwards. Recomputing on approval would mean a
  * catalogue edit, an expiring promo or a lapsing membership between asking and
- * answering silently changed what was agreed — which is precisely the class of
+ * answering silently changed what was agreed - which is precisely the class of
  * defect the estimate exists to prevent one screen earlier.
  */
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -61,7 +61,7 @@ export interface ApprovalRequest {
  *
  * Staff-only, enforced at the route. What this adds beyond the write is the
  * arithmetic: it loads the job, prices the visit as it stands and as it would
- * be, and stores both — so the customer is shown a delta the studio cannot
+ * be, and stores both - so the customer is shown a delta the studio cannot
  * later dispute and a total the studio cannot later exceed.
  */
 export async function requestApproval(
@@ -82,7 +82,7 @@ export async function requestApproval(
   const job = { id: jobSnap.id, ...(jobSnap.data() as object) } as Job;
 
   /* A CAR NOBODY OWNS CANNOT BE ASKED. A walk-in whose customer never had an
-     account has no one to approve — the counter asks them in person, and this
+     account has no one to approve - the counter asks them in person, and this
      object would be a request addressed to nobody. */
   if (!job.customerId) throw new ApprovalError('job-has-no-customer', 409);
   if (job.status === 'completed' || job.status === 'cancelled') {
@@ -175,7 +175,7 @@ export async function requestApproval(
 export interface RespondResult {
   id: string;
   status: 'approved' | 'declined';
-  /** true when the answer had already been given — a replay, not a second act. */
+  /** true when the answer had already been given - a replay, not a second act. */
   replayed: boolean;
   /** What the job now totals. Unchanged on a decline. */
   total: number;
@@ -187,7 +187,7 @@ export interface RespondResult {
  * ── IDEMPOTENT, AND NOT BY A MARKER ──────────────────────────────────────
  * The approval's own status is the guard, inside the transaction that applies
  * the change. A second approve finds it already `approved`, applies nothing,
- * and returns the same answer — so a double tap, a retried request and a
+ * and returns the same answer - so a double tap, a retried request and a
  * customer pressing back and forward all cost exactly one charge.
  *
  * ── DECLINING WRITES NOTHING BUT THE ANSWER ──────────────────────────────
@@ -210,7 +210,7 @@ export async function respondToApproval(
     if (!snap.exists) throw new ApprovalError('not-found', 404);
     const approval = { id: snap.id, ...(snap.data() as object) } as Approval;
 
-    /* NOT "forbidden" — the same answer as an id that does not exist, so this
+    /* NOT "forbidden" - the same answer as an id that does not exist, so this
        cannot be used to discover which approvals are real. */
     if (approval.customerId !== callerUid) throw new ApprovalError('not-found', 404);
 
@@ -227,7 +227,7 @@ export async function respondToApproval(
     }
 
     /* THE CLOCK RETIRES IT, and the retirement is recorded rather than
-       silently refused — otherwise a customer answering a minute late is told
+       silently refused - otherwise a customer answering a minute late is told
        nothing at all. */
     const requestedAtMs = approval.requestedAt?.toMillis?.() ?? 0;
     if (approvalHasExpired({ status: approval.status, requestedAtMs }, now)) {

@@ -7,7 +7,7 @@
  * test that pins the shape of a workaround keeps the workaround, which is
  * exactly what five membership assertions did until this pass.
  *
- * Where a law is already enforced elsewhere it is not repeated here — this
+ * Where a law is already enforced elsewhere it is not repeated here - this
  * file holds the ones the product had no assertion for.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
@@ -68,8 +68,8 @@ describe('the viewport is never assumed', () => {
     const grid = codeOf('design/grid.ts');
     expect(grid).toMatch(/env\(safe-area-inset-bottom/);
     expect(grid).toMatch(/env\(safe-area-inset-top/);
-    /* A screen may reach for the inset, but the stacking arithmetic — the
-       floor that clears the dock — is the token's and only the token's. */
+    /* A screen may reach for the inset, but the stacking arithmetic - the
+       floor that clears the dock - is the token's and only the token's. */
     const offenders = walk('components/screens')
       .filter(f => /contentFloor|navHeight/.test(codeOf(f)))
       .filter(f => /calc\([^)]*\d+px[^)]*env\(safe-area/.test(codeOf(f)));
@@ -80,7 +80,7 @@ describe('the viewport is never assumed', () => {
 describe('the 44px floor has no discounts', () => {
   it('nothing subtracts from TARGET_MIN', () => {
     /* The landing's BOOK control was `minHeight: TARGET_MIN - space.hair`,
-       which is 40px — the floor, shaved, on the first screen anybody sees.
+       which is 40px - the floor, shaved, on the first screen anybody sees.
        §21.3 does not have an exception for a header. */
     const offenders = [...CUSTOMER, ...walk('components/invoice'), ...walk('components/legal')]
       .filter(f => /TARGET_MIN\s*[-–]\s*/.test(codeOf(f)));
@@ -89,7 +89,7 @@ describe('the 44px floor has no discounts', () => {
 
   it('and every control that states the floor also refuses to shrink', () => {
     /* Belt and braces. A control that is 44px only while its parent happens
-       to be a block is one refactor away from being 40 — and the landing's
+       to be a block is one refactor away from being 40 - and the landing's
        sections have been recomposed more than once. */
     const landing = codeOf('components/screens/LandingScreen.tsx');
     const targets = [...landing.matchAll(/minHeight: TARGET_MIN[^}]*/g)].map(m => m[0]);
@@ -113,8 +113,8 @@ describe('the 44px floor has no discounts', () => {
 
 describe('one design language', () => {
   it('THE SIGNED-IN ROOMS DRAW THEIR OWN MARKS, and import no icon set at all', () => {
-    /* Every room a customer lives in — the car, the record, the Club, the
-       studio, the settlement — draws its glyphs inline. An icon library
+    /* Every room a customer lives in - the car, the record, the Club, the
+       studio, the settlement - draws its glyphs inline. An icon library
        arriving in one of them is a second visual vocabulary arriving one
        import at a time. */
     const rooms = CUSTOMER
@@ -141,12 +141,12 @@ describe('one design language', () => {
   });
 
   it('no customer surface hard-codes a palette value', () => {
-    /* §22.4 — no raw colour outside `design/`. The two ramps that fill an
+    /* §22.4 - no raw colour outside `design/`. The two ramps that fill an
        `Action` used to live inside the primitive itself; they are
        `design/colors.fill` now.
 
        A BRAND MARK IS NOT OUR PALETTE. Google's four colours inside its own
-       logo are that brand's, and re-tinting them would be wrong — so an
+       logo are that brand's, and re-tinting them would be wrong - so an
        element carrying a literal INSIDE an <svg> path is exempt, and only
        there. */
     const offenders = CUSTOMER
@@ -164,7 +164,7 @@ describe('one design language', () => {
        and it is how two spacing systems start.
 
        The landing composes with responsive utilities (`hidden md:flex`) over
-       the same tokens, which is a different thing from being STYLED by them —
+       the same tokens, which is a different thing from being STYLED by them -
        the pattern below is the styling half only, and the landing is held to
        it too. */
     const offenders = CUSTOMER
@@ -186,7 +186,7 @@ describe('no customer screen is a dead end', () => {
       .map(r => r.replace(/\[[^\]]+\]/g, 'x'))
       .filter(r => !ROOT.has(r))
       .filter(r => r !== '/welcome' && r !== '/offline' && r !== '/auth/login')
-      /* The four surfaces read by people with no session and no history —
+      /* The four surfaces read by people with no session and no history -
          `publicParent` answers for them, asserted next. */
       .filter(r => !r.startsWith('/invoice') && !r.startsWith('/chapter')
         && r !== '/privacy' && r !== '/terms')
@@ -206,7 +206,7 @@ describe('no customer screen is a dead end', () => {
   });
 
   it('and the legal pages carry the ONE back control, not a footer of links', () => {
-    /* They had three links at the FOOT — the exact idiom the navigation law
+    /* They had three links at the FOOT - the exact idiom the navigation law
        suite condemned everywhere else. A control you reach by scrolling past
        everything is not an escape route. */
     const legal = readFileSync('components/legal/LegalPage.tsx', 'utf8');
@@ -300,7 +300,7 @@ describe('the customer never writes authoritative state', () => {
   /**
    * THE COLLECTIONS THAT CARRY A PROMISE, A PRICE OR AN ENTITLEMENT.
    *
-   * For each: who may write it from a browser. `false` means nobody — the
+   * For each: who may write it from a browser. `false` means nobody - the
    * server is the only writer, through a named route.
    */
   const SEALED: readonly [string, 'nobody' | 'staff'][] = [
@@ -334,7 +334,7 @@ describe('the customer never writes authoritative state', () => {
     /* `ownsVehicle()` asks whether a document EXISTS at
        `users/{me}/vehicles/{thatId}`, and protections, visits and declarations
        all read it. While a browser could CHOOSE that id, squatting another
-       customer's was a claim over their car's whole record — and vehicle ids
+       customer's was a claim over their car's whole record - and vehicle ids
        travel in the customer's own addresses.
 
        `allow create: if false` is the line that closes it. An UPDATE cannot
@@ -348,7 +348,7 @@ describe('the customer never writes authoritative state', () => {
   });
 
   it('but CONSENT stays the owner’s, because it cannot be anyone else’s', () => {
-    /* `lib/os/consent.ts` is explicit that the studio has no way in — an admin
+    /* `lib/os/consent.ts` is explicit that the studio has no way in - an admin
        who could consent on a customer's behalf would defeat the point of
        asking. So the one owner-writable field is named, and only that one. */
     const at = rules.indexOf('match /vehicles/{vehicleId}');
@@ -358,7 +358,7 @@ describe('the customer never writes authoritative state', () => {
   });
 
   it('the money words appear in no client-writable rule', () => {
-    /* `amount`, `total`, `paid` — a rule that mentions one is a rule trying to
+    /* `amount`, `total`, `paid` - a rule that mentions one is a rule trying to
        validate arithmetic, which rules cannot do. */
     for (const c of ['payments', 'estimates', 'subscriptions', 'bookings']) {
       const block = blockOf(c);
@@ -440,11 +440,11 @@ describe('history cannot be rewritten', () => {
       .toEqual({ ok: false, reason: 'already-expired' });
   });
 
-  it('a PAID payment is terminal — a refund is its own event, not a reversal', () => {
+  it('a PAID payment is terminal - a refund is its own event, not a reversal', () => {
     expect(paymentTransition('paid', 'unpaid', 'studio')).toEqual({ ok: false, reason: 'already-paid' });
   });
 
-  it('an EXPIRED membership is never revived — rejoining is a new record', () => {
+  it('an EXPIRED membership is never revived - rejoining is a new record', () => {
     expect(membershipTransition('expired', 'active', 'studio'))
       .toEqual({ ok: false, reason: 'already-expired' });
     expect(membershipTransition('cancelled', 'active', 'studio'))
@@ -467,7 +467,7 @@ describe('history cannot be rewritten', () => {
       .filter(f => /captureTerms\(/.test(codeOf(f)) && f !== 'lib/os/protection.ts')
       .sort();
     /* THE SEAL, and the documented migration read path. No screen, no
-       projection, no route — and never on a read of a sealed record. */
+       projection, no route - and never on a read of a sealed record. */
     expect(callers).toEqual(['lib/server/sealVisit.ts', 'lib/services/visits.ts']);
   });
 });
@@ -487,7 +487,7 @@ describe('an expired promise is never dressed as a live one', () => {
   it('and the car’s warranty tile counts only what still holds', () => {
     /* The tile reads "Active to <month>". It used to take the furthest dated
        term including LAPSED ones, so a car whose only protection had run out
-       on 30 July was given "Active to July 2026" — under a ledger row saying
+       on 30 July was given "Active to July 2026" - under a ledger row saying
        "Lapsed 30 July 2026", on the same screen. */
     const project = codeOf('lib/customer/project.ts');
     const furthest = project.slice(project.indexOf('const furthest = protections'));
@@ -502,11 +502,11 @@ describe('a customer never reads an internal word', () => {
     /* The Club's record listed every membership with `status: s.status`, so a
        membership the studio had not taken payment for appeared as the
        lowercase word "pending" beside four sentences of the product's own
-       English. §21.8 — the customer's word, never the internal one.
+       English. §21.8 - the customer's word, never the internal one.
 
        Narrow on purpose: `status: x.status` INSIDE a model literal is the
-       defect. Passing `{ status: approval.status }` to an ENGINE is not — the
-       engine's whole job is to read the enum — so the pattern is the
+       defect. Passing `{ status: approval.status }` to an ENGINE is not - the
+       engine's whole job is to read the enum - so the pattern is the
        assignment shape and not the identifier. */
     const project = codeOf('lib/customer/project.ts');
     const offenders = project.split('\n')
@@ -517,7 +517,7 @@ describe('a customer never reads an internal word', () => {
 
   it('AND NO TIER IS CLAIMED BEFORE THE STUDIO GRANTS IT', () => {
     /* A membership the studio had not taken payment for put the word GOLD in
-       the customer's own identity line — the tier asserted beside their name,
+       the customer's own identity line - the tier asserted beside their name,
        three lines above a card saying "waiting on the studio to confirm it".
        The same rule the certificate follows. */
     const toYou = codeOf('lib/customer/project.ts');
@@ -580,7 +580,7 @@ describe('every control the customer is offered actually does something', () => 
   it('no customer surface prints to the console', () => {
     /* `console.error` is allowed and used deliberately: a read that failed and
        a control with no destination are things that must be visible. What is
-       forbidden is the debugging residue — `log`, `warn`, `debug`. */
+       forbidden is the debugging residue - `log`, `warn`, `debug`. */
     const offenders = CUSTOMER.filter(f => /console\.(log|warn|debug|info)\(/.test(codeOf(f)));
     expect(offenders).toEqual([]);
   });

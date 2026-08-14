@@ -35,7 +35,7 @@ const promo = (over: Partial<Promo> = {}): Promo => ({
 
 const GLASS = [{ name: 'Glass Coating', price: 1200 }];
 
-describe('THE PINNED REGRESSION — discount is carried, never derived', () => {
+describe('THE PINNED REGRESSION - discount is carried, never derived', () => {
   it('services 1200, discount 200, two legs → subtotal 1200, discount 200, fees 100, total 1100', () => {
     const b = priceVisit({
       services: GLASS,
@@ -112,13 +112,13 @@ describe('benefits', () => {
 });
 
 describe('tax', () => {
-  it('OFF — the field is absent, never zero', () => {
+  it('OFF - the field is absent, never zero', () => {
     const b = priceVisit({ services: GLASS, benefit: benefit(), tax: { enabled: false, rate: 18 } });
     expect(b.tax).toBeUndefined();
     expect('tax' in b).toBe(false);
     expect(b.total).toBe(1200);
   });
-  it('ON — exclusive, on work and fees, rounded once to the rupee', () => {
+  it('ON - exclusive, on work and fees, rounded once to the rupee', () => {
     const b = priceVisit({
       services: GLASS, fees: pickupFees({ pickup: true }),
       benefit: benefit({ promos: [promo()] }),
@@ -129,7 +129,7 @@ describe('tax', () => {
     expect(b.tax).toEqual({ rate: 18, amount: 189, gstin: '24ABCDE1234F1Z5' });
     expect(b.total).toBe(1239);
   });
-  it('rounds once — a fractional rate never leaves a fraction', () => {
+  it('rounds once - a fractional rate never leaves a fraction', () => {
     const b = priceVisit({
       services: [{ name: 'x', price: 999 }], benefit: benefit(),
       tax: { enabled: true, rate: 18 },
@@ -143,7 +143,7 @@ describe('tax', () => {
   });
 });
 
-describe('AMZ-2026-0001 — the real invoice, pinned forever', () => {
+describe('AMZ-2026-0001 - the real invoice, pinned forever', () => {
   it('reconciles at exactly ₹1,250', () => {
     /* Glass Coating ₹1,200 + one leg ₹50, no discount, no GST. Booking, job,
        sealed visit and invoice all record 1250; this proves the canonical

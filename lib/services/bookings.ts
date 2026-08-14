@@ -35,7 +35,7 @@ export const getPendingApprovals = async (): Promise<Booking[]> => {
  *
  * The customer's only booking path is in-app now, so a `pending` booking is a
  * customer waiting. A listener rather than a fetch: the studio must not have to
- * reload the board to discover one. Newest first — the newest is the one nobody
+ * reload the board to discover one. Newest first - the newest is the one nobody
  * has seen yet.
  *
  * Needs the composite index on (status, createdAt desc); it is in
@@ -75,7 +75,7 @@ export const getBookingsForDates = async (dates: string[]): Promise<Booking[]> =
 };
 
 /**
- * CANCEL — through the server, always.
+ * CANCEL - through the server, always.
  *
  * This used to be a direct `updateDoc` setting `status: 'cancelled'`, and that
  * was a silent bug: a booking that had consumed a membership wash or a promo
@@ -83,13 +83,13 @@ export const getBookingsForDates = async (dates: string[]): Promise<Booking[]> =
  * subscription nor the promo. The customer lost a wash they had paid for.
  *
  * The restore has to be server-authoritative, so this is the one way to cancel
- * and every caller — customer, admin refusal, no-show — goes through it.
+ * and every caller - customer, admin refusal, no-show - goes through it.
  */
 export const cancelBooking = async (
   bookingId: string,
   opts: { reason?: string; noShow?: boolean } = {},
 ): Promise<void> => {
-  /* Waited for — `/studio` is a customer room and mounts no AuthProvider, so
+  /* Waited for - `/studio` is a customer room and mounts no AuthProvider, so
      `currentUser` can still be null when a customer presses cancel. */
     const res = await authedFetch('/api/booking/cancel', {
     method: 'POST',
@@ -124,7 +124,7 @@ export const rejectBooking = async (
 export const markNoShow = async (
   booking: Pick<Booking, 'id' | 'userId' | 'serviceName' | 'vehicleName' | 'scheduledDate' | 'scheduledTime'>,
 ) => {
-  /* `noShow` forfeits the wash — the bay was held. The rule lives in
+  /* `noShow` forfeits the wash - the bay was held. The rule lives in
      lib/server/bookingService.ts; this only names the case. */
   await cancelBooking(booking.id, { noShow: true });
   const body = `You missed your ${booking.serviceName} appointment for ${booking.vehicleName} on ${booking.scheduledDate} at ${booking.scheduledTime}. Rebook anytime from the app.`;
@@ -136,18 +136,18 @@ export const markNoShow = async (
 };
 
 /**
- * MOVE A BOOKING — through the server, always.
+ * MOVE A BOOKING - through the server, always.
  *
  * This was `updateDoc(doc(db,'bookings',id), { scheduledDate, scheduledTime })`,
  * and `firestore.rules` permitted it because the rule checked which KEYS had
  * changed and nothing about their values. So a customer could move a visit into
  * an hour the studio was already working, into the past, onto a slot that does
- * not exist, or — the expensive one — to two hours' notice on a two-day PPF
+ * not exist, or - the expensive one - to two hours' notice on a two-day PPF
  * whose film had already been cut. The 24-hour rule was also decided from the
  * browser's own clock.
  *
- * The rule is now closed and the whole decision — window, capacity, span,
- * audit trail — is one transaction in the Booking Service.
+ * The rule is now closed and the whole decision - window, capacity, span,
+ * audit trail - is one transaction in the Booking Service.
  */
 export const rescheduleBooking = async (
   id: string, scheduledDate: string, scheduledTime: string,
@@ -204,7 +204,7 @@ export const updateBookingStatusWithNotification = async (
 ) => {
   /* The write lives HERE, inlined, rather than behind a second exported
      function nothing outside this module called. A bare `updateBookingStatus`
-     was a way to move a booking's status without telling the customer — the
+     was a way to move a booking's status without telling the customer - the
      whole reason this wrapper exists. */
   const data: Record<string, unknown> = { status, updatedAt: serverTimestamp() };
   if (notes) data.adminNotes = notes;
@@ -212,7 +212,7 @@ export const updateBookingStatusWithNotification = async (
 
   /* ── TELLING THE CUSTOMER IS THE SERVER'S ──
      This wrote the notification document and fired the push from the BROWSER,
-     which meant quiet mode — decided server-side, in `recordEvent` — was
+     which meant quiet mode - decided server-side, in `recordEvent` - was
      bypassed entirely: a customer who had asked for quiet received every stage
      ping regardless. Nothing de-duplicated either, so advancing, undoing and
      re-advancing a stage sent the same message three times.

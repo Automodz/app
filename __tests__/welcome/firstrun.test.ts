@@ -1,5 +1,5 @@
 /**
- * FIRST ARRIVAL — §19, §21.4, §21.6 · ARCHITECTURE §1 · Apple 4.5.4.
+ * FIRST ARRIVAL - §19, §21.4, §21.6 · ARCHITECTURE §1 · Apple 4.5.4.
  *
  * THE DEFECT THIS SURFACE HAD, and it was not a missing screen:
  *
@@ -9,7 +9,7 @@
  *   reset it for someone who asked. It is now a field on the user document.
  *
  *   THERE WERE THREE COPIES OF THE SAME FACT: the localStorage key, the
- *   `onboardingCompleted` boolean in the session store, and — implicitly — a
+ *   `onboardingCompleted` boolean in the session store, and - implicitly - a
  *   car in the garage. Two of the three are gone.
  *
  *   THE STEP WAS COMPONENT STATE, so Back left the welcome entirely and a
@@ -51,12 +51,12 @@ const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
   addresses: [], approvals: [],
 });
 
-describe('FIRST LOGIN — the welcome appears exactly once', () => {
+describe('FIRST LOGIN - the welcome appears exactly once', () => {
   it('a brand-new customer with no car is welcomed', () => {
     expect(shouldWelcome({ vehicleCount: 0 })).toBe(true);
   });
 
-  it('SECOND LOGIN — a customer who has arrived before is not', () => {
+  it('SECOND LOGIN - a customer who has arrived before is not', () => {
     expect(shouldWelcome({ welcomedAt: ts('2026-07-01T00:00:00Z'), vehicleCount: 0 }))
       .toBe(false);
   });
@@ -72,12 +72,12 @@ describe('FIRST LOGIN — the welcome appears exactly once', () => {
   });
 
   it('a customer with a car is never walked through an arrival', () => {
-    /* A garage with a car in it is proof of a previous arrival on its own —
+    /* A garage with a car in it is proof of a previous arrival on its own -
        it covers anyone whose flag predates this field. */
     expect(shouldWelcome({ vehicleCount: 1 })).toBe(false);
   });
 
-  it('ADMIN RESET — `?welcome=1` overrides everything', () => {
+  it('ADMIN RESET - `?welcome=1` overrides everything', () => {
     expect(shouldWelcome({
       welcomedAt: ts('2026-07-01T00:00:00Z'), vehicleCount: 3, forced: true,
     })).toBe(true);
@@ -143,7 +143,7 @@ describe('DEEP LINKS and the BACK BUTTON', () => {
     expect(stepIndex('hello')).toBe(0);
   });
 
-  it('the last step has no forward address — it is an act, not a step', () => {
+  it('the last step has no forward address - it is an act, not a step', () => {
     expect(toWelcome(picture(), 'car').panel.forwardHref).toBeUndefined();
   });
 });
@@ -176,7 +176,7 @@ describe('what the arrival actually says', () => {
     expect(line).toMatch(/as long as you own/i);
   });
 
-  it('asks whether the customer already has a car — it does not assume', () => {
+  it('asks whether the customer already has a car - it does not assume', () => {
     const p = toWelcome(picture(), 'car').panel;
     expect(p.title).toMatch(/Do you have a car already\?/);
     expect(p.forward).toMatch(/Yes/);
@@ -190,12 +190,12 @@ describe('what the arrival actually says', () => {
   });
 
   it('says where it is up to, for a screen reader', () => {
-    /* §21.6 — position announced, without drawing progress dots at anyone. */
+    /* §21.6 - position announced, without drawing progress dots at anyone. */
     expect(toWelcome(picture(), 'rooms').position).toEqual({ index: 2, total: 5 });
   });
 });
 
-describe('WITHOUT A VEHICLE — adding one is never forced', () => {
+describe('WITHOUT A VEHICLE - adding one is never forced', () => {
   it('every step after the first can be passed over', () => {
     for (const s of ['rooms', 'record', 'notifications', 'car'] as const) {
       expect(toWelcome(picture(), s).panel.pass).toBeTruthy();
@@ -225,14 +225,14 @@ describe('WITHOUT A VEHICLE — adding one is never forced', () => {
   });
 });
 
-describe('APPLE 4.5.4 — notifications are asked for, never demanded', () => {
+describe('APPLE 4.5.4 - notifications are asked for, never demanded', () => {
   const screen = codeOf('components/screens/WelcomeScreen.tsx');
 
   it('the permission step can be skipped', () => {
     expect(toWelcome(picture(), 'notifications').panel.pass).toBe('Not now');
   });
 
-  it('nothing is gated on the answer — the arrival continues either way', () => {
+  it('nothing is gated on the answer - the arrival continues either way', () => {
     /* The forward move sits in `finally`, so a refusal, an unsupported device
        and an outright throw all continue identically. */
     expect(screen).toMatch(/finally \{[\s\S]{0,220}router\.push\(panel\.forwardHref\)/);
@@ -284,7 +284,7 @@ describe('ONE SOURCE OF TRUTH', () => {
     expect(codeOf('navigation/CustomerChrome.tsx')).not.toMatch(/FirstRunGate/);
   });
 
-  it('the old welcome layout is gone — the surface uses ServerRoom now', () => {
+  it('the old welcome layout is gone - the surface uses ServerRoom now', () => {
     expect(existsSync('app/welcome/layout.tsx')).toBe(false);
     expect(codeOf('app/welcome/page.tsx')).toMatch(/ServerRoom/);
   });
@@ -308,15 +308,15 @@ describe('ONE SOURCE OF TRUTH', () => {
 
   it('the profile write reuses the existing service, not a second one', () => {
     /* The old welcome wrote name and phone through `updateUserProfile`. That
-       edit now lives where it always belonged — the account settings — and
+       edit now lives where it always belonged - the account settings - and
        there is exactly one writer of a profile. */
     const writers = sources.filter(f => /export const updateUserProfile/.test(codeOf(f)));
     expect(writers).toEqual(['lib/services/auth.ts']);
   });
 });
 
-describe('ARCHITECTURE §1 — the layers hold', () => {
-  it('THE ENGINE IS PURE — no React, no routes, no storage, no Firestore', () => {
+describe('ARCHITECTURE §1 - the layers hold', () => {
+  it('THE ENGINE IS PURE - no React, no routes, no storage, no Firestore', () => {
     const engine = codeOf('lib/os/welcome.ts');
     expect(engine).not.toMatch(/from 'react'/);
     expect(engine).not.toMatch(/localStorage/);
@@ -325,7 +325,7 @@ describe('ARCHITECTURE §1 — the layers hold', () => {
     expect(engine).not.toMatch(/['"`]\/[a-z]+['"`]/);
   });
 
-  it('THE PROJECTION HAS NO ROUTING — every address comes from the resolver', () => {
+  it('THE PROJECTION HAS NO ROUTING - every address comes from the resolver', () => {
     const projection = codeOf('lib/customer/welcome.ts');
     expect([...projection.matchAll(/['"`]\/[a-z][^'"`]*['"`]/g)].map(m => m[0])).toEqual([]);
     expect(projection).toMatch(/hrefForDestination/);
@@ -336,14 +336,14 @@ describe('ARCHITECTURE §1 — the layers hold', () => {
     expect(screen).not.toMatch(/from ['"]@\/lib\/os\//);
   });
 
-  it('THE RENDERER HOLDS NO WORDING — the projection owns it', () => {
+  it('THE RENDERER HOLDS NO WORDING - the projection owns it', () => {
     const screen = codeOf('components/screens/WelcomeScreen.tsx');
     for (const words of ['My Car', 'My Studio', 'My Ownership', 'Welcome to']) {
       expect(screen).not.toContain(words);
     }
   });
 
-  it('THE SERVER OWNS THE TRUTH — the decision is made before anything draws', () => {
+  it('THE SERVER OWNS THE TRUTH - the decision is made before anything draws', () => {
     /* A client effect used to redirect after mount, so a customer who should
        have been welcomed saw a flash of Home first. */
     const home = codeOf('app/page.tsx');
@@ -358,7 +358,7 @@ describe('ARCHITECTURE §1 — the layers hold', () => {
   });
 });
 
-describe('SECURITY — the flag cannot be forged', () => {
+describe('SECURITY - the flag cannot be forged', () => {
   const rules = readFileSync('firestore.rules', 'utf8');
   const route = codeOf('app/api/welcome/complete/route.ts');
 
@@ -373,7 +373,7 @@ describe('SECURITY — the flag cannot be forged', () => {
     expect(route).toMatch(/error: 'Unauthorized'/);
   });
 
-  it('recording is only ever about the caller — the body cannot name a uid', () => {
+  it('recording is only ever about the caller - the body cannot name a uid', () => {
     expect(route).toMatch(/db\.collection\('users'\)\.doc\(uid\)\.set\(/);
   });
 
@@ -407,7 +407,7 @@ describe('the customer cannot be trapped in it', () => {
 
   it('leaving waits for the flag to be written', () => {
     /* Home reads the same flag to decide whether to send someone here, so
-       leaving without writing it walks straight back in — a best-effort mark
+       leaving without writing it walks straight back in - a best-effort mark
        would have turned a failed write into an inescapable loop. */
     expect(screen).toMatch(/if \(!res\.ok\) throw new Error\('mark-failed'\)/);
     expect(screen).toMatch(/window\.location\.replace\(href\)/);
@@ -420,7 +420,7 @@ describe('the customer cannot be trapped in it', () => {
 
   it('the cached server render is discarded, or Home answers from the old flag', () => {
     /* `router.refresh()` was not enough: it clears the client cache for the
-       CURRENT route — `/welcome` — while the destination is what has to be
+       CURRENT route - `/welcome` - while the destination is what has to be
        re-rendered against the flag just written. A document load does it. */
     expect(screen).toMatch(/window\.location\.replace\(href\)/);
     expect(screen).not.toMatch(/router\.refresh\(\)/);

@@ -33,7 +33,7 @@ export default function OfflineBar() {
             borderBottom: '1px solid var(--st-hairline)',
           }}
         >
-          <Whisper tone="ink-2">You’re offline — showing your last saved details.</Whisper>
+          <Whisper tone="ink-2">You’re offline - showing your last saved details.</Whisper>
         </motion.div>
       )}
     </AnimatePresence>

@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * `ownsVehicle()` in `firestore.rules` is the ownership primitive for
  * protections, visits and declarations, and it asks one question: does a
  * document exist at `users/{me}/vehicles/{thatId}`. While a browser could
- * choose that id, squatting somebody else's was an ownership claim — and
+ * choose that id, squatting somebody else's was an ownership claim - and
  * vehicle ids travel in the customer's own addresses, so they are neither
  * secret nor hard to come by.
  *

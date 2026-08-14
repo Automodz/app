@@ -40,20 +40,20 @@ export const INVITE_AFTER_VISITS = 2;
  *
  * `clubModel` gives the same number as part of the whole picture, but three
  * callers only have a `Subscription` in hand and were each subtracting it
- * themselves. One subtraction, one place — §22.2.
+ * themselves. One subtraction, one place - §22.2.
  */
 export const washesLeftOf = (
   sub: { plan?: string; washesTotal?: number; washesIncluded?: number; washesUsed?: number } | null,
 ): number => Math.max(0, washesGrantedBy(sub) - (sub?.washesUsed ?? 0));
 
 /**
- * WHAT THE PLAN GRANTS — and why this is not simply `sub.washesTotal`.
+ * WHAT THE PLAN GRANTS - and why this is not simply `sub.washesTotal`.
  *
  * A production Gold subscription carried BOTH `washesIncluded: 8` and
  * `washesTotal: 16`, while `MEMBERSHIP_PLANS.Gold.washesPerMonth` is 8 and the
  * plan's own perk line reads "8 Premium Washes / month". Reading `washesTotal`
  * made every customer surface say "10 of 16 washes left" over a benefits list
- * that said 8 — the product overstating what the customer was owed, by eight
+ * that said 8 - the product overstating what the customer was owed, by eight
  * washes, in its own words, on one screen.
  *
  * THE PLAN THE CUSTOMER BOUGHT IS THE AUTHORITY. A count copied onto the
@@ -125,7 +125,7 @@ export function clubModel(args: {
 
   if (!m || m.status === 'cancelled') return none;
 
-  /* The catalogue, not the document — see `washesGrantedBy`. */
+  /* The catalogue, not the document - see `washesGrantedBy`. */
   const washesTotal = washesGrantedBy(m);
   const washesUsed = m.washesUsed ?? 0;
   const washesLeft = Math.max(0, washesTotal - washesUsed);
@@ -140,7 +140,7 @@ export function clubModel(args: {
 
   const context =
     state === 'pending' ? null // the card carries its own confirming line
-    : state === 'lapsed' ? 'Rejoin any time — your history holds.'
+    : state === 'lapsed' ? 'Rejoin any time - your history holds.'
     : state === 'grace'
     ? `The cycle ended ${fmtLong(m.endDate)} - renew to keep it going.`
     : `${washesLeft} wash${washesLeft === 1 ? '' : 'es'} left this cycle · renews ${fmtLong(m.endDate)}`;

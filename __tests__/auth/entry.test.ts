@@ -1,13 +1,13 @@
 /**
  * SIGNING IN, AND ACTUALLY ARRIVING.
  *
- * TWO BUGS, both of which broke the same journey — land on the front page,
+ * TWO BUGS, both of which broke the same journey - land on the front page,
  * tap Book, sign in with Google, and end up back on the front page still
  * signed out.
  *
  *   THE DESTINATION CAME FROM THE CLIENT ROUTER CACHE. Every customer room
  *   renders on the SERVER and reads an httpOnly session cookie. Sign-in minted
- *   that cookie and then called `router.replace('/')` — a SOFT navigation,
+ *   that cookie and then called `router.replace('/')` - a SOFT navigation,
  *   which Next serves from the client Router Cache. That cache already held
  *   the signed-out landing page fetched moments earlier, so the server was
  *   never asked again and never saw the new cookie.
@@ -18,8 +18,8 @@
  *
  *   AND THE REDIRECT WAS BEING SWALLOWED. `ServerRoom` called
  *   `children(picture)` inside its own `try`. `redirect()` works by throwing,
- *   so Home sending a first-time customer to their arrival — and `/welcome`
- *   sending a returning one home — were both caught and rendered as "We could
+ *   so Home sending a first-time customer to their arrival - and `/welcome`
+ *   sending a returning one home - were both caught and rendered as "We could
  *   not reach your garage." A brand-new customer's first sign-in landed there.
  */
 import { readFileSync, readdirSync, statSync } from 'fs';
@@ -96,11 +96,11 @@ describe('sign-in lands on a server render that can see the cookie', () => {
    * `POST /api/session`. The already-signed-in effect then replaced the
    * document while the cookie was still in flight: the request died with the
    * page, the server saw no cookie, and `/` answered with the public landing.
-   * Measured against the emulator — `setUser` at +2.3s, the session POST at
+   * Measured against the emulator - `setUser` at +2.3s, the session POST at
    * +13.3s, so it was not marginal, it was the normal case.
    */
   it('a sign-in in flight is never overtaken by the already-signed-in guard', () => {
-    /* Claimed BEFORE the popup, because the credential — and so `setUser` —
+    /* Claimed BEFORE the popup, because the credential - and so `setUser` -
        lands while `signInWithGoogle` is still awaiting. */
     const claim = login.indexOf('signingIn.current = true');
     const popup = login.indexOf('await signInWithGoogle()');
@@ -149,7 +149,7 @@ describe('sign-in lands on a server render that can see the cookie', () => {
 
   it('a failed cookie mint is SAID, not swallowed', () => {
     /* It was `catch {}` with a comment saying the rooms would ask again. They
-       do not — they render the signed-out landing, and the customer sees
+       do not - they render the signed-out landing, and the customer sees
        themselves bounced to the front page for no stated reason. */
     expect(login).toMatch(/if \(session !== 'ok'\)/);
     expect(login).toMatch(/could not open your studio/);
@@ -158,7 +158,7 @@ describe('sign-in lands on a server render that can see the cookie', () => {
   it('a failed mint does not leave a half-signed-in client', () => {
     /* Signed in to Firebase but with no server session is the state that
        produced the bounce loop; it must not be a state anyone can sit in. */
-    /* Bounded on real code after the branch — `claimReferral` alone matches
+    /* Bounded on real code after the branch - `claimReferral` alone matches
        its own import at the top of the file, which made this slice empty. */
     const branch = login.slice(login.indexOf("if (session !== 'ok')"),
       login.indexOf('void claimReferral()'));
@@ -199,13 +199,13 @@ describe('the door carries no instrumentation', () => {
    * cost came due in production: a sign-in failure was reported in Chrome and
    * Safari, on new and returning accounts, and the door had thrown the SDK's
    * error code away at the only point it existed. A silent door is not a clean
-   * door — it is one nobody can diagnose.
+   * door - it is one nobody can diagnose.
    *
    * So: exactly one console call, an `error`, carrying the code and nothing
    * about the customer. The instrumentation ban above is unchanged.
    */
   it('the door reports failures and narrates nothing else', () => {
-    /* `console.error` and nothing else — `removeConsole` strips every other
+    /* `console.error` and nothing else - `removeConsole` strips every other
        level from a production build anyway, so a `console.log` here is a line
        that exists only to be missing when it is needed. */
     const levels = new Set((login.match(/console\.(\w+)/g) ?? []));
@@ -215,7 +215,7 @@ describe('the door carries no instrumentation', () => {
 
   it('and the line it logs cannot carry the customer', () => {
     /* The diagnostic is built from the fault and the SDK's own message. No
-       email, no token, no profile — a console is not a private place. */
+       email, no token, no profile - a console is not a private place. */
     const diag = codeOf('lib/authError.ts');
     const fn = diag.slice(diag.indexOf('export function authDiagnostic'));
     expect(fn).not.toMatch(/email|uid|token|profile|user/i);
@@ -259,7 +259,7 @@ describe('nothing soft-navigates across a change the server must see', () => {
 
        Only the LEAVING matters. `WelcomeScreen` also calls `router.push` to
        move between its own steps, which is an ordinary soft navigation across
-       no state the server has to re-read — flagging that would be noise. */
+       no state the server has to re-read - flagging that would be noise. */
     const suspects = [...walk('app'), ...walk('components')]
       .filter(f => !f.includes('node_modules') && !f.startsWith('app/api/'))
       .filter(f => /\/api\/session'|clearSession\(\)|welcome\/complete/.test(codeOf(f)));
@@ -282,7 +282,7 @@ describe('nothing soft-navigates across a change the server must see', () => {
  *
  * The rooms authenticate with the httpOnly cookie; the API routes
  * authenticated with a Bearer token from the Firebase client SDK. They lapse
- * independently — the token after an hour, the cookie after fourteen days — so
+ * independently - the token after an hour, the cookie after fourteen days - so
  * a customer could reach a room that rendered perfectly and find its one
  * control saying "your session has expired". Observed on the scope screen: the
  * coverages drew and the estimate beside them refused to price.
@@ -298,7 +298,7 @@ describe('a route accepts a token OR the session the rooms already trust', () =>
     expect(isSameOrigin(request({ 'sec-fetch-site': 'same-origin' }))).toBe(true);
   });
 
-  it('A CROSS-SITE REQUEST MAY NOT — that is the CSRF door', () => {
+  it('A CROSS-SITE REQUEST MAY NOT - that is the CSRF door', () => {
     /* Without this, another origin could post a form that books, cancels or
        pays as the customer, because their cookie would ride along. */
     expect(isSameOrigin(request({ 'sec-fetch-site': 'cross-site' }))).toBe(false);
@@ -311,14 +311,14 @@ describe('a route accepts a token OR the session the rooms already trust', () =>
     expect(isSameOrigin(request({ origin: 'https://evil.test', host: 'automodz.app' }))).toBe(false);
   });
 
-  it('and NO Origin is not treated as same-origin — that is what a form post sends', () => {
+  it('and NO Origin is not treated as same-origin - that is what a form post sends', () => {
     expect(isSameOrigin(request({ host: 'automodz.app' }))).toBe(false);
     expect(isSameOrigin(request({}))).toBe(false);
   });
 
   it('the token is tried FIRST, and the cookie only behind the guard', () => {
     /* Asserted on the source because `callerOf` composes the Admin SDK, which
-       cannot load in this environment — and what matters is the ORDER: a
+       cannot load in this environment - and what matters is the ORDER: a
        token, then a same-origin check, then the cookie. */
     const session = readFileSync('lib/server/session.ts', 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '');

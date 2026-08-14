@@ -12,7 +12,7 @@ import 'server-only';
  *   · the Firebase client SDK left the customer bundle entirely
  *   · a room's first paint is its content, not a loading bar
  *   · one request fetches once, instead of every navigation refetching
- *   · rules are no longer the read path's only guard — the query is scoped by
+ *   · rules are no longer the read path's only guard - the query is scoped by
  *     the verified session, and the Admin SDK bypasses rules, so ownership is
  *     enforced HERE. Every query below is filtered by the uid from the session
  *     cookie. That is not defence in depth; with the Admin SDK it is the only
@@ -70,22 +70,22 @@ async function _loadCustomerPicture(session: {
     db.collection('services').get(),
     /* A CHAPTER'S PAPERS. Without this, `toVisit` hardcoded `documents: []`
        and no past visit could ever show its invoice or receipt. Read here so
-       History stays one server read, and scoped to this customer — the rules
+       History stays one server read, and scoped to this customer - the rules
        would refuse anything wider anyway. */
     db.collection('invoices').where('customerId', '==', uid).get(),
-    /* WHAT THE STUDIO HAS SENT THEM — scoped by the session uid like every
+    /* WHAT THE STUDIO HAS SENT THEM - scoped by the session uid like every
        other query here. Read to resolve an unread record to the surface that
        owns it (§17.3), never to draw a list (§17.1). No `orderBy`, so no
        composite index; sorted below. */
     db.collection('notifications').where('userId', '==', uid).limit(30).get(),
     /* WHERE THE STUDIO MAY COLLECT FROM. Read here so the booking sheet and
-       the settings list are the same list — two fetches would eventually
+       the settings list are the same list - two fetches would eventually
        disagree about which address is the default, and the default is what the
        sheet pre-selects. */
     db.collection(`users/${uid}/addresses`).get(),
     /* WHAT THE STUDIO IS ASKING. Scoped by the session uid like every other
        query here, and read with the picture so a car on a bay wears the
-       question — a push the customer missed is a car held for a day. */
+       question - a push the customer missed is a car held for a day. */
     db.collection('approvals').where('customerId', '==', uid).limit(20).get(),
   ]);
 
@@ -98,7 +98,7 @@ async function _loadCustomerPicture(session: {
    * THE PROFILE IS CARRIED, NOT RE-TYPED.
    *
    * This listed five fields by hand and `as User` silenced the compiler about
-   * every one it did not list — so `welcomedAt` never reached the projection.
+   * every one it did not list - so `welcomedAt` never reached the projection.
    * `shouldWelcome` therefore fell through to "has no car", and every customer
    * without a car in their garage was greeted by the first-arrival flow ON
    * EVERY SINGLE SIGN-IN, for ever, no matter how many times they finished it.
@@ -106,7 +106,7 @@ async function _loadCustomerPicture(session: {
    *
    * Spreading the document first and overriding only what needs a fallback
    * means a field added to `User` arrives here without anybody remembering to
-   * add it — which is the failure this had.
+   * add it - which is the failure this had.
    */
   const user: User = {
     ...(profile ?? {}),
@@ -126,14 +126,14 @@ async function _loadCustomerPicture(session: {
      * EVERY EDGE IS AN ID. THE PLATE JOINS NOTHING.
      *
      * Bookings and jobs were attached to a car by `vehicleRegNo`, and that
-     * query — not the stored data — produced the corruption in production: a
+     * query - not the stored data - produced the corruption in production: a
      * booking labelled "Honda City" carrying the BMW's plate appeared in the
      * BMW's room, while its own `vehicleId` named the i20 all along. Three
      * bookings were mis-parented by a string comparison.
      *
      * A registration is a display snapshot. It is edited, mistyped, reissued
-     * and transferred between cars; it has never been an identity. §P1.6 — it
-     * may never establish ownership, and §P1.7 — a record with no `vehicleId`
+     * and transferred between cars; it has never been an identity. §P1.6 - it
+     * may never establish ownership, and §P1.7 - a record with no `vehicleId`
      * is a record whose vehicle is UNKNOWN. There is deliberately no fallback:
      * finding "another vehicle with this plate" is precisely the bug.
      *
@@ -171,16 +171,16 @@ async function _loadCustomerPicture(session: {
     user,
     cars,
     /* The newest is the one in force; the rest are the record. Both come from
-       the SAME read — the query already returned every subscription and the
+       the SAME read - the query already returned every subscription and the
        older ones were being thrown away, so the history costs nothing. */
     subscription: subscriptions[0] ?? null,
     subscriptions,
     catalogue: rows<Service>(serviceSnap),
     invoices: rows<Invoice>(invoiceSnap),
-    /* Newest first — which one is "the latest news" depends on it. */
+    /* Newest first - which one is "the latest news" depends on it. */
     notifications: rows<Notification>(notifSnap)
       .sort((a, b) => millis(b.createdAt) - millis(a.createdAt)),
-    /* Default first, then alphabetically — the same order the address service
+    /* Default first, then alphabetically - the same order the address service
        returns, so the chip a customer tapped last time is where they left it. */
     addresses: rows<SavedAddress>(addressSnap).sort((a, b) =>
       Number(b.isDefault) - Number(a.isDefault)

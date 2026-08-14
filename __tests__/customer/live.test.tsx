@@ -2,7 +2,7 @@
  * THE ROOM CALLED LIVE HAS TO BE LIVE.
  *
  * Every customer room renders on the SERVER, which is what makes them arrive
- * whole with no loading bar — and it is also what froze this one at the moment
+ * whole with no loading bar - and it is also what froze this one at the moment
  * it was requested. A customer watching their own car saw the act it was in
  * when the page loaded and nothing after it: new photographs never appeared,
  * the rail never advanced, and the only way to see progress was to know to
@@ -49,8 +49,8 @@ describe('the live visit keeps itself current', () => {
   });
 
   it('tears the interval down when it unmounts', () => {
-    /* The room unmounts as soon as the visit stops being live — the same
-       address then renders the record — so this is what actually stops the
+    /* The room unmounts as soon as the visit stops being live - the same
+       address then renders the record - so this is what actually stops the
        polling. A leaked interval would go on asking forever. */
     expect(refresh).toMatch(/clearInterval\(timer\)/);
     expect(refresh).toMatch(/removeEventListener\('visibilitychange'/);
@@ -61,7 +61,7 @@ describe('the live visit keeps itself current', () => {
   });
 
   it('renders nothing at all', () => {
-    /* §19.2 — no spinner, no "updating…", no ticking timestamp. The customer
+    /* §19.2 - no spinner, no "updating…", no ticking timestamp. The customer
        watches their car, never the machinery. */
     expect(renderToStaticMarkup(<LiveRefresh />)).toBe('');
     expect(refresh).toMatch(/return null;/);

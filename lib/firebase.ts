@@ -65,7 +65,7 @@ export const db = (() => {
    be exercised end to end against real rules and real documents.
 
    This exists because the dev-auth shim fakes a store user without a Firebase
-   session, so every rule-guarded read is refused — which meant the whole
+   session, so every rule-guarded read is refused - which meant the whole
    customer data layer had only ever been type-checked, never run. Guarded on
    NODE_ENV as well as the flag, so a production build cannot be pointed at a
    local emulator by an environment variable alone. */

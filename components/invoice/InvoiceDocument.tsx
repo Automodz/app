@@ -152,7 +152,7 @@ export default function InvoiceDocument({ invoice }: { invoice: InvoiceDocData }
         <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
           {BUSINESS.address} · +91 {BUSINESS.phone}
         </div>
-        {/* §21.3 — 44px is the floor whatever the type size is. This was a
+        {/* §21.3 - 44px is the floor whatever the type size is. This was a
             12px line with a 19px box, which is a tap target the width of a
             sentence and the height of one line. The words are unchanged. */}
         <a href={BUSINESS.googleReviewUrl} target="_blank" rel="noreferrer"

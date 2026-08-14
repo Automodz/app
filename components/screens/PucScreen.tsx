@@ -33,7 +33,7 @@ import { color, space, MEASURE, radius, TARGET_MIN } from '@/design';
 import type { StateTone } from '@/design';
 /* DEEP IMPORTS, NOT THE BARRELS. This is a SERVER component, and both barrels
    re-export a dozen `'use client'` primitives with Radix and framer-motion
-   behind them — reaching through one drags all of that into this page's
+   behind them - reaching through one drags all of that into this page's
    bundle. Measured elsewhere at 35% of a page's JavaScript. */
 import { OfflineNote } from '@/components/system/OfflineNote';
 import { Screen } from '@/components/os/Screen';
@@ -49,20 +49,20 @@ import { PucForm } from '@/components/protection/PucForm';
  * One certificate, already worded.
  *
  * `reference` and `issued` are optional because a protection that was seeded
- * rather than declared has neither — every pollution certificate in production
+ * rather than declared has neither - every pollution certificate in production
  * is one. §18.1: an absent fact is not printed, and the row goes with it.
  */
 export interface PucCertificate {
   reference?: string;
   /**
-   * "26 February 2026" — BARE. The row's label is the word for it, and a value
+   * "26 February 2026" - BARE. The row's label is the word for it, and a value
    * that repeats its own label reads as a stammer: the first cut of this
    * screen said "Issued · Issued 26 February 2026" and "Valid · Valid until 26
    * August 2026", which is how the visual pass found it.
    */
   issued?: string;
   /**
-   * The word for the end of the term — "Valid until" while it holds, "Ran out"
+   * The word for the end of the term - "Valid until" while it holds, "Ran out"
    * once it has gone. It is a LABEL rather than part of the value because a
    * lapsed certificate filed under "Valid" is the room contradicting its own
    * headline two lines above.
@@ -78,7 +78,7 @@ export interface PucCertificate {
 export interface PucRecordRow {
   id: string;
   reference: string;
-  /** "Until 26 August 2026" — the date that decided anything. */
+  /** "Until 26 August 2026" - the date that decided anything. */
   validity: string;
   /** The studio's word for what became of it. */
   state: string;
@@ -106,7 +106,7 @@ export interface PucModel {
 
   /**
    * The form, when there is anything to send. Absent while the studio is
-   * holding one — §10.5: the screen explains instead of disabling, and the
+   * holding one - §10.5: the screen explains instead of disabling, and the
    * explanation is the pending pane above it.
    */
   declare?: {
@@ -118,7 +118,7 @@ export interface PucModel {
   };
 
   /**
-   * §18.4 — a way to reach a person. SECONDARY and named as an alternative,
+   * §18.4 - a way to reach a person. SECONDARY and named as an alternative,
    * never the path: this used to be the only way to declare anything, which
    * is how a product ends up with a control that opens WhatsApp and a
    * certificate that never arrives.
@@ -126,7 +126,7 @@ export interface PucModel {
   askHref: string;
 }
 
-/** §3.3 — the state's own tone. One warm family, and nothing else. */
+/** §3.3 - the state's own tone. One warm family, and nothing else. */
 const TONE: Record<StateTone, string> = {
   assent: color.champagne,
   caution: color.amber,
@@ -140,7 +140,7 @@ export function PucScreen(
     model: PucModel;
     /**
      * Whether this deployment can accept a photograph at all. Read on the
-     * server from the media configuration — §10.5, a control that always
+     * server from the media configuration - §10.5, a control that always
      * fails is not a control.
      */
     canAttach?: boolean;
@@ -164,7 +164,7 @@ export function PucScreen(
       >
         {/* ── WHAT THE CAR IS, IN ONE LINE ────────────────────────────
             The state, in the state's own tone. Always drawn, because the
-            answer to "is my car certified" is never absent — "not added" is
+            answer to "is my car certified" is never absent - "not added" is
             an answer (§19.1). */}
         <Pane style={{ padding: `${space.gap}px ${space.gap + 2}px` }}>
           <span
@@ -178,7 +178,7 @@ export function PucScreen(
         </Pane>
 
         {/* ── WHAT STANDS RIGHT NOW ───────────────────────────────────
-            §14.6 — the file where one exists, and the facts beside it. */}
+            §14.6 - the file where one exists, and the facts beside it. */}
         {standing ? (
           <Pane
             as="section"
@@ -193,9 +193,9 @@ export function PucScreen(
                 What we hold
               </Label>
             </h2>
-            {/* §18.1 — a row with nothing in it is not drawn. A certificate
+            {/* §18.1 - a row with nothing in it is not drawn. A certificate
                 that was never declared has no number and no issue date, and
-                printing "Certificate —" would be a hole where a fact goes. */}
+                printing "Certificate -" would be a hole where a fact goes. */}
             {standing.reference ? (
               <Row value={<Value>{standing.reference}</Value>}>Certificate</Row>
             ) : null}
@@ -230,7 +230,7 @@ export function PucScreen(
         ) : null}
 
         {/* ── WHAT THE STUDIO HAS NOT DECIDED ─────────────────────────
-            §19.1 — a wait is a state. A customer who sent something last
+            §19.1 - a wait is a state. A customer who sent something last
             night is told it arrived, rather than being shown "not added"
             and sending it again. */}
         {pending ? (
@@ -257,7 +257,7 @@ export function PucScreen(
         {/* ── WHAT THE STUDIO WOULD NOT STAND BEHIND ──────────────────
             Said plainly and with the studio's own sentence, because a
             refusal with no reason is a customer sending the same thing
-            again. AutoModz answers — never a person (Art. 8). */}
+            again. AutoModz answers - never a person (Art. 8). */}
         {refused ? (
           <Pane
             as="section"

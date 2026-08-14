@@ -1,13 +1,13 @@
 'use client';
 /**
- * THE ROOM SHELL — loading, absence and failure, once.
+ * THE ROOM SHELL - loading, absence and failure, once.
  *
  * Source: docs/AUTOMODZ-OS.md §19.1, §19.2, §19.5, §20.1, §20.2, §20.3, §22.2
  *
  * Seven routes need the same four answers to "what is on screen before the data
- * is": establishing, signed out, failed, ready. §22.2 — one implementation.
+ * is": establishing, signed out, failed, ready. §22.2 - one implementation.
  *
- * §19.5 — "never tear down what is already true." A route that has rendered its
+ * §19.5 - "never tear down what is already true." A route that has rendered its
  * room does not fall back to the breath on a refetch; only the first load has
  * nothing to show.
  */
@@ -25,7 +25,7 @@ function Centred({ children }: { children: ReactNode }) {
         minHeight: '100svh',
         /* THE TOP INSET, ONCE. `Screen` has always reserved it for the rooms
            that use it; the shells that roll their own `<main>` did not, and the
-           product is installable — in standalone the first line sat under the
+           product is installable - in standalone the first line sat under the
            status bar. §8.5 keeps the inset in the token, never at a call site. */
         paddingTop: stack.top,
         paddingBottom: stack.contentFloor,
@@ -47,7 +47,7 @@ function Centred({ children }: { children: ReactNode }) {
 }
 
 /**
- * §19.2 — the breath, on its own. A route that reads the address bar has to be
+ * §19.2 - the breath, on its own. A route that reads the address bar has to be
  * wrapped in a Suspense boundary (Next bails out of prerendering otherwise), and
  * that boundary needs the same establishing state the room uses. One breath, two
  * callers.
@@ -59,10 +59,10 @@ export function RoomBreath() {
 export function Room({ children }: { children: (p: CustomerPicture) => ReactNode }) {
   const state = useCustomerPicture();
 
-  /* §19.2 — the breath, while the application establishes itself. */
+  /* §19.2 - the breath, while the application establishes itself. */
   if (state.status === 'loading') return <RoomBreath />;
 
-  /* Signed out. §20.1 — the studio's voice, not an error code. */
+  /* Signed out. §20.1 - the studio's voice, not an error code. */
   if (state.status === 'anonymous') {
     return (
       <Centred>
@@ -74,7 +74,7 @@ export function Room({ children }: { children: (p: CustomerPicture) => ReactNode
     );
   }
 
-  /* §20.2 — always recoverable. §20.4 — the car is safe; say so. */
+  /* §20.2 - always recoverable. §20.4 - the car is safe; say so. */
   if (state.status === 'failed') {
     return (
       <Centred>
@@ -93,7 +93,7 @@ export function Room({ children }: { children: (p: CustomerPicture) => ReactNode
 }
 
 /**
- * §18.4 — "No cars → invitation, the whole screen, warm, one action." A room
+ * §18.4 - "No cars → invitation, the whole screen, warm, one action." A room
  * that needs a car and has none says so the same way everywhere.
  */
 export function NoCar() {

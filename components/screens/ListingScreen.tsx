@@ -8,13 +8,13 @@
  * follow as a list of label-and-value pairs rather than a table, so they read
  * on a phone without scrolling sideways.
  *
- * §6.4 — the enquiry and the viewing request are ADDRESSABLE (`?ask=inquiry`,
+ * §6.4 - the enquiry and the viewing request are ADDRESSABLE (`?ask=inquiry`,
  * `?ask=viewing`) rather than component state. That makes them linkable, lets
  * the back button close them, and means a customer who reloads mid-form lands
  * back where they were rather than at the top of the page.
  *
  * A CAR THAT CANNOT BE BOUGHT IS NOT A DEAD END. Sold and reserved listings
- * keep their address — the link somebody pasted last week still opens — but the
+ * keep their address - the link somebody pasted last week still opens - but the
  * form is replaced by a sentence and the rest of the stock.
  */
 import Link from 'next/link';
@@ -54,7 +54,7 @@ export function ListingScreen(
       <OfflineNote caption="You’re offline. You can look, but nothing will send." />
 
       {/* REPORTED AS "no obvious way back". It was a `quiet` Button set flush
-          with no glyph, which reads as a caption and not as a control — and
+          with no glyph, which reads as a caption and not as a control - and
           this screen has no dock behind it either. Same shape as every other
           room's now: a chevron, the parent's name, its own 44px target. The
           model still decides WHERE, since a listing knows which filter the
@@ -92,7 +92,7 @@ export function ListingScreen(
                 background: color.surface,
               }}
             >
-              {/* Through the primitive — a listing photograph that 404s is a
+              {/* Through the primitive - a listing photograph that 404s is a
                   fault a buyer must not be shown as a browser glyph. */}
               <Photograph src={p.url} alt={p.alt} sizes={imageSizes.inMeasure} />
             </div>
@@ -108,7 +108,7 @@ export function ListingScreen(
         ) : null}
 
         <Heading level="display">{model.title}</Heading>
-        {/* The price carries a Title's weight but is not a heading — it is the
+        {/* The price carries a Title's weight but is not a heading - it is the
             car's single most important fact, so it takes the type without
             taking a place in the document outline. */}
         <Heading level="title" as="p" style={{ marginTop: space.breath }}>
@@ -117,7 +117,7 @@ export function ListingScreen(
 
         <SaveCar listingId={model.id} saved={model.saved} signedIn={signedIn} />
 
-        {/* THE FACTS. Rows, not a table — a table cannot wrap on a phone. */}
+        {/* THE FACTS. Rows, not a table - a table cannot wrap on a phone. */}
         <dl style={{ marginTop: space.rest }}>
           {model.facts.map(f => (
             <div
@@ -141,7 +141,7 @@ export function ListingScreen(
         {/* ── ITS RECORD WITH US ─────────────────────────────────────────
             Design screen 17, and the one place a private record crosses into
             public. `history` is `null` unless the car's OWNER has explicitly
-            consented — the decision is `publicHistoryOf`'s, made where the
+            consented - the decision is `publicHistoryOf`'s, made where the
             data is shaped, so this screen cannot leak a count it was never
             given. Absent is the ordinary case and draws nothing at all.
 
@@ -175,7 +175,7 @@ export function ListingScreen(
           </section>
         ) : null}
 
-        {/* §15.7 — no description means no heading, not an empty one. */}
+        {/* §15.7 - no description means no heading, not an empty one. */}
         {model.description ? (
           <div style={{ marginTop: space.rest }}>
             <Text role="body" tone="ink2" style={{ whiteSpace: 'pre-wrap' }}>
@@ -203,7 +203,7 @@ export function ListingScreen(
               </div>
             </>
           ) : (
-            /* §18.1 — say plainly what happened, then offer the way on. */
+            /* §18.1 - say plainly what happened, then offer the way on. */
             <Text role="body" tone="ink2">{model.closedLine}</Text>
           )}
         </div>

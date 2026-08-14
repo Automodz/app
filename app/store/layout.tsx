@@ -8,7 +8,7 @@ import { ClientSession } from '@/components/ClientSession';
  */
 /**
  * NOT INDEXED. This is the staff kiosk lock, and without its own entry it
- * inherited the root layout's `canonical: '/'` and `robots: { index: true }` —
+ * inherited the root layout's `canonical: '/'` and `robots: { index: true }` -
  * so a PIN screen was being offered to search engines as the homepage.
  */
 export const metadata: Metadata = {

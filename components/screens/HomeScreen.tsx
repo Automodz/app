@@ -479,7 +479,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                    `Photograph` fills its frame with `position: absolute;
                    inset: 0`, which anchors to the nearest POSITIONED ancestor.
                    This frame had none, so the photograph climbed past it to the
-                   initial containing block and covered the whole screen —
+                   initial containing block and covered the whole screen -
                    upscaled from the 104px source `sizes` had asked for, so it
                    arrived as a blurred wallpaper painted over the room. */
                 position: 'relative',
@@ -490,7 +490,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
               }}
             >
               {/* THROUGH THE PRIMITIVE. This hid a failed photograph with an
-                  `onError` that set `visibility: hidden` — which works, and
+                  `onError` that set `visibility: hidden` - which works, and
                   was a fourth implementation of a rule the product already
                   owns in one place. `Photograph` composes the absence, SAYS
                   the failure rather than hiding it, and keeps the alt text out
@@ -889,7 +889,7 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           </p>
           {/* THREE CONTROLS ON ONE ROW DO NOT FIT A 375px PHONE. `Action` is
               `width: 100%` and shrinks, so the third was pushed past the
-              gutter — "WhatsApp" ran off the right edge of the smallest
+              gutter - "WhatsApp" ran off the right edge of the smallest
               display the product supports. They wrap now, which is what a row
               of equals should always have done. */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: space.breath, marginTop: space.line }}>

@@ -13,7 +13,7 @@
 import type { Booking } from '@/lib/types';
 /* REPOINTED at the stored protection model, away from the retired
    `lib/cx/protection`. Both carried a field called `term`, meaning a health
-   word in the old and a Term OBJECT in the new — so this engine silently could
+   word in the old and a Term OBJECT in the new - so this engine silently could
    not read a real customer's protections. `health` is the term engine's own
    derivation (§22.2: one implementation of the lifecycle). */
 import type { LiveProtection } from './protection';

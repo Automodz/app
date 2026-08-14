@@ -310,7 +310,7 @@ export function VehicleScreen(
             perpetual protection with a full bar would be a lie shaped like a
             measurement; it states its term and nothing more. */}
         {/* The ledger is never empty: the certificate's row is always in it
-            (§19.1 — "not added" is an answer). The guard stays because a model
+            (§19.1 - "not added" is an answer). The guard stays because a model
             is a contract, not a promise about today's data. */}
         {protections.length > 0 ? (
           <Pane
@@ -372,7 +372,7 @@ export function VehicleScreen(
 
                 /* A layer with somewhere to go carries the way there under
                    itself, so the row stays a row and the control stays a
-                   control — §21.3's 44px floor is the link's own, whatever
+                   control - §21.3's 44px floor is the link's own, whatever
                    size the type beside it is. */
                 return p.action ? (
                   <div
@@ -400,7 +400,7 @@ export function VehicleScreen(
             </div>
           </Pane>
         ) : null}
-        {/* THE EMPTY-LEDGER PANE STOOD HERE — "Nothing declared yet. …tell us
+        {/* THE EMPTY-LEDGER PANE STOOD HERE - "Nothing declared yet. …tell us
             and it will sit here", over a `wa.me` link. It was the product's
             only declaration path and it ended in a messaging application. The
             ledger now always carries the certificate's own row, whatever else

@@ -1,29 +1,29 @@
 /**
- * WHO IS SIGNED IN, IN THE BROWSER — WAITED FOR, NOT GUESSED AT.
+ * WHO IS SIGNED IN, IN THE BROWSER - WAITED FOR, NOT GUESSED AT.
  *
  * `auth.currentUser` is null for the first moments of every page load. The SDK
  * restores the persisted session from IndexedDB asynchronously, and until that
  * lands it has no idea who anybody is. Code that reads `currentUser` straight
- * after an import is not reading "signed out" — it is reading "not yet".
+ * after an import is not reading "signed out" - it is reading "not yet".
  *
  * ON THE ADMIN AND KIOSK TREES that was survivable, because `ClientSession`
  * mounts `AuthProvider`, whose `onAuthStateChanged` subscription is what drives
  * the restore and holds the answer by the time anything is clickable.
  *
  * THE CUSTOMER ROOMS MOUNT NONE OF IT. They render on the server and
- * deliberately ship no provider — which is the right trade for a first paint,
+ * deliberately ship no provider - which is the right trade for a first paint,
  * and it means nothing in those rooms ever subscribes, so `currentUser` can
  * still be null at the moment a customer presses something. What that produced:
  *
  *   · finishing the first arrival threw `signed-out` and told the customer
- *     "that didn't save" — so `welcomedAt` was never written and the welcome
+ *     "that didn't save" - so `welcomedAt` was never written and the welcome
  *     greeted them again on every single sign-in, forever;
  *   · a booking, and the availability lookup behind it, went out with no
  *     Authorization header and came back 401.
  *
  * Each was found and fixed separately as though it were its own bug. They are
  * one bug, and this is the one answer to it: subscribe once, resolve the moment
- * the SDK knows, and never ask before then. §22.2 — one implementation of
+ * the SDK knows, and never ask before then. §22.2 - one implementation of
  * anything.
  *
  * `onAuthStateChanged` rather than `authStateReady()` because the latter is not
@@ -47,7 +47,7 @@ export async function waitForUser(): Promise<User | null> {
 
   const { onAuthStateChanged } = await import('firebase/auth');
   return new Promise<User | null>((resolve) => {
-    /* Unsubscribed on the first answer — this is a question, not a feed. */
+    /* Unsubscribed on the first answer - this is a question, not a feed. */
     const stop = onAuthStateChanged(
       auth,
       (user) => { stop(); resolve(user); },
@@ -60,7 +60,7 @@ export async function waitForUser(): Promise<User | null> {
  * A fresh ID token for the signed-in customer, or null.
  *
  * Carried by every authenticated `fetch` in the browser. It is the STRONGER
- * proof and is preferred wherever it exists — but its absence no longer means
+ * proof and is preferred wherever it exists - but its absence no longer means
  * signed out: see `authedFetch`.
  */
 export async function idToken(force = false): Promise<string | null> {
@@ -84,8 +84,8 @@ export async function currentUid(): Promise<string | null> {
  * ── THE FAILURE THIS EXISTS FOR ──────────────────────────────────────────
  * The rooms authenticate with the httpOnly session cookie; the routes
  * authenticated with a Bearer token from the Firebase client SDK. Those two
- * lapse independently — the token after an hour, refreshed only while a page
- * holding the SDK is alive, the cookie after fourteen days — and every caller
+ * lapse independently - the token after an hour, refreshed only while a page
+ * holding the SDK is alive, the cookie after fourteen days - and every caller
  * did this:
  *
  *     const token = await idToken();
@@ -100,7 +100,7 @@ export async function currentUid(): Promise<string | null> {
  * Attaches the token when there IS one, and otherwise sends the request
  * anyway: it is same-origin, so the cookie rides along and the route accepts
  * it (`lib/server/session.callerOf`, guarded against cross-site by
- * `lib/os/origin`). Only a 401 from the server means signed out — which is the
+ * `lib/os/origin`). Only a 401 from the server means signed out - which is the
  * only thing that ever actually did.
  */
 export async function authedFetch(

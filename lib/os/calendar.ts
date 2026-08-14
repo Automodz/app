@@ -1,12 +1,12 @@
 /**
- * ADD TO CALENDAR — design screen 09.
+ * ADD TO CALENDAR - design screen 09.
  *
  * A calendar event GENERATED FROM THE BOOKING, never a template with the
  * booking's words dropped into it. The distinction is the whole feature: a
  * static `.ics` with a fixed hour is a file that lies the moment somebody moves
  * their visit, and moving a visit is screen 10's entire purpose.
  *
- * Pure, like every engine here — it is handed the facts and returns text. It
+ * Pure, like every engine here - it is handed the facts and returns text. It
  * reads no clock it is not given, holds no address, and touches no database.
  *
  * ── WHAT MAKES THIS CORRECT RATHER THAN MERELY VALID ─────────────────────
@@ -15,11 +15,11 @@
  *   in the owner's calendar, and it will not if the string is parsed in the
  *   server's zone.
  * · `UID` is derived from the booking id, so importing the same visit twice
- *   UPDATES the event rather than making a second one — and a rescheduled
+ *   UPDATES the event rather than making a second one - and a rescheduled
  *   visit re-imported replaces the old time instead of leaving both.
  * · `SEQUENCE` rises with every change, which is what tells a calendar client
  *   that this version supersedes the one it already has.
- * · Nothing private travels in it. No price, no phone number, no invoice — a
+ * · Nothing private travels in it. No price, no phone number, no invoice - a
  *   calendar file is forwarded, synced to third-party servers and read on
  *   shared screens (§22.1).
  */
@@ -53,7 +53,7 @@ const fold = (line: string): string => {
   return parts.join(CRLF);
 };
 
-/** `20260812T033000Z` — UTC, which is the only form every client agrees on. */
+/** `20260812T033000Z` - UTC, which is the only form every client agrees on. */
 export const icsStamp = (ms: number): string => {
   const d = new Date(ms);
   const p = (n: number, w = 2) => String(n).padStart(w, '0');
@@ -133,7 +133,7 @@ export function eventForBooking(b: {
     uid: `booking-${b.id}@automodz`,
     startMs: b.startMs,
     endMs: b.startMs + minutes * 60_000,
-    summary: `${b.serviceName} — ${b.vehicleName}`,
+    summary: `${b.serviceName} - ${b.vehicleName}`,
     description: b.pickup
       ? 'AutoModz will collect the car. Nothing is charged now; you approve the final figure at handover.'
       : 'Nothing is charged now. You approve the final figure at handover.',

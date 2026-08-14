@@ -5,11 +5,11 @@
  * Source: reference/customer-old/app/app/error.tsx
  *         docs/AUTOMODZ-OS.md §20.3, §20.4
  *
- * `/api/report` has existed since the rebuild with NO CALLER — every client
+ * `/api/report` has existed since the rebuild with NO CALLER - every client
  * error since then has gone unreported. This is that caller.
  *
- * §20.4 — the customer is told their car is safe, because it is: this is our
- * connection failing, not their property. §20.3 — ours, not theirs.
+ * §20.4 - the customer is told their car is safe, because it is: this is our
+ * connection failing, not their property. §20.3 - ours, not theirs.
  */
 import { useEffect } from 'react';
 import { space } from '@/design';
@@ -36,7 +36,7 @@ export default function Error(
   return (
     /* The same room every other surface is, rather than a page of its own.
        It painted `color.paper` opaque, which was the one moment in the product
-       where the ambient field behind the rooms visibly switched off — the same
+       where the ambient field behind the rooms visibly switched off - the same
        thing `app/loading.tsx` was fixed for. */
     <Screen top={space.rest} style={{ justifyContent: 'center' }}>
       <RoomHeader
@@ -52,7 +52,7 @@ export default function Error(
           flexDirection: 'column', gap: space.line,
         }}
       >
-        {/* §6.3 — one control commits, the other only moves. */}
+        {/* §6.3 - one control commits, the other only moves. */}
         <Action onClick={reset}>Try again</Action>
         <Action href="/" quiet>Back to your car</Action>
       </div>

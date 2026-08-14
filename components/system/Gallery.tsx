@@ -1,23 +1,23 @@
 'use client';
 /**
- * GALLERY — a grid of media.
+ * GALLERY - a grid of media.
  *
  * Source: docs/AUTOMODZ-OS.md §8.4, §8.6, §10.3, §18.1, §21.3, §21.6
  *
- * §10.3 — composition over configuration. This component does not accept a
+ * §10.3 - composition over configuration. This component does not accept a
  * list of image URLs and render them; it renders whatever tiles it is given as
  * children. That is what keeps it ignorant of what media is, where it comes
  * from and what opening one means.
  *
- * §8.6 — "a photograph opened" deserves a full screen. This grid therefore
+ * §8.6 - "a photograph opened" deserves a full screen. This grid therefore
  * does NOT contain a viewer: opening is the caller's business, composed from
  * `Modal`. Building the viewer in would make this component know what a tile
  * means, which it must not.
  *
- * §18.1 — a gallery with nothing in it renders nothing. Absence is silence,
+ * §18.1 - a gallery with nothing in it renders nothing. Absence is silence,
  * never an empty grid with a dashed box in it (§18.2).
  *
- * §21.3 — a tappable tile is an interactive element, so the minimum tile edge
+ * §21.3 - a tappable tile is an interactive element, so the minimum tile edge
  * is the target floor.
  */
 import type { CSSProperties, ReactNode } from 'react';
@@ -41,7 +41,7 @@ export function Gallery({
   className,
   style,
 }: GalleryProps) {
-  /* §18.1 — nothing renders as nothing. */
+  /* §18.1 - nothing renders as nothing. */
   const empty = children == null
     || (Array.isArray(children) && children.filter(Boolean).length === 0);
   if (empty) return null;

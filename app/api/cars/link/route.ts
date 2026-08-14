@@ -6,7 +6,7 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * LINKING A LISTING TO A CAR — the admin operation behind design screen 17.
+ * LINKING A LISTING TO A CAR - the admin operation behind design screen 17.
  *
  * ── THE OWNER IS VALIDATED, NEVER TRUSTED ────────────────────────────────
  * A listing carries `vehicleId` and `vehicleOwnerId`, and the second is what

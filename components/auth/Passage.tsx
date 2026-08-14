@@ -1,6 +1,6 @@
 'use client';
 /**
- * THE PASSAGE — what the door says while it is opening.
+ * THE PASSAGE - what the door says while it is opening.
  *
  * Signing in is not instant and never was: a popup opens on another origin, a
  * profile is read, a role is reconciled, and a session cookie is minted. For
@@ -8,7 +8,7 @@
  * smallest possible account of what is happening and says nothing about
  * whether it is going well.
  *
- * Two states, one surface. The surface is shared deliberately — the panel must
+ * Two states, one surface. The surface is shared deliberately - the panel must
  * not resize underneath somebody mid-sign-in.
  *
  *   opening    the press was received and something is happening
@@ -17,7 +17,7 @@
  *              is being told a fact before they are carried inside.
  *
  * Its own component so both states can be rendered and asserted without
- * driving a popup on another origin — see __tests__/auth/passage.test.tsx.
+ * driving a popup on another origin - see __tests__/auth/passage.test.tsx.
  */
 import { motion } from 'framer-motion';
 import { Text } from '@/components/system';

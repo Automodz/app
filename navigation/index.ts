@@ -4,7 +4,7 @@
  * Source of truth: docs/AUTOMODZ-OS.md §6
  *
  * The application's wayfinding: where you are, how you move, and when the
- * navigation gets out of the way. It knows the seven rooms and nothing else —
+ * navigation gets out of the way. It knows the seven rooms and nothing else -
  * no vehicles, no visits, no memberships, no data of any kind.
  *
  * HOW THE SEVEN ROOMS ARE SUPPORTED WITH FOUR SLOTS
@@ -15,7 +15,7 @@
  *   Membership                          reached from protection   §15.2
  *
  * Every route still maps to exactly one navigation element through
- * `activates`, so §6.2's promise — "always shows where the customer is" —
+ * `activates`, so §6.2's promise - "always shows where the customer is" -
  * holds in all seven rooms, including the two without a slot.
  *
  * WHAT THIS DOES NOT DO

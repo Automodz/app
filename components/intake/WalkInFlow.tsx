@@ -122,7 +122,7 @@ export default function WalkInFlow({ onDone }: {
     if (item) { next.set(id, { ...item, price: Math.max(0, price) }); setSelected(next); }
   };
 
-  /* One subtraction, one place (§22.2). This one also had no floor at zero —
+  /* One subtraction, one place (§22.2). This one also had no floor at zero -
      an over-spent membership would have reported a negative entitlement. */
   const washesLeft = washesLeftOf(memberSub);
   const rawItems = Array.from(selected.values());

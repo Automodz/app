@@ -7,25 +7,25 @@
  * Everything the application needs to know about where it is, and nothing
  * about what it is showing. No business logic passes through here.
  *
- * §6.1 — "Navigation moves between rooms in one lit space… Moving from Garage
+ * §6.1 - "Navigation moves between rooms in one lit space… Moving from Garage
  * to Vehicle should feel like walking toward something, not like loading a
  * page." `navigate()` wraps the route change in a view transition where the
  * browser supports one, so a photograph shared between two rooms carries
  * across (§7.5) instead of blinking. Where it is unsupported the navigation
- * still happens — §7.1, motion decorates, it never gates.
+ * still happens - §7.1, motion decorates, it never gates.
  *
- * §6.2 — the navigation "disappears for exactly one reason: a full-screen
+ * §6.2 - the navigation "disappears for exactly one reason: a full-screen
  * takeover that demands the whole surface." Two things can cause that: an
  * address whose room declares `chrome: 'takeover'`, and a takeover that is not
- * an address at all — a photograph opened over the room (§8.6). `suppress()`
+ * an address at all - a photograph opened over the room (§8.6). `suppress()`
  * covers the second, and it counts rather than toggles, so two overlapping
  * takeovers cannot leave the bar stranded when only one closes.
  *
- * §6.5 — "Back returns to where the customer actually came from." The stack is
+ * §6.5 - "Back returns to where the customer actually came from." The stack is
  * kept so that a room which was reached from two directions can be left in the
  * direction it was entered from.
  *
- * §6.6 — "A cold launch returns the customer to the car they were last looking
+ * §6.6 - "A cold launch returns the customer to the car they were last looking
  * at." This provider REMEMBERS the room; it deliberately does not perform the
  * redirect, because that is the shell's decision and this file does not own a
  * layout. The memory is offered; acting on it is someone else's call.
@@ -47,7 +47,7 @@ interface NavigationValue {
   /** The current address. */
   pathname: string;
   /**
-   * §6.5 — the rooms this session has walked through, newest last, each with
+   * §6.5 - the rooms this session has walked through, newest last, each with
    * the car it was about. Exposed so `Back` can prefer the walk over the
    * parent map; the rules live in `lib/os/navstack`.
    */
@@ -58,18 +58,18 @@ interface NavigationValue {
   activeSlot: string | undefined;
   /** Whether the navigation is on screen. §6.2, §13.2 */
   navVisible: boolean;
-  /** §6.1 — move to a room, carrying the subject across where possible. */
+  /** §6.1 - move to a room, carrying the subject across where possible. */
   navigate: (path: string) => void;
-  /** §6.5 — leave in the direction the room was entered from. */
+  /** §6.5 - leave in the direction the room was entered from. */
   back: () => void;
   /** True when there is somewhere truthful to go back to. */
   canGoBack: boolean;
   /**
-   * §6.2 — hide the navigation for a takeover that is not an address.
+   * §6.2 - hide the navigation for a takeover that is not an address.
    * Returns the release function; call it when the takeover closes.
    */
   suppress: () => () => void;
-  /** §6.6 — the room the customer was last in. Offered, never acted on here. */
+  /** §6.6 - the room the customer was last in. Offered, never acted on here. */
   rememberedRoom: () => string | null;
 }
 
@@ -80,11 +80,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const search = useSearchParams();
   const router = useRouter();
 
-  /** §6.2 — how many non-address takeovers are currently open. */
+  /** §6.2 - how many non-address takeovers are currently open. */
   const [suppressed, setSuppressed] = useState(0);
 
   /**
-   * §6.5 — how the customer actually got here.
+   * §6.5 - how the customer actually got here.
    *
    * The rules live in `lib/os/navstack`, pure and tested, because this is the
    * thing that decides where Back goes and it was previously three lines in an
@@ -97,11 +97,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [walkSnapshot, setWalkSnapshot] = useState<readonly string[]>([]);
 
   useEffect(() => {
-    /* The SEARCH is part of the address — see `CONTEXT_KEYS`. */
+    /* The SEARCH is part of the address - see `CONTEXT_KEYS`. */
     const here = pathname + (search?.toString() ? `?${search.toString()}` : '');
     stack.current = pushRoute(stack.current, here);
     setWalkSnapshot(stack.current);
-    /* §6.6 — remember the room. Reading it back is the shell's business.
+    /* §6.6 - remember the room. Reading it back is the shell's business.
 
        No room check here: `CustomerChrome` does not mount this provider outside
        a room, so the branch that used to guard this was unreachable. */
@@ -113,7 +113,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   /**
-   * §6.1 — one lit space. A view transition lets the browser carry a shared
+   * §6.1 - one lit space. A view transition lets the browser carry a shared
    * element between rooms; §7.5 wants exactly that for a photograph.
    */
   const navigate = useCallback((path: string) => {
@@ -129,11 +129,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, [pathname, router]);
 
   /**
-   * §6.5, §17.3 — the walk when there is one, the parent map when there is not.
+   * §6.5, §17.3 - the walk when there is one, the parent map when there is not.
    *
    * NEVER `router.back()`. This used to fall through to it, and from an address
    * opened by a notification that leaves the application entirely while from a
-   * shared link it does nothing at all — both indistinguishable from working
+   * shared link it does nothing at all - both indistinguishable from working
    * when you happen to have arrived through the front door.
    */
   const back = useCallback(() => {
@@ -172,7 +172,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     walk: walkSnapshot,
     room: roomFor(pathname),
     activeSlot: activeSlotFor(pathname),
-    /* §6.2 — hidden for an address that declares itself a takeover, and for a
+    /* §6.2 - hidden for an address that declares itself a takeover, and for a
        takeover laid over the room. Whether the address is a room at all is
        `CustomerChrome`'s question, asked once, above this provider. */
     navVisible: chromeFor(pathname) === 'nav' && suppressed === 0,
@@ -194,7 +194,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
  * The same context, without the throw.
  *
  * `Back` is drawn by screens that render server-side and by tests that mount a
- * screen on its own — neither has a provider, and neither is a bug. A control
+ * screen on its own - neither has a provider, and neither is a bug. A control
  * that cannot be rendered outside a provider is a control that dictates where
  * it may be used.
  */
@@ -211,7 +211,7 @@ export function useNavigation(): NavigationValue {
 }
 
 /**
- * §6.2 — hide the navigation for as long as a takeover is mounted.
+ * §6.2 - hide the navigation for as long as a takeover is mounted.
  * A hook rather than a prop, so the takeover owns the decision and the bar
  * cannot be left hidden by a component that forgot to put it back.
  */

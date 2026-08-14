@@ -9,7 +9,7 @@
  * width are two small pictures, and the difference between a corrected panel
  * and an uncorrected one does not survive being shrunk. One frame at full
  * width with a seam through it keeps the car life-size and puts the change
- * under the customer's own thumb — they find it themselves rather than being
+ * under the customer's own thumb - they find it themselves rather than being
  * told it happened.
  *
  * POINTER EVENTS, not mouse and touch separately: one code path for a finger,
@@ -17,15 +17,15 @@
  * the finger leaves the element, which is exactly what happens when somebody
  * drags to the very edge to see the whole of one side.
  *
- * `touch-action: none` on the handle only — not the figure — so the page still
+ * `touch-action: none` on the handle only - not the figure - so the page still
  * scrolls under a finger that lands anywhere else. Taking the whole element
  * out of the scroll would trap the customer in the middle of the page.
  *
  * IT WORKS WITHOUT JAVASCRIPT. The seam starts at the midpoint from the server,
  * so the pair is legible before hydration and if the drag never initialises the
- * customer still sees both halves. §7.1 — motion decorates, it never gates.
+ * customer still sees both halves. §7.1 - motion decorates, it never gates.
  *
- * §21.6 — a slider is what this IS, so it says so: `role="slider"` with the
+ * §21.6 - a slider is what this IS, so it says so: `role="slider"` with the
  * position in `aria-valuenow`, driven by the arrow keys as well as a finger.
  */
 import { useCallback, useRef, useState } from 'react';
@@ -35,7 +35,7 @@ import { Photograph } from '@/components/os/Photograph';
 export interface BeforeAfterProps {
   before: string;
   after: string;
-  /** The car, for the alt text. §21.6 — a photograph that carries meaning. */
+  /** The car, for the alt text. §21.6 - a photograph that carries meaning. */
   subject: string;
 }
 
@@ -73,12 +73,12 @@ export function BeforeAfter({ before, after, subject }: BeforeAfterProps) {
         ref={frame}
         style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', overflow: 'hidden', background: color.surface }}
       >
-        {/* AFTER underneath, whole. The finished car is the ground state — a
+        {/* AFTER underneath, whole. The finished car is the ground state - a
             customer who never touches this sees the result, not the damage. */}
         <Photograph src={after} alt={`${subject}, finished`} sizes={imageSizes.fullBleed} />
 
         {/* BEFORE on top, clipped to the seam. `inset` rather than width, so
-            the image inside never reflows — it is revealed, not resized, and
+            the image inside never reflows - it is revealed, not resized, and
             the two halves stay in register at every position. */}
         <div style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - at}% 0 0)` }}>
           <Photograph src={before} alt={`${subject}, on arrival`} sizes={imageSizes.fullBleed} />
@@ -94,7 +94,7 @@ export function BeforeAfter({ before, after, subject }: BeforeAfterProps) {
           }}
         />
 
-        {/* THE HANDLE — the whole surface, so the seam can be grabbed anywhere
+        {/* THE HANDLE - the whole surface, so the seam can be grabbed anywhere
             rather than only on a small target. §21.3's floor is about the
             visible grip, which is 44pt below. */}
         <div

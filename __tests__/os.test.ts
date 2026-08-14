@@ -80,7 +80,7 @@ describe('truthOf priority', () => {
    * IT DOES NOT DECIDE WHICH VISIT IS NEXT, AND MUST NOT LEARN TO.
    *
    * This engine used to take the whole booking list and pick the next visit
-   * itself — the third implementation of that question, and the one that
+   * itself - the third implementation of that question, and the one that
    * outlived the other two. It was hidden because Home suppressed this
    * sentence whenever a visit was booked; when lapsed requests stopped
    * counting as booked, this line began announcing the bookings that had just
@@ -118,7 +118,7 @@ describe('truthOf priority', () => {
 
 describe('proposal engine', () => {
   /* Built through `liveProtection` rather than hand-faked, so `health` and
-     `daysLeft` come from the real term engine — the fixture cannot drift away
+     `daysLeft` come from the real term engine - the fixture cannot drift away
      from the lifecycle the engine actually implements. */
   const P = (until: number | null, kind: 'ceramic' | 'ppf' = 'ceramic') =>
     liveProtection({
@@ -242,7 +242,7 @@ describe('the Stay model', () => {
         arrivedAt(morning),
         new Date('2026-07-20T14:00:00'),
       );
-      expect(s.timing).toBe('Running longer than planned — the work sets the pace.');
+      expect(s.timing).toBe('Running longer than planned - the work sets the pace.');
     });
   });
 
@@ -260,7 +260,7 @@ describe('the Stay model', () => {
   it('offers a planned finish only while it is still a plan', () => {
     expect(deriveStay(booking(), job(), NOW).timing).toMatch(/^Planned finish around /);
     const late = deriveStay(booking({ serviceDurationMinutes: 30 }), job(), NOW);
-    expect(late.timing).toBe('Running longer than planned — the work sets the pace.');
+    expect(late.timing).toBe('Running longer than planned - the work sets the pace.');
   });
 
   it('says nothing about time at Ready, or before the car has arrived', () => {
@@ -316,7 +316,7 @@ describe('the Club model', () => {
     expect(clubModel({ membership: sub({ endDate: iso(-3) }), completed: [], now: NOW }).state).toBe('grace');
     const lapsed = clubModel({ membership: sub({ endDate: iso(-40) }), completed: [], now: NOW });
     expect(lapsed.state).toBe('lapsed');
-    expect(lapsed.context).toBe('Rejoin any time — your history holds.');
+    expect(lapsed.context).toBe('Rejoin any time - your history holds.');
     expect(clubModel({ membership: sub({ status: 'expired' }), completed: [], now: NOW }).state).toBe('lapsed');
   });
 
@@ -375,7 +375,7 @@ describe('the concierge log', () => {
   /**
    * EVERY DATE IN THIS LOG IS A DATE SOMETHING HAPPENED.
    *
-   * There was a fifth line — "The studio confirmed 18 July 2026 for the …" —
+   * There was a fifth line - "The studio confirmed 18 July 2026 for the …" -
    * dated from `booking.updatedAt`, which is when the document was last
    * WRITTEN. Nine of the eleven bookings in production have been edited since
    * they were created, so for nine of them that date was the date of the last
@@ -429,7 +429,7 @@ describe('the concierge log', () => {
       } as never, NOW) as unknown as Protection],
       membership: { id: 'm1', plan: 'Silver', status: 'active', startDate: '2026-07-05' } as unknown as Subscription,
     });
-    expect(rich.some(e => e.line === 'Ceramic coating applied — protected until July 2029.')).toBe(true);
+    expect(rich.some(e => e.line === 'Ceramic coating applied - protected until July 2029.')).toBe(true);
     expect(rich.some(e => e.line === 'The studio confirmed your Club membership on Silver.')).toBe(true);
   });
 

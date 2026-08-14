@@ -1,7 +1,7 @@
 /**
- * FIRST ARRIVAL — the engine.
+ * FIRST ARRIVAL - the engine.
  *
- * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1 — engines decide, and this one is
+ * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1 - engines decide, and this one is
  * pure: no React, no routes, no Firestore, no `localStorage`.
  *
  * WHAT THIS REPLACED. The flag was `localStorage['automodz-welcomed']`, written
@@ -17,7 +17,7 @@
  * yet. Every step after the first may be passed over.
  */
 
-/** The steps, in order. The order IS the flow — there is no branching state. */
+/** The steps, in order. The order IS the flow - there is no branching state. */
 export const STEPS = ['hello', 'rooms', 'record', 'notifications', 'car'] as const;
 export type WelcomeStep = (typeof STEPS)[number];
 
@@ -36,7 +36,7 @@ export interface FirstRunFacts {
   welcomedAt?: unknown;
   /** A garage with a car in it is proof of a previous arrival on its own. */
   vehicleCount: number;
-  /** `?welcome=1` — the reset path, for the studio and for development. */
+  /** `?welcome=1` - the reset path, for the studio and for development. */
   forced?: boolean;
 }
 
@@ -45,7 +45,7 @@ export interface FirstRunFacts {
  *
  * `forced` wins over everything, because that is what makes a reset a reset.
  * Otherwise a recorded arrival settles it, and failing that a car in the garage
- * does — someone with a car has plainly been here before, whatever the flag
+ * does - someone with a car has plainly been here before, whatever the flag
  * says, and walking them through an arrival would be the product forgetting
  * them.
  */

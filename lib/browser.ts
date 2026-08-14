@@ -6,7 +6,7 @@
  *
  * WHY THIS EXISTS. A studio's customers arrive from Instagram and Facebook
  * links, and those apps open pages in their own embedded webview rather than
- * in Safari or Chrome. `signInWithPopup` cannot complete there — the webview
+ * in Safari or Chrome. `signInWithPopup` cannot complete there - the webview
  * either refuses `window.open` outright or opens a view that can never post
  * back to its opener. Firebase reports it as `auth/popup-blocked`, and the
  * product answered "Allow pop-ups for AutoModz, then try again."
@@ -20,8 +20,8 @@
 /**
  * An embedded webview that cannot complete a sign-in pop-up.
  *
- * Deliberately narrow. iOS `SFSafariViewController` — what WhatsApp and most
- * apps use on iOS — is a real Safari and handles pop-ups fine, so it is NOT
+ * Deliberately narrow. iOS `SFSafariViewController` - what WhatsApp and most
+ * apps use on iOS - is a real Safari and handles pop-ups fine, so it is NOT
  * matched here; matching it would send people out of the app for no reason.
  * These are the webviews that genuinely cannot do it:
  *

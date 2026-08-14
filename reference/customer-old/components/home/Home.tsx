@@ -120,7 +120,7 @@ export default function Home({
     .map(p => ({
       key: p.kind,
       ...ZONE[p.kind]!,
-      label: `${p.kind} — ${p.health}`,
+      label: `${p.kind} - ${p.health}`,
       attention: p.health !== 'healthy',
       onTap: () => onOpenProtection(p),
     }));

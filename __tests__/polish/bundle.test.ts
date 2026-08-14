@@ -7,8 +7,8 @@
  * `Heading` and `Text` pulled the whole client half of the design system into
  * that page's bundle.
  *
- * Measured, not guessed: `/privacy` and `/terms` — two pages of static legal
- * text with no interactivity whatever — shipped 167 kB of JavaScript. Deep
+ * Measured, not guessed: `/privacy` and `/terms` - two pages of static legal
+ * text with no interactivity whatever - shipped 167 kB of JavaScript. Deep
  * imports took them to 108 kB, a 35% cut, and `/cars` from 174 kB to 116 kB.
  */
 import { readFileSync, readdirSync, statSync } from 'fs';
@@ -27,7 +27,7 @@ const isClient = (f: string) => readFileSync(f, 'utf8').startsWith("'use client'
 
 describe('no server component reaches through the barrel', () => {
   it('every barrel importer is a client component', () => {
-    /* A client component may use the barrel freely — it is already on the
+    /* A client component may use the barrel freely - it is already on the
        client side of the boundary and pays nothing extra. A server component
        may not, because the barrel drags Radix and framer-motion across with
        it. */
@@ -51,7 +51,7 @@ describe('no server component reaches through the barrel', () => {
   });
 
   it('the barrel still exists for the client components that want it', () => {
-    /* This is not a campaign against the barrel — it is the right import for
+    /* This is not a campaign against the barrel - it is the right import for
        anything already on the client. */
     const users = SOURCES.filter(f => /from '@\/components\/system'/.test(readFileSync(f, 'utf8')));
     expect(users.length).toBeGreaterThan(5);

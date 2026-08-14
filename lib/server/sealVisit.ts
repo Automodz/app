@@ -9,7 +9,7 @@ import 'server-only';
  * into that document at that moment: the services, the pricing, and the warranty
  * terms as the catalogue read them right then.
  *
- * §14.5 — "Changing a price list must never change what a past customer was
+ * §14.5 - "Changing a price list must never change what a past customer was
  * promised." Until this existed, nothing wrote a visit at all, so every warranty
  * a customer saw was recomputed live from a mutable catalogue: editing a service's
  * warranty string silently rewrote history. That is the bug the anchor was
@@ -20,11 +20,11 @@ import 'server-only';
  *                re-reads it before writing. Sealing twice is a no-op, so a
  *                retry, a double-tap and a backfill are all safe.
  * ATOMIC         the visit and every protection commit together, or not at all.
- *                §22.6 — nothing is half-written.
+ *                §22.6 - nothing is half-written.
  * PERMANENT      once `sealedAt` is set the transaction refuses to touch it, and
  *                the rules refuse too (§16.2).
  * SERVER-ONLY    Admin SDK, so a closed browser tab cannot leave a promise
- *                half-recorded. §22.8 — the studio's plumbing stays server-side.
+ *                half-recorded. §22.8 - the studio's plumbing stays server-side.
  */
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { adminDb } from './firebaseAdmin';
@@ -52,7 +52,7 @@ export type SealOutcome =
   | { status: 'not-found'; jobId: string }
   /**
    * A walk-in whose car is not in anyone's garage. `Job` carries a PLATE, not a
-   * vehicle id — only a booking carries the id — so such a job has no vehicle
+   * vehicle id - only a booking carries the id - so such a job has no vehicle
    * document to anchor a visit to, and no customer surface on which it could
    * ever appear. Skipping is correct; it is reported so a backfill's numbers
    * stay honest rather than silently short.
@@ -127,7 +127,7 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
     const visitRef = db.doc(`visits/${visitId}`);
     const existing = await t.get(visitRef);
     if (existing.exists && (existing.data() as Visit).sealedAt) {
-      /* §16.2 — permanent. Not an error: a retry, a re-run of the backfill and a
+      /* §16.2 - permanent. Not an error: a retry, a re-run of the backfill and a
          double status write all land here, which is what idempotent means. */
       return { status: 'already-sealed', visitId } as const;
     }
@@ -149,7 +149,7 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
        `discount: Math.max(0, subtotal - total)`, which is only ever right when
        nothing but a discount separates the two. With a discount AND a fee it
        understates: services 1200, discount 200, fees 100 gives total 1100, and
-       the subtraction reports 100 — half of what the customer was actually
+       the subtraction reports 100 - half of what the customer was actually
        given, written permanently into a sealed record.
 
        The booking already stores what was decided at the counter, so the
@@ -161,13 +161,13 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
     const amounts = { subtotal, discount: discountAmount, total };
 
     /* ── SNAPSHOT: warranty, as the catalogue reads it AT THIS MOMENT ──
-       `source: 'captured'` is the whole point — this is what was sold, frozen. */
+       `source: 'captured'` is the whole point - this is what was sold, frozen. */
     /**
-     * WHEN THE WORK WAS DONE — and `updatedAt` is not that date.
+     * WHEN THE WORK WAS DONE - and `updatedAt` is not that date.
      *
      * This read `completedAt ?? updatedAt ?? now`. `updatedAt` moves whenever
-     * ANY field on the job is touched — a note corrected a fortnight later, a
-     * photo added, a backfill — so using it as the application date silently
+     * ANY field on the job is touched - a note corrected a fortnight later, a
+     * photo added, a backfill - so using it as the application date silently
      * dates a warranty from an edit. A protection's whole life is measured
      * from this day; it must be a fact about the CAR, never about the record.
      *
@@ -183,7 +183,7 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
     const termsCaptured: CapturedTerm[] = (appliedOn ? captureTerms({
       work: services.map(s => ({
         serviceName: s.name,
-        /* The key first — see `resolveService`. A display name is not identity. */
+        /* The key first - see `resolveService`. A display name is not identity. */
         serviceId: s.serviceId,
         category: s.category,
         appliedOn,
@@ -231,7 +231,7 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
     }, { merge: true });
 
     /* ── PROTECTIONS, in the same commit ─────────────────────────────── */
-    /* No datable day, no protection — `termsCaptured` is already empty in that
+    /* No datable day, no protection - `termsCaptured` is already empty in that
        case, so this is belt and braces rather than a second rule. */
     const rows = appliedOn
       ? protectionsFromVisit({ ...visit, id: visitId } as Visit, appliedOn)
@@ -257,7 +257,7 @@ export async function sealVisitForJob(jobId: string): Promise<SealOutcome> {
 /**
  * Seal every completed job that has no sealed visit yet.
  *
- * §22.7 — intent is idempotent, so this is safe to run repeatedly and safe to
+ * §22.7 - intent is idempotent, so this is safe to run repeatedly and safe to
  * run while the studio is working. Existing customers get their history without
  * anyone touching the admin.
  */
@@ -284,7 +284,7 @@ export async function backfillSealedVisits(limit = 500): Promise<{
 }
 
 /**
- * REMEDIATE A VISIT SEALED WITH A DEFECT — not a rewrite of history.
+ * REMEDIATE A VISIT SEALED WITH A DEFECT - not a rewrite of history.
  *
  * Two visits sealed on 2026-08-10 captured NO terms, because service
  * resolution matched the catalogue on an exact, case-sensitive display name

@@ -1,10 +1,10 @@
 /**
- * WHAT IS ACTUALLY OWED — design screen 13.
+ * WHAT IS ACTUALLY OWED - design screen 13.
  *
  * ── WHY THIS IS AN ENGINE AND NOT A SUBTRACTION AT THE CALL SITE ─────────
  * Three documents carry a figure for one visit: the job (what the counter
  * rang up), the booking (what was agreed), and the invoice (what was billed).
- * The audit found them unreconcilable — one invoice in the whole business,
+ * The audit found them unreconcilable - one invoice in the whole business,
  * carrying no `visitId`, while the album totalled sealed amounts and the visit
  * screen preferred the receipt, and the two disagreed by ₹11,990.
  *
@@ -17,7 +17,7 @@
  *      and the only figure with paper behind it.
  *   2. THE JOB. The operational record, and the one that moved when a mid-visit
  *      approval was granted.
- *   3. THE BOOKING. What was agreed before the car arrived — correct until the
+ *   3. THE BOOKING. What was agreed before the car arrived - correct until the
  *      studio touches it, and the honest answer when nothing else exists.
  *
  * Pure: no Firestore, no clock it is not given, no routes.
@@ -63,7 +63,7 @@ export function settlementOf(m: MoneyOnRecord): Settlement {
     total,
     received,
     source,
-    /* A zero-value visit is settled — a covered membership wash owes nothing
+    /* A zero-value visit is settled - a covered membership wash owes nothing
        and must not sit for ever on a "pay" screen. */
     settled: payable === 0,
   };
@@ -74,7 +74,7 @@ export function settlementOf(m: MoneyOnRecord): Settlement {
  *
  * `submitted` is deliberately not "paid". The customer has told the studio
  * they have paid; the studio has not yet seen it. Saying "paid" here would be
- * the product confirming something only a bank can confirm — and the car is
+ * the product confirming something only a bank can confirm - and the car is
  * not released on it.
  */
 export const PAYMENT_WORD: Record<PaymentStatus, string> = {
@@ -87,7 +87,7 @@ export const PAYMENT_WORD: Record<PaymentStatus, string> = {
 };
 
 export const PAYMENT_LINE: Record<PaymentStatus, string> = {
-  unpaid: 'Settle it here, or at the counter — whichever suits.',
+  unpaid: 'Settle it here, or at the counter - whichever suits.',
   initiated: 'Finish it in your UPI app, then tell us the reference.',
   submitted: 'We are checking with the bank. Nothing more for you to do.',
   paid: 'Thank you. Nothing outstanding.',

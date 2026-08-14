@@ -93,7 +93,7 @@ export default function WelcomePage() {
             Welcome.
           </span>
           <Body tone="ink-2" style={{ marginTop: 'var(--st-inset)', maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
-            This is where your car will live — its care, its protection, its story.
+            This is where your car will live - its care, its protection, its story.
             It starts with the car.
           </Body>
           <div style={{ marginTop: 'var(--st-rest)', maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>

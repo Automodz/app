@@ -3,7 +3,7 @@
  *
  * The atoms of the ratified customer design ("AutoModz App.dc.html"), which
  * the twelve screens compose and never re-implement. `components/system` is
- * the older, broader kit — `Text`, `Hero`, `Button`, `Section`; these are the
+ * the older, broader kit - `Text`, `Hero`, `Button`, `Section`; these are the
  * shapes that kit has no word for: a dial, a pane of glass, a meter, a label.
  */
 export { Pane } from './Pane';

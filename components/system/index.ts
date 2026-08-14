@@ -5,7 +5,7 @@
  * Tokens: design/
  *
  * Eighteen components, each one traceable to a section of the constitution and
- * built from tokens alone. §22.4 — no raw colour, spacing, size, duration or
+ * built from tokens alone. §22.4 - no raw colour, spacing, size, duration or
  * stacking order appears in any of them.
  *
  * WHAT THESE DO NOT KNOW
@@ -20,10 +20,10 @@
  *   Text     body · data · whisper            §9.5
  *   Heading  display · title                  §9.5
  *   Button   primary · forward · quiet        §10.4
- *   Surface  the seven elevation bands        §9.3   (one material — §10.2)
+ *   Surface  the seven elevation bands        §9.3   (one material - §10.2)
  *   StatusChip  assent · caution · urgent · lapsed   §9.2
  *
- * §10.3 — composition over configuration. `Hero` takes its media as children
+ * §10.3 - composition over configuration. `Hero` takes its media as children
  * rather than a src, `Gallery` takes tiles rather than URLs, `Section` takes an
  * action rather than a set of flags describing one.
  */

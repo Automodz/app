@@ -67,7 +67,7 @@ export function termFromWarranty(warranty: string | null | undefined, appliedOn:
  * SERVICE IDENTITY IS NOT A DISPLAY NAME.
  *
  * This resolution used to be `new Map(catalogue.map(s => [s.name, s]))` and a
- * plain `.get(serviceName)` — an exact, case-sensitive match on a string a
+ * plain `.get(serviceName)` - an exact, case-sensitive match on a string a
  * human types into an admin form. In production that silently cost a real
  * customer a real warranty: a job recorded `"Glass Coating"`, the catalogue
  * holds `"Glass coating"`, and one capital letter meant no match, no warranty,
@@ -80,18 +80,18 @@ export function termFromWarranty(warranty: string | null | undefined, appliedOn:
  *
  * So, in order:
  *
- *   1. `serviceId` — a real key, when it resolves. New work always carries one.
- *   2. NORMALISED NAME — lowercased, whitespace collapsed. This is the legacy
+ *   1. `serviceId` - a real key, when it resolves. New work always carries one.
+ *   2. NORMALISED NAME - lowercased, whitespace collapsed. This is the legacy
  *      path, and it exists because historical jobs carry ids from a catalogue
  *      that has since been replaced (`s7`, `s14` against today's `svc-*`), so
  *      their id resolves to nothing and the name is the only key left.
  *   3. Nothing. An unresolved service creates NO protection.
  *
- * Normalisation is deliberately narrow — case and whitespace only. There is no
+ * Normalisation is deliberately narrow - case and whitespace only. There is no
  * fuzzy matching, no prefix matching, no edit distance: "Ceramic coating" and
  * "Ceramic maintenance" are different promises with different terms, and a
  * matcher loose enough to bridge a typo is loose enough to bridge those two.
- * Art. 1.6 — a wrong promise is worse than no promise.
+ * Art. 1.6 - a wrong promise is worse than no promise.
  */
 const normalise = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -273,8 +273,8 @@ export function projectProtections(args: {
 /**
  * A vehicle exposes AT MOST ONE active protection of a given kind.
  *
- * This was previously guaranteed only by an id convention —
- * `${vehicleId}_${kind}` — which is a naming habit, not an invariant. Any
+ * This was previously guaranteed only by an id convention -
+ * `${vehicleId}_${kind}` - which is a naming habit, not an invariant. Any
  * writer that chose its own id broke it, and one did: production carries both
  * `MfU7e5qLzdLvkvvi8E3o_glass` (sealed, expires 2028-07-16) and the seeded
  * `prot-seltos-glass` (expires 2027-09-21). The customer's Home listed "Glass
@@ -284,19 +284,19 @@ export function projectProtections(args: {
  * So the rule moves into the engine, where no writer can route around it.
  *
  * ── WHY THIS ORDER ──────────────────────────────────────────────────────
- * 1. `captured` — the term as SOLD, snapshotted at seal from the catalogue of
+ * 1. `captured` - the term as SOLD, snapshotted at seal from the catalogue of
  *    that moment. It is the only source with a provenance chain back to work
  *    that actually happened.
- * 2. LINKED TO A SEALED VISIT — a protection that can name the visit that
+ * 2. LINKED TO A SEALED VISIT - a protection that can name the visit that
  *    created it outranks one that cannot, because the visit is the evidence.
- * 3. HAS A `since` — a protection whose life can be measured outranks one that
+ * 3. HAS A `since` - a protection whose life can be measured outranks one that
  *    can only be estimated.
- * 4. NEWEST `since` — a re-coat replaces its ancestor, which is the same rule
+ * 4. NEWEST `since` - a re-coat replaces its ancestor, which is the same rule
  *    `captureTerms` already applies within a single visit.
  *
  * NOTHING IS MERGED. The winner is returned whole. Taking `since` from one
  * document and `term` from another would manufacture a promise that no visit
- * ever made — the precise failure this file exists to prevent.
+ * ever made - the precise failure this file exists to prevent.
  *
  * Deterministic by construction: every tie-break is a total order on values,
  * and the final fallback is the document id, so Firestore's arrival order
@@ -320,7 +320,7 @@ export function oneProtectionPerKind<T extends Protection>(list: T[]): T[] {
       if (a[i] > b[i]) best.set(p.kind, p);
       break;
     }
-    /* Every field equal — including `since`. Fall back to the id so the answer
+    /* Every field equal - including `since`. Fall back to the id so the answer
        is still the same on every read. */
     if (a.every((x, i) => x === b[i]) && p.id < held.id) best.set(p.kind, p);
   }
@@ -331,8 +331,8 @@ export function oneProtectionPerKind<T extends Protection>(list: T[]): T[] {
  * IS THIS PERCENTAGE A MEASUREMENT OR A GUESS?
  *
  * A protection with a `since` and a dated term has a real proportion between
- * two real dates. One without `since` falls back to a health bucket — 0.8,
- * 0.2, 0.05 — which is a CATEGORY wearing a number. Eight legacy protections
+ * two real dates. One without `since` falls back to a health bucket - 0.8,
+ * 0.2, 0.05 - which is a CATEGORY wearing a number. Eight legacy protections
  * are in that state and no date may be invented for them.
  *
  * The distinction is exposed rather than hidden, so no surface can imply that
@@ -345,7 +345,7 @@ export const measurementOf = (p: Pick<Protection, 'since' | 'term'>): Measuremen
   p.since && p.term.kind === 'dated' ? 'measured' : 'estimated';
 
 /**
- * HOW MUCH OF A PROMISE IS LEFT, AS A MEASUREMENT — or nothing at all.
+ * HOW MUCH OF A PROMISE IS LEFT, AS A MEASUREMENT - or nothing at all.
  *
  * Returns `null` unless the fraction can be taken between two real dates. That
  * is stricter than the customer-facing dial, and deliberately so: the dial may
@@ -355,7 +355,7 @@ export const measurementOf = (p: Pick<Protection, 'since' | 'term'>): Measuremen
  * somebody's car, and a bucket wearing a number is not a claim anyone can
  * stand behind.
  *
- * A perpetual promise has no fraction to take — it does not deplete — so it is
+ * A perpetual promise has no fraction to take - it does not deplete - so it is
  * `null` here too, and the surface says what it is rather than how much is
  * left.
  */

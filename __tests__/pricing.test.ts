@@ -103,13 +103,13 @@ describe('applyDiscount', () => {
   });
 });
 
-/* ── decidePrice — the whole booking decision, the thing the server acts on ──
+/* ── decidePrice - the whole booking decision, the thing the server acts on ──
    These matter more than the pieces above: this is the function that decides
    what a customer is charged. Every case here was previously decided in a
    browser. */
 
 /* `washesTotal` MATCHES THE PLAN. It read 4 against a Gold plan the catalogue
-   grants 8 — the same drift a production subscription turned out to carry, and
+   grants 8 - the same drift a production subscription turned out to carry, and
    the reason `os/club.washesGrantedBy` now reads the catalogue rather than the
    document. A fixture that disagrees with the plan it names is a fixture
    asserting the bug. */
@@ -152,7 +152,7 @@ describe('decidePrice · membership wash', () => {
   });
 
   it('refuses when the allowance is spent', () => {
-    /* Spent means "used everything the PLAN grants" — Gold's eight — not
+    /* Spent means "used everything the PLAN grants" - Gold's eight - not
        "used everything a field on the document happens to say". */
     const d = decidePrice(input({
       membership: sub({ washesUsed: 8 }), wantsWash: true,
@@ -162,7 +162,7 @@ describe('decidePrice · membership wash', () => {
 
   it('the plan outranks a drifted count on the document', () => {
     /* The production defect, pinned: a Gold subscription claiming sixteen
-       washes grants eight, so six used leaves two — never ten. */
+       washes grants eight, so six used leaves two - never ten. */
     const d = decidePrice(input({
       membership: sub({ washesTotal: 16, washesUsed: 6 }), wantsWash: true,
     }));

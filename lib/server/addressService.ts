@@ -1,6 +1,6 @@
 import 'server-only';
 /**
- * SAVED PICKUP AND DROP ADDRESSES — `users/{uid}/addresses/{id}`.
+ * SAVED PICKUP AND DROP ADDRESSES - `users/{uid}/addresses/{id}`.
  *
  * ── WHY THE SERVER OWNS EVERY WRITE ──────────────────────────────────────
  * Two of the three rules here cannot be expressed in Firestore rules at all:
@@ -41,7 +41,7 @@ export async function listAddresses(uid: string): Promise<SavedAddress[]> {
   const snap = await collection(uid).get();
   return snap.docs
     .map(d => ({ id: d.id, ...(d.data() as object) }) as SavedAddress)
-    /* Default first, then alphabetically — a stable order, so the chip a
+    /* Default first, then alphabetically - a stable order, so the chip a
        customer tapped last time is where they left it. */
     .sort((a, b) =>
       Number(b.isDefault) - Number(a.isDefault)
@@ -53,7 +53,7 @@ export async function listAddresses(uid: string): Promise<SavedAddress[]> {
  *
  * `line` is assembled from the parts rather than stored a second time on the
  * address itself, so a corrected pincode cannot leave a stale sentence behind
- * it — and the snapshot keeps the parts too, because a driver needs them.
+ * it - and the snapshot keeps the parts too, because a driver needs them.
  */
 export function snapshotOf(a: SavedAddress) {
   return {
@@ -105,7 +105,7 @@ export async function saveAddress(
     const isDefault = checked.value.isDefault || first;
 
     if (isDefault) {
-      /* EXACTLY ONE. Every other address is stood down in the SAME commit —
+      /* EXACTLY ONE. Every other address is stood down in the SAME commit -
          two defaults is a state no reader can resolve, and it is reachable in
          one dropped connection if this is two writes. */
       for (const d of existing) {
@@ -131,7 +131,7 @@ export async function saveAddress(
  * Remove an address, unless a van is due at it.
  *
  * A booking carries a SNAPSHOT, so deleting the saved address never damages a
- * past visit's record — the refusal is not about data integrity. It is about
+ * past visit's record - the refusal is not about data integrity. It is about
  * the customer: an address they deleted is one they believe the studio no
  * longer holds, and quietly driving to it on Tuesday would prove otherwise.
  * They are told which visit is in the way, so the refusal is actionable.

@@ -1,5 +1,5 @@
 /**
- * WHERE THE STUDIO COLLECTS FROM — design screens 08 and 19.
+ * WHERE THE STUDIO COLLECTS FROM - design screens 08 and 19.
  *
  * `bookings.pickupAddress` was declared and never populated: 0% across every
  * booking in production, read by exactly one WhatsApp template. The concierge
@@ -112,7 +112,7 @@ export function checkAddress(input: AddressInput): AddressCheck {
   };
 }
 
-/** "Bodakdev · Home" — the chip on screen 08. */
+/** "Bodakdev · Home" - the chip on screen 08. */
 export const shortAddress = (a: { label: string; area: string }): string =>
   `${a.area} · ${a.label}`;
 

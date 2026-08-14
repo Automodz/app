@@ -75,7 +75,7 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
 
   const validate = (): boolean => {
     let ok = true;
-    if (name.trim().length < 2) { setNameErr('The car needs a name — “Mercedes-AMG C 43”.'); ok = false; }
+    if (name.trim().length < 2) { setNameErr('The car needs a name - “Mercedes-AMG C 43”.'); ok = false; }
     const p = normPlate(plate);
     if (!plateLooksReal(p)) { setPlateErr('That doesn’t look like a plate yet.'); ok = false; }
     else if (duplicate(p)) { setPlateErr(`The ${p} is already in your garage.`); ok = false; }
@@ -85,7 +85,7 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
   const save = async () => {
     if (!user || busy) return;
     if (!validate()) return;
-    if (!online) { setError('You’re offline — reconnect to add the car.'); return; }
+    if (!online) { setError('You’re offline - reconnect to add the car.'); return; }
 
     setBusy(true); setError(null);
     // `photo` always mirrors the cover so every existing reader (the Glance
@@ -128,7 +128,7 @@ export default function CarForm({ editing, first = false, onSaved }: CarFormProp
         }
         return;
       }
-      setError('That didn’t reach the studio — try again.');
+      setError('That didn’t reach the studio - try again.');
       setBusy(false);
     }
   };

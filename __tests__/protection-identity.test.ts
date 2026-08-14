@@ -63,7 +63,7 @@ describe('service resolution', () => {
 
   it('NEVER bridges two different services', () => {
     /* The failure mode a fuzzy matcher would introduce. These two are one word
-       apart and carry different terms — 3 years against none. */
+       apart and carry different terms - 3 years against none. */
     expect(resolveService(CATALOGUE, { serviceName: 'Ceramic' })).toBeUndefined();
     expect(resolveService(CATALOGUE, { serviceName: 'Ceramic coat' })).toBeUndefined();
     expect(resolveService(CATALOGUE, { serviceName: 'Ceramic maintenance' })?.id)
@@ -83,7 +83,7 @@ describe('what capture does with that', () => {
     expect(term.source).toBe('captured');
   });
 
-  it('an unresolved service produces NO protection — never a blank one', () => {
+  it('an unresolved service produces NO protection - never a blank one', () => {
     expect(capture({ serviceName: 'Something we do not sell', category: 'Coating' })).toEqual([]);
   });
 
@@ -116,7 +116,7 @@ describe('`since` is a fact about the car, not about the record', () => {
   });
 });
 
-describe('§14.5 — a catalogue edit cannot reach back', () => {
+describe('§14.5 - a catalogue edit cannot reach back', () => {
   it('re-pricing or re-wording a warranty does not move an existing protection', () => {
     /* The captured term is the snapshot. `protectionsFromVisit` reads
        `termsCaptured` and never the catalogue, which is the whole reason the

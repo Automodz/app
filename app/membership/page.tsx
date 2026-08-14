@@ -10,7 +10,7 @@ import { toMembership } from '@/lib/customer/project';
 export const dynamic = 'force-dynamic';
 
 
-/** `/membership` — the club. §15.2 places it with the car's protections too. */
+/** `/membership` - the club. §15.2 places it with the car's protections too. */
 export default function MembershipPage() {
   return <ServerRoom>{p => <MembershipScreen model={toMembership(p)} />}</ServerRoom>;
 }

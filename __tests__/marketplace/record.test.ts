@@ -1,5 +1,5 @@
 /**
- * ITS RECORD WITH US — design screen 17.
+ * ITS RECORD WITH US - design screen 17.
  *
  * The one place a private record crosses into public: "detailed here since
  * 2021 · 11 visits · 340 photos · full-body PPF 68% life", on a page anyone
@@ -55,7 +55,7 @@ describe('consent is the gate, and absent means no', () => {
     expect(m.history).toMatchObject({ since: '2021', visits: 2, photographs: 340 });
   });
 
-  it('NO CONSENT, NO RECORD — and null, not zeroes', () => {
+  it('NO CONSENT, NO RECORD - and null, not zeroes', () => {
     /* Zeroes are themselves a claim about the car. A screen holding `null`
        cannot leak a count, because it has no count. */
     const m = toListing(listing(), [], [], record({
@@ -64,7 +64,7 @@ describe('consent is the gate, and absent means no', () => {
     expect(m.history).toBeNull();
   });
 
-  it('NOBODY IS GRANDFATHERED IN — a car that was never asked is private', () => {
+  it('NOBODY IS GRANDFATHERED IN - a car that was never asked is private', () => {
     expect(hasPublicHistoryConsent({ publicHistoryConsent: undefined })).toBe(false);
     expect(hasPublicHistoryConsent(undefined)).toBe(false);
     expect(hasPublicHistoryConsent(null)).toBe(false);
@@ -88,7 +88,7 @@ describe('consent is the gate, and absent means no', () => {
 
   it('consent with nothing to show is still nothing to show', () => {
     /* A car whose owner consented but which the studio has never worked on has
-       no history — and "0 visits" would be a claim about the car. */
+       no history - and "0 visits" would be a claim about the car. */
     expect(toListing(listing(), [], [], record({ visits: [], since: undefined })).history)
       .toBeNull();
     expect(publicHistoryOf({ ...record(), visits: [] })).toBeNull();
@@ -139,7 +139,7 @@ describe('a percentage on a public page is a measurement or it is absent', () =>
     expect(Math.round(life! * 100)).toBe(50);
   });
 
-  it('NO START DATE, NO PERCENTAGE — a bucket wearing a number is not a claim', () => {
+  it('NO START DATE, NO PERCENTAGE - a bucket wearing a number is not a claim', () => {
     /* The customer's own dial may fall back to a health bucket: they can see
        the word beside it and can ask the studio. A stranger reading a listing
        has neither. */
@@ -170,7 +170,7 @@ describe('the link between a listing and a car is proven, never trusted', () => 
   const page = readFileSync('app/cars/[id]/page.tsx', 'utf8');
 
   it('the owner is validated by reading the car from UNDER them', () => {
-    /* Never "find another vehicle with this id" — searching for a matching
+    /* Never "find another vehicle with this id" - searching for a matching
        record is exactly how a plate join re-parented three bookings in
        production. */
     expect(loader).toMatch(/doc\(`users\/\$\{vehicleOwnerId\}\/vehicles\/\$\{vehicleId\}`\)/);
@@ -182,7 +182,7 @@ describe('the link between a listing and a car is proven, never trusted', () => 
     expect(link).toMatch(/vehicle-not-in-that-garage/);
   });
 
-  it('half a link is refused — it names a car with no garage to look in', () => {
+  it('half a link is refused - it names a car with no garage to look in', () => {
     expect(link).toMatch(/both-required/);
   });
 
@@ -191,7 +191,7 @@ describe('the link between a listing and a car is proven, never trusted', () => 
     expect(link).toMatch(/vehicleOwnerId: FieldValue\.delete\(\)/);
   });
 
-  it('LINKING IS NOT CONSENT — the admin route grants nothing', () => {
+  it('LINKING IS NOT CONSENT - the admin route grants nothing', () => {
     /* An admin who could consent on a customer's behalf would defeat the point
        of asking. It only REPORTS whether the owner has. */
     expect(link).not.toMatch(/publicHistoryConsent: \{|granted: true/);

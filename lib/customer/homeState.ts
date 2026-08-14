@@ -5,7 +5,7 @@
  * Reference: reference/customer-old/app/app/page.tsx:348-421
  *
  * The engine decides WHICH state the car is in. This decides what that state
- * SAYS — nothing more. It builds no addresses: the next action is emitted as an
+ * SAYS - nothing more. It builds no addresses: the next action is emitted as an
  * intent by `lib/os/action.ts` and resolved by `navigation/resolve.ts`, so
  * neither this file nor any renderer knows a route
  * (docs/AUTOMODZ-OS-ARCHITECTURE.md §1, §4).
@@ -24,17 +24,17 @@ import { proposalApplies } from './ownership';
 export interface HomeStateCopy {
   word: string;
   line?: string;
-  /** A second, quieter fact — the service name, the reason it was refused. */
+  /** A second, quieter fact - the service name, the reason it was refused. */
   note?: string;
   /**
    * One honest line about time, from `os/stay`. Absent unless the engine has
-   * something true to say — §19.2 forbids inventing a duration.
+   * something true to say - §19.2 forbids inventing a duration.
    */
   timing?: string;
   tone: StateTone;
 }
 
-/** §3.3 — colour only where it carries meaning grey cannot. */
+/** §3.3 - colour only where it carries meaning grey cannot. */
 const NEUTRAL: StateTone = 'lapsed';
 
 export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCopy {
@@ -62,7 +62,7 @@ export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCo
           ? stay.narration
           : (act ? ACT_LINE[act] : `The ${car} is with us.`),
         note: live?.serviceName,
-        /* One honest line about time, or nothing at all — never a guess. */
+        /* One honest line about time, or nothing at all - never a guess. */
         timing: stay?.timing ?? undefined,
         tone: NEUTRAL,
       };

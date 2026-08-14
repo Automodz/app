@@ -3,13 +3,13 @@
  * THE BROWSER-SESSION PROVIDERS, for the trees that still need one.
  *
  * `AuthProvider`, `ThemeProvider` and `Toaster` used to live in the root layout,
- * so every route in the application — including every customer room — carried
+ * so every route in the application - including every customer room - carried
  * the Firebase client SDK, the Zustand store and react-hot-toast in its first
  * load. The customer rooms now read on the server and import none of the three.
  *
  * So they moved here, and this is mounted by the trees that genuinely run a
  * browser session: the operations application, the kiosk, and sign-in. Those
- * surfaces behave exactly as before — the same three providers, one level lower.
+ * surfaces behave exactly as before - the same three providers, one level lower.
  */
 import type { ReactNode } from 'react';
 import { Toaster } from 'react-hot-toast';

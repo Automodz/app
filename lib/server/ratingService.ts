@@ -1,11 +1,11 @@
 import 'server-only';
 /**
- * RATING A VISIT — design screen 13's "Rate this visit".
+ * RATING A VISIT - design screen 13's "Rate this visit".
  *
  * ── IT ATTACHES TO THE SEALED VISIT, AND TO NOTHING ELSE ─────────────────
  * The old rating hung off the PUBLIC invoice. Two things followed, and both
  * were wrong: anybody holding a shared invoice link could rate somebody else's
- * work, and a visit with no invoice — which is most of them — could not be
+ * work, and a visit with no invoice - which is most of them - could not be
  * rated at all.
  *
  * ── ONCE IS STRUCTURAL, NOT A CHECK ──────────────────────────────────────
@@ -42,8 +42,8 @@ export async function rateVisit(
   const visit = visitSnap.exists
     ? ({ id: visitSnap.id, ...(visitSnap.data() as object) } as Visit) : null;
 
-  /* OWNERSHIP IS THE VEHICLE'S. A visit carries no customer field — it is
-     keyed by `vehicleId`, and vehicles live under their owner — so this is the
+  /* OWNERSHIP IS THE VEHICLE'S. A visit carries no customer field - it is
+     keyed by `vehicleId`, and vehicles live under their owner - so this is the
      same lookup the rules use, and there is no owner field to forge. */
   const ownsVehicle = !!visit && (
     await db.doc(`users/${callerUid}/vehicles/${visit.vehicleId}`).get()

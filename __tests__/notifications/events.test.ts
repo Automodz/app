@@ -1,5 +1,5 @@
 /**
- * WHAT THE STUDIO TELLS A CUSTOMER — and what quiet mode does with it.
+ * WHAT THE STUDIO TELLS A CUSTOMER - and what quiet mode does with it.
  *
  * §17.1 removed the notification list on purpose and nothing here brings it
  * back. An event is a FACT, written down so the surface that owns it can show
@@ -7,7 +7,7 @@
  *
  * The two properties that matter are that one fact produces one record however
  * many times the code runs, and that quiet mode suppresses the PHONE and never
- * the record — a quiet mode that dropped events would erase a customer's own
+ * the record - a quiet mode that dropped events would erase a customer's own
  * history of what happened to their car.
  */
 import { readFileSync } from 'fs';
@@ -61,7 +61,7 @@ describe('one fact, one record', () => {
 
 /* ── quiet mode ──────────────────────────────────────────────────────────── */
 
-describe('quiet mode — "only approvals and handover reach you"', () => {
+describe('quiet mode - "only approvals and handover reach you"', () => {
   it('everything reaches a customer who has not asked for quiet', () => {
     for (const t of EVERY) expect(deliverable(t, false)).toBe(true);
     for (const t of EVERY) expect(deliverable(t, undefined)).toBe(true);
@@ -102,7 +102,7 @@ describe('quiet mode — "only approvals and handover reach you"', () => {
   it('the engine decides it, so no caller can forget to honour it', () => {
     const server = readFileSync('lib/server/events.ts', 'utf8');
     expect(server).toMatch(/deliverable\(input\.type, quiet\)/);
-    /* Read inside, never passed in — a parameter is a thing a caller omits. */
+    /* Read inside, never passed in - a parameter is a thing a caller omits. */
     expect(server).toMatch(/quietMode === true/);
   });
 });
@@ -118,7 +118,7 @@ describe('the words are the studio’s, and unsigned', () => {
     }
   });
 
-  it('NO FIGURE IN ANY OF THEM — a lock screen is read by the room', () => {
+  it('NO FIGURE IN ANY OF THEM - a lock screen is read by the room', () => {
     for (const t of EVERY) {
       const w = wordsFor(input({ type: t, detail: '12 February at 9:00' }));
       expect(`${w.title} ${w.body}`).not.toMatch(/₹/);
@@ -147,7 +147,7 @@ describe('the words are the studio’s, and unsigned', () => {
 describe('a notification is a doorway, and opens what it is about', () => {
   it('a booking event opens the BOOKING, not a visit that does not exist', () => {
     /* Every booking notification used to open `/history/<bookingId>`, which
-       renders a visit — and a confirmed booking has none, so "the bay is
+       renders a visit - and a confirmed booking has none, so "the bay is
        yours" opened the no-car invitation. */
     for (const t of ['booking_confirmed', 'booking_rescheduled', 'booking_cancelled', 'booking_expired']) {
       expect(eventHref(t, { kind: 'booking', id: 'bk1' })).toBe('/booking/bk1');
@@ -169,7 +169,7 @@ describe('a notification is a doorway, and opens what it is about', () => {
     expect(eventHref('visit_completed', { kind: 'visit', id: 'vis1' })).toBe('/history/vis1');
   });
 
-  it('§17.3 — never Home, for any event', () => {
+  it('§17.3 - never Home, for any event', () => {
     for (const t of EVERY) {
       expect(eventHref(t, { kind: 'booking', id: 'bk1' })).not.toBe('/');
     }
@@ -178,8 +178,8 @@ describe('a notification is a doorway, and opens what it is about', () => {
 
 /* ── it is not an inbox ──────────────────────────────────────────────────── */
 
-describe('§17.1 — the car is the inbox', () => {
-  it('one collection, not two — the record a customer already had', () => {
+describe('§17.1 - the car is the inbox', () => {
+  it('one collection, not two - the record a customer already had', () => {
     /* A parallel `events` collection would mean two records of one fact, two
        rules blocks and two readers; the day they disagree the car says one
        thing and the phone says another. */

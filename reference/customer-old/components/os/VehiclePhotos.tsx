@@ -39,7 +39,7 @@ export default function VehiclePhotos({ photos, onChange, uid }: VehiclePhotosPr
   const addFiles = async (files: FileList) => {
     const list = Array.from(files);
     if (!list.length) return;
-    if (!online) { setError('You’re offline — reconnect to add photos.'); return; }
+    if (!online) { setError('You’re offline - reconnect to add photos.'); return; }
     setError(null);
     setPending(n => n + list.length);
 
@@ -179,8 +179,8 @@ export default function VehiclePhotos({ photos, onChange, uid }: VehiclePhotosPr
 
       <Whisper style={{ marginTop: 'var(--st-hair)' }}>
         {photos.length > 1
-          ? 'Drag to reorder — the first is your home screen.'
-          : 'Camera or library. A front three-quarter, in good light — it becomes your home screen.'}
+          ? 'Drag to reorder - the first is your home screen.'
+          : 'Camera or library. A front three-quarter, in good light - it becomes your home screen.'}
       </Whisper>
 
       {error && (

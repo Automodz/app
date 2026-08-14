@@ -31,7 +31,7 @@ connectFirestoreEmulator(db, '127.0.0.1', 8080);
 
 let failures = 0;
 const check = (label, ok, detail = '') => {
-  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  — ' + detail : ''}`);
+  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  - ' + detail : ''}`);
   if (!ok) failures++;
 };
 const denied = async (label, q) => {

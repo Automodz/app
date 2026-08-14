@@ -7,7 +7,7 @@ import { backfillSealedVisits } from '@/lib/server/sealVisit';
  * get their history without anyone touching the admin.
  *
  * Idempotent, so it may be run repeatedly and while the studio is working. Admin
- * only — it walks every job in the business.
+ * only - it walks every job in the business.
  */
 export const runtime = 'nodejs';
 export const maxDuration = 300;

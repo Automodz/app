@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: 'Privacy',
   description: 'What AutoModz holds about you, why, and how to delete it.',
   /* Its OWN canonical. Metadata is shallowly merged, so a page that does not
-     declare `alternates` inherits the root layout's `canonical: '/'` — which
+     declare `alternates` inherits the root layout's `canonical: '/'` - which
      told search engines this page was a duplicate of the homepage and should
      not be indexed on its own. Apple requires this one at a stable, findable
      URL. */
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 /**
  * PUBLIC AND STATIC. Apple requires a privacy policy reachable at a stable URL
  * without signing in, and so does anyone deciding whether to sign up. No
- * session, no `force-dynamic` — it prerenders.
+ * session, no `force-dynamic` - it prerenders.
  */
 export default async function PrivacyPage(
   { searchParams }: { searchParams: Promise<{ from?: string }> },

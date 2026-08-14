@@ -6,7 +6,7 @@ import { sealVisitForJob } from '@/lib/server/sealVisit';
  * Seal the visit for one completed job. Called by the kiosk the moment a job
  * completes; safe to call again, because sealing is idempotent.
  *
- * STAFF ONLY, verified server-side against the role on the user document — the
+ * STAFF ONLY, verified server-side against the role on the user document - the
  * caller's own claim about who they are is never trusted (§22.8).
  */
 export const runtime = 'nodejs';

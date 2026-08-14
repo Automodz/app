@@ -1,7 +1,7 @@
 /**
  * THE DEMO CUSTOMER, FILLED IN.
  *
- * `sheth871@gmail.com` is a REAL account with real records — four cars, ten
+ * `sheth871@gmail.com` is a REAL account with real records - four cars, ten
  * bookings, jobs against them. Nothing here creates a parallel demo world: it
  * fills the gaps that made the product look empty, using the same collections
  * and the same document shapes the studio's own admin writes.
@@ -14,7 +14,7 @@
  *   PROTECTIONS     none at all, so Home's protection region never drew and
  *                   the proposal engine had nothing to reason from.
  *   JOB PHOTOS      the live job had none, so the one thing the product is
- *                   for — watching your car being worked on — showed nothing.
+ *                   for - watching your car being worked on - showed nothing.
  *   MEMBERSHIP      stuck at `pending`, so the club never appeared.
  *   INVOICE         none, so a finished visit had no papers behind it.
  *
@@ -61,7 +61,7 @@ async function put(path, data) {
 }
 
 /* Studio photography. Unsplash is already whitelisted in next.config, and
-   these are the same curated frames `lib/media.ts` uses — placeholders until
+   these are the same curated frames `lib/media.ts` uses - placeholders until
    real AutoModz shoots replace them, exactly as that file says. */
 const shot = (id, w = 1200) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
@@ -75,12 +75,12 @@ console.log(`\ndemo customer: ${EMAIL}  uid=${uid}${DRY ? '  (DRY RUN)' : ''}\n`
    protection to (`PPF`, `Ceramic`, `Coating`) plus `Washing`, so a
    recommendation can resolve to something bookable. */
 const SERVICES = [
-  { id: 'svc-ppf-full', name: 'Paint protection film — full body', category: 'PPF',
+  { id: 'svc-ppf-full', name: 'Paint protection film - full body', category: 'PPF',
     brand: 'LLumar', price: 145000, duration: 2880, warranty: '5 years', popular: true, order: 1,
     description: 'Every painted panel wrapped in self-healing film, cut to the car.' },
-  { id: 'svc-ppf-front', name: 'Paint protection film — front', category: 'PPF',
+  { id: 'svc-ppf-front', name: 'Paint protection film - front', category: 'PPF',
     brand: 'LLumar', price: 48000, duration: 1440, warranty: '5 years', popular: false, order: 2,
-    description: 'Bonnet, bumper, fenders and mirrors — the panels that take the road.' },
+    description: 'Bonnet, bumper, fenders and mirrors - the panels that take the road.' },
   { id: 'svc-ceramic', name: 'Ceramic coating', category: 'Ceramic',
     brand: 'Kovalent', price: 64000, duration: 300, warranty: '3 years', popular: true, order: 3,
     description: 'Paint corrected by hand, then a ceramic coat cured in the booth.' },
@@ -89,7 +89,7 @@ const SERVICES = [
     description: 'The coat decontaminated and topped, so its years run their course.' },
   { id: 'svc-glass', name: 'Glass coating', category: 'Coating',
     brand: 'Kovalent', price: 12000, duration: 150, warranty: '2 years', popular: false, order: 5,
-    description: 'Windscreen and windows sealed — rain beads and leaves.' },
+    description: 'Windscreen and windows sealed - rain beads and leaves.' },
   { id: 'svc-interior', name: 'Interior deep clean', category: 'Coating',
     brand: '', price: 9500, duration: 240, warranty: '', popular: false, order: 6,
     description: 'Every surface lifted, leather fed, glass finished last.' },
@@ -137,7 +137,7 @@ if (seltos) {
     { provider: 'HDFC', termsSource: 'declared' });
 }
 if (bmw) {
-  /* The booked car — protected, nothing urgent. */
+  /* The booked car - protected, nothing urgent. */
   await protection('prot-bmw-ceramic', bmw, 'ceramic', { kind: 'dated', expiresOn: plus(690) },
     { provider: 'Kovalent', plan: 'Prolong', coverage: 'Paint', since: '2026-02-02' });
   await protection('prot-bmw-interior', bmw, 'interior', { kind: 'dated', expiresOn: plus(300) },
@@ -146,7 +146,7 @@ if (bmw) {
     { provider: 'Bajaj Allianz', plan: 'Comprehensive', termsSource: 'declared' });
 }
 if (defender) {
-  /* The car that needs attention — its paint is bare and its PUC is out.
+  /* The car that needs attention - its paint is bare and its PUC is out.
      This is what makes the recommendation on Home legitimate. */
   await protection('prot-defender-puc', defender, 'puc', { kind: 'dated', expiresOn: plus(-8) },
     { termsSource: 'declared' });
@@ -157,7 +157,7 @@ if (i20) {
   /* 22 days puts this in the term engine's `waning` band (8–30), which is
      the ONLY thing that makes `os/proposal` speak. The recommendation on Home
      is therefore real reasoning about a real coat, not copy written to fill a
-     section — and it disappears by itself once the coat is renewed. */
+     section - and it disappears by itself once the coat is renewed. */
   await protection('prot-i20-ceramic', i20, 'ceramic', { kind: 'dated', expiresOn: plus(22) },
     { provider: 'Kovalent', coverage: 'Paint', since: '2025-11-10' });
   await protection('prot-i20-warranty', i20, 'warranty', { kind: 'dated', expiresOn: plus(520) },
@@ -199,7 +199,7 @@ if (doneJob) {
 }
 
 /* ── 4b · THE RECORD ──────────────────────────────────────────────────────
-   `visitsOf` reads SEALED VISIT documents, and production had none — so no
+   `visitsOf` reads SEALED VISIT documents, and production had none - so no
    car had a life, on Home or in History, however many bookings it had
    completed. A completed booking is not a visit; `sealVisit` makes one, and
    these are what that would have produced. */
@@ -224,7 +224,7 @@ if (seltos) {
     { subtotal: 13200, discount: 1980, total: 13240 }, DONE_BOOKING);
 
   await visit('vis-demo-ppf', seltos, '2025-08-14',
-    [svc('svc-ppf-full', 'Paint protection film — full body', 'PPF', 145000)],
+    [svc('svc-ppf-full', 'Paint protection film - full body', 'PPF', 145000)],
     [stage('ready', '2025-08-16T16:00:00Z', 'Every panel wrapped. Edges wrapped in, not cut at the line.',
       [photo(shot('photo-1618843479313-40f8afb4b4d8')), photo(shot('photo-1600661653561-629509216228'))])],
     [{ kind: 'ppf', term: { kind: 'perpetual' }, source: 'captured' }],
@@ -249,7 +249,7 @@ if (bmw) {
 }
 
 /* NO INVOICE IS WRITTEN HERE.
-   The completed Glass Coating ALREADY HAD ONE — the studio's own,
+   The completed Glass Coating ALREADY HAD ONE - the studio's own,
    `AMZ-2026-0001`, ₹1,250, with its real line items. Writing a second against
    the same booking put two invoices on one visit and `toVisit` took the first
    it found, so a fabricated ₹13,240 shadowed the genuine record. Removed, and
@@ -259,7 +259,7 @@ if (bmw) {
 
 /* ── 5 · THE CLUB ─────────────────────────────────────────────────────────
    The subscription existed but sat at `pending`, so it never counted as a
-   membership anywhere — no washes, no discount, no club on Home. */
+   membership anywhere - no washes, no discount, no club on Home. */
 const subs = await db.collection('subscriptions').where('userId', '==', uid).get();
 const sub = subs.docs[0];
 if (sub) {

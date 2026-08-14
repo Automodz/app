@@ -1,5 +1,5 @@
 /**
- * THE PRODUCTION SMOKE TEST. READ ONLY — this script writes nothing, anywhere.
+ * THE PRODUCTION SMOKE TEST. READ ONLY - this script writes nothing, anywhere.
  *
  *   ORIGIN=https://automodz.vercel.app node scripts/verify-production.mjs
  *
@@ -10,7 +10,7 @@
  *   2. DOES EVERY PUBLIC SURFACE ANSWER?  A 404 where a route should exist,
  *      or a 500 anywhere, is a deploy that did not work.
  *   3. DOES EVERY PRIVATE DOOR REFUSE?  Signed out, every route that writes
- *      must answer 401 — and the customer rooms must show the sign-in
+ *      must answer 401 - and the customer rooms must show the sign-in
  *      invitation rather than somebody's garage.
  *
  * WHAT IT DELIBERATELY DOES NOT DO is sign in. Minting a session against
@@ -18,7 +18,7 @@
  * real customer's data is not a smoke test. Everything a signed-in customer
  * does is covered by the emulator matrices (`scripts/security/customer`).
  *
- * NO SECRET IS PRINTED. Configuration is verified by BEHAVIOUR — a route that
+ * NO SECRET IS PRINTED. Configuration is verified by BEHAVIOUR - a route that
  * answers 401 rather than 503 proves the Admin SDK is configured, without
  * anything having to read a key.
  */
@@ -79,7 +79,7 @@ const DOORS = [
 
   /* The deploy names itself. Nothing in the rendered HTML carries the build,
      so `next.config.js` puts twelve characters of the commit on every
-     response — which is what makes this "THIS deploy" rather than "a deploy". */
+     response - which is what makes this "THIS deploy" rather than "a deploy". */
   const release = home.headers.get('x-automodz-release');
   ok('it says which commit it is', Boolean(release) && release !== 'local', release ?? 'none');
   if (release) console.log(`        release ${release}`);
@@ -100,7 +100,7 @@ const DOORS = [
   ok('  …and it is the product’s own room, not a stack trace',
     /can.t find that|Nothing here/i.test(missing.body));
 
-  console.log('\nSIGNED OUT, A ROOM IS AN INVITATION — NEVER SOMEBODY’S GARAGE');
+  console.log('\nSIGNED OUT, A ROOM IS AN INVITATION - NEVER SOMEBODY’S GARAGE');
   for (const path of PRIVATE) {
     const r = await get(path);
     const shown = r.status === 200 && /behind a sign-in|Sign in|Continue with Google/i.test(r.body);
@@ -111,21 +111,21 @@ const DOORS = [
   console.log('\nEVERY DOOR THAT WRITES REFUSES A STRANGER');
   for (const path of DOORS) {
     const r = await post(path, { probe: true });
-    /* 401 is the answer. 503 would mean the Admin SDK is not configured — a
+    /* 401 is the answer. 503 would mean the Admin SDK is not configured - a
        different failure, and one worth telling apart. */
     ok(`${path} → 401`, r.status === 401, `${r.status}${r.status === 503 ? ' (Admin SDK not configured)' : ''}`);
   }
 
   console.log('\nCONFIGURATION, PROVEN BY BEHAVIOUR (no secret is read)');
   const session = await post('/api/session', { idToken: 'not-a-token' });
-  ok('the Admin SDK is configured — /api/session refuses rather than 503',
+  ok('the Admin SDK is configured - /api/session refuses rather than 503',
     session.status === 400 || session.status === 401, session.status);
 
   const cron = await get('/api/cron/daily');
   ok('the nightly job is protected and FAILS CLOSED', cron.status === 401, cron.status);
 
   const sign = await post('/api/media/sign', { path: 'vehicles/x-1' });
-  ok('media signing is configured — it refuses the CALLER, not the config',
+  ok('media signing is configured - it refuses the CALLER, not the config',
     sign.status === 401, `${sign.status}${sign.status === 503 ? ' (Cloudinary not configured)' : ''}`);
 
   console.log('\nWHAT THE WORLD MAY INDEX');

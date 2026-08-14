@@ -1,11 +1,11 @@
 import 'server-only';
 /**
- * PAYING — design screen 13.
+ * PAYING - design screen 13.
  *
  * ── THE AMOUNT IS NEVER THE CUSTOMER'S ───────────────────────────────────
  * Nothing on the request names a figure. The payable amount is resolved here
  * from the studio's own records through `settlementOf`, and the UPI intent is
- * built from that. A body carrying `amount` would not be rejected — it has no
+ * built from that. A body carrying `amount` would not be rejected - it has no
  * name to be read by.
  *
  * ── AND OPENING A LINK IS NOT A RECEIPT ──────────────────────────────────
@@ -40,7 +40,7 @@ export class PaymentError extends Error {
  * changes bank, and it must change in exactly one place.
  *
  * `NEXT_PUBLIC_UPI_ID` is the name the deployment already uses, and it is
- * kept — a payee address is meant to be public, it is printed on the counter,
+ * kept - a payee address is meant to be public, it is printed on the counter,
  * and inventing a second name for a value that is already set would mean a
  * deploy where the studio silently stops being payable. `STUDIO_UPI_VPA`
  * overrides it for the day the two need to differ.
@@ -48,7 +48,7 @@ export class PaymentError extends Error {
  * VALIDATED, not merely read. A malformed address here is every customer
  * tapping Pay and their bank refusing to open, so an unusable value is treated
  * as no value at all and the screen says the studio is not taking UPI in the
- * app — which is true, and is better than a link to nowhere.
+ * app - which is true, and is better than a link to nowhere.
  */
 export const studioVpa = (): string | null => {
   const raw = process.env.STUDIO_UPI_VPA || process.env.NEXT_PUBLIC_UPI_ID || '';
@@ -70,7 +70,7 @@ export interface VisitMoney {
  *
  * Ownership is checked here and not assumed: the Admin SDK is not subject to
  * rules, so the caller's uid must match the record's customer or nothing is
- * returned. A record that is not theirs is "not found" — the same answer as
+ * returned. A record that is not theirs is "not found" - the same answer as
  * one that does not exist.
  */
 export async function payableFor(
@@ -127,7 +127,7 @@ export interface IntentResult {
 /**
  * Build a payment intent for what is actually owed.
  *
- * The customer's own VPA is recorded on the payment — it is which application
+ * The customer's own VPA is recorded on the payment - it is which application
  * opens on their phone, and the studio's is the one being paid. Neither
  * decides the amount.
  */
@@ -147,7 +147,7 @@ export async function createPaymentIntent(
   const customerVpa = (profile.data()?.upiVpa as string | undefined) ?? '';
 
   /* ONE OPEN INTENT PER VISIT. A customer who taps twice gets the same
-     payment, not a second one — otherwise the studio reconciles two records
+     payment, not a second one - otherwise the studio reconciles two records
      for one credit, and a settlement against the wrong one leaves a car
      unreleased. */
   const open = await db.collection('payments')
@@ -192,7 +192,7 @@ export async function createPaymentIntent(
  * THE CUSTOMER SAYS THEY HAVE PAID.
  *
  * A claim, recorded as one. It does not settle anything, does not release the
- * car, and does not change what is owed — it gives the studio a reference to
+ * car, and does not change what is owed - it gives the studio a reference to
  * reconcile against, which is the whole of what a customer can honestly
  * contribute without a gateway.
  */
@@ -226,7 +226,7 @@ export async function submitPaymentReference(
 export interface SettleResult {
   id: string;
   status: 'paid';
-  /** true when it had already been settled — nothing was added a second time. */
+  /** true when it had already been settled - nothing was added a second time. */
   replayed: boolean;
   amount: number;
 }
@@ -240,7 +240,7 @@ export interface SettleResult {
  *
  * `expectedAmount` is what the counter believes it received. It is compared
  * against the payment's own figure and a mismatch is REFUSED rather than
- * reconciled — a settlement for the wrong amount leaves the studio's books and
+ * reconciled - a settlement for the wrong amount leaves the studio's books and
  * the customer's record disagreeing, and only one of them is looked at again.
  */
 export async function settlePayment(
@@ -258,7 +258,7 @@ export async function settlePayment(
     const payment = { id: snap.id, ...(snap.data() as object) } as Payment;
 
     /* ALREADY SETTLED: succeed, add nothing. The caller asked for a state the
-       payment is already in, which is not an error — but crediting the money
+       payment is already in, which is not an error - but crediting the money
        twice would be. */
     if (payment.status === 'paid') {
       return { id: paymentId, status: 'paid' as const, replayed: true, amount: payment.amount };
@@ -293,7 +293,7 @@ export async function settlePayment(
         const already = (job.payments ?? []).some(p => p.id === paymentId);
         if (!already) {
           /* Admin-SDK `Timestamp`, not the client class `lib/types.ts` is
-             written against — identical on the wire, different classes at
+             written against - identical on the wire, different classes at
              compile time. The same cast the walk-in path already makes. */
           const entry = {
             id: paymentId,

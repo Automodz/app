@@ -4,19 +4,19 @@ import 'server-only';
  *
  * Required outright: Apple's Guideline 5.1.1(v) makes in-app deletion mandatory
  * for any app that lets someone create an account, and nothing in this product
- * offered it. Nothing partial counts — a link to "email us" is a rejection.
+ * offered it. Nothing partial counts - a link to "email us" is a rejection.
  *
  * TWO KINDS OF DATA, TREATED DIFFERENTLY, and the distinction is the whole
  * design:
  *
- *   ERASED — what belongs to the person. Their profile, their cars, their push
+ *   ERASED - what belongs to the person. Their profile, their cars, their push
  *   tokens, their saved listings, their notifications. This is theirs and it
  *   goes.
  *
- *   ANONYMISED — what belongs to the STUDIO's books. A visit that happened,
+ *   ANONYMISED - what belongs to the STUDIO's books. A visit that happened,
  *   an invoice that was raised, a membership that was paid for. Deleting these
  *   would destroy the studio's financial record and detach a warranty from the
- *   work that created it — the studio would lose its accounts and the next
+ *   work that created it - the studio would lose its accounts and the next
  *   owner of that car would lose a promise still in force. So the personal
  *   identifiers are stripped and the record stays.
  *
@@ -107,14 +107,14 @@ export async function deleteAccount(uid: string): Promise<DeletionResult> {
 
   const userRef = db.collection('users').doc(uid);
 
-  /* Subcollections do not go with their parent in Firestore — deleting the
+  /* Subcollections do not go with their parent in Firestore - deleting the
      user document alone would orphan every one of these forever. */
   for (const sub of ['vehicles', 'fcmTokens', 'savedCars'] as const) {
     await deleteAll(userRef.collection(sub), add(erased, sub));
   }
 
   /* A vehicle's service history is a subcollection of a subcollection, and the
-     vehicles are already gone by now — so it is swept by collection group. */
+     vehicles are already gone by now - so it is swept by collection group. */
   await deleteAll(
     db.collectionGroup('serviceHistory').where('userId', '==', uid),
     add(erased, 'serviceHistory'),
@@ -152,7 +152,7 @@ export async function deleteAccount(uid: string): Promise<DeletionResult> {
     add(anonymised, 'jobs'),
   );
 
-  /* Visits carry no personal fields — they are keyed to a vehicle, and the
+  /* Visits carry no personal fields - they are keyed to a vehicle, and the
      vehicle is gone. Nothing to strip, and the sealed record stays intact
      (§16: history is permanent). */
 

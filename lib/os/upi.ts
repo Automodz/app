@@ -1,5 +1,5 @@
 /**
- * UPI — the payment mechanism, and the only one.
+ * UPI - the payment mechanism, and the only one.
  *
  * Design screen 13: "Pay ₹43,622" over "UPI · aarav@okhdfc". There is no
  * payment gateway in this product and none is being added: the studio is paid
@@ -8,7 +8,7 @@
  *
  * ── THE AMOUNT IS NEVER THE CUSTOMER'S ───────────────────────────────────
  * `buildUpiIntent` takes an amount and does not validate it, because it is not
- * this function's job to decide what is owed — it is the caller's, and the only
+ * this function's job to decide what is owed - it is the caller's, and the only
  * caller is the server, which reads the sealed visit. Nothing on the client may
  * reach this with a figure of its own. That rule is enforced at the route.
  *
@@ -22,7 +22,7 @@
  */
 
 /**
- * A virtual payment address — `name@bank`.
+ * A virtual payment address - `name@bank`.
  *
  * Deliberately permissive on the handle and strict on the shape. UPI handles
  * differ between banks and a regex that tried to enumerate them would reject a
@@ -38,7 +38,7 @@ export const isVpa = (raw: string): boolean => VPA.test((raw ?? '').trim());
 export const normaliseVpa = (raw: string): string => (raw ?? '').trim().toLowerCase();
 
 /**
- * "aa••••@okhdfc" — enough to recognise, not enough to reuse.
+ * "aa••••@okhdfc" - enough to recognise, not enough to reuse.
  *
  * Shown wherever the address is confirmed back to the customer. It is never
  * published and never leaves the owner's own surfaces, but a payment address

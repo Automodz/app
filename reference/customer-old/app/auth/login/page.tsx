@@ -70,7 +70,7 @@ function Login() {
   // ── Google sign-in - the only way in ──────────────────────────────────
   const handleGoogle = async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setError('You’re offline — reconnect to sign in.');
+      setError('You’re offline - reconnect to sign in.');
       return;
     }
     setLoading(true);
@@ -102,7 +102,7 @@ function Login() {
       } else if (code === 'auth/popup-blocked') {
         setError('Allow pop-ups for AutoModz, then try again.');
       } else if (code === 'auth/network-request-failed') {
-        setError('That didn’t reach Google — check your connection and try again.');
+        setError('That didn’t reach Google - check your connection and try again.');
       } else {
         setError('That did not go through. Please try again.');
       }
@@ -147,7 +147,7 @@ function Login() {
             Your studio
           </span>
           <Body tone="ink-2" style={{ marginTop: 'var(--st-inset)', maxWidth: 380, marginLeft: 'auto', marginRight: 'auto' }}>
-            Where your car lives — its care, its protection, its story.
+            Where your car lives - its care, its protection, its story.
           </Body>
 
           <div style={{ marginTop: 'var(--st-rest)', maxWidth: 340, marginLeft: 'auto', marginRight: 'auto' }}>
@@ -156,7 +156,7 @@ function Login() {
             </Action>
             {error
               ? <Body tone="ink-2" style={{ marginTop: 'var(--st-line)' }} aria-live="polite">{error}</Body>
-              : <Whisper style={{ marginTop: 'var(--st-line)' }}>One tap — no password to remember.</Whisper>}
+              : <Whisper style={{ marginTop: 'var(--st-line)' }}>One tap - no password to remember.</Whisper>}
           </div>
         </main>
 

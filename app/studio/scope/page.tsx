@@ -6,7 +6,7 @@ import { toScopeQuote } from '@/lib/customer/project';
 export const dynamic = 'force-dynamic';
 
 /**
- * `/studio/scope` — design screen 07.
+ * `/studio/scope` - design screen 07.
  *
  * Reached by choosing a service in the Studio (design 06 → 07), and it leaves
  * for the date screen carrying an estimate id.
@@ -25,7 +25,7 @@ export default async function ScopePage(
   return (
     <ServerRoom>
       {picture => {
-        /* No car at all is not an error — it is the one thing a customer can
+        /* No car at all is not an error - it is the one thing a customer can
            do something about, and `NoCar` offers exactly that (§10.5). */
         if (picture.cars.length === 0) return <NoCar />;
         const model = toScopeQuote(picture, service, car);

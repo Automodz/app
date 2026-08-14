@@ -22,14 +22,14 @@ export const dynamic = 'force-dynamic';
  *   · Nothing de-duplicated. An admin advancing, undoing and re-advancing a
  *     stage sent the same message three times.
  *
- * Now the studio writes the STATUS from the console — which rules permit and
- * which is a fact about the studio's own work — and asks here for the customer
+ * Now the studio writes the STATUS from the console - which rules permit and
+ * which is a fact about the studio's own work - and asks here for the customer
  * to be told. One notification path, one place quiet mode is honoured, and an
  * event id derived from the fact so a repeat collapses onto one document.
  *
  * ── AND THE MIDDLE OF THE VISIT NO LONGER PUSHES ─────────────────────────
  * `vehicle_received`, `in_progress` and `quality_check` used to each send a
- * message. §17.1 — "state changes surface as state" — and the live visit
+ * message. §17.1 - "state changes surface as state" - and the live visit
  * screen already shows exactly where the car is, act by act, with the
  * photographs. Three pushes to say the car moved between acts a customer can
  * watch is the noise quiet mode was invented to escape. What still reaches
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  /* A bearer token, or the session cookie the rooms already use — the two
+  /* A bearer token, or the session cookie the rooms already use - the two
      lapse independently, and a customer signed in enough to SEE a screen is
      signed in enough to use it. Same-origin only; see lib/server/session.ts. */
   const uid = await sessionCaller(req, t => adminAuth!.verifyIdToken(t));
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       /* AND WHETHER THERE IS ANYTHING TO SETTLE. A car called ready with money
          outstanding is a customer arriving to collect and being stopped at the
          counter; saying so first is the difference between a handover and an
-         argument. The figure itself is never in the message — a price on a
+         argument. The figure itself is never in the message - a price on a
          lock screen is a price shown to the room. */
       const job = booking.jobId
         ? ((await adminDb!.collection('jobs').doc(booking.jobId).get()).data() as Job | undefined)

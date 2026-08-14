@@ -58,7 +58,7 @@ export default function MediaGrid({ frames, onOpen, min = 104, label = 'Photogra
         <li key={f.id}>
           <motion.button
             onClick={onOpen ? () => onOpen(i) : undefined}
-            aria-label={f.caption ? `${f.caption} — open` : 'Open photograph'}
+            aria-label={f.caption ? `${f.caption} - open` : 'Open photograph'}
             whileTap={onOpen && !reduced ? { scale: 0.97 } : undefined}
             transition={{ duration: tick, ease: studioEase }}
             style={{

@@ -1,28 +1,28 @@
 /**
- * A SERVER COMPONENT. It holds no state, no handlers and no motion — it is
- * handed a model and draws it — so marking it `'use client'` shipped its
+ * A SERVER COMPONENT. It holds no state, no handlers and no motion - it is
+ * handed a model and draws it - so marking it `'use client'` shipped its
  * markup to the browser twice and hydrated it for nothing. The interactive
  * pieces it renders carry their own directive.
  */
 /**
- * HISTORY — the album.
+ * HISTORY - the album.
  *
  * Source: docs/AUTOMODZ-OS.md §5.2, §6.4, §8.4, §8.6, §9.5, §16.1, §16.2,
  *         §18.1, §21.1, §21.6
  *
- * §16.1 — "Every completed visit, newest first, as a series of transformations.
+ * §16.1 - "Every completed visit, newest first, as a series of transformations.
  * Not a log. Not a table. Not a list of invoices."
  *
  * So: a continuous strip of full-bleed photographs, newest first, each with its
  * date, its title and one sentence. The same album grammar as the Garage, for
- * the same reason — there and here the subject is a photograph, and the caption
+ * the same reason - there and here the subject is a photograph, and the caption
  * belongs on it.
  *
- * §6.4 + §8.6 + §16.4 — a visit's full account is addressable, full-screen and
+ * §6.4 + §8.6 + §16.4 - a visit's full account is addressable, full-screen and
  * shareable, so it is a ROUTE (`/history/[id]`) rather than something that
  * unfolds in place. An accordion could satisfy none of the three.
  *
- * §9.5 — the newest visit carries the one Display; every other carries a Title.
+ * §9.5 - the newest visit carries the one Display; every other carries a Title.
  * That is position, not rank: §16.2 makes every completed visit equally
  * permanent.
  */
@@ -44,9 +44,9 @@ import { color, INSET, HAIRLINE } from '@/design';
 
 export interface HistoryPhoto {
   url: string;
-  /** §21.6 — an image that carries meaning carries a description. */
+  /** §21.6 - an image that carries meaning carries a description. */
   description: string;
-  /** "Before", "During", "After" — only inside an account. */
+  /** "Before", "During", "After" - only inside an account. */
   caption?: string;
 }
 
@@ -58,27 +58,27 @@ export interface HistoryDocument {
 export interface HistoryVisit {
   id: string;
   when: string;
-  /** `2026` — the album puts a divider between one year and the next. */
+  /** `2026` - the album puts a divider between one year and the next. */
   year?: string;
   title: string;
   /** One sentence. What it felt like, not what was billed. */
   line: string;
-  /** §16.3 — the car as it was finished. */
+  /** §16.3 - the car as it was finished. */
   photo?: HistoryPhoto;
-  /** §16.3 — what was done, in plain language. */
+  /** §16.3 - what was done, in plain language. */
   did: string;
-  /** §16.3 — before, during, after. */
+  /** §16.3 - before, during, after. */
   photos?: readonly HistoryPhoto[];
-  /** §16.3 — what it promised, and for how long. */
+  /** §16.3 - what it promised, and for how long. */
   promised?: readonly { label: string; term: string }[];
-  /** §16.3 — what it cost and how it was settled. One line, never a table.
+  /** §16.3 - what it cost and how it was settled. One line, never a table.
       The ALBUM's reading of the money; the Visit screen shows the receipt. */
   settled?: string;
 
   /**
    * BEFORE AND AFTER, when the job recorded both.
    *
-   * Present only when both sides exist — a comparison missing one half is not
+   * Present only when both sides exist - a comparison missing one half is not
    * a comparison, and filling it from an unrelated frame would be a lie about
    * the customer's own car.
    */
@@ -102,11 +102,11 @@ export interface HistoryVisit {
     paid: boolean;
     method?: string;
   };
-  /** §14.6 — the file, behind one tap, never on the surface. */
+  /** §14.6 - the file, behind one tap, never on the surface. */
   documents?: readonly HistoryDocument[];
   /**
    * The public address of this chapter, when it has one. Present only where an
-   * invoice exists, because the share token is the invoice's — there is no
+   * invoice exists, because the share token is the invoice's - there is no
    * second token and no second privacy rule.
    */
   shareHref?: string;
@@ -115,11 +115,11 @@ export interface HistoryVisit {
 export interface HistoryModel {
   /** Whose life this is. Shown once, on the newest visit. */
   vehicle: string;
-  /** §16.1 — newest first. */
+  /** §16.1 - newest first. */
   visits: readonly HistoryVisit[];
   /** How many transformations there have been. */
   count: number;
-  /** The day the record starts — the oldest visit. Absent when there is none. */
+  /** The day the record starts - the oldest visit. Absent when there is none. */
   since?: string;
   /** What the record adds up to, as SEALED (§16.2). Absent when nothing was. */
   settledTotal?: string;
@@ -142,7 +142,7 @@ function Visit({ visit, newest, vehicle }: {
           <div style={{ maxWidth: MEASURE }}>
             {/* The car is named once, on the newest visit, so a customer who
                 arrived from the navigation rather than from a car knows whose
-                life this is. §4.4 — it is not repeated after that. */}
+                life this is. §4.4 - it is not repeated after that. */}
             <Text role="data" tone="over" as="span">
               {newest ? `${vehicle} · ${when}` : when}
             </Text>
@@ -160,7 +160,7 @@ function Visit({ visit, newest, vehicle }: {
           </div>
         }
       >
-        {/* THROUGH THE PRIMITIVE — absent, ready and failed are three states
+        {/* THROUGH THE PRIMITIVE - absent, ready and failed are three states
             and the class-only path could only express two. */}
         <Photograph
           src={photo?.url}
@@ -173,7 +173,7 @@ function Visit({ visit, newest, vehicle }: {
   );
 }
 
-/** A quiet marker between one year and the next. Never a heading — the
+/** A quiet marker between one year and the next. Never a heading - the
     photographs are the content and a year is only where you are in them. */
 function Year({ label }: { label: string }) {
   return (
@@ -196,14 +196,14 @@ function Year({ label }: { label: string }) {
 }
 
 /**
- * THE STANDING — what the record adds up to.
+ * THE STANDING - what the record adds up to.
  *
  * §16.1 calls this "a series of transformations", and a series has a shape the
  * room was not showing: a customer scrolled photographs with no idea how many
  * visits there had been, how long their car had been cared for here, or what
  * the record came to. Every one of those facts was already in the model.
  *
- * It is a sentence, not a dashboard (§8.6 — a fact is a line of text). No
+ * It is a sentence, not a dashboard (§8.6 - a fact is a line of text). No
  * tiles, no counters, no chart.
  */
 function Standing({ vehicle, count, since, settledTotal }: {
@@ -229,9 +229,9 @@ function Standing({ vehicle, count, since, settledTotal }: {
       <Back style={{ marginBottom: space.line }} />
 
       {/* NOT A HEADING. §9.5 gives the room exactly one Display and the album
-          has already spent it on the newest photograph — which is right, because
+          has already spent it on the newest photograph - which is right, because
           the photographs are the content and this is only context for them.
-          §8.6 — a fact is a line of text, so that is what this is. */}
+          §8.6 - a fact is a line of text, so that is what this is. */}
       <Text role="data" tone="ink3" as="span">{vehicle}</Text>
       <Text role="body" tone="ink" style={{ marginTop: space.hair }}>
         {count === 1 ? 'One visit' : `${count} visits`}
@@ -249,7 +249,7 @@ function Standing({ vehicle, count, since, settledTotal }: {
 /**
  * A CAR WITH NO RECORD YET.
  *
- * §18.1 says a car with no completed visits has no History SECTION — and that
+ * §18.1 says a car with no completed visits has no History SECTION - and that
  * is right for a section inside another room. This is a ROOM, and it has its
  * own address in the navigation bar: a customer who taps History before their
  * first visit was handed a blank black screen with nothing on it at all. An
@@ -295,13 +295,13 @@ export function HistoryScreen({ model }: { model: HistoryModel }) {
         /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
            which is fixed behind everything (components/system/Ambient.tsx).
            Painting `color.paper` here would occlude it completely. The dark
-           ground still exists — it is on `body` — so nothing loses contrast. */
+           ground still exists - it is on `body` - so nothing loses contrast. */
         background: 'transparent',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
       }}
     >
-      {/* §20.3 — the room was rendered on the server and is still true; only
+      {/* §20.3 - the room was rendered on the server and is still true; only
           what happens NEXT needs a connection. One implementation (§22.2). */}
       <OfflineNote />
 
@@ -318,7 +318,7 @@ export function HistoryScreen({ model }: { model: HistoryModel }) {
           {visits.map((visit, i) => (
             <div key={visit.id}>
               {/* The divider falls where the year changes, never above the
-                  first visit — the standing has just named the car and a
+                  first visit - the standing has just named the car and a
                   year immediately under it reads as a subtitle. */}
               {i > 0 && visit.year && visit.year !== visits[i - 1].year ? (
                 <Year label={visit.year} />

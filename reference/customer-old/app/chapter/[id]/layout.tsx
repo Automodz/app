@@ -15,7 +15,7 @@ import { COMPANY } from '@/lib/company';
  */
 export const metadata: Metadata = {
   title: 'A visit at AutoModz',
-  description: `The work, the evidence, and the protection that came out of it — ${COMPANY.name}, ${COMPANY.city}.`,
+  description: `The work, the evidence, and the protection that came out of it - ${COMPANY.name}, ${COMPANY.city}.`,
   robots: { index: false, follow: false },
   openGraph: {
     title: 'A visit at AutoModz',

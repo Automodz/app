@@ -13,7 +13,7 @@ import { PROTECTION_TITLE, type ProtectionKind } from '@/lib/types';
 /**
  * REPOINTED at the stored protection model (`lib/os/protection`), away from the
  * retired `lib/cx/protection`. The two carried a field called `term` that meant
- * different things — a health word in the old, a Term OBJECT in the new — so
+ * different things - a health word in the old, a Term OBJECT in the new - so
  * the engine silently could not read a real customer's protections. Health now
  * comes from the one term engine (`healthOf`) rather than being re-derived here.
  *

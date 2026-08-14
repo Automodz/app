@@ -56,7 +56,7 @@ export default function RatingCard({ invoiceId, customerName, customerPhone }: {
       <p className="text-center mb-3" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--chrome)' }}>
         How did we do?
       </p>
-      {/* §21.3 — the star stays 30px and the TARGET clears 44. A rating
+      {/* §21.3 - the star stays 30px and the TARGET clears 44. A rating
           control a finger misses is a rating nobody leaves. */}
       <div className="flex justify-center gap-2 mb-2">
         {[1, 2, 3, 4, 5].map(r => (

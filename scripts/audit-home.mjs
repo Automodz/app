@@ -21,7 +21,7 @@ async function session(uid) {
 const strip = h => h.replace(/<script[\s\S]*?<\/script>/g,'').replace(/<[^>]+>/g,' ').replace(/&#x27;/g,"'").replace(/&amp;/g,'&').replace(/\s+/g,' ');
 
 /* Precise markers. The first pass used loose regexes and produced false
-   positives on every car — "In care" is a STATE WORD as well as a photo
+   positives on every car - "In care" is a STATE WORD as well as a photo
    caption, and `aria-current` is on the navigation bar as well as the garage
    rail. A probe that cries wolf is worse than no probe. */
 const TRUTH = /(\d+ days? of protection left\.|Last cared for \d+ days ago\.|Ready for collection\.|All quiet)/;
@@ -88,8 +88,8 @@ console.log('\nCROSS-CAR LEAKAGE');
 const names = cars.docs.map(d => d.data().name);
 for (const [name, r] of Object.entries(seen)) {
   const others = names.filter(n => n !== name && r.txt.includes(n));
-  /* the garage rail names every car by design — check OUTSIDE it */
-  /* The garage rail names EVERY car by design — it is the navigation. Only
+  /* the garage rail names every car by design - check OUTSIDE it */
+  /* The garage rail names EVERY car by design - it is the navigation. Only
      what appears BEFORE it belongs to the selected car, so that is the slice
      leakage would show up in. The rail is identified by its own markup. */
   const railAt = r.raw.indexOf('aria-current');

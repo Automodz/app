@@ -3,14 +3,14 @@
  *
  * `BookingFlow` once sent no Authorization header at all, so every booking in
  * the product came back 401 and the customer was told "we couldn't arrange
- * that" — indistinguishable from the studio being full, for a request that had
+ * that" - indistinguishable from the studio being full, for a request that had
  * simply never identified anybody. It is the one revenue action in the
  * customer application.
  *
  * ── AND THEN THE OPPOSITE FAILURE ────────────────────────────────────────
  * Every caller was then written as `const token = await idToken(); if (!token)
  * return 'session expired'`. The rooms authenticate with the httpOnly cookie
- * and the routes with a token, and those lapse independently — so a customer
+ * and the routes with a token, and those lapse independently - so a customer
  * reached a room that had just rendered their car, their visit and their
  * price, tapped its one control, and was told they were signed out. They were
  * not.
@@ -46,7 +46,7 @@ describe('the booking request identifies the customer', () => {
 
   it('and the helper waits for the SDK rather than reading it too early', () => {
     /* `auth.currentUser` is null until the SDK restores the persisted session,
-       and a customer room mounts no AuthProvider to make that happen — so
+       and a customer room mounts no AuthProvider to make that happen - so
        reading it directly returns "not yet", not "signed out". */
     const session = codeOf('lib/clientSession.ts');
     expect(session).toMatch(/await idToken\(forceFresh\)/);
@@ -101,7 +101,7 @@ describe('no client caller of a Bearer route forgets the header', () => {
  * THE KEY THE CLIENT BUILDS MUST BE A KEY THE SERVER ACCEPTS.
  *
  * `createBookingAuthoritative` refuses anything outside `^[A-Za-z0-9_-]+$`,
- * and the client built its key out of the scheduled TIME — which contains a
+ * and the client built its key out of the scheduled TIME - which contains a
  * colon. Every appointment booked from the customer application came back
  * `bad-idempotency-key` 400, and the sheet reported it with the same sentence
  * it uses for an outage, so it read as the studio declining work.
@@ -136,7 +136,7 @@ describe('the idempotency key survives the server rule', () => {
     expect(accepts('car-nexon_svc-ceramic_2026-08-13_09:00')).toBe(false);
   });
 
-  it('is stable — the same intent yields the same key, so a retry joins', () => {
+  it('is stable - the same intent yields the same key, so a retry joins', () => {
     const a = keyFor('car-nexon', 'svc-ceramic', '2026-08-13', '09:00');
     const b = keyFor('car-nexon', 'svc-ceramic', '2026-08-13', '09:00');
     expect(a).toBe(b);
@@ -164,7 +164,7 @@ describe('the idempotency key survives the server rule', () => {
  *
  * It is drawn now, and it is a DOORWAY rather than a sheet. A booking has two
  * screens of its own (design 09 and 10), so the Studio lists what the customer
- * has arranged and each row opens the booking itself — which is what makes the
+ * has arranged and each row opens the booking itself - which is what makes the
  * back button, a shared link and a notification all behave.
  */
 describe('an arranged visit is visible and changeable', () => {
@@ -175,7 +175,7 @@ describe('an arranged visit is visible and changeable', () => {
   });
 
   it('every row is a door to that booking, not a control inside a card', () => {
-    /* §21.3, §4.3 — the whole row is the target. A small "Change or cancel"
+    /* §21.3, §4.3 - the whole row is the target. A small "Change or cancel"
        link inside a pane made the words the target rather than the visit. */
     const list = studio.slice(studio.indexOf('manageable.map('), studio.indexOf('THE WORK'));
     expect(list).toMatch(/href: v\.href/);
@@ -197,7 +197,7 @@ describe('an arranged visit is visible and changeable', () => {
 
   /* The assertion that stood here matched the literal `?manage=${next.id}` in
      the projection's source. It broke the moment that expression moved into a
-     named helper, having proved nothing about what the customer gets — and a
+     named helper, having proved nothing about what the customer gets - and a
      source-shape check where the model itself can be asked is the string-
      matching this codebase keeps having to unlearn. Asked of the model now, in
      `__tests__/customer/next-visit.test.ts`, where every room's answer is

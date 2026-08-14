@@ -1,8 +1,8 @@
 /**
  * THE DOOR SAYS SOMETHING WHILE IT OPENS.
  *
- * The passage states are transient by nature — one lasts as long as a popup on
- * another origin, the other for a beat before the document is replaced — so
+ * The passage states are transient by nature - one lasts as long as a popup on
+ * another origin, the other for a beat before the document is replaced - so
  * they are the states least likely to be looked at and most likely to rot.
  * Rendered here directly, they can be asserted without driving a popup.
  *
@@ -76,7 +76,7 @@ describe('the Google control is recognisably Google', () => {
     }
   });
 
-  it('is decorative to a screen reader — the control carries the label', () => {
+  it('is decorative to a screen reader - the control carries the label', () => {
     expect(html(<GoogleMark />)).toContain('aria-hidden');
   });
 });

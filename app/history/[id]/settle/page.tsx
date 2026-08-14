@@ -10,7 +10,7 @@ import type { PaymentStatus } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 /**
- * `/history/[id]/settle` — design screen 13.
+ * `/history/[id]/settle` - design screen 13.
  *
  * Under the visit rather than beside it, because settling is something you do
  * TO a visit: the address reads as what it is, the back button lands on the
@@ -41,7 +41,7 @@ export default async function SettlePage(
         if (!money) notFound();
 
         /* The sealed record, when the visit has produced one. A visit that has
-           not been sealed cannot be rated — there is nothing permanent to
+           not been sealed cannot be rated - there is nothing permanent to
            attach an opinion to yet. */
         const visit = picture.cars
           .flatMap(car => visitsOf(car))

@@ -1,5 +1,5 @@
 /**
- * HOW MUCH OF THE CAR — design screen 07, "Scope & quote".
+ * HOW MUCH OF THE CAR - design screen 07, "Scope & quote".
  *
  * Source: docs/DESIGN-PARITY-AUDIT.md screen 07, §PHASE 3 (`services` EXTEND)
  *
@@ -11,7 +11,7 @@
  * name. A scope is a PRICED VARIANT, and it lives on the service.
  *
  * ── THE CATALOGUE IS AUTHORITATIVE FOR THE NEXT QUOTE, NEVER THE LAST ────
- * This engine READS the catalogue and produces a `BookedScope` — a snapshot
+ * This engine READS the catalogue and produces a `BookedScope` - a snapshot
  * carrying the label, the panels and the prices as they stood at that moment.
  * The snapshot is what an estimate and then a booking carry, so raising the
  * price of full-body PPF changes what the next customer is quoted and cannot
@@ -29,7 +29,7 @@
 import type { BookedScope, Service, ServiceAddOn, ServiceScope } from '@/lib/types';
 import { spanDays, DAY_OPEN_MIN } from '@/lib/availability';
 
-/** What a customer chose. Ids only — never a label, never a figure. */
+/** What a customer chose. Ids only - never a label, never a figure. */
 export interface ScopeChoice {
   /** Absent, or `WHOLE`, means the service as the catalogue sells it. */
   scopeId?: string;
@@ -90,7 +90,7 @@ export function scopesOf(service: Service): ServiceScope[] {
       kind: 'full',
       /* NOT THE SERVICE'S NAME. The screen that draws this has already spent
          its one Display on exactly that string, so the single card underneath
-         repeated the headline word for word — under a heading that asks "how
+         repeated the headline word for word - under a heading that asks "how
          much of the car". This answers the question that was asked. §4.4: a
          fact is said once. */
       label: 'The whole car',
@@ -109,7 +109,7 @@ export function addOnsOf(service: Service): ServiceAddOn[] {
 }
 
 /**
- * WHAT A CHOICE COSTS AND HOW LONG IT TAKES — resolved once, from the
+ * WHAT A CHOICE COSTS AND HOW LONG IT TAKES - resolved once, from the
  * catalogue, into a snapshot.
  *
  * It does NOT apply the membership, the promo, the fees or the tax: those are
@@ -194,7 +194,7 @@ export function resolveScope(
       addOns,
       workPrice,
       durationMinutes,
-      /* Screen 07's "2 days in the bay" — the SAME expansion the availability
+      /* Screen 07's "2 days in the bay" - the SAME expansion the availability
          engine reserves with, so what the customer is told and what the bay is
          actually held for cannot drift. */
       bayDays: spanDays(DAY_OPEN_MIN, durationMinutes),
@@ -205,7 +205,7 @@ export function resolveScope(
 /**
  * How long an estimate stands.
  *
- * A price quoted against a catalogue does not hold for ever — but it must hold
+ * A price quoted against a catalogue does not hold for ever - but it must hold
  * long enough that a customer who thinks about it overnight is not silently
  * repriced. Seven days, stated on the screen, and enforced when the estimate is
  * spent rather than only when it is read.

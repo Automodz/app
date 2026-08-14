@@ -17,7 +17,7 @@ import { scheduledEpochMs } from '@/lib/os/lifecycle';
 const ts = (iso: string) => Timestamp.fromDate(new Date(iso));
 
 /* The slot: 12 February 2026, 09:00 studio time = 03:30Z. */
-const NOW_FAR = new Date('2026-02-01T06:00:00Z');   // 11 days out — changeable
+const NOW_FAR = new Date('2026-02-01T06:00:00Z');   // 11 days out - changeable
 const NOW_NEAR = new Date('2026-02-11T18:00:00Z');  // inside the last day
 
 const vehicle: Vehicle = {
@@ -57,7 +57,7 @@ describe('a booking is found only inside its owner’s picture', () => {
   it('an id that is not in the picture is not found, and nothing is invented', () => {
     /* THE PICTURE IS THE SCOPE. It was built by querying `bookings` where
        `userId` equals the verified session's uid, so another customer's
-       booking is not present to be found — there is no ownership check here
+       booking is not present to be found - there is no ownership check here
        to forget, and no way to reach one by guessing an id. */
     expect(findBooking(picture([booking()]), 'someone-elses')).toBeNull();
     expect(toBooked(picture([booking()]), 'someone-elses')).toBeNull();
@@ -67,8 +67,8 @@ describe('a booking is found only inside its owner’s picture', () => {
 
 /* ── screen 09 ───────────────────────────────────────────────────────────── */
 
-describe('screen 09 — the bay is yours', () => {
-  it('states the work, the days, the return and the estimate — from the record', () => {
+describe('screen 09 - the bay is yours', () => {
+  it('states the work, the days, the return and the estimate - from the record', () => {
     const m = toBooked(picture([booking()]), 'bk1', NOW_FAR)!;
 
     expect(m.standing).toBe('Confirmed');
@@ -120,7 +120,7 @@ describe('screen 09 — the bay is yours', () => {
     }
   });
 
-  it('and it does NOT breathe — the studio is holding nothing', () => {
+  it('and it does NOT breathe - the studio is holding nothing', () => {
     /* The pulse is the product's whole vocabulary for "this is happening now".
        A cancelled visit that pulses contradicts its own headline. */
     for (const status of ['cancelled', 'expired', 'completed'] as const) {
@@ -157,7 +157,7 @@ describe('screen 09 — the bay is yours', () => {
 
 /* ── screen 10 ───────────────────────────────────────────────────────────── */
 
-describe('screen 10 — what may actually be done', () => {
+describe('screen 10 - what may actually be done', () => {
   it('offers the move while there is more than a day left, and says until when', () => {
     const m = toManageBooking(picture([booking()]), 'bk1', [], NOW_FAR)!;
     expect(m.moveable).toBe(true);
@@ -243,7 +243,7 @@ describe('add to calendar is generated from the booking', () => {
     expect(ics()).toContain('DTSTART:20260212T033000Z');
   });
 
-  it('ends when the work ends — a two-day job is not an hour', () => {
+  it('ends when the work ends - a two-day job is not an hour', () => {
     /* 960 minutes after 03:30Z on the 12th is 19:30Z on the 12th. A fixed
        length here would be the template this function exists to avoid. */
     expect(ics()).toContain('DTEND:20260212T193000Z');
@@ -267,18 +267,18 @@ describe('add to calendar is generated from the booking', () => {
   });
 
   it('nothing private travels in a file that gets forwarded and synced', () => {
-    /* §22.1 — a calendar file is read on shared screens and stored on third
+    /* §22.1 - a calendar file is read on shared screens and stored on third
        party servers. No price, no phone number, no invoice. */
     const out = ics();
     expect(out).not.toMatch(/₹|\b\d{5,}\b/);
     expect(out).not.toMatch(/9512605088|invoice/i);
   });
 
-  it('it is a valid document — CRLF, folded lines, escaped separators', () => {
+  it('it is a valid document - CRLF, folded lines, escaped separators', () => {
     const out = ics({ serviceName: 'PPF; front, rear' });
     expect(out.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
     expect(out.trimEnd().endsWith('END:VCALENDAR')).toBe(true);
-    expect(out).toContain('SUMMARY:PPF\\; front\\, rear — BMW M340i');
+    expect(out).toContain('SUMMARY:PPF\\; front\\, rear - BMW M340i');
     for (const line of out.split('\r\n')) expect(line.length).toBeLessThanOrEqual(75);
   });
 

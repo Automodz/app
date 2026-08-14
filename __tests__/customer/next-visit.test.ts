@@ -1,5 +1,5 @@
 /**
- * THE NEXT VISIT — one answer, or none.
+ * THE NEXT VISIT - one answer, or none.
  *
  * Two functions used to answer this question and they answered it differently.
  * `agreedOf` took the SOONEST open booking and fed the Home hero, the ownership
@@ -64,7 +64,7 @@ const asked = (cars: CarPicture[]) => {
   const vehicleRoom = toVehicle(cars[0], p, NOW);
   const studio = toStudio(p, NOW);
   /* A booking's own address is `/booking/<id>` (design screen 09). It was
-     `/studio?manage=<id>` — a sheet over another room — until the two screens
+     `/studio?manage=<id>` - a sheet over another room - until the two screens
      the design draws for a booking were built. */
   const idIn = (href?: string) => href?.match(/\/booking\/([^/?&]+)/)?.[1];
   return {
@@ -81,21 +81,21 @@ const asked = (cars: CarPicture[]) => {
 };
 
 describe('the next visit', () => {
-  it('ONE FUTURE BOOKING — every room names it, and the same way', () => {
+  it('ONE FUTURE BOOKING - every room names it, and the same way', () => {
     const b = booking({ id: 'soon', scheduledDate: '2026-08-04', scheduledTime: '10:00' });
     const a = asked([car([b])]);
 
     expect(a.engine).toBe('soon');
     expect(a.vehicle).toBe('soon');
     expect(a.studioFirst).toBe('soon');
-    /* The hero says it, so the section does not say it again — the same rule
+    /* The hero says it, so the section does not say it again - the same rule
        `heroOwnsTheProposal` applies to a recommendation. */
     expect(a.heroLine).toContain('4 August 2026');
     expect(a.homeSection).toBeUndefined();
     expect(a.vehicleWhen).toBe('4 August 2026 at 10:00');
   });
 
-  it('MULTIPLE FUTURE BOOKINGS — the soonest wins, and nothing disagrees', () => {
+  it('MULTIPLE FUTURE BOOKINGS - the soonest wins, and nothing disagrees', () => {
     /* Declared newest-created first, which is the order `liveBooking` read and
        the reason it answered "Kovalent Prolong": the later visit was created
        last. The soonest is the answer regardless of when it was asked for. */
@@ -114,12 +114,12 @@ describe('the next visit', () => {
     expect(a.studioFirst).toBe('sooner');
     expect(a.heroLine).toContain('Teflon Coating');
     expect(a.heroLine).not.toContain('Kovalent Prolong');
-    /* Both are still the customer's visits — the Studio lists every one, in
+    /* Both are still the customer's visits - the Studio lists every one, in
        the order they will happen. */
     expect(a.studioAll).toEqual(['sooner', 'later']);
   });
 
-  it('PAST BOOKINGS ONLY — there is no next visit, and no room invents one', () => {
+  it('PAST BOOKINGS ONLY - there is no next visit, and no room invents one', () => {
     const gone = booking({ id: 'gone', scheduledDate: '2026-07-18' });
     const alsoGone = booking({ id: 'also', status: 'pending', scheduledDate: '2026-07-02' });
     const a = asked([car([gone, alsoGone])]);
@@ -140,7 +140,7 @@ describe('the next visit', () => {
     expect(home?.truth ?? '').not.toContain('ready for it');
   });
 
-  it('PAST AND FUTURE — the past one is never the answer', () => {
+  it('PAST AND FUTURE - the past one is never the answer', () => {
     const gone = booking({ id: 'gone', scheduledDate: '2026-07-18', serviceName: 'Regular Wash' });
     const ahead = booking({ id: 'ahead', scheduledDate: '2026-08-20', serviceName: 'Glass coating' });
     const a = asked([car([gone, ahead])]);
@@ -152,7 +152,7 @@ describe('the next visit', () => {
     expect(a.heroLine).not.toContain('Regular Wash');
   });
 
-  it('TODAY still counts — a visit does not retire at its own start time', () => {
+  it('TODAY still counts - a visit does not retire at its own start time', () => {
     /* §14.4's spirit: the DAY is the unit a customer books in. A 09:00 wash is
        still today's visit at 09:05, and expiring it mid-morning would be the
        product being pedantic at the customer's expense. */
@@ -195,14 +195,14 @@ describe('the next visit', () => {
     const c = car([here, ahead]);
     const home = toHome(picture([c]), NOW);
 
-    /* The hero is about the car being here, so it does not own the booking —
+    /* The hero is about the car being here, so it does not own the booking -
        and the section carries it, because nothing else on the screen does. */
     expect(home?.live).toBeDefined();
     expect(home?.next?.href).toContain('/booking/ahead');
     expect(toVehicle(c, picture([c]), NOW).followHref).toContain('here');
   });
 
-  it('NO BOOKING AT ALL — silence, not an empty frame', () => {
+  it('NO BOOKING AT ALL - silence, not an empty frame', () => {
     const a = asked([car([])]);
     expect(a.engine).toBeUndefined();
     expect(a.homeSection).toBeUndefined();
@@ -236,7 +236,7 @@ describe('the next visit', () => {
        record until it is sealed, so that address told a customer with a full
        garage "Your car's place is ready. Add your car." The Studio's sheet is
        the one surface a pending visit has, and the Vehicle room already used
-       it — one booking, one destination. */
+       it - one booking, one destination. */
     const here = booking({ id: 'here', status: 'in_progress', scheduledDate: '2026-07-30' });
     const ahead = booking({ id: 'ahead', scheduledDate: '2026-08-20' });
     const c = car([here, ahead]);

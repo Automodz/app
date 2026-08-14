@@ -11,7 +11,7 @@
  *   node scripts/verify-production-login.mjs
  *
  * Reads FIREBASE_ADMIN_* and NEXT_PUBLIC_FIREBASE_API_KEY from .env.local.
- * Signs in as the studio's own account (VERIFY_AS overrides) — never a
+ * Signs in as the studio's own account (VERIFY_AS overrides) - never a
  * customer's, so no one else's records are touched. The cookie is dropped
  * again at the end.
  *
@@ -22,7 +22,7 @@ import { readFileSync } from 'fs';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
-/* .env.local, read directly — this script is run by hand, not by Next. */
+/* .env.local, read directly - this script is run by hand, not by Next. */
 const env = Object.fromEntries(
   readFileSync('.env.local', 'utf8')
     .split('\n')
@@ -52,7 +52,7 @@ if (missing.length) {
 
 let failures = 0;
 const check = (label, ok, detail = '') => {
-  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  — ' + detail : ''}`);
+  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  - ' + detail : ''}`);
   if (!ok) failures++;
 };
 
@@ -67,7 +67,7 @@ const adminAuth = getAuth(app);
 
 console.log(`\nverifying ${ORIGIN}\n`);
 
-/* 1 · an identity that already exists — nothing is created */
+/* 1 · an identity that already exists - nothing is created */
 const account = await adminAuth.getUserByEmail(AS);
 console.log(`signing in as ${AS} (${account.uid})\n`);
 
@@ -99,7 +99,7 @@ const setCookie = res.headers.get('set-cookie') ?? '';
 check('session cookie created', setCookie.includes('automodz-session-id'));
 check('httpOnly', /httponly/i.test(setCookie));
 if (built) check('Secure (production)', /secure/i.test(setCookie));
-else console.log('  – Secure — skipped, http origin cannot set it');
+else console.log('  – Secure - skipped, http origin cannot set it');
 check('SameSite=Lax', /samesite=lax/i.test(setCookie));
 
 const value = /automodz-session-id=([^;]+)/.exec(setCookie)?.[1] ?? '';
@@ -153,7 +153,7 @@ for (const [p, n] of [
   ['/membership', 'Membership'], ['/vehicle', 'Vehicle'], ['/you', 'You'],
 ]) await verdict(p, n);
 
-/* 7 · no loop — nothing above may 3xx back to the door */
+/* 7 · no loop - nothing above may 3xx back to the door */
 console.log('\n══ 7 · no redirect loops');
 const hops = [];
 let at = '/';
@@ -173,10 +173,10 @@ const chunkSrc = loginChunk ? await (await fetch(`${ORIGIN}${loginChunk}`)).text
 if (!loginChunk) console.log('  ! could not locate the door chunk');
 check('no stage trace', !/automodz-auth-trace|POST \/api\/session started|popup NEVER opened/.test(chunkSrc));
 /* `removeConsole` only strips in a production build, and a dev chunk carries
-   React's own dev-time logging — so this asserts what SHIPS, not what a
+   React's own dev-time logging - so this asserts what SHIPS, not what a
    developer's server happens to serve. */
 if (built) check('no console calls on the door', !/console\.(log|debug|info)\(/.test(chunkSrc));
-else console.log('  – console calls — skipped, dev build keeps them by design');
+else console.log('  – console calls - skipped, dev build keeps them by design');
 
 /* leave nothing behind */
 await fetch(`${ORIGIN}/api/session`, { method: 'DELETE', headers: { cookie: jar } });

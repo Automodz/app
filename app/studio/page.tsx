@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 
 /**
- * `/studio` — the place, and where a visit is arranged (design 06 and 08).
+ * `/studio` - the place, and where a visit is arranged (design 06 and 08).
  *
  * `?estimate=` arrives from the scope screen. It is READ HERE, from the
  * estimate's own document, rather than rebuilt from the address: a figure a
@@ -35,7 +35,7 @@ export default async function StudioPage(
 /**
  * Ownership is checked inside `readEstimate`, against the verified session.
  *
- * An estimate that is not the caller's — or has been spent, or has run out —
+ * An estimate that is not the caller's - or has been spent, or has run out -
  * simply does not arrive, and the sheet falls back to arranging from the
  * catalogue. A stale link therefore costs a customer a re-quote and never a
  * wrong price.

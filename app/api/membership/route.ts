@@ -11,7 +11,7 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * THE CLUB — design §15.
+ * THE CLUB - design §15.
  *
  * POST    the customer asks to join, renew or upgrade  (owner; the SERVER
  *                                                       decides plan price,
@@ -27,8 +27,8 @@ export const dynamic = 'force-dynamic';
  * granted, so there is nothing to validate and nothing to forget to validate.
  *
  * This is `/api/payment`'s shape on purpose. Membership and settlement are the
- * same problem — a customer says they have paid, the studio says whether they
- * have — and the product should not have two answers to one question.
+ * same problem - a customer says they have paid, the studio says whether they
+ * have - and the product should not have two answers to one question.
  */
 const callerOf = (req: NextRequest) =>
   sessionCaller(req, t => adminAuth!.verifyIdToken(t));
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     { userId?: unknown; plan?: unknown; paymentMethod?: unknown } | null;
   try {
     /* THE STUDIO STARTING ONE AT THE COUNTER names the customer it is for.
-       That naming is the whole reason this branch exists — and it is why the
+       That naming is the whole reason this branch exists - and it is why the
        service checks the caller's own role before it looks at `userId` at all.
        A customer sending `userId` is refused by that check, not by this one. */
     if (body?.userId != null) {
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
     const result = await joinMembership(uid, body);
     /**
-     * TELL THE STUDIO — from the server, now that there is a server moment.
+     * TELL THE STUDIO - from the server, now that there is a server moment.
      *
      * This used to be fired by the browser after its own Firestore write,
      * because there was no other place to hook it. `notifyAdmins` is
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       void notifyAdmins(
         'membership_pending',
         'Membership awaiting payment',
-        `A ${result.act} — ₹${result.amountDue} to verify in Admin → Memberships.`,
+        `A ${result.act} - ₹${result.amountDue} to verify in Admin → Memberships.`,
         { url: '/admin/subscriptions', dedupeKey: result.subscriptionId },
       ).catch(() => {});
     }

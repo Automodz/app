@@ -7,7 +7,7 @@
  *
  * EVERY BUSINESS RULE IS THE SERVER'S. `/api/booking/create` deliberately does
  * NOT read `totalAmount`, `discount`, `serviceBasePrice`, `promoId` or
- * `discountAmount` off the body — it recomputes all of them. So this sends the
+ * `discountAmount` off the body - it recomputes all of them. So this sends the
  * intent and nothing that could be forged, and the price shown here is a
  * PREVIEW of what the server will decide, never an instruction to it.
  *
@@ -18,15 +18,15 @@
  *   2. A membership wash is covered when the plan is active AND washes remain.
  *   3. The promo lookup is a network read and may fail; the MEMBERSHIP discount
  *      is already in hand and must never depend on it. That is why the promo
- *      call is wrapped separately — a promo outage used to silently charge a
+ *      call is wrapped separately - a promo outage used to silently charge a
  *      member full price.
- *   4. One idempotency key per intent — this car, this service, this slot — so
+ *   4. One idempotency key per intent - this car, this service, this slot - so
  *      a retry after a timeout joins the first booking instead of making a
  *      second one.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-/* WAITED FOR, NOT GUESSED AT — `auth.currentUser` is null until the SDK has
+/* WAITED FOR, NOT GUESSED AT - `auth.currentUser` is null until the SDK has
    restored the persisted session, and no customer room subscribes to make that
    happen. See lib/clientSession.ts. */
 import { authedFetch } from '@/lib/clientSession';
@@ -78,7 +78,7 @@ const endTime = (start: string, durationMin: number) => {
   const [h, m] = start.split(':').map(Number);
   const total = h * 60 + m + durationMin;
   /* Work spilling past closing is carried to the next day by the studio, and
-     the slot generator already refuses to start one that cannot finish — so a
+     the slot generator already refuses to start one that cannot finish - so a
      wrapped time here would be a lie rather than a rounding. */
   if (total >= 24 * 60) return null;
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
@@ -88,7 +88,7 @@ const endTime = (start: string, durationMin: number) => {
  * How long the car is away, said the way a person would say it.
  *
  * RETURNS NULL RATHER THAN NONSENSE. A catalogue document written without a
- * `duration` — the shape drifted once already — rendered "NaN hour" on the
+ * `duration` - the shape drifted once already - rendered "NaN hour" on the
  * control a customer uses to commit thousands of rupees. A fact we do not
  * have is not shown; it is never shown wrong.
  */
@@ -104,7 +104,7 @@ const spokenDuration = (min: number): string | null => {
   return m ? `${h}h ${m}m` : `${h} hour${h > 1 ? 's' : ''}`;
 };
 
-/** Morning, afternoon, evening — a flat strip of times is a list to parse. */
+/** Morning, afternoon, evening - a flat strip of times is a list to parse. */
 const PART_OF_DAY = [
   ['Morning', (h: number) => h < 12],
   ['Afternoon', (h: number) => h >= 12 && h < 17],
@@ -112,7 +112,7 @@ const PART_OF_DAY = [
 ] as const;
 
 /**
- * WHAT THE CUSTOMER WAS QUOTED — design screen 07, carried into 08.
+ * WHAT THE CUSTOMER WAS QUOTED - design screen 07, carried into 08.
  *
  * Read on the SERVER from the estimate's own document and handed down, so the
  * figure on this sheet is the figure the studio wrote rather than one the
@@ -124,7 +124,7 @@ export interface CarriedEstimate {
   serviceId: string;
   vehicleId: string;
   serviceName: string;
-  /** "Full body · Two-stage correction" — what was actually chosen. */
+  /** "Full body · Two-stage correction" - what was actually chosen. */
   scopeLine: string;
   /** "₹1,26,720", or "Covered" for a membership wash. */
   total: string;
@@ -156,7 +156,7 @@ export interface BookingFlowProps {
   estimate?: CarriedEstimate | null;
   /** Where the studio may collect from. Empty is a real state, with a way out. */
   addresses?: AddressChoice[];
-  /** ₹ per leg, from the pricing engine — never a number typed here. */
+  /** ₹ per leg, from the pricing engine - never a number typed here. */
   legFee?: string;
   /** Where a customer goes to add their first address. */
   addAddressHref?: string;
@@ -206,7 +206,7 @@ export function BookingFlow({
    *
    * ONLY ON THE TRANSITION INTO OPEN, and that is the whole point. `services`
    * and `vehicles` arrive as fresh array identities on every render of the
-   * room above, so this effect used to re-run constantly — and the run
+   * room above, so this effect used to re-run constantly - and the run
    * immediately after a successful booking was fatal: `confirm` calls
    * `router.refresh()`, the server re-renders, new arrays come down, and
    * `setDone(null)` wiped the receipt. The customer's booking succeeded and
@@ -257,7 +257,7 @@ export function BookingFlow({
     /* THIS ROUTE IS BEARER-AUTHENTICATED TOO, and it was called without a
        token. The 401 body parsed cleanly into `{ fullDates: undefined }`, so
        the sheet defaulted to "everything is free" and offered days and hours
-       that were already taken — the customer only found out at the very end,
+       that were already taken - the customer only found out at the very end,
        as "that slot has just gone". A silent failure that reads as an answer
        is worse than an error. */
     void (async () => {
@@ -275,7 +275,7 @@ export function BookingFlow({
         const d = await r.json();
         if (!cancelled) setFull({ fullDates: d.fullDates ?? [], fullSlots: d.fullSlots ?? {} });
       } catch {
-        /* Unreachable — the studio may still take it; the server decides. */
+        /* Unreachable - the studio may still take it; the server decides. */
       }
     })();
 
@@ -301,8 +301,8 @@ export function BookingFlow({
    * and the audit found the estimate and the invoice drifting for exactly that
    * reason.
    *
-   * `/api/estimate` with `preview: true` runs `priceVisit` — the same single
-   * calculation the booking, the approval and the invoice run — and stores
+   * `/api/estimate` with `preview: true` runs `priceVisit` - the same single
+   * calculation the booking, the approval and the invoice run - and stores
    * nothing. One round trip per choice, and the figure on the screen is the
    * figure the studio holds.
    *
@@ -332,7 +332,7 @@ export function BookingFlow({
         setQuoted(e.breakdown.washCovered ? 'Covered' : spokenPrice(e.breakdown.total));
         setDiscount(e.breakdown.discount);
       } catch {
-        /* Unreachable. The sheet shows no figure rather than a guessed one —
+        /* Unreachable. The sheet shows no figure rather than a guessed one -
            the server decides the price at the moment of booking either way. */
         if (live) setQuoted(null);
       }
@@ -351,7 +351,7 @@ export function BookingFlow({
    *
    * SANITISED, because the server's rule is `^[A-Za-z0-9_-]+$` and the time
    * this is built from contains a colon. Every appointment booked from the
-   * customer application was refused `bad-idempotency-key` 400 — the studio
+   * customer application was refused `bad-idempotency-key` 400 - the studio
    * looked like it was declining work, and the sheet said "we couldn't arrange
    * that", which is the same sentence it uses for a genuine outage.
    *
@@ -361,8 +361,8 @@ export function BookingFlow({
    */
   const idempotencyKey = () =>
     /* THE ESTIMATE IS PART OF THE INTENT. Two different quotes for the same
-       car, service and slot — a full body, then a front end after thinking
-       better of it — are two different bookings, and without this the second
+       car, service and slot - a full body, then a front end after thinking
+       better of it - are two different bookings, and without this the second
        would be swallowed as a replay of the first and the customer would be
        given the coverage they had just rejected. */
     `${vehicleId ?? 'v'}_${service?.id ?? 's'}_${date ?? 'd'}_${time ?? 't'}_${estimate?.id ?? 'q'}`
@@ -382,13 +382,13 @@ export function BookingFlow({
     setError(null);
     try {
       /* THE REQUEST HAS TO SAY WHO IS MAKING IT.
-         `/api/booking/create` authenticates with a Bearer ID token — the
+         `/api/booking/create` authenticates with a Bearer ID token - the
          session cookie is for SERVER RENDERING and this route never reads it.
          Sent without one, every booking in the product came back 401 and the
          customer was told "we couldn't arrange that", which reads as the
          studio being full rather than as a request that never identified
          anybody. Every other client caller already did this; this one did not.
-         The token is the same one `/api/session` was given — minted by the
+         The token is the same one `/api/session` was given - minted by the
          client SDK, refreshed by it, and verified server-side. */
       
       const res = await authedFetch('/api/booking/create', {
@@ -425,7 +425,7 @@ export function BookingFlow({
         );
         return;
       }
-      /* THE REFERENCE. Derived from the booking id rather than stored — a new
+      /* THE REFERENCE. Derived from the booking id rather than stored - a new
          field would need a migration and a second source of truth for the same
          fact. Six characters is enough to read down a phone. */
       const created = await res.json().catch(() => ({}));
@@ -451,7 +451,7 @@ export function BookingFlow({
     <BottomSheet open={open} onClose={onClose} label="Arrange a visit">
       <div style={{ paddingInline: INSET, maxWidth: MEASURE + INSET * 2, marginInline: 'auto', width: '100%' }}>
         {done ? (
-          /* THE RECEIPT. §20.1 — a customer who has just committed to something
+          /* THE RECEIPT. §20.1 - a customer who has just committed to something
              is told plainly what the studio now holds, in the studio's words. */
           <div aria-live="polite">
             <Heading level="title">The studio has it.</Heading>
@@ -477,7 +477,7 @@ export function BookingFlow({
           </div>
         ) : (
         <>
-        {/* Design 1f — the label names WHAT is being arranged and for which
+        {/* Design 1f - the label names WHAT is being arranged and for which
             car, and the display says only the act. The two were one line
             before, which made the sheet read as a form title rather than as
             the studio setting a bay aside. */}
@@ -493,14 +493,14 @@ export function BookingFlow({
 
         <OfflineNote inline caption="You’re offline. We can’t hold a slot until you’re back." />
 
-        {/* NO CAR AT ALL — THE DEAD END THIS SHEET USED TO BE.
+        {/* NO CAR AT ALL - THE DEAD END THIS SHEET USED TO BE.
             With an empty garage `vehicleId` stayed null, the picker below
             never rendered (it needs TWO cars to appear), and `ready` could
-            never become true — so a customer chose a service, chose a day,
+            never become true - so a customer chose a service, chose a day,
             chose an hour, and then found "Arrange it" greyed out with nothing
             anywhere saying why. Three separate invitations lead here from
             empty rooms, so it was the first thing a new customer met.
-            §10.5 — the way out is a control, not an explanation. */}
+            §10.5 - the way out is a control, not an explanation. */}
         {vehicles.length === 0 ? (
           <div style={{ marginTop: space.rest }}>
             <Text role="body" tone="ink">Which car is this for?</Text>
@@ -514,7 +514,7 @@ export function BookingFlow({
           </div>
         ) : null}
 
-        {/* WHICH CAR — only when there is a choice to make. */}
+        {/* WHICH CAR - only when there is a choice to make. */}
         {vehicles.length > 1 ? (
           <Group label="Which car">
             <Row>
@@ -529,11 +529,11 @@ export function BookingFlow({
 
         {vehicles.length === 0 ? null : (
         <>
-        {/* WHAT — grouped by category, never a flat list.
+        {/* WHAT - grouped by category, never a flat list.
             THE CHOICE IS LEGIBLE NOW. These were bare name chips: a customer
             picked a ₹64,000 service from a single word, with no idea what it
             cost or how long their car would be gone, and found out only after
-            committing. §22.1 keeps prices out of the Studio's PROSE — this is
+            committing. §22.1 keeps prices out of the Studio's PROSE - this is
             the booking sheet, which has always had to state the figure, and
             stating it at the moment of choosing is the difference between a
             menu and a guess. */}
@@ -561,7 +561,7 @@ export function BookingFlow({
           ))}
         </Group>
 
-        {/* WHEN — the day, then the hour, and the hour says when the car is
+        {/* WHEN - the day, then the hour, and the hour says when the car is
             back. A full day is said to be full rather than merely being
             unpressable, which is the difference between an answer and a dead
             control (§10.5). */}
@@ -594,7 +594,7 @@ export function BookingFlow({
                       paddingBlock: space.line,
                       paddingInline: space.breath + 2,
                       borderRadius: radius.card - 2,
-                      /* Design 1f — the chosen day is LIT rather than
+                      /* Design 1f - the chosen day is LIT rather than
                          inverted. An inverted tile is a selection control; a
                          lit one is the day the studio has set aside, which is
                          what it actually is. */
@@ -694,7 +694,7 @@ export function BookingFlow({
                   ) : null}
                 </div>
               ) : (
-                /* §10.5 — the way out is a control, not an explanation. */
+                /* §10.5 - the way out is a control, not an explanation. */
                 <div style={{ marginTop: space.gap }}>
                   <Text role="body" tone="ink">Where should we collect it from?</Text>
                   <Text role="whisper" tone="ink3" style={{ marginTop: space.hair }}>
@@ -717,14 +717,14 @@ export function BookingFlow({
           </Group>
         ) : null}
 
-        {/* WHAT YOU ARE ARRANGING — the whole intent in one place, before it
+        {/* WHAT YOU ARE ARRANGING - the whole intent in one place, before it
             is committed rather than after. The sheet used to end on a bare
             figure: the car, the work, the day and the hour had each been
             chosen several screens of scrolling apart and were never once
             stated back together. A booking nobody can check is a booking
             people make wrong.
 
-            The figure remains a PREVIEW — `/api/booking/create` recomputes
+            The figure remains a PREVIEW - `/api/booking/create` recomputes
             every rupee and ignores anything sent from here. */}
         {service && date && time ? (
           <div
@@ -797,7 +797,7 @@ export function BookingFlow({
             </Text>
           </div>
         ) : service ? (
-          /* Chosen the work but not yet the hour — say what it costs and how
+          /* Chosen the work but not yet the hour - say what it costs and how
              long it takes anyway, so the next choice is made knowing both. */
           <div style={{ marginTop: space.rest }}>
             {washCovered ? (
@@ -877,7 +877,7 @@ function SummaryLine({ label, said }: { label: string; said: string }) {
  * ONE SERVICE, AS A DECISION RATHER THAN A WORD.
  *
  * What a customer needs in order to choose is the name, what it costs, and how
- * long their car is gone — and the third is the one nobody ever puts on the
+ * long their car is gone - and the third is the one nobody ever puts on the
  * control, which is why people book a full-day job for a morning they do not
  * have. A membership wash says it is covered here, at the point of choosing,
  * rather than surprising somebody pleasantly two steps later.
@@ -941,13 +941,13 @@ function ServiceChoice({
         fontWeight: 620,
         color: covered ? color.assent : color.ink,
       }}>
-        {covered ? 'Covered' : spokenPrice(service.price) ?? '—'}
+        {covered ? 'Covered' : spokenPrice(service.price) ?? '-'}
       </span>
     </button>
   );
 }
 
-/** One choice. §21.3 — a real target; §21.6 — its state is in `aria-pressed`. */
+/** One choice. §21.3 - a real target; §21.6 - its state is in `aria-pressed`. */
 function Chip({
   on, disabled, onClick, children,
 }: {
@@ -966,7 +966,7 @@ function Chip({
         minHeight: TARGET_MIN,
         paddingInline: space.gap,
         borderRadius: radius.card,
-        /* Design 1f — a drop-off hour is champagne, not amber. The DAY is the
+        /* Design 1f - a drop-off hour is champagne, not amber. The DAY is the
            studio setting time aside (amber, it is doing something); the hour
            within it is simply the one you picked. Two lights, two meanings. */
         border: `${HAIRLINE}px solid ${on ? 'rgba(232,217,190,0.32)' : color.edge}`,

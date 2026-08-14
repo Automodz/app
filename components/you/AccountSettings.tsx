@@ -13,7 +13,7 @@
  *   deleting the account       → `POST /api/account/delete`
  *
  * Nothing computes anything. `NotificationPrefs` has four booleans and they are
- * the only preference store in the product — `lib/server/retention.ts` reads
+ * the only preference store in the product - `lib/server/retention.ts` reads
  * exactly these when deciding whether to send, so a switch turned off here is
  * honoured by the job that would have sent it.
  *
@@ -37,12 +37,12 @@ import {
 
 /** The studio's word for each refusal an address can meet. */
 const ADDRESS_FAULT: Record<string, string> = {
-  'label-required': 'Give it a name — "Home", "Office".',
+  'label-required': 'Give it a name - "Home", "Office".',
   'line1-required': 'We need the flat or building.',
   'area-required': 'Which area is it in?',
   'city-required': 'Which city?',
-  'pincode-invalid': 'That pincode does not look right — six digits.',
-  'phone-invalid': 'That number does not look right — ten digits.',
+  'pincode-invalid': 'That pincode does not look right - six digits.',
+  'phone-invalid': 'That number does not look right - ten digits.',
   'too-long': 'That is longer than we can store. Shorten it a little.',
   'too-many-addresses': 'That is as many as we keep. Remove one first.',
   'address-in-use': 'A visit is booked to that address. Move or cancel it first.',
@@ -121,7 +121,7 @@ export function AccountSettings({
   /**
    * THE ACCOUNT, READ FROM THE ACCOUNT.
    *
-   * This filled itself from `user` in the client store — and `/you` renders on
+   * This filled itself from `user` in the client store - and `/you` renders on
    * the SERVER and mounts no `AuthProvider`, so that user is always null here.
    * The fields opened blank whatever the customer's name actually was, saving
    * returned at `if (!user)` without writing anything, and every notification
@@ -179,7 +179,7 @@ export function AccountSettings({
     return () => { live = false; };
   }, [panel, addresses]);
 
-  /* Push is a property of THIS DEVICE, not of the account — a customer signed
+  /* Push is a property of THIS DEVICE, not of the account - a customer signed
      in on a phone and a laptop may want it on one and not the other. */
   useEffect(() => {
     if (panel !== 'notifications') return;
@@ -188,7 +188,7 @@ export function AccountSettings({
 
   useEffect(() => {
     /* Against the loaded account. Guarded on the store's user this never ran
-       on `/you` — the referral panel opened and stayed empty for ever, which
+       on `/you` - the referral panel opened and stayed empty for ever, which
        reads as the studio having no referral programme. */
     if (panel !== 'referral' || !account || code) return;
     void getMyReferralCode(account).then(setCode).catch(() => setCode(null));
@@ -213,7 +213,7 @@ export function AccountSettings({
 
   /* A preference is written the moment it is touched. A "Save" button here
      would mean a customer who turns something off and closes the sheet is
-     still sent it — the one outcome this screen exists to prevent. */
+     still sent it - the one outcome this screen exists to prevent. */
   const togglePref = async (key: keyof NotificationPrefs) => {
     if (!account) return;
     const next = { ...prefs, [key]: !prefs[key] };
@@ -230,7 +230,7 @@ export function AccountSettings({
   };
 
   const togglePush = async () => {
-    /* The account, not the store's user — see the note on the load above.
+    /* The account, not the store's user - see the note on the load above.
        Guarded on `user` this switch did nothing on a customer room, which is
        the one place it is ever offered. */
     if (!account || push === 'unsupported') return;
@@ -279,7 +279,7 @@ export function AccountSettings({
         const body = await res.json().catch(() => ({}));
         setError((body as { error?: string })?.error === 'staff-account'
           ? 'A staff account can’t be deleted here. Speak to the studio.'
-          : 'That didn’t complete. Nothing was removed — try again.');
+          : 'That didn’t complete. Nothing was removed - try again.');
         return;
       }
 
@@ -288,13 +288,13 @@ export function AccountSettings({
       const { signOut } = await import('firebase/auth');
       await signOut(auth).catch(() => {});
       await authedFetch('/api/session', { method: 'DELETE' }).catch(() => {});
-      /* A document load, for the same reason as signing out — and more so:
+      /* A document load, for the same reason as signing out - and more so:
          every cached payload here belongs to an account that no longer
          exists. */
       useAppStore.getState().clearSession();
       window.location.replace('/');
     } catch {
-      setError('That didn’t complete. Nothing was removed — try again.');
+      setError('That didn’t complete. Nothing was removed - try again.');
     } finally {
       setDeleting(false);
     }
@@ -718,7 +718,7 @@ export function AccountSettings({
   );
 }
 
-/** One switch. §21.6 — its state is `aria-checked`, not a colour. */
+/** One switch. §21.6 - its state is `aria-checked`, not a colour. */
 function Switch({
   label, detail, on, first, busy, onToggle,
 }: {
@@ -783,7 +783,7 @@ function Switch({
   );
 }
 
-/** One field. The label sits above — a placeholder is not a label (§21.6). */
+/** One field. The label sits above - a placeholder is not a label (§21.6). */
 function Field({
   label, value, onChange, type = 'text', autoComplete,
 }: {

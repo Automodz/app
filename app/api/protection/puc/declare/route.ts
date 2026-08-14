@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  *
  * The customer's own half of the act, and the whole of what a browser may do:
  * it states a fact about a piece of paper. It creates no Protection, changes
- * nothing about the car, and cannot — `firestore.rules` refuses every client
+ * nothing about the car, and cannot - `firestore.rules` refuses every client
  * write to `declarations` and to `protections`, so this route is not merely
  * the preferred door, it is the only one.
  *
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   /* A bearer token, or the session cookie the rooms already use. The cookie
-     path is same-origin only — see lib/server/session.ts for why a
+     path is same-origin only - see lib/server/session.ts for why a
      state-changing route may not accept a cookie from anywhere else. */
   const uid = await sessionCaller(req, t => adminAuth!.verifyIdToken(t));
   if (!uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

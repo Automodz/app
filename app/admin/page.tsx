@@ -112,7 +112,7 @@ export default function StudioBoard() {
   /* ── BOOKINGS AWAITING AN ANSWER ────────────────────────────────────────
      The customer's only booking path is now in-app, so a request that nobody
      confirms is a customer left waiting with no way to chase it. This board
-     showed jobs and dated bookings and never mentioned pending ones at all —
+     showed jobs and dated bookings and never mentioned pending ones at all -
      a new booking was invisible on the one screen the studio watches.
 
      A LISTENER, not a fetch: the whole point is that it appears without anyone
@@ -367,7 +367,7 @@ export default function StudioBoard() {
           Above the header on purpose. Everything else on this board is work
           already in hand; this is the only thing on it that a customer is
           currently waiting on, and it is the one thing that used to be
-          invisible here. §18.1 — nothing at all when there is nothing. */}
+          invisible here. §18.1 - nothing at all when there is nothing. */}
       {pending.length > 0 ? (
         <div
           className="mb-4 rounded-xl p-4"

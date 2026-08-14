@@ -21,7 +21,7 @@ export function isSameOrigin(req: {
   if (fetchSite) return fetchSite === 'same-origin';
 
   /* Older browsers: compare the stated origin with the host we were actually
-     reached on. An ABSENT origin is not treated as same-origin — that is
+     reached on. An ABSENT origin is not treated as same-origin - that is
      precisely what a cross-site form post sends. */
   const origin = req.headers.get('origin');
   const host = req.headers.get('host');

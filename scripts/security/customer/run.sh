@@ -4,16 +4,16 @@
 # `npx jest` reads `firestore.rules` as text. This runs the REAL rules engine
 # in the Firestore emulator and asks it every question the design depends on:
 # an owner reads their own papers, nobody reads anybody else's, and no browser
-# — customer, technician or owner — can write a declaration or a protection.
+# - customer, technician or owner - can write a declaration or a protection.
 #
 #   ./scripts/security/customer/run.sh
 #
 # It then boots a throwaway dev server against the same emulators and runs the
-# API matrix — the half `npx jest` cannot reach: the session cookie, the CSRF
+# API matrix - the half `npx jest` cannot reach: the session cookie, the CSRF
 # guard on it, staff authorisation read from a real profile, and the Admin SDK
 # writing against real Firestore semantics.
 #
-# Nothing touches the real project — the id is `demo-automodz`, and
+# Nothing touches the real project - the id is `demo-automodz`, and
 # firebase-tools refuses to reach live services for a `demo-` id.
 set -euo pipefail
 
@@ -53,7 +53,7 @@ export FIREBASE_ADMIN_CLIENT_EMAIL=test@demo-automodz.iam.gserviceaccount.com
 export FIREBASE_ADMIN_PRIVATE_KEY="$(sed 's/$/\\n/' "$WORK/fake.pem" | tr -d '\n')"
 export FIRESTORE_EMULATOR_HOST=127.0.0.1:$PORT_FS
 export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:$PORT_AUTH
-# Cloudinary signing is pure local crypto — these let /api/media/* answer
+# Cloudinary signing is pure local crypto - these let /api/media/* answer
 # without ever reaching Cloudinary.
 export CLOUDINARY_CLOUD_NAME=demo-cloud
 export CLOUDINARY_API_KEY=000000000000000

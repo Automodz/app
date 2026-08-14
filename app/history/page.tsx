@@ -11,7 +11,7 @@ import { historyContextOf, toHistory, toGarage } from '@/lib/customer/project';
 export const dynamic = 'force-dynamic';
 
 /**
- * `/history` — the album. §18.1: a car with no completed visits shows none.
+ * `/history` - the album. §18.1: a car with no completed visits shows none.
  *
  * The subject is resolved by `historyContextOf` and nowhere else. This route
  * used to fall back to `leadCar` whenever `?car=` was absent, so a customer
@@ -27,7 +27,7 @@ export default async function HistoryPage(
       {picture => {
         const ctx = historyContextOf(picture, { car });
         if (ctx.kind === 'none') return <NoCar />;
-        /* Several cars and nothing naming one: ask (§19.1 — an absence of
+        /* Several cars and nothing naming one: ask (§19.1 - an absence of
            context is a state, not a licence to choose). */
         if (ctx.kind === 'choose') {
           return <ChooseCar model={toGarage(picture)} because="whose record to open" />;

@@ -11,11 +11,11 @@
  * fails the thumb. The padding is computed from the token, so the target is
  * arithmetic rather than an inline guess.
  *
- * §21.6 — an icon-only control carries no visible text, so `label` is a
+ * §21.6 - an icon-only control carries no visible text, so `label` is a
  * REQUIRED prop, not an optional nicety. §21.8 constrains what it may say:
  * the customer's word, never the internal one.
  *
- * design/icons.ts rule 3 — no container. The glyph sits on the surface it
+ * design/icons.ts rule 3 - no container. The glyph sits on the surface it
  * belongs to; there is no circular badge or tinted chip behind it.
  */
 import type { CSSProperties, ReactNode } from 'react';
@@ -25,7 +25,7 @@ import { toneColor, type Tone } from './tone';
 
 export interface IconButtonProps {
   /**
-   * §21.6 — required. The accessible name, in the customer's language (§21.8).
+   * §21.6 - required. The accessible name, in the customer's language (§21.8).
    * There is no way to render this control without one.
    */
   label: string;
@@ -52,14 +52,14 @@ export function IconButton({
   style,
 }: IconButtonProps) {
   if (process.env.NODE_ENV !== 'production' && !onClick && !href) {
-    console.error(`[IconButton "${label}"] has no onClick or href — nothing is inert (§10.5).`);
+    console.error(`[IconButton "${label}"] has no onClick or href - nothing is inert (§10.5).`);
   }
 
   const base: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    /* §21.3 — the floor, whatever the glyph does. */
+    /* §21.3 - the floor, whatever the glyph does. */
     minWidth: ICON_TARGET,
     minHeight: ICON_TARGET,
     padding: iconPadding[size],

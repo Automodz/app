@@ -1,5 +1,5 @@
 /**
- * DATE & CONCIERGE — design screen 08.
+ * DATE & CONCIERGE - design screen 08.
  *
  * `bookings.pickupAddress` was declared and never populated: 0% across every
  * booking in production, read by one WhatsApp template. The concierge was two
@@ -97,7 +97,7 @@ describe('when the van leaves is derived, never chosen', () => {
     expect(pickupTimeFor('10:00', DAY_OPEN_MIN)).toBe('09:40');
   });
 
-  it('never before the studio opens — a van cannot leave a locked unit', () => {
+  it('never before the studio opens - a van cannot leave a locked unit', () => {
     expect(pickupTimeFor('09:00', DAY_OPEN_MIN)).toBe('09:00');
     expect(pickupTimeFor('09:10', DAY_OPEN_MIN)).toBe('09:00');
   });
@@ -170,7 +170,7 @@ describe('a multi-day reservation blocks every day it occupies', () => {
     expect(fullDates).not.toContain('2026-02-16');
   });
 
-  it('a wash is unaffected — it is a different physical resource', () => {
+  it('a wash is unaffected - it is a different physical resource', () => {
     const { fullDates } = computeAvailability(
       ['2026-02-12', '2026-02-13'], 'Washing', 60,
       [occupant], { washCapacity: 1 },
@@ -198,7 +198,7 @@ describe('a UPI address is checked and never published', () => {
     expect(normaliseVpa('  Aarav@OKHDFC ')).toBe('aarav@okhdfc');
   });
 
-  it('is masked wherever it is shown back — a screen gets photographed', () => {
+  it('is masked wherever it is shown back - a screen gets photographed', () => {
     expect(maskVpa('aarav@okhdfc')).toBe('aa•••@okhdfc');
     expect(maskVpa('ab@ybl')).toBe('ab••@ybl');
     expect(maskVpa('')).toBe('');
@@ -247,7 +247,7 @@ describe('the writes rules cannot check are the server’s', () => {
   const service = readFileSync('lib/server/addressService.ts', 'utf8');
   const booking = readFileSync('lib/server/bookingService.ts', 'utf8');
 
-  it('no client writes an address — one default and delete-protection need a query', () => {
+  it('no client writes an address - one default and delete-protection need a query', () => {
     const block = rules.slice(rules.indexOf('match /addresses/{addressId}'));
     expect(block.slice(0, 300)).toMatch(/allow write: if false;/);
     expect(block.slice(0, 300)).toMatch(/allow read: if request\.auth != null && request\.auth\.uid == userId;/);

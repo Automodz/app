@@ -1,8 +1,8 @@
 /**
- * COLOURS — AutoModz Design Language
+ * COLOURS - AutoModz Design Language
  *
  * Source: docs/AUTOMODZ-OS.md §3.3, §3.4, §9.1, §9.2, §21.1
- *         design/AutoModz App.dc.html — "liquid glass · amber & champagne light"
+ *         design/AutoModz App.dc.html - "liquid glass · amber & champagne light"
  *
  * The constitution names seven ink/paper families and four state colours. It
  * fixes no hex values, so every value below is DERIVED from a stated rule and
@@ -11,7 +11,7 @@
  * ── WHY THIS IS WARM AND NO LONGER GREY ──────────────────────────────────
  * The product was monochrome: chrome ink on graphite, with §3.3 reading as
  * "nothing is coloured". The ratified customer design replaces that with ONE
- * warm light — amber, and its cooled reflection, champagne — over the same
+ * warm light - amber, and its cooled reflection, champagne - over the same
  * near-black room. §3.3 survives intact and gets stricter, because there is
  * now exactly one hue in the entire product: warmth means the studio, and
  * nothing else in the interface is allowed to be coloured at all.
@@ -20,10 +20,10 @@
  *   The application is dark because "a car photographed against black reads as
  *   a car in a studio". But §3.4 requires depth to come from light and shadow,
  *   and pure #000000 has no room below it for a shadow to exist. The ground is
- *   therefore a near-black with a slight cool cast — it stays cool so the amber
+ *   therefore a near-black with a slight cool cast - it stays cool so the amber
  *   light reads as light falling ON the room rather than as a tinted room.
  *
- * Verified contrast against paper (§21.1 requires WCAG AA — 4.5:1 for normal
+ * Verified contrast against paper (§21.1 requires WCAG AA - 4.5:1 for normal
  * text). Measured, not estimated:
  *   ink      16.74:1      assent  14.33:1
  *   ink2      8.78:1      caution  9.14:1
@@ -31,11 +31,11 @@
  *   surface   1.10:1      lapsed   6.12:1   (surface is a step, not text)
  *
  * Note that ink3 passes AA at 6.31:1. §9.1 forbids it for body text on
- * grounds of HIERARCHY, not legibility — a whisper is still read, so it is
+ * grounds of HIERARCHY, not legibility - a whisper is still read, so it is
  * still held to the same contrast bar as everything else.
  */
 
-/** The four semantic states. §9.2 — "these are the only saturated colours". */
+/** The four semantic states. §9.2 - "these are the only saturated colours". */
 export type StateTone = 'assent' | 'caution' | 'urgent' | 'lapsed';
 
 export const color = {
@@ -45,7 +45,7 @@ export const color = {
   paper: '#08090A',
 
   /**
-   * The ONE raised material (§10.2 — "not a card and a panel and a tile — one").
+   * The ONE raised material (§10.2 - "not a card and a panel and a tile - one").
    * A single fill at the smallest step that reads as lifted off paper (1.10:1).
    * Higher bands do not get a lighter fill; they get a deeper shadow, because
    * §3.4 says a surface is raised by light, not by a different colour.
@@ -54,16 +54,16 @@ export const color = {
 
   /**
    * The hairline separating a material from its ground. §9.1 names it; §3.4
-   * constrains it — an edge clarifies a boundary, it never creates the lift.
+   * constrains it - an edge clarifies a boundary, it never creates the lift.
    * Kept at the threshold of visibility for that reason.
    */
   edge: 'rgba(255, 255, 255, 0.08)',
 
-  /** Primary text — the thing being said. 16.74:1 on paper. */
+  /** Primary text - the thing being said. 16.74:1 on paper. */
   ink: '#EDEBE7',
-  /** Secondary — supporting, "still fully legible" (§9.1). 8.78:1 on paper. */
+  /** Secondary - supporting, "still fully legible" (§9.1). 8.78:1 on paper. */
   ink2: '#ADACA9',
-  /** Tertiary — labels and whispers only, never body text (§9.1). 6.31:1. */
+  /** Tertiary - labels and whispers only, never body text (§9.1). 6.31:1. */
   ink3: '#91918F',
 
   /* ── Text over photographs · §9.1, §21.1 ─────────────────────────────── */
@@ -76,20 +76,20 @@ export const color = {
   /* ── The one light · §3.3, §9.2 ──────────────────────────────────────── */
 
   /**
-   * AMBER — the studio's light. Work happening, a bay lit, attention wanted.
+   * AMBER - the studio's light. Work happening, a bay lit, attention wanted.
    * The only hue that initiates anything: a lit tab, a live dot, the confirm.
    */
   amber: '#E0A45C',
-  /** Amber under a finger or a pointer — the same light, closer. */
+  /** Amber under a finger or a pointer - the same light, closer. */
   amberHot: '#F0C48C',
   /**
-   * CHAMPAGNE — amber's cooled reflection. Everything the studio has already
+   * CHAMPAGNE - amber's cooled reflection. Everything the studio has already
    * done and that is still holding: a coat in force, a benefit, a settled sum.
    * It never asks for anything, which is exactly what separates it from amber.
    */
   champagne: '#E8D9BE',
   /**
-   * Champagne under a finger, or lit — the same reflection, closer. The exact
+   * Champagne under a finger, or lit - the same reflection, closer. The exact
    * twin of `amberHot`, and it exists for the same reason that one does.
    *
    * It was already in the product three times over: the selected star on the
@@ -106,12 +106,12 @@ export const color = {
   /** Attention soon. The light itself. */
   caution: '#E0A45C',
   /**
-   * Attention now. The one value pushed off the amber ramp toward red — far
+   * Attention now. The one value pushed off the amber ramp toward red - far
    * enough that it cannot be mistaken for `caution` at a glance, still warm
    * enough that it belongs to the same room. Nothing in the product is red.
    */
   urgent: '#E2705A',
-  /** No longer in force. Deliberately neutral — a lapsed thing is not an alarm. */
+  /** No longer in force. Deliberately neutral - a lapsed thing is not an alarm. */
   lapsed: '#8A8F96',
 } as const;
 
@@ -130,21 +130,21 @@ export const color = {
  * THIS FLOOR IS FOR `over` ONLY, AND THAT IS A CONSTRAINT ON WHAT MAY BE
  * WRITTEN OVER A PHOTOGRAPH. It was solved for pure white and clears AA by a
  * hair. `over2` is 72% white, so on a bright image it composites toward the
- * very background it must contrast with — the two converge, and the pair
+ * very background it must contrast with - the two converge, and the pair
  * measures 3.33:1. No floor satisfies both: `over2` needs α 0.66, by which
  * point the photograph beneath is gone. Over a photograph, quiet therefore
  * means smaller type, never fainter ink. `over2` is for grounds that are
- * known — a surface, a sheet — not for one that can be any image at all.
+ * known - a surface, a sheet - not for one that can be any image at all.
  */
 export const scrim = {
   /** Minimum permitted overlay behind text on any photograph. Never go below. */
   photoFloor: 0.55,
-  /** Shipped value — the floor plus headroom for compression artefacts. */
+  /** Shipped value - the floor plus headroom for compression artefacts. */
   photo: 0.6,
   /** Behind a sheet or takeover, to hold focus on the layer above (§9.3). */
   layer: 0.6,
   /**
-   * §11.4 — when the car answers a question about one of its regions, the
+   * §11.4 - when the car answers a question about one of its regions, the
    * rest of the photograph recedes so the region reads as the one being
    * asked about.
    *
@@ -152,7 +152,7 @@ export const scrim = {
    *
    * It must be BELOW `layer` (0.6): that value exists to put a photograph
    * behind something else, and at 0.6 the car is effectively gone. This is
-   * attention moving WITHIN one subject, not a layer covering it — the car has
+   * attention moving WITHIN one subject, not a layer covering it - the car has
    * to stay legible throughout, because the customer is standing in front of
    * it.
    *
@@ -179,14 +179,14 @@ export const contrastFloor = {
 
 /**
  * The width of the edge. §9.1 calls it "the hairline", and a hairline is the
- * thinnest line a display can draw — so this is 1 by definition rather than by
+ * thinnest line a display can draw - so this is 1 by definition rather than by
  * choice. It is a token so that §22.4 holds without exception: no component
  * needs to write a border width literal.
  */
 export const HAIRLINE = 1;
 
 /**
- * §11.5 — the composed absence. "It is never a grey box, never a placeholder
+ * §11.5 - the composed absence. "It is never a grey box, never a placeholder
  * silhouette, never a large empty field with a small plate floating in it."
  *
  * A field lit from slightly above centre: enough structure that it reads as a
@@ -203,13 +203,13 @@ export const ground = {
  *
  * `Action` is the only element in the product filled with light rather than
  * lit by it. The design draws it in amber and champagne at 92%→64% alpha over
- * the room, and at the weak end that composites to #926C3E — 4.12:1 against
+ * the room, and at the weak end that composites to #926C3E - 4.12:1 against
  * the label, under §21.1's floor. These are the same ramps as OPAQUE stops, so
  * they hold their contrast wherever the control lands: amber 10.10:1 → 7.21:1,
  * champagne 14.02:1 → 8.94:1.
  *
  * They lived inside `components/os/parts.tsx`, which made a primitive the
- * second place a colour was written. §22.4 — no raw colour outside `design/`.
+ * second place a colour was written. §22.4 - no raw colour outside `design/`.
  */
 export const fill = {
   amber: 'linear-gradient(160deg, #E8B072, #D0904A)',

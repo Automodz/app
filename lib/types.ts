@@ -34,7 +34,7 @@ export interface User {
    */
   welcomedAt?: Timestamp;
   /**
-   * QUIET MODE — design screen 19: "Only approvals and handover reach you."
+   * QUIET MODE - design screen 19: "Only approvals and handover reach you."
    *
    * It suppresses DELIVERY, never the record. Which events break through is
    * `BREAKS_QUIET` in lib/os/events.ts, and it is the engine's decision rather
@@ -55,7 +55,7 @@ export interface User {
 }
 
 /**
- * A SAVED PICKUP OR DROP ADDRESS — `users/{uid}/addresses/{id}`.
+ * A SAVED PICKUP OR DROP ADDRESS - `users/{uid}/addresses/{id}`.
  *
  * Design screens 08 ("Bodakdev · Home") and 19 ("Pickup addresses · 2 saved").
  * Structured rather than a free string, because a driver needs the parts:
@@ -65,11 +65,11 @@ export interface User {
  *
  * A booking stores a SNAPSHOT of the chosen address, not a reference. Editing
  * a saved address later must never rewrite where a past visit was collected
- * from — the same rule the captured warranty terms follow.
+ * from - the same rule the captured warranty terms follow.
  */
 export interface SavedAddress {
   id: string;
-  /** "Home", "Office" — the customer's own word. */
+  /** "Home", "Office" - the customer's own word. */
   label: string;
   line1: string;
   line2?: string;
@@ -102,7 +102,7 @@ export interface Vehicle {
    * THE ODOMETER, IN KILOMETRES.
    *
    * The car's own room shows it (design screen 1d) and nothing in the product
-   * held it — a customer could see their coating's life and their warranty and
+   * held it - a customer could see their coating's life and their warranty and
    * not the one number every owner knows by heart. Optional and owner-entered:
    * the studio reads it at every visit but does not publish it, so a value
    * here is the owner's, and a car without one simply does not show the tile
@@ -118,7 +118,7 @@ export interface Vehicle {
    * original paint" on a listing anyone can open. That is one customer's
    * record shown to strangers, so it is consent, and consent has rules:
    *
-   *   ABSENT MEANS NO. Not "not asked yet", not "probably fine" — no. Every
+   *   ABSENT MEANS NO. Not "not asked yet", not "probably fine" - no. Every
    *   existing car is therefore private until its owner says otherwise, and
    *   nobody is grandfathered in.
    *
@@ -143,7 +143,7 @@ export interface Vehicle {
 }
 
 /**
- * HOW MUCH OF THE CAR — design screen 07's three coverages.
+ * HOW MUCH OF THE CAR - design screen 07's three coverages.
  *
  * A scope is a PRICED VARIANT of a service, not a service of its own. "Front
  * end PPF" and "Full-body PPF" are one piece of work at two sizes: the same
@@ -155,7 +155,7 @@ export type ScopeKind = 'front' | 'full' | 'custom';
 
 export interface ServicePanel {
   id: string;
-  /** "Rear quarter", "Bonnet" — the customer's word for a part of the car. */
+  /** "Rear quarter", "Bonnet" - the customer's word for a part of the car. */
   label: string;
   price: number;
   durationMinutes: number;
@@ -166,7 +166,7 @@ export interface ServiceScope {
   kind: ScopeKind;
   /** "Full body" */
   label: string;
-  /** The one line under it — what is actually covered. */
+  /** The one line under it - what is actually covered. */
   detail: string;
   /**
    * ABSENT FOR `custom`, and that absence is the design's "On quote".
@@ -182,7 +182,7 @@ export interface ServiceScope {
 
 /**
  * An extra stage, chosen at quote time. A real catalogue object with a price
- * and a duration — never a string a client can invent.
+ * and a duration - never a string a client can invent.
  */
 export interface ServiceAddOn {
   id: string;
@@ -211,7 +211,7 @@ export interface Service {
   order: number;
   /**
    * Screen 07's coverages. A service with none is booked whole, at `price`,
-   * exactly as every service was before — so this is additive and no existing
+   * exactly as every service was before - so this is additive and no existing
    * catalogue entry has to change to keep working.
    */
   scopes?: ServiceScope[];
@@ -223,7 +223,7 @@ export interface Service {
  * WHAT WAS CHOSEN, AS IT WAS PRICED AT THE TIME.
  *
  * Copied onto the estimate and then onto the booking. The catalogue is
- * authoritative for the NEXT quote and may never rewrite this one — the same
+ * authoritative for the NEXT quote and may never rewrite this one - the same
  * rule `CapturedTerm` exists for, applied to money instead of to a warranty.
  */
 export interface BookedScope {
@@ -233,7 +233,7 @@ export interface BookedScope {
   /** Only for `custom`: the panels chosen, each at the price it carried then. */
   panels?: { id: string; label: string; price: number }[];
   addOns: { id: string; label: string; price: number; durationMinutes: number }[];
-  /** The work before any benefit — the figure the estimate was built on. */
+  /** The work before any benefit - the figure the estimate was built on. */
   workPrice: number;
   durationMinutes: number;
   /** Screen 07's "2 days in the bay". */
@@ -255,7 +255,7 @@ export interface StoredBreakdown {
   fees: { label: string; amount: number }[];
   feesTotal: number;
   taxable: number;
-  /** ABSENT when no tax applied — never a zero, which would claim a nil charge. */
+  /** ABSENT when no tax applied - never a zero, which would claim a nil charge. */
   tax?: { rate: number; amount: number; gstin?: string };
   total: number;
   washCovered: boolean;
@@ -264,11 +264,11 @@ export interface StoredBreakdown {
 }
 
 /**
- * THE ESTIMATE — design screen 07's "Estimate · Gold −12% · ₹1,26,720".
+ * THE ESTIMATE - design screen 07's "Estimate · Gold −12% · ₹1,26,720".
  *
  * Server-created, immutable, owner-scoped. It exists so that the figure a
  * customer saw when they chose is the figure carried to the date screen, to
- * the confirmation, and into the booking — rather than each of those four
+ * the confirmation, and into the booking - rather than each of those four
  * surfaces recomputing it and one of them being right.
  *
  * "Final on inspection" is still true and is not a licence to drift: the final
@@ -301,7 +301,7 @@ export interface Estimate {
  * customer could not see them, could not cancel them, and were never told the
  * studio would not answer. A request that is never answered has to resolve
  * somewhere, and calling it `cancelled` would put a decision in the record that
- * nobody made — and would credit back a membership wash on a slot that was
+ * nobody made - and would credit back a membership wash on a slot that was
  * never accepted. The transitions into it live in lib/os/lifecycle.ts.
  */
 export type BookingStatus =
@@ -332,12 +332,12 @@ export interface Booking {
   /** The one-line form, kept because the WhatsApp template reads it. */
   pickupAddress?: string;
   /**
-   * WHERE THE VAN ACTUALLY GOES — a SNAPSHOT of the saved address, never a
+   * WHERE THE VAN ACTUALLY GOES - a SNAPSHOT of the saved address, never a
    * reference to it.
    *
    * A customer who moves house and corrects "Home" has not changed the street
    * the studio drove to last March. Editing a saved address must change where
-   * the next van goes and must never rewrite where the last one went — the
+   * the next van goes and must never rewrite where the last one went - the
    * same rule the captured warranty terms follow.
    */
   pickupAddressRef?: {
@@ -357,7 +357,7 @@ export interface Booking {
   totalAmount: number;
   scheduledDate: string;
   /**
-   * THE LAST WORKING DAY THE BAY IS HELD — design screen 08's "Wed 12 – Thu 13
+   * THE LAST WORKING DAY THE BAY IS HELD - design screen 08's "Wed 12 – Thu 13
    * Feb". Derived from the work's duration by `spanEndDate`, never chosen: a
    * customer-settable end date would be a second, contradictable answer to
    * "how long is my car away". Equal to `scheduledDate` for same-day work, and
@@ -387,7 +387,7 @@ export interface Booking {
    *
    * `totalAmount` is the same figure and is kept because every existing reader
    * uses it. This is the working behind it: the services, the one benefit that
-   * applied, each concierge leg as its own line, and the tax block — absent
+   * applied, each concierge leg as its own line, and the tax block - absent
    * rather than zero when no tax applied. Produced by `priceVisit` and by
    * nothing else, so the estimate, the confirmation and the invoice cannot
    * quote three different totals for one visit.
@@ -438,12 +438,12 @@ export interface Notification {
   vehicleId?: string;
   /**
    * The record was written and the phone stayed dark, because the customer
-   * asked for quiet. Never means the fact was dropped — quiet mode suppresses
+   * asked for quiet. Never means the fact was dropped - quiet mode suppresses
    * DELIVERY and never history.
    */
   heldByQuietMode?: boolean;
   /**
-   * §17.3 — the surface this notification is about. Resolved once, at the
+   * §17.3 - the surface this notification is about. Resolved once, at the
    * moment it is written, by `navigation/resolve.notificationHref`, so the
    * stored record and the push payload can never point at different places.
    */
@@ -505,7 +505,7 @@ export interface Subscription {
    *
    * A live Gold subscription carries `washesTotal: 16` and
    * `washesIncluded: 8`, against a plan that grants 8. Neither field is the
-   * authority any more — `os/club.washesGrantedBy` reads the catalogue and
+   * authority any more - `os/club.washesGrantedBy` reads the catalogue and
    * falls back to these only for a plan the catalogue no longer has. They are
    * typed so the drift is visible rather than arriving as `any`.
    */
@@ -517,7 +517,7 @@ export interface Subscription {
   /**
    * THE CUSTOMER'S OWN REFERENCE FOR A PAYMENT THEY SAY THEY MADE.
    *
-   * A CLAIM, exactly as `submitPaymentReference` records one against a visit —
+   * A CLAIM, exactly as `submitPaymentReference` records one against a visit -
    * it activates nothing and releases nothing. The studio still activates
    * against money it has actually seen.
    */
@@ -526,7 +526,7 @@ export interface Subscription {
   paymentClaimedAt?: Timestamp;
   /**
    * WHAT THIS COST, DECIDED BY THE SERVER FROM THE CATALOGUE at the moment it
-   * was asked for — never a figure a browser sent. `amountPaid` is the twin,
+   * was asked for - never a figure a browser sent. `amountPaid` is the twin,
    * stamped at activation; this is what the customer was told they owed.
    */
   amountDue?: number;
@@ -536,7 +536,7 @@ export interface Subscription {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   /**
-   * WHEN THE STUDIO TOOK THE MONEY — the source of truth for membership
+   * WHEN THE STUDIO TOOK THE MONEY - the source of truth for membership
    * revenue. Written exactly once, when an admin activates the subscription,
    * and never moved after.
    *
@@ -753,7 +753,7 @@ export interface Job {
   bookingId?: string;
   /**
    * THE AUTHORITATIVE CAR. Inherited from the booking at creation, never
-   * derived from `vehicleRegNo` — a registration is a display snapshot, and
+   * derived from `vehicleRegNo` - a registration is a display snapshot, and
    * joining on one put a "Honda City" booking in the BMW's room. Absent for a
    * walk-in whose car was never in anyone's garage, and absent then means
    * UNKNOWN: nothing may look up another vehicle by matching the plate.
@@ -997,7 +997,7 @@ export interface CarListing {
   /**
    * The car in someone's garage this listing is for, when it is one of ours.
    * Without it a listing has no service record to show and screen 17's
-   * "Its record with us" cannot be produced at all — which is the correct
+   * "Its record with us" cannot be produced at all - which is the correct
    * behaviour for a trade-in the studio has never touched.
    */
   vehicleId?: string;
@@ -1105,7 +1105,7 @@ export interface Visit {
   termsCaptured: CapturedTerm[];
 
   /**
-   * THE DAY THE WORK WAS DONE — snapshotted at seal, never the record's own
+   * THE DAY THE WORK WAS DONE - snapshotted at seal, never the record's own
    * date. `createdAt` is when the document was written, which for a backfill
    * is years after the fact. See `os/visit.visitDateOf`, which reads this
    * first and derives it for visits sealed before the field existed.
@@ -1357,11 +1357,11 @@ export const MEMBERSHIP_PLANS: MembershipPlanConfig[] = [
     price: 1499,
     washesPerMonth: 4,
     label: 'Silver',
-    /* THE TIER'S OWN METAL. Dead for a long time — nothing read it, and
+    /* THE TIER'S OWN METAL. Dead for a long time - nothing read it, and
        Platinum was a violet, which is not a metal. It is read now, by the
        membership cards, so each tier is tinted with the thing it is named
        after: neutral grey, the studio's warm gold, and a cooler, brighter
-       white for platinum. Three metals the eye can actually tell apart —
+       white for platinum. Three metals the eye can actually tell apart -
        silver and platinum are both greys, so the difference between them has
        to be temperature rather than lightness. */
     color: '#C0C5CB',
@@ -1413,20 +1413,20 @@ export const MEMBERSHIP_PLANS: MembershipPlanConfig[] = [
  *
  *   · Only the OWNER may approve or decline. The studio may withdraw its own
  *     request and the clock may retire it, but neither can produce an approval
- *     — see `APPROVAL_ACTORS` in lib/os/lifecycle.ts.
+ *     - see `APPROVAL_ACTORS` in lib/os/lifecycle.ts.
  *   · The customer approves A FIGURE, not a percentage or a promise. Both the
  *     state before and the state after are frozen at the moment of asking, so
  *     the total they tapped is the total that is applied.
  *   · Once responded it is immutable. A resolved request cannot be resolved
  *     again, which is what makes a double tap cost nothing.
  *   · `requestedByEmployeeId` is recorded for the studio and NEVER rendered
- *     customer-side (Art. 8 — no individual is ever named).
+ *     customer-side (Art. 8 - no individual is ever named).
  */
 export type ApprovalStatus = 'requested' | 'approved' | 'declined' | 'expired' | 'cancelled';
 
 export interface ApprovalEvidence {
   url: string;
-  /** "Rear quarter", "Under light" — where the photograph was taken. */
+  /** "Rear quarter", "Under light" - where the photograph was taken. */
   caption: string;
 }
 
@@ -1438,7 +1438,7 @@ export interface Approval {
   customerId: string;
   vehicleId: string;
   vehicleName: string;
-  /** "We found something under the film" — the studio's own sentence. */
+  /** "We found something under the film" - the studio's own sentence. */
   reason: string;
   /** Why it matters, and what happens if it is left. */
   detail?: string;
@@ -1457,7 +1457,7 @@ export interface Approval {
   requestedByEmployeeId?: string;
   requestedAt: Timestamp;
   respondedAt?: Timestamp;
-  /** After this the request retires itself — a bay cannot wait for ever. */
+  /** After this the request retires itself - a bay cannot wait for ever. */
   expiresAt?: Timestamp;
 }
 
@@ -1468,7 +1468,7 @@ export interface Approval {
  *
  * The studio takes UPI at handover. There is no payment gateway in this
  * product and none is being added, so nothing here can confirm a payment by
- * itself — which is exactly why the record separates the two facts:
+ * itself - which is exactly why the record separates the two facts:
  *
  *   `initiated` the studio generated an intent for ITS OWN figure
  *   `submitted` the customer says they have paid, and gave a reference.
@@ -1488,7 +1488,7 @@ export interface Payment {
   bookingId?: string;
   visitId?: string;
   invoiceId?: string;
-  /** In rupees. SERVER-DERIVED, always — never read off a request. */
+  /** In rupees. SERVER-DERIVED, always - never read off a request. */
   amount: number;
   method: 'upi' | 'cash';
   status: PaymentStatus;
@@ -1509,15 +1509,15 @@ export interface Payment {
 // ─── RATING (design screen 13) ───────────────────────────────────────────────
 
 /**
- * HOW THE VISIT WENT — attached to the SEALED VISIT, and to nothing else.
+ * HOW THE VISIT WENT - attached to the SEALED VISIT, and to nothing else.
  *
  * The old rating hung off the public invoice, which meant anybody holding a
  * shared invoice link could rate somebody else's work, and a visit with no
- * invoice — most of them — could not be rated at all.
+ * invoice - most of them - could not be rated at all.
  *
  * The document id IS the visit id, so rating twice is not something the
  * product has to detect: it is not representable. And a rating never touches
- * the visit itself, because a sealed visit is permanent (§16.2) — the opinion
+ * the visit itself, because a sealed visit is permanent (§16.2) - the opinion
  * lives beside the record, not inside it.
  */
 export interface Rating {

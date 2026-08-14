@@ -2,7 +2,7 @@
 
 The UI is a **renderer of state**, not a collection of conditions.
 
-Every state below is produced by `lib/os/ownership.ts` — an engine that already
+Every state below is produced by `lib/os/ownership.ts` - an engine that already
 exists and is already tested. Nothing here re-implements it. This document is
 the contract between that engine and the Home surface: given a state, exactly
 what the screen shows.
@@ -13,13 +13,13 @@ Seven, and only seven. Every surface in the product is a projection of these.
 
 | Object | Source of truth | Engine |
 |---|---|---|
-| **Car** | `CarPicture.vehicle` | — |
+| **Car** | `CarPicture.vehicle` | - |
 | **Protection** | `CarPicture.protections` | `os/protection`, `os/term` |
 | **Visit** | `CarPicture.visits` (sealed) | `os/visit` |
 | **Membership** | `CustomerPicture.subscription` | `os/club` |
 | **Timeline** | derived from all of the above | `os/moment` (extended) |
-| **Studio** | `lib/company` | — |
-| **Owner** | `CustomerPicture.user` | — |
+| **Studio** | `lib/company` | - |
+| **Owner** | `CustomerPicture.user` | - |
 
 ## Resolution order
 
@@ -48,32 +48,32 @@ and a car cannot be both in the studio and overdue for a wash. It is a **layer**
 
 ## The map
 
-Each state declares six things. `—` means the region is **absent**, not empty:
-§15.7 — absence is silence, never a placeholder.
+Each state declares six things. `-` means the region is **absent**, not empty:
+§15.7 - absence is silence, never a placeholder.
 
-### 1 · `new` — no car yet
+### 1 · `new` - no car yet
 
 | | |
 |---|---|
 | **Hero** | Studio photograph, no vehicle. Awaiting height (`grid.hero.awaitingPhoto`). |
 | **State** | "Your car's place is ready." |
-| **Timeline** | — |
-| **Protection** | — |
+| **Timeline** | - |
+| **Protection** | - |
 | **CTA** | **Add your car** → car form |
 | **Transitions** | → `unvisited` on first vehicle |
 
-### 2 · `unvisited` — a car, no story
+### 2 · `unvisited` - a car, no story
 
 | | |
 |---|---|
 | **Hero** | Vehicle photo if present, else awaiting ground |
 | **State** | "The {car} hasn't been in yet." |
 | **Timeline** | Single event: **Added to the garage** |
-| **Protection** | Invitation — "Add what protects this car." |
+| **Protection** | Invitation - "Add what protects this car." |
 | **CTA** | **Arrange a visit** → studio |
 | **Transitions** | → `booked` · → `protected` on declared protection |
 
-### 3 · `booked` — a visit is agreed
+### 3 · `booked` - a visit is agreed
 
 | | |
 |---|---|
@@ -84,23 +84,23 @@ Each state declares six things. `—` means the region is **absent**, not empty:
 | **CTA** | **Manage the visit** → manage expansion (reschedule / cancel) |
 | **Transitions** | → `in_studio` on arrival · → `declined` on refusal/no-show · → steady on cancel |
 
-### 4 · `in_studio` — the car is with us
+### 4 · `in_studio` - the car is with us
 
 | | |
 |---|---|
-| **Hero** | Live frames from the job if any, else vehicle. **Takeover** — no nav (§13.2) |
+| **Hero** | Live frames from the job if any, else vehicle. **Takeover** - no nav (§13.2) |
 | **State** | Act word from `os/visit` (`ACT_TITLE`), line from `ACT_LINE`. ETA from `os/stay` |
 | **Timeline** | Live event, pinned, progressing |
-| **Protection** | Suppressed — one subject at a time |
+| **Protection** | Suppressed - one subject at a time |
 | **CTA** | **Follow the visit** → visit surface |
 | **Transitions** | → `ready` when the act reaches ready |
 
-### 5 · `ready` — finished, waiting to be collected
+### 5 · `ready` - finished, waiting to be collected
 
 | | |
 |---|---|
 | **Hero** | After-frames from the visit |
-| **State** | "Ready" — "The {car} is ready to collect." Note: service name |
+| **State** | "Ready" - "The {car} is ready to collect." Note: service name |
 | **Timeline** | Live event resolving |
 | **Protection** | Any protection the visit just created, newly lit |
 | **CTA** | **See the visit** → visit surface |
@@ -109,10 +109,10 @@ Each state declares six things. `—` means the region is **absent**, not empty:
 > **`delivered` is a transition, not a state.** On collection the visit completes
 > and ownership falls through to `protected` or `settled`. The moment is carried
 > by the **Timeline** (a `Visit completed` event) and by a one-time arrival
-> animation — not by a state the car can sit in. Modelling it as a state would
+> animation - not by a state the car can sit in. Modelling it as a state would
 > create one nothing could ever leave.
 
-### 6 · `declined` — refused or missed
+### 6 · `declined` - refused or missed
 
 | | |
 |---|---|
@@ -123,7 +123,7 @@ Each state declares six things. `—` means the region is **absent**, not empty:
 | **CTA** | **Arrange again** → studio |
 | **Transitions** | → `booked` on rebooking |
 
-### 7 · `membership_attention` — the Club needs answering
+### 7 · `membership_attention` - the Club needs answering
 
 | | |
 |---|---|
@@ -134,18 +134,18 @@ Each state declares six things. `—` means the region is **absent**, not empty:
 | **CTA** | Lapsed → **Rejoin the Club**; grace → **Renew the Club** → membership expansion |
 | **Transitions** | → steady on renewal |
 
-### 8 · `warranty_expiring` — a layer is waning
+### 8 · `warranty_expiring` - a layer is waning
 
 | | |
 |---|---|
 | **Hero** | Vehicle, unchanged |
-| **State** | "Care due" — the waning layer named |
+| **State** | "Care due" - the waning layer named |
 | **Timeline** | **Warranty expiring** event |
 | **Protection** | The waning layer **first**, at caution/urgent tone |
 | **CTA** | **Renew it** → studio, category preselected |
 | **Transitions** | → `protected` on renewal · → `settled` on lapse |
 
-### 9 · `dormant` — 90+ days quiet
+### 9 · `dormant` - 90+ days quiet
 
 | | |
 |---|---|
@@ -156,7 +156,7 @@ Each state declares six things. `—` means the region is **absent**, not empty:
 | **CTA** | Proposal if any, else **Arrange a visit** |
 | **Transitions** | → `booked` |
 
-### 10 · `protected` — steady, something shields it
+### 10 · `protected` - steady, something shields it
 
 | | |
 |---|---|
@@ -167,7 +167,7 @@ Each state declares six things. `—` means the region is **absent**, not empty:
 | **CTA** | Proposal if any (**Arrange it** / **Renew it**), else **Arrange a visit** |
 | **Transitions** | → any |
 
-### 11 · `settled` — steady, nothing shields it
+### 11 · `settled` - steady, nothing shields it
 
 Identical to `protected` except **Protection** shows the invitation rather than
 layers, and the proposal is more likely to fire.
@@ -185,7 +185,7 @@ When `os/proposal` returns a `Proposal`, it overrides the CTA of `protected`,
 - CTA → `Washing` ? **Arrange it** : **Renew it**, category preselected
 
 It never overrides `in_studio`, `ready`, `booked`, `declined` or
-`membership_attention` — those are live facts and outrank a recommendation.
+`membership_attention` - those are live facts and outrank a recommendation.
 
 ---
 
@@ -208,7 +208,7 @@ Home, Vehicle and History. Every event is `{ id, at, kind, title, line?, media?,
 | `membership_lapsed` | club lapsed | Membership lapsed |
 
 Sorted newest-first. Future-dated events (a booked visit, an expiring warranty)
-sort **above the present** — the timeline runs forward as well as back.
+sort **above the present** - the timeline runs forward as well as back.
 
 ---
 
@@ -217,7 +217,7 @@ sort **above the present** — the timeline runs forward as well as back.
 **`sold` does not exist.** There is no disposal concept anywhere: no
 `Vehicle.soldAt`, no archived state, no engine branch. Adding it means a schema
 field, an engine state, a Firestore rule and a way to trigger it. I have **not**
-invented it — say the word and I'll spec it properly as its own piece of work.
+invented it - say the word and I'll spec it properly as its own piece of work.
 
 **`delivered` is deliberately not a state**, for the reason given under `ready`.
 If you want a persistent post-collection state ("collected, awaiting review"),

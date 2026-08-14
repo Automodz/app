@@ -8,7 +8,7 @@ import { currentSession } from '@/lib/server/session';
 import { formatCurrency } from '@/lib/utils';
 
 /**
- * `/cars/[id]` — one car. Public, and the one address in the product that
+ * `/cars/[id]` - one car. Public, and the one address in the product that
  * genuinely has to be findable and shareable: a listing with no preview card
  * is a link nobody opens when it is pasted into WhatsApp.
  */
@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
  *
  * Only a listing the studio is still showing gets real metadata. A withdrawn
  * car falls back to the generic card rather than leaking its details to anyone
- * holding an old id — `loadListing` already returns null for it, so this is
+ * holding an old id - `loadListing` already returns null for it, so this is
  * one decision made in one place rather than two.
  */
 export async function generateMetadata(
@@ -65,7 +65,7 @@ export default async function CarPage({ params }: { params: Promise<{ id: string
      ids exist. `not-found` renders the product's own 404, not a blank. */
   if (!car) notFound();
 
-  /* THE CAR'S RECORD WITH US — design screen 17.
+  /* THE CAR'S RECORD WITH US - design screen 17.
      Undefined for a trade-in the studio never touched, for a link that names a
      car which is not in the stated owner's garage, and for a car whose owner
      has not consented. `publicHistoryOf` inside `toListing` is still the gate;

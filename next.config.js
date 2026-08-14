@@ -13,7 +13,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
    * connection it falls back to the CACHED document, and that document names
    * the chunk hashes of whatever build it was captured from. Those chunks are
    * still in the CacheFirst static bucket, so a returning customer runs an
-   * OLD COPY OF THE APPLICATION — indefinitely, and only in a profile that has
+   * OLD COPY OF THE APPLICATION - indefinitely, and only in a profile that has
    * a worker installed. That is exactly the shape of "it fails in Safari and
    * works in a private window", and it is why a bug fixed and deployed can
    * keep being reported.
@@ -48,7 +48,7 @@ const nextConfig = {
        compresses roughly 20% smaller and this is a product whose payload is
        almost entirely photographs of cars. The cost is ~50% longer to encode
        on the FIRST request for a given size and a second cached copy per
-       format — both one-time, both at the edge. */
+       format - both one-time, both at the edge. */
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
@@ -92,7 +92,7 @@ const nextConfig = {
         'https://*.googleapis.com', 'https://*.firebaseio.com',
         'https://firestore.googleapis.com', 'https://identitytoolkit.googleapis.com',
         'https://securetoken.googleapis.com', 'https://fcmregistrations.googleapis.com',
-        /* `apis.google.com` IS NOT `*.googleapis.com` — different host, and the
+        /* `apis.google.com` IS NOT `*.googleapis.com` - different host, and the
            wildcard above does not cover it. `script-src` has trusted it since
            this policy was written, because the auth relay's gapi loader is
            served from there; `connect-src` never did, so anything that loader
@@ -117,7 +117,7 @@ const nextConfig = {
       /* The popup is a window, but the credential comes BACK through a hidden
          iframe on the auth domain (Firebase's `sendAuthEventViaIframeRelay`).
          Leave that origin out and the popup completes, the relay is blocked,
-         and the SDK reports "No matching frame" — the sign-in simply never
+         and the SDK reports "No matching frame" - the sign-in simply never
          resolves. The local suite needs the same allowance in development,
          which is why a popup sign-in had never once completed against the
          emulator; only ever emitted in a development build. */
@@ -125,7 +125,7 @@ const nextConfig = {
         "frame-src 'self'", 'https://accounts.google.com', 'https://*.firebaseapp.com',
         /* The landing page's map. `www.google.com` is NOT covered by the
            sign-in entry above, so the embed was blocked by our own policy and
-           the Contact section rendered an empty box — on the one page every
+           the Contact section rendered an empty box - on the one page every
            visitor arrives at. */
         'https://www.google.com',
         ...(dev ? ['http://127.0.0.1:9099'] : []),
@@ -151,7 +151,7 @@ const nextConfig = {
         /* WHICH COMMIT IS ACTUALLY LIVE.
            A deploy is only verified if the thing answering can say what it is,
            and nothing in the rendered HTML carries the build. Twelve
-           characters of the commit — the same slice `lib/server/report.ts`
+           characters of the commit - the same slice `lib/server/report.ts`
            tags an error report with, so a report and the deploy that produced
            it name the same thing. Not a secret: it is a public repository's
            commit hash, and it is what makes `scripts/verify-production.mjs`

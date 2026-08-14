@@ -1,11 +1,11 @@
 /**
- * BREAKPOINTS — AutoModz Design Language
+ * BREAKPOINTS - AutoModz Design Language
  *
  * ┌──────────────────────────────────────────────────────────────────────┐
  * │ THE CONSTITUTION IS SILENT ON BREAKPOINTS.                           │
  * │                                                                      │
  * │ §8.1 fixes one column at every width, so there is no layout that     │
- * │ needs to change shape — a phone and a desktop show the same single    │
+ * │ needs to change shape - a phone and a desktop show the same single    │
  * │ column, capped by §8.2's measure. Nothing here is derived from a      │
  * │ numbered rule, because no numbered rule exists to derive it from.     │
  * │                                                                      │
@@ -24,17 +24,17 @@ export const breakpoint = {
 } as const;
 
 /**
- * `sizes` hints for responsive images (§8.2 — photographs are exempt from the
+ * `sizes` hints for responsive images (§8.2 - photographs are exempt from the
  * measure and go full-bleed, so they are always viewport-wide until the
  * viewport exceeds the widest breakpoint).
  */
 export const imageSizes = {
-  /** A full-bleed photograph — the hero (§11.2). */
+  /** A full-bleed photograph - the hero (§11.2). */
   fullBleed: `(max-width: ${breakpoint.wide}px) 100vw, ${breakpoint.wide}px`,
-  /** An image inside the measure — a card, a media tile. */
+  /** An image inside the measure - a card, a media tile. */
   inMeasure: `(max-width: ${breakpoint.tablet}px) 100vw, 600px`,
   /**
-   * Half the measure — one of a pair of panes side by side, which the design
+   * Half the measure - one of a pair of panes side by side, which the design
    * uses on Home and on the Car. Without this the pair asked for a full-width
    * image each and downloaded twice the pixels either one could show.
    */

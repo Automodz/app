@@ -89,11 +89,11 @@ export function StudioError({
   const copy = kind === 'offline'
     ? {
         title: 'You’re offline.',
-        body: 'Your garage is safe — it just needs a connection. The moment you’re back online, everything is here waiting.',
+        body: 'Your garage is safe - it just needs a connection. The moment you’re back online, everything is here waiting.',
       }
     : {
         title: 'We couldn’t reach the studio.',
-        body: 'Your car and its history are safe with us. This one’s on our side, not yours — a moment, and it should pass.',
+        body: 'Your car and its history are safe with us. This one’s on our side, not yours - a moment, and it should pass.',
       };
 
   return (
@@ -111,7 +111,7 @@ export function StudioError({
           <Action
             variant="quiet"
             onClick={() => window.open(
-              waLink('Hi — I’m trying to open my AutoModz garage.'), '_blank',
+              waLink('Hi - I’m trying to open my AutoModz garage.'), '_blank',
             )}
           >
             Message the studio

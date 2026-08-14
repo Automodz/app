@@ -1,16 +1,16 @@
 'use client';
 /**
- * WHICH CAR THIS LISTING IS — the admin operation behind design screen 17.
+ * WHICH CAR THIS LISTING IS - the admin operation behind design screen 17.
  *
  * A listing is only able to show "its record with us" when the studio has said
  * which car in which garage it actually is. Without that there is no history
  * to show, and that is the correct behaviour for a trade-in the studio has
- * never touched — screen 17 simply draws nothing.
+ * never touched - screen 17 simply draws nothing.
  *
  * ── LINKING IS NOT CONSENT, AND THIS SCREEN SAYS SO ──────────────────────
  * Nothing here publishes anything. Consent belongs to the car and only its
  * owner may grant it, from their own settings. So the control reports back
- * whether the owner HAS consented — otherwise the studio links a car, sees no
+ * whether the owner HAS consented - otherwise the studio links a car, sees no
  * record appear, and assumes the feature is broken.
  *
  * ── AND THE PAIR IS PROVEN, NOT TAKEN ────────────────────────────────────
@@ -26,7 +26,7 @@ import type { CarListing } from '@/lib/types';
 
 const FAULT: Record<string, string> = {
   'vehicle-not-in-that-garage': 'That car is not in that customer’s garage. Check both ids.',
-  'both-required': 'Both the car and its owner are needed — half a link finds nothing.',
+  'both-required': 'Both the car and its owner are needed - half a link finds nothing.',
   'listing-not-found': 'This listing no longer exists.',
   'admin-only': 'Only the owner account can link a listing to a car.',
 };
@@ -57,7 +57,7 @@ export function ListingVehicleLink(
       }
       if (clear) {
         setVehicleId(''); setOwnerId('');
-        toast.success('Unlinked — the listing shows no record.');
+        toast.success('Unlinked - the listing shows no record.');
       } else {
         toast.success(b.ownerConsented
           ? 'Linked. The owner has consented, so the record will show.'
@@ -76,7 +76,7 @@ export function ListingVehicleLink(
       <div>
         <span className="data-label block">Its record with us</span>
         <p className="font-body mt-1" style={{ fontSize: 11.5, color: 'var(--steel)' }}>
-          Which car in which garage. Linking only says WHICH car — whether its
+          Which car in which garage. Linking only says WHICH car - whether its
           record may be shown is the owner&rsquo;s decision, made in their own
           settings.
         </p>

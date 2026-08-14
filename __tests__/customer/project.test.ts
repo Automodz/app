@@ -39,7 +39,7 @@ const picture = (over: Partial<CustomerPicture> = {}): CustomerPicture => ({
   cars: [car()], subscription: null, subscriptions: [], invoices: [], notifications: [], catalogue: [] as Service[], addresses: [], approvals: [], ...over,
 });
 
-describe('termWords — §14.3 and §14.4', () => {
+describe('termWords - §14.3 and §14.4', () => {
   it('a perpetual term is never spoken in time', () => {
     expect(termWords({ kind: 'perpetual' }, NOW)).toBe('For as long as you own it');
   });
@@ -75,7 +75,7 @@ describe('longDate', () => {
   });
 });
 
-describe('stateOf — §5.3 #2, the present tense', () => {
+describe('stateOf - §5.3 #2, the present tense', () => {
   it('a live visit speaks in the customer act, never the ops status', () => {
     const s = stateOf(car({ bookings: [booking({ status: 'in_progress' })] }));
     expect(s.word).toBe('In care');
@@ -92,8 +92,8 @@ describe('stateOf — §5.3 #2, the present tense', () => {
   });
 
   it('a reserved visit is reserved, not "confirmed"', () => {
-    /* Dated AHEAD of `NOW`. It used to sit on the fixture's default 18 July —
-       twelve days behind the clock these tests run at — and still read as
+    /* Dated AHEAD of `NOW`. It used to sit on the fixture's default 18 July -
+       twelve days behind the clock these tests run at - and still read as
        "Reserved", which is the whole of H2 in one assertion: a visit whose day
        has gone was being presented as one that is coming. */
     const ahead = booking({ status: 'confirmed', scheduledDate: '2026-08-04' });
@@ -117,7 +117,7 @@ describe('sinceWords', () => {
   });
 });
 
-describe('visitsOf — sealed and STORED only, §16.1 + §22.5', () => {
+describe('visitsOf - sealed and STORED only, §16.1 + §22.5', () => {
   const stored = (over: Record<string, unknown> = {}) => ({
     id: 'v-1', vehicleId: 'v1', status: 'sealed',
     services: [{ serviceId: 's1', name: 'Ceramic coating', category: 'Ceramic', price: 64000 }],
@@ -137,8 +137,8 @@ describe('visitsOf — sealed and STORED only, §16.1 + §22.5', () => {
     expect(v).toHaveLength(0);
   });
 
-  it('NEVER projects a visit from a booking — the fallback is gone', () => {
-    /* §22.5 — a projected visit read its warranty from the live catalogue, so a
+  it('NEVER projects a visit from a booking - the fallback is gone', () => {
+    /* §22.5 - a projected visit read its warranty from the live catalogue, so a
        price-list edit rewrote what a past customer had been promised. A car with
        completed bookings and no sealed visit now correctly shows none. */
     expect(visitsOf(car({ bookings: [booking()] }))).toHaveLength(0);
@@ -152,7 +152,7 @@ describe('toHome', () => {
 
   /* RESTORED CONTRACT (docs/HOME-STATE-MAP.md). This used to assert that a
      steady car offered NO action, which was true only because the ownership
-     engine had been disconnected — five branches over booking status could not
+     engine had been disconnected - five branches over booking status could not
      express "arrange a visit". The old application offered it, so the parity
      migration restores it. */
   it('always offers a way forward, and it leads somewhere real', () => {
@@ -196,7 +196,7 @@ describe('toHome', () => {
     }
   });
 
-  it('§15.2 — the membership appears alongside the car\'s other protections', () => {
+  it('§15.2 - the membership appears alongside the car\'s other protections', () => {
     const sub: Subscription = {
       id: 'sub1', userId: 'u1', plan: 'Gold', status: 'active',
       startDate: '2026-07-01', endDate: '2026-08-14',
@@ -216,7 +216,7 @@ describe('toHome', () => {
 });
 
 describe('toGarage', () => {
-  it('puts the car with live work first — position, never a stored flag', () => {
+  it('puts the car with live work first - position, never a stored flag', () => {
     const quiet = car({ vehicle: vehicle({ id: 'quiet' }) });
     const live = car({ vehicle: vehicle({ id: 'live' }), bookings: [booking({ status: 'in_progress' })] });
     const g = toGarage(picture({ cars: [quiet, live] }), NOW);
@@ -229,7 +229,7 @@ describe('toGarage', () => {
   });
 });
 
-describe('toVehicle — §11.4 regions are parts of a car', () => {
+describe('toVehicle - §11.4 regions are parts of a car', () => {
   const protection = (over: Partial<Protection>): Protection => ({
     id: 'p', vehicleId: 'v1', kind: 'ceramic', term: { kind: 'dated', expiresOn: '2029-03-01' },
     termsSource: 'captured', createdAt: ts('2026-01-01T00:00:00Z'), updatedAt: ts('2026-01-01T00:00:00Z'),
@@ -246,7 +246,7 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
       protection({ id: 'p3', kind: 'glass' }),
     ] }), picture({ cars: [] }), NOW);
 
-    /* The certificate is ALWAYS in the ledger, whatever the car has — "not
+    /* The certificate is ALWAYS in the ledger, whatever the car has - "not
        added" is an answer and an absent row is not (§19.1). See `toPuc`. */
     expect(m.protections.map(p => p.label).sort())
       .toEqual(['Ceramic coating', 'Glass coating', 'Insurance', 'Pollution certificate']);
@@ -260,10 +260,10 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
   it('never puts a membership on the car', () => {
     /* §15.2 places the membership among Home's protections, where `os/club`
        owns it. In the car's room it would be the same fact under a second
-       owner — and it is not a layer on this vehicle. */
+       owner - and it is not a layer on this vehicle. */
     const m = toVehicle(car({ protections: [protection({ kind: 'membership' })] }), picture({ cars: [] }), NOW);
     /* The certificate's own row is the only thing left, and it says the car
-       has none — which is the truth about this car. */
+       has none - which is the truth about this car. */
     expect(m.protections.map(p => p.label)).toEqual(['Pollution certificate']);
     expect(m.protections[0].term).toBe('Not added');
   });
@@ -274,7 +274,7 @@ describe('toVehicle — §11.4 regions are parts of a car', () => {
       protection({ id: 'b', kind: 'ppf' }),
     ] }), picture({ cars: [] }), NOW);
 
-    /* Both are real and both are said — a car with film under a coating has
+    /* Both are real and both are said - a car with film under a coating has
        two layers on its paint. */
     expect(m.protections.filter(p => p.region === 'paint')).toHaveLength(2);
     /* Touching the region still resolves to exactly one answer, which is what
@@ -344,7 +344,7 @@ describe('toStudio', () => {
   it('words no price into the studio’s own prose (§22.1)', () => {
     /* NARROWED, and the narrowing is the point. This asserted that the WHOLE
        model carried no `₹`, which was true only while the projection had
-       nothing to hand the booking sheet. It now carries a concierge leg fee —
+       nothing to hand the booking sheet. It now carries a concierge leg fee -
        a real figure, from the pricing engine, that the sheet must state before
        a customer agrees to it. What §22.1 protects is the studio's VOICE: the
        room's prose is about craft, and a price in it turns craft into a shelf
@@ -366,11 +366,11 @@ describe('toYou', () => {
     expect(toYou(picture({ cars: [car(), car()] }), NOW).garage.line).toBe('Two cars live here.');
   });
 
-  it('shows no membership block when there is none — never a sales pitch', () => {
+  it('shows no membership block when there is none - never a sales pitch', () => {
     expect(toYou(picture(), NOW).membership).toBeUndefined();
   });
 
-  it('§15.3 — states the tier, what remains and when it renews', () => {
+  it('§15.3 - states the tier, what remains and when it renews', () => {
     const sub = { id: 's', plan: 'Gold', status: 'active', endDate: '2026-08-14', washesTotal: 8, washesUsed: 6 } as Subscription;
     const lines = toYou(picture({ subscription: sub }), NOW).membership!.lines;
     expect(lines[0]).toBe('Gold member.');
@@ -379,7 +379,7 @@ describe('toYou', () => {
   });
 
   it('never fabricates what the membership has been worth (§15.3 #4)', () => {
-    /* §15.3's fourth fact — "what it has been worth" — is the one that decides
+    /* §15.3's fourth fact - "what it has been worth" - is the one that decides
        renewal, and nothing records it honestly yet. A plausible number would be
        that figure, invented. Asserted against the MEMBERSHIP block: the room
        now also says whether a payment address or an address is saved, and
@@ -389,7 +389,7 @@ describe('toYou', () => {
     expect(JSON.stringify(you.membership)).not.toMatch(/saved|worth|₹/);
   });
 
-  it('says what is saved without inventing it — the design 19 rows', () => {
+  it('says what is saved without inventing it - the design 19 rows', () => {
     const you = toYou(picture(), NOW);
     expect(you.payment?.line).toBe('Not saved yet.');
     expect(you.addresses?.line).toBe('None saved yet.');
@@ -398,7 +398,7 @@ describe('toYou', () => {
     });
   });
 
-  it('a payment address is MASKED — a screen gets photographed', () => {
+  it('a payment address is MASKED - a screen gets photographed', () => {
     const you = toYou(picture({
       user: { uid: 'u1', name: 'Nikhil Patel', email: 'n@example.com', role: 'customer', upiVpa: 'nikhil@okhdfc' } as User,
     }), NOW);
@@ -429,7 +429,7 @@ describe('toMembership', () => {
   });
 });
 
-describe('leadCar — §12.3, no car is primary', () => {
+describe('leadCar - §12.3, no car is primary', () => {
   it('is the car the studio touched most recently, not a stored rank', () => {
     const older = car({ vehicle: vehicle({ id: 'old', createdAt: ts('2020-01-01T00:00:00Z') }) });
     const newer = car({ vehicle: vehicle({ id: 'new', createdAt: ts('2026-01-01T00:00:00Z') }) });

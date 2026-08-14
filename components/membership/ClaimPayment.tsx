@@ -1,6 +1,6 @@
 'use client';
 /**
- * "I HAVE PAID FOR IT" — the customer's word on a membership.
+ * "I HAVE PAID FOR IT" - the customer's word on a membership.
  *
  * Source: docs/AUTOMODZ-OS.md §15, §16, §19.1
  *
@@ -14,7 +14,7 @@
  * It is a CLAIM, and the product already has a word for that shape:
  * `lib/os/lifecycle` models a customer returning from their bank application
  * as `submitted`, which is a different state from `paid` and releases nothing.
- * This is the same thing for a membership — it records a reference and moves
+ * This is the same thing for a membership - it records a reference and moves
  * no status. The Club still starts when the studio has seen the money.
  */
 import { useState } from 'react';
@@ -32,7 +32,7 @@ const REFUSAL: Record<string, string> = {
   'not-configured': 'The studio cannot be reached just now. Try again shortly.',
 };
 const SIGNED_OUT = 'Your session has expired. Sign in again and we’ll keep this.';
-const UNKNOWN = 'That didn’t send. Your connection, most likely — try again.';
+const UNKNOWN = 'That didn’t send. Your connection, most likely - try again.';
 
 export function ClaimPayment(
   { subscriptionId, claimed }: { subscriptionId: string; claimed?: string },
@@ -66,7 +66,7 @@ export function ClaimPayment(
     }
   };
 
-  /* §19.1 — what has already been said is a state, not an empty form. */
+  /* §19.1 - what has already been said is a state, not an empty form. */
   if (sent || claimed) {
     return (
       <Pane style={{ marginTop: space.line, padding: `${space.gap}px ${space.gap + 2}px` }}>
@@ -75,7 +75,7 @@ export function ClaimPayment(
           style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: color.ink2, maxWidth: MEASURE }}
         >
           You told us the reference {claimed && !sent ? <b>{claimed}</b> : null}
-          {claimed && !sent ? ' — ' : '. '}
+          {claimed && !sent ? ' - ' : '. '}
           the studio will confirm it against the payment.
         </p>
       </Pane>

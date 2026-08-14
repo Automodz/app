@@ -1,12 +1,12 @@
 /**
- * THE AMBIENT FIELD — the room the application stands in.
+ * THE AMBIENT FIELD - the room the application stands in.
  *
  * A DELIBERATE AMENDMENT to §3.3 and §3.4. The constitution says "colour is
  * information, never decoration" and "depth comes from light and shadow, not
  * from decorative gradients". The product has an ambient environment anyway,
  * and this is how it is reconciled rather than simply ignored:
  *
- *   THE FIELD IS LIGHT, NOT A SURFACE. It is the far wall of the room — the
+ *   THE FIELD IS LIGHT, NOT A SURFACE. It is the far wall of the room - the
  *   thing glass has to have something to refract. Apple's glass sits on a
  *   wallpaper; the wallpaper is not glass. So this is modelled as coloured
  *   LIGHT falling on paper, which keeps §3.4's "light is the only ornament"
@@ -19,8 +19,8 @@
  *   ── IT WAS MAGENTA, AND THE DESIGN MAKES IT AMBER ──
  *   Three magenta and violet lights, which is a nightclub's palette and not a
  *   detailing studio's. The ratified design ("AutoModz App.dc.html") lights
- *   the room with the same warmth the interface uses — amber, and champagne
- *   as its cooled reflection — so the glass now refracts the studio's own
+ *   the room with the same warmth the interface uses - amber, and champagne
+ *   as its cooled reflection - so the glass now refracts the studio's own
  *   light rather than a second, unrelated one. The lights are DIMMER than the
  *   magenta ones were: this hue is the product's information colour, and a
  *   field bright enough to be noticed would be the one thing §3.3 cannot
@@ -29,7 +29,7 @@
  *   IT STAYS UNDER THE CONTENT. Ink, photographs and state colour all sit on
  *   the near side of the glass. The field is only ever seen THROUGH something.
  *
- * §3.6 — "glass never sits on glass" — is why the field is not itself
+ * §3.6 - "glass never sits on glass" - is why the field is not itself
  * translucent. One glass layer, over a lit ground. Stack a second and it reads
  * as a rendering mistake, because it is one.
  */
@@ -48,7 +48,7 @@ export interface AmbientLight {
 /**
  * The three lights.
  *
- * Three, not one, because a single radial reads as a spotlight — a flat disc
+ * Three, not one, because a single radial reads as a spotlight - a flat disc
  * with an obvious centre. Three overlapping at different sizes and offsets
  * never resolves into a shape the eye can name, which is what makes it read as
  * atmosphere rather than as a graphic.
@@ -65,7 +65,7 @@ export const ambient = {
     size: 92,
     opacity: 0.16,
   },
-  /** Champagne, low and to the right — keeps the field from reading flat. */
+  /** Champagne, low and to the right - keeps the field from reading flat. */
   warm: {
     hue: '#E8D9BE',
     x: 86,
@@ -75,7 +75,7 @@ export const ambient = {
   },
   /**
    * A cool counterweight. Without it the field is one hue and reads as a tint
-   * over the whole screen rather than as light in a space — but it is a cool
+   * over the whole screen rather than as light in a space - but it is a cool
    * GREY rather than a second colour, because two hues in the room is the
    * thing that made the old field read as decoration.
    */
@@ -102,7 +102,7 @@ export const ambient = {
   /**
    * How far the field leans toward a pointer or a tilt, in percent.
    *
-   * This is the "reacts" half. It is parallax against input, not a follow — the
+   * This is the "reacts" half. It is parallax against input, not a follow - the
    * light shifts as though the surface caught it, which is why it must be far
    * smaller than the pointer's own movement.
    */
@@ -112,7 +112,7 @@ export const ambient = {
 /**
  * THE GLASS.
  *
- * One material, at one strength (§10.2 — "not a card and a panel and a tile —
+ * One material, at one strength (§10.2 - "not a card and a panel and a tile -
  * one"). A card is this. A sheet is this. Nothing gets a second, glassier
  * variant, because two translucencies in one view is the stacking §3.6 forbids
  * even when they are not literally nested.
@@ -124,7 +124,7 @@ export const ambient = {
 export const glass = {
   blur: 24,
   saturate: 1.6,
-  /** The fill over the blur. Barely there — the blur does the work. */
+  /** The fill over the blur. Barely there - the blur does the work. */
   fill: 'rgba(255, 255, 255, 0.055)',
   /** Lit from above, as §3.4 requires: the top edge catches, the rest does not. */
   sheen: 'rgba(255, 255, 255, 0.14)',

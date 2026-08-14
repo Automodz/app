@@ -11,7 +11,7 @@ const makeQuery = (path: string, docs: unknown[]) => {
   const q = {
     where(f: string, op: string, v: unknown) { wheres.push([f, op, v]); return q; },
     /* The notification read caps its page, so the fake has to answer `limit`
-       as Firestore does — chainably, and without losing the filters. */
+       as Firestore does - chainably, and without losing the filters. */
     limit(_n: number) { return q; },
     async get() {
       calls.push({ path, wheres });
@@ -32,7 +32,7 @@ const DATA: Record<string, unknown[]> = {
   visits: [{ vehicleId: 'x', status: 'sealed' }],
   bookings: [{ userId: 'u1', status: 'completed' }],
   jobs: [{ customerId: 'u1' }],
-  /* §17.1 — read to resolve an unread record to the surface that owns it,
+  /* §17.1 - read to resolve an unread record to the surface that owns it,
      never to draw a list. Owned data, so it is scoped like everything else. */
   notifications: [
     { userId: 'u1', title: 'Ready for Pickup', type: 'booking_update', read: false },
@@ -93,7 +93,7 @@ it('never issues an unscoped query against an owned collection', async () => {
 it('NEVER joins a record to a car by its registration', async () => {
   /* The production defect: a booking labelled "Honda City" carrying the BMW's
      plate appeared in the BMW's room, while its own `vehicleId` named the i20.
-     The query — not the data — mis-parented it. §P1.6, §P1.9. */
+     The query - not the data - mis-parented it. §P1.6, §P1.9. */
   await loadCustomerPicture({ uid: 'u1' });
   const fields = calls.flatMap(c => c.wheres).map(([f]) => f);
   expect(fields).not.toContain('vehicleRegNo');
@@ -103,7 +103,7 @@ it('NEVER joins a record to a car by its registration', async () => {
   }
 });
 
-it('does one query per car per collection — no N+1 walk', async () => {
+it('does one query per car per collection - no N+1 walk', async () => {
   await loadCustomerPicture({ uid: 'u1' });
   expect(calls.filter(c => c.path === 'protections')).toHaveLength(2);
   expect(calls.filter(c => c.path === 'services')).toHaveLength(1);

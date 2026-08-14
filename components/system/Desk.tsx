@@ -1,13 +1,13 @@
 'use client';
 /**
- * THE DESK — find anything.
+ * THE DESK - find anything.
  *
  * Source: reference/customer-old/components/os/Desk.tsx
  *         docs/AUTOMODZ-OS-ARCHITECTURE.md §6
  *
  * The old Home carried a search layer over eight kinds of row. It is restored
  * here as a system primitive rather than a Home component, because the same
- * layer serves Garage, Vehicle and History without change — it takes items and
+ * layer serves Garage, Vehicle and History without change - it takes items and
  * knows nothing about what they are.
  *
  * Radix supplies the focus trap, dismiss layer and scroll lock; the keyboard
@@ -33,7 +33,7 @@ export interface DeskItem {
    * Words a customer might arrive with that the label does not contain. The
    * rooms speak the product's vocabulary ("The Club", "Arrange a visit"); a
    * customer types the world's ("membership", "book"). Matching the label
-   * alone answers neither. Never shown — only matched.
+   * alone answers neither. Never shown - only matched.
    */
   keywords?: string;
 }
@@ -79,7 +79,7 @@ export function Desk({ open, onOpenChange, items, log = [], truth }: DeskProps) 
 
   const groups = useMemo(() => [...new Set(results.map(r => r.group))], [results]);
 
-  /* A new query invalidates the highlighted row — leaving it where it was would
+  /* A new query invalidates the highlighted row - leaving it where it was would
      mean Enter opening something the customer can no longer see. */
   useEffect(() => { setActive(0); }, [q]);
 
@@ -122,7 +122,7 @@ export function Desk({ open, onOpenChange, items, log = [], truth }: DeskProps) 
               asChild
               aria-label="Find anything"
               onOpenAutoFocus={e => {
-                /* Focus belongs in the field, not on the first result — the
+                /* Focus belongs in the field, not on the first result - the
                    customer opened this to type. */
                 e.preventDefault();
                 inputRef.current?.focus();
@@ -177,7 +177,7 @@ export function Desk({ open, onOpenChange, items, log = [], truth }: DeskProps) 
                     </Text>
                   ) : null}
 
-                  {/* §1.3 — the one hairline the Desk is allowed. */}
+                  {/* §1.3 - the one hairline the Desk is allowed. */}
                   <input
                     ref={inputRef}
                     value={q}
@@ -210,7 +210,7 @@ export function Desk({ open, onOpenChange, items, log = [], truth }: DeskProps) 
 
                   <div id="desk-results" role="listbox" style={{ marginTop: space.gap }}>
                     {flat.length === 0 ? (
-                      /* §18.1 — absence speaks plainly, and says what to do next. */
+                      /* §18.1 - absence speaks plainly, and says what to do next. */
                       <Text role="body" tone="ink3" style={{ paddingBlock: space.gap }}>
                         Nothing by that name.
                       </Text>
@@ -251,7 +251,7 @@ export function Desk({ open, onOpenChange, items, log = [], truth }: DeskProps) 
                     )}
                   </div>
 
-                  {/* THE RECORD. Only while nothing is typed — a search result
+                  {/* THE RECORD. Only while nothing is typed - a search result
                       and a history beneath it would be two answers at once. */}
                   {!q.trim() && log.length > 0 ? (
                     <div style={{ marginTop: space.rest }}>

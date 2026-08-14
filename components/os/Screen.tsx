@@ -1,15 +1,15 @@
 'use client';
 /**
- * THE ROOM — what every screen in the customer application sits inside.
+ * THE ROOM - what every screen in the customer application sits inside.
  *
  * Source: docs/AUTOMODZ-OS.md §8.1, §8.4, §8.5, §9.1
- *         design "AutoModz App.dc.html" — the frame drawn around all twelve
+ *         design "AutoModz App.dc.html" - the frame drawn around all twelve
  *
  * Three things, and only three, because every room in the design has exactly
  * these and nothing else:
  *
  * 1. ONE COLUMN, INSET (§8.1, §8.4). Capped, so the phone composition does not
- *    become a stretched band on a laptop — the design is drawn at 390 and the
+ *    become a stretched band on a laptop - the design is drawn at 390 and the
  *    cap is what keeps it recognisably that composition at 1440.
  *
  * 2. THE STACKING CONTRACT (§8.5). The floor is `stack.contentFloor`, so the
@@ -18,7 +18,7 @@
  *
  * 3. THE LIGHT ABOVE (§9.1). A soft warm bloom at the top of the room. It is
  *    on the room, not on any surface, which is why glass has something to be
- *    glass against — a pane over flat black is a grey box.
+ *    glass against - a pane over flat black is a grey box.
  *
  * The ambient field mounted by `CustomerChrome` sits behind all of this and is
  * not repeated here.

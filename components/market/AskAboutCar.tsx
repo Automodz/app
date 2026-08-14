@@ -2,7 +2,7 @@
 /**
  * ASKING ABOUT A CAR, OR ASKING TO SEE IT.
  *
- * One layer, two shapes — the difference is a date, so two components would be
+ * One layer, two shapes - the difference is a date, so two components would be
  * two copies of the same form. The old app had exactly that: an `inquiry` modal
  * and a `viewing` modal sharing every field.
  *
@@ -52,7 +52,7 @@ export function AskAboutCar(
 
     setSending(true);
     try {
-      /* The token is used if there is one and never required — the route
+      /* The token is used if there is one and never required - the route
          accepts an anonymous enquiry deliberately. */
       /* `idToken()` waits for the SDK to decide and answers null rather than
          throwing, so the anonymous case needs no try/catch of its own. */
@@ -101,7 +101,7 @@ export function AskAboutCar(
     <Modal open={kind !== null} onClose={close} label={copy.title}>
       <div style={{ padding: space.gap }}>
         {sent ? (
-          /* §19 — the confirmation names what will happen next, not "success". */
+          /* §19 - the confirmation names what will happen next, not "success". */
           <>
             <Heading level="title">We have it</Heading>
             <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
@@ -150,7 +150,7 @@ export function AskAboutCar(
 /**
  * One field. Local to this layer on purpose: the Garage's `CarForm` has its own
  * and they are styled from the same tokens, but neither is exported as a
- * primitive yet — promoting one is a design-system decision, not a marketplace
+ * primitive yet - promoting one is a design-system decision, not a marketplace
  * one, and inventing a third here would be the duplicate this file avoids.
  */
 function Field(

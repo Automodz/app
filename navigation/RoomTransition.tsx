@@ -3,8 +3,8 @@
  * ONE ROOM BECOMING ANOTHER.
  *
  * Rooms used to swap instantly. Every other motion in the product is
- * considered, and the single most frequent transition in it — moving between
- * rooms — had none at all, which is what made the application read as a set of
+ * considered, and the single most frequent transition in it - moving between
+ * rooms - had none at all, which is what made the application read as a set of
  * separate screens rather than one place.
  *
  * OPACITY ONLY, AND THAT IS NOT A COMPROMISE. A `transform` on an ancestor
@@ -13,7 +13,7 @@
  * opacity as the one property that may survive reduced motion, so the same
  * treatment serves both cases and there is no second code path.
  *
- * `duration.move` (§7.3 — "an element changing place or state") rather than
+ * `duration.move` (§7.3 - "an element changing place or state") rather than
  * `scene`. A room arriving at 480ms is a room the customer waits for.
  */
 import { usePathname } from 'next/navigation';

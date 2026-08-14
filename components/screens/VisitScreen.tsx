@@ -1,33 +1,33 @@
 /**
- * A SERVER COMPONENT. It holds no state, no handlers and no motion — it is
- * handed a model and draws it — so marking it `'use client'` shipped its
+ * A SERVER COMPONENT. It holds no state, no handlers and no motion - it is
+ * handed a model and draws it - so marking it `'use client'` shipped its
  * markup to the browser twice and hydrated it for nothing. The interactive
  * pieces it renders carry their own directive.
  */
 /**
- * ONE VISIT — the account.
+ * ONE VISIT - the account.
  *
  * Source: docs/AUTOMODZ-OS.md §6.2, §8.4, §8.6, §9.5, §14.6, §16.2, §16.3,
  *         §16.5, §18.1, §21.1, §21.6
  *
- * §8.6 — "a completed visit's account" deserves a full screen. §16.3 fixes what
+ * §8.6 - "a completed visit's account" deserves a full screen. §16.3 fixes what
  * it gives, in this order:
  *
  *     the car as it was finished
  *     what was done, in plain language
- *     the photographs — before, during, after
+ *     the photographs - before, during, after
  *     what it promised, and for how long
  *     what it cost and how it was settled
  *
  * That order is the file. Nothing was added to it.
  *
- * §16.2 — a completed visit is sealed. So the protection here is what was
+ * §16.2 - a completed visit is sealed. So the protection here is what was
  * PROMISED at the time, stated flat, with none of the living measure Home draws
  * for a protection that is still running down. A sealed record does not deplete.
  *
- * §14.6 — documents sit behind one tap, labelled plainly, never on the surface.
+ * §14.6 - documents sit behind one tap, labelled plainly, never on the surface.
  *
- * There is no back control. §6.2 — the navigation is persistent and predictable,
+ * There is no back control. §6.2 - the navigation is persistent and predictable,
  * and `/history/[id]` lights the History slot, which is the way back.
  */
 import {
@@ -48,7 +48,7 @@ import { Photograph } from '@/components/os/Photograph';
 import { hrefForDestination } from '@/navigation/resolve';
 import { BeforeAfter } from '@/components/visit/BeforeAfter';
 import type { HistoryVisit } from './HistoryScreen';
-/* Deep import — this is a SERVER component and the barrel pulls a dozen
+/* Deep import - this is a SERVER component and the barrel pulls a dozen
    client modules with it. See the note at the top of this file. */
 import type { Tone } from '@/components/system/tone';
 
@@ -72,7 +72,7 @@ export function VisitScreen(
      * WHICH CAR THIS VISIT BELONGS TO, resolved by `historyContextOf`.
      *
      * Without it the control that leaves this address went to the generic
-     * record, which then showed whichever car the product defaulted to — so a
+     * record, which then showed whichever car the product defaulted to - so a
      * customer reading the BMW's visit could leave into the Kia's history.
      */
     carId?: string;
@@ -89,20 +89,20 @@ export function VisitScreen(
         /* TRANSPARENT ON PURPOSE. The room stands in the ambient field,
            which is fixed behind everything (components/system/Ambient.tsx).
            Painting `color.paper` here would occlude it completely. The dark
-           ground still exists — it is on `body` — so nothing loses contrast. */
+           ground still exists - it is on `body` - so nothing loses contrast. */
         background: 'transparent',
         position: 'relative',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
       }}
     >
-      {/* §20.3 — the room was rendered on the server and is still true; only
+      {/* §20.3 - the room was rendered on the server and is still true; only
           what happens NEXT needs a connection. One implementation (§22.2). */}
       <OfflineNote />
 
       {/* THE WAY BACK, ON THE PHOTOGRAPH.
           A sealed record is reached from the album, from Now's "recently", and
-          from a notification — and it had no exit of its own at all. It sits
+          from a notification - and it had no exit of its own at all. It sits
           OVER the hero rather than above it because §11.2 makes the photograph
           the largest element on the screen, and a control is not allowed to
           push it down the page to earn its own row. */}
@@ -115,7 +115,7 @@ export function VisitScreen(
         <Back over parent={carId ? { href: hrefForDestination({ to: 'history.car', vehicleId: carId }), name: 'Your visits' } : undefined} />
       </div>
 
-      {/* §16.3 — the car as it was finished. */}
+      {/* §16.3 - the car as it was finished. */}
       <Hero
         state={photo ? 'media' : 'awaiting'}
         band="brief"
@@ -133,7 +133,7 @@ export function VisitScreen(
         ) : null}
       </Hero>
 
-      {/* §16.3 — what was done, in plain language. */}
+      {/* §16.3 - what was done, in plain language. */}
       <section style={{ ...column, paddingTop: space.rest }}>
         <Text role="body" tone="ink">{did}</Text>
       </section>
@@ -141,7 +141,7 @@ export function VisitScreen(
       {/* ── BEFORE ← drag → AFTER ────────────────────────────────────────
           The one part of the record that argues for itself; everything else
           here is the studio's account of the work, and this is the work. Only
-          when the job recorded both sides — a comparison missing a half is not
+          when the job recorded both sides - a comparison missing a half is not
           a comparison, and filling it from another frame would be a lie about
           the customer's own car. */}
       {comparison ? (
@@ -150,7 +150,7 @@ export function VisitScreen(
         </section>
       ) : null}
 
-      {/* §16.3, §16.5 — the photographs. Full-bleed and sequential, each named
+      {/* §16.3, §16.5 - the photographs. Full-bleed and sequential, each named
           for the moment it was taken. A sequence, never a grid: a grid of
           thumbnails makes the evidence smaller than the caption. */}
       {photos.map(p => (
@@ -166,8 +166,8 @@ export function VisitScreen(
         </figure>
       ))}
 
-      {/* §16.3 — what it promised, and for how long. §8.6 — facts, so lines of
-          text. §18.1 — a visit that promised nothing says nothing. */}
+      {/* §16.3 - what it promised, and for how long. §8.6 - facts, so lines of
+          text. §18.1 - a visit that promised nothing says nothing. */}
       {promised.length > 0 ? (
         <section style={{ ...column, paddingTop: space.movement }}>
           {promised.map((p, i) => (
@@ -192,11 +192,11 @@ export function VisitScreen(
           arithmetic from the person who paid it.
 
           One fact, one place: the bare `settled` line this replaces said the
-          same total, and the album still uses it — there, a visit is a line
+          same total, and the album still uses it - there, a visit is a line
           rather than an account. */}
       {!receipt && settled ? (
         /* A SEALED VISIT KNOWS ITS TOTAL EVEN WITHOUT AN INVOICE DOCUMENT.
-           §16 — the amount as sealed. Losing this when the receipt was added
+           §16 - the amount as sealed. Losing this when the receipt was added
            would have hidden the money on every visit the studio never raised
            paper for, which is most of them. */
         <section style={{ ...column, paddingTop: space.rest }}>
@@ -204,10 +204,10 @@ export function VisitScreen(
         </section>
       ) : null}
 
-      {/* ── WHAT IT COST — design screen 1j ─────────────────────────────
+      {/* ── WHAT IT COST - design screen 1j ─────────────────────────────
           THE BREAKDOWN IS NO LONGER BEHIND A TAP. It sat inside a `<details>`
           summarised by the invoice number, so the one question a receipt
-          exists to answer — what am I being charged for — took a tap, and the
+          exists to answer - what am I being charged for - took a tap, and the
           control that revealed it was labelled with a reference code. The
           design states the whole account on one pane and puts the total at
           the foot of it, which is what a receipt is.
@@ -278,7 +278,7 @@ export function VisitScreen(
         </section>
       ) : null}
 
-      {/* §14.6 — "one tap away, never on the surface." One line per file, and
+      {/* §14.6 - "one tap away, never on the surface." One line per file, and
           never the file itself: a PDF rendered inline would make the document
           the primary surface, which is exactly what §2.3 rejects. */}
       {documents.length > 0 ? (
@@ -288,7 +288,7 @@ export function VisitScreen(
               {/* Design 1j gives the paper the screen's filled control. The
                   design's own label is "Pay & download invoice"; ours says
                   only what the control actually does, because nothing in this
-                  product takes a payment — the studio settles at the counter,
+                  product takes a payment - the studio settles at the counter,
                   which the line above has just said. A button that promises
                   to take money and then opens a PDF is a lie in a control. */}
               <Button tier={i === 0 ? 'primary' : 'forward'} href={d.href} full={i === 0}>
@@ -299,7 +299,7 @@ export function VisitScreen(
         </section>
       ) : null}
 
-      {/* SHARE THIS CHAPTER. The one act a sealed record permits — it does not
+      {/* SHARE THIS CHAPTER. The one act a sealed record permits - it does not
           change the visit, it lets someone else read it. `quiet`, because the
           record is the point and passing it on is a secondary path (§10.4).
           The address carries the invoice's own share token, and the endpoint
@@ -312,7 +312,7 @@ export function VisitScreen(
         </section>
       ) : null}
 
-      {/* Nothing else follows. §16.2 — the account is sealed, so there is
+      {/* Nothing else follows. §16.2 - the account is sealed, so there is
           nothing here to do to it. */}
       <div style={{ height: INSET }} />
     </main>

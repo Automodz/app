@@ -436,7 +436,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
 /**
  * The operations application keeps the browser-session providers that used to
- * live in the root layout. Behaviour is identical — `AuthProvider`,
+ * live in the root layout. Behaviour is identical - `AuthProvider`,
  * `ThemeProvider` and `Toaster` are simply mounted here instead of globally, so
  * the customer rooms stop paying for them. See components/ClientSession.tsx.
  */

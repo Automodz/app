@@ -282,7 +282,7 @@ export default function BookingWorkspace({ id, onBack, backLabel }: {
               <PhotosSection job={job} record={record} onChange={() => refreshJob(job.id)} />
               {/* DESIGN 12's STUDIO SIDE. A customer cannot approve extra work
                   the studio never asked for, so this is what makes that screen
-                  more than a page. Nothing here can ANSWER — the transition
+                  more than a page. Nothing here can ANSWER - the transition
                   table refuses `approved` to the studio. */}
               <ApprovalSection job={job} onAsked={() => refreshJob(job.id)} />
               <PaymentsSection job={job} actor={actor} record={record} onChange={() => refreshJob(job.id)} />

@@ -85,7 +85,7 @@ export default function YouPage() {
      gone (Design Language §13 - every mutation produces a success moment). */
   const save = async () => {
     if (!dirty || !name.trim()) return;
-    if (!online) { setSaveErr('You’re offline — reconnect to save this.'); return; }
+    if (!online) { setSaveErr('You’re offline - reconnect to save this.'); return; }
     setSaving(true); setSaveErr(null);
     const next = { name: name.trim(), phone: phone.trim() };
     try {
@@ -95,7 +95,7 @@ export default function YouPage() {
          surface falls back to local state for it (see ArrangeSheet), so the
          preview stays exercisable while a real failure still speaks up */
       if (!isDevUser(user.uid)) {
-        setSaveErr('That didn’t reach us — try again.');
+        setSaveErr('That didn’t reach us - try again.');
         setSaving(false);
         return;
       }
@@ -113,15 +113,15 @@ export default function YouPage() {
   };
 
   const turnOnPush = async () => {
-    if (!online) { setPushErr('You’re offline — reconnect to turn these on.'); return; }
+    if (!online) { setPushErr('You’re offline - reconnect to turn these on.'); return; }
     setPushBusy(true); setPushErr(null);
     const ok = await enablePush(user.uid);
     setPushBusy(false);
     if (ok) { setPush('on'); return; }
     setPushErr(
       typeof Notification !== 'undefined' && Notification.permission === 'denied'
-        ? 'Notifications are blocked — allow them for AutoModz in your browser settings.'
-        : 'That didn’t go through — try again.',
+        ? 'Notifications are blocked - allow them for AutoModz in your browser settings.'
+        : 'That didn’t go through - try again.',
     );
   };
 
@@ -215,7 +215,7 @@ export default function YouPage() {
             )}
 
             <Whisper tone="ink-2">
-              While the car’s in care we always message — it’s your car.
+              While the car’s in care we always message - it’s your car.
             </Whisper>
           </div>
         </Panel>

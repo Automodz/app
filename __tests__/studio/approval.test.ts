@@ -1,5 +1,5 @@
 /**
- * MID-VISIT APPROVAL — design screen 12.
+ * MID-VISIT APPROVAL - design screen 12.
  *
  * The only place a customer agrees to spend more money after their car is on a
  * bay. Four things can go wrong and all four cost real money:
@@ -69,7 +69,7 @@ describe('screen 12 states what changes, and never who found it', () => {
   });
 
   it('NEVER NAMES THE TECHNICIAN, though the record holds one', () => {
-    /* §2.2 — no individual is ever named on a customer surface, and a
+    /* §2.2 - no individual is ever named on a customer surface, and a
        notification is the surface most likely to be read on a lock screen by
        whoever is holding the phone. */
     const m = toApproval(approval(), NOW);
@@ -107,7 +107,7 @@ describe('screen 12 states what changes, and never who found it', () => {
 });
 
 describe('what is still waiting', () => {
-  it('only requests that stand — answered and expired ones are not questions', () => {
+  it('only requests that stand - answered and expired ones are not questions', () => {
     const list = [
       approval({ id: 'live' }),
       approval({ id: 'done', status: 'approved' }),
@@ -132,7 +132,7 @@ describe('the studio cannot answer for the customer', () => {
     expect(approvalTransition('requested', 'cancelled', 'studio').ok).toBe(true);
   });
 
-  it('every resolved state is terminal — a double approval is impossible', () => {
+  it('every resolved state is terminal - a double approval is impossible', () => {
     for (const from of ['approved', 'declined', 'expired', 'cancelled'] as const) {
       expect(APPROVAL_TRANSITIONS[from]).toEqual([]);
     }
@@ -163,7 +163,7 @@ describe('the answer and its consequence are one commit', () => {
     expect(service).toMatch(/after = storedBreakdown\(priceVisit\(/);
   });
 
-  it('both figures come from priceVisit — the delta is not a hand subtraction', () => {
+  it('both figures come from priceVisit - the delta is not a hand subtraction', () => {
     expect(service).toMatch(/priceVisit\(\{/);
     expect(service).toMatch(/priceDelta: Math\.max\(0, after\.total - before\.total\)/);
   });
@@ -184,7 +184,7 @@ describe('the answer and its consequence are one commit', () => {
   it('declining writes the answer and nothing else', () => {
     /* A decline is not a change to the visit; it is the absence of one. The
        branch reads the job's total in order to RETURN it, and writes only the
-       approval — so what is asserted is that it touches no other document. */
+       approval - so what is asserted is that it touches no other document. */
     const decline = service.slice(
       service.indexOf("if (answer === 'declined')"),
       service.indexOf('── APPLIED IN THE SAME COMMIT'),
@@ -213,7 +213,7 @@ describe('the answer and its consequence are one commit', () => {
     expect(route).toMatch(/respondToApproval\(uid, approvalId, answer\)/);
   });
 
-  it('no client writes an approval at all — rules cannot propagate a total', () => {
+  it('no client writes an approval at all - rules cannot propagate a total', () => {
     const block = rules.slice(rules.indexOf('match /approvals/{id}'));
     expect(block.slice(0, 400)).toMatch(/allow write: if false;/);
     expect(block.slice(0, 400)).toMatch(/resource\.data\.customerId == request\.auth\.uid/);

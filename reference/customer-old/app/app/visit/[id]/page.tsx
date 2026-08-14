@@ -188,7 +188,7 @@ export default function VisitPage() {
                 {booking.usedMembershipWash
                   ? 'Covered by the Club.'
                   : stay.paid
-                  ? 'Paid — thank you.'
+                  ? 'Paid - thank you.'
                   : <>Pay at the desk · <Data tone="ink">₹{stay.amount.toLocaleString('en-IN')}</Data></>}
               </Body>
               {/* the studio's closing time, spoken the way the rest of the

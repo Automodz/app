@@ -16,7 +16,7 @@
  *
  * THE DOOR IS A ROOM, NOT A FORM.
  *
- * It used to be a mark, a button and an address on flat paper — which read as
+ * It used to be a mark, a button and an address on flat paper - which read as
  * a utility screen in a product whose whole argument is that this is where
  * something valuable is kept. It is now the first room of the application and
  * behaves like one: the car is present, the glass is the same glass every
@@ -55,7 +55,7 @@ import { authFault, authDiagnostic } from '@/lib/authError';
 import { rememberDevice, forgetDevice } from '@/components/auth/SessionKeeper';
 
 /**
- * Only ever return to an internal customer path — never an attacker's URL, and
+ * Only ever return to an internal customer path - never an attacker's URL, and
  * never the operations application. The old rule was `startsWith('/app')`, which
  * did both jobs at once because every customer room lived under `/app`. The
  * rooms are at the root now, so the second job is stated explicitly: a customer
@@ -78,7 +78,7 @@ const safeDest = (redirect: string | null): string | null =>
  * landing. So this is the one thing that has to be true before the door is
  * allowed to close behind anybody.
  *
- * `'unavailable'` is a 503 — the server has no Firebase Admin credentials, so
+ * `'unavailable'` is a 503 - the server has no Firebase Admin credentials, so
  * the studio is misconfigured rather than the customer being unwelcome.
  * `'refused'` is anything else, including a token the server would not take.
  */
@@ -98,7 +98,7 @@ type SessionResult = 'ok' | 'unavailable' | 'refused' | 'offline';
  *
  * So the reason travels with the verdict. It reaches the console on every
  * environment and the screen only under `?debug=1`, exactly as the auth code
- * does — a customer is never shown a slug.
+ * does - a customer is never shown a slug.
  */
 interface SessionOutcome {
   result: SessionResult;
@@ -113,28 +113,28 @@ async function openServerSession(): Promise<SessionOutcome> {
   const current = auth?.currentUser;
   /* No signed-in user at all: the client SDK lost the credential between the
      popup closing and this call. It is a refusal in the sense that there is
-     nothing to exchange, and it is worth naming — it is not a server verdict. */
+     nothing to exchange, and it is worth naming - it is not a server verdict. */
   if (!current) return { result: 'refused', code: 'session/no-user' };
 
   /**
    * THE CACHED TOKEN FIRST, AND THE FORCED ONE ONLY IF IT IS ACTUALLY STALE.
    *
    * This forced a refresh unconditionally. The note that defended it conceded
-   * the original reason was wrong — measured against production, a token 377
-   * seconds old minted a cookie fine — and kept the flag for a smaller one: a
+   * the original reason was wrong - measured against production, a token 377
+   * seconds old minted a cookie fine - and kept the flag for a smaller one: a
    * device asleep across the hour boundary hands over an expired token.
    *
    * That smaller reason does not justify what the flag costs. `getIdToken(true)`
    * is a mandatory round trip to `securetoken.googleapis.com`, and it sits in
    * the one second between Google granting a credential and the studio being
-   * handed it. A customer on a weak connection loses the whole sign-in there —
+   * handed it. A customer on a weak connection loses the whole sign-in there -
    * which is precisely the failure that was reported from production, arriving
    * as "we signed you in, but could not open your studio".
    *
    * `getIdToken()` refreshes on its own when the token is near expiry, so the
    * common case now costs NO network at all. The rare genuinely-stale token is
-   * caught where it is actually known to be stale — the server says so, by
-   * name — and the forced refresh happens then, once. Strictly fewer round
+   * caught where it is actually known to be stale - the server says so, by
+   * name - and the forced refresh happens then, once. Strictly fewer round
    * trips than before, and strictly more cases recovered.
    */
   const exchange = async (force: boolean): Promise<SessionOutcome> => {
@@ -142,7 +142,7 @@ async function openServerSession(): Promise<SessionOutcome> {
     try {
       idToken = await current.getIdToken(force);
     } catch (err) {
-      /* Offline, or Google unreachable. NOT a refusal — see the caller. This is
+      /* Offline, or Google unreachable. NOT a refusal - see the caller. This is
          `securetoken.googleapis.com`, not this studio: a browser that cannot
          reach it cannot refresh a token, and the Firebase code that comes back
          (`auth/network-request-failed`, usually) is the whole diagnosis. */
@@ -164,7 +164,7 @@ async function openServerSession(): Promise<SessionOutcome> {
     }
     /* No response at all is the network, not a verdict on the customer. */
     if (!res) return { result: 'offline', code: 'session/unreachable' };
-    /* The route's own reason — `auth/id-token-expired`, `auth/argument-error`,
+    /* The route's own reason - `auth/id-token-expired`, `auth/argument-error`,
        `auth/user-disabled`, and on a 503 the `app/…` code naming which part of
        the studio's own configuration is broken. A body that is not JSON is a
        proxy or an edge answering instead of the route, which the status is the
@@ -186,11 +186,11 @@ async function openServerSession(): Promise<SessionOutcome> {
  *
  * Long enough to be read, short enough that nobody waits for it. It is spent
  * AFTER the cookie exists, so it costs a customer nothing they were not
- * already waiting for — the session is already open behind this screen.
+ * already waiting for - the session is already open behind this screen.
  */
 const WELCOME_BEAT = 1150;
 
-/** The door while the search params resolve — a state, not an absence (§19.1). */
+/** The door while the search params resolve - a state, not an absence (§19.1). */
 function Door() {
   return (
     <main
@@ -198,7 +198,7 @@ function Door() {
         minHeight: '100svh',
         /* Same rule as the door it stands in for: `body` is the ground, and
            painting paper here would black out the field for exactly as long as
-           this is on screen — which is the one moment it would be noticed. */
+           this is on screen - which is the one moment it would be noticed. */
         display: 'grid',
         placeItems: 'center',
       }}
@@ -222,7 +222,7 @@ export default function LoginPage() {
  * A customer who has never signed in has no idea what signing in gets them,
  * and "Continue with Google" does not tell them. Three lines, each naming a
  * thing they will actually find, is the difference between a gate and an
- * invitation — and it is the honest version of the argument the landing page
+ * invitation - and it is the honest version of the argument the landing page
  * makes at length.
  */
 const BEHIND_THE_DOOR = [
@@ -250,17 +250,17 @@ function Login() {
   /**
    * THE RAW CODE, shown only where it helps and never to a customer.
    *
-   * On screen in development, and in production only behind `?debug=1` — which
+   * On screen in development, and in production only behind `?debug=1` - which
    * the owner can add to the URL and a customer never will. It reveals an
    * error code and nothing else: no token, no address, no account.
    */
   const [diagnostic, setDiagnostic] = useState('');
-  /* §22.2 — the one reader of the connection. This surface used to consult
+  /* §22.2 - the one reader of the connection. This surface used to consult
      `navigator.onLine` on its own. */
   const online = useOnline();
 
-  /* THE DOOR IS LEFT EXACTLY ONCE. Two paths can decide it is time to go —
-     a sign-in that just succeeded, and an arrival that was already signed in —
+  /* THE DOOR IS LEFT EXACTLY ONCE. Two paths can decide it is time to go -
+     a sign-in that just succeeded, and an arrival that was already signed in -
      and both are async now, so without this they can both fire. */
   const leaving = useRef(false);
   /* While a manual sign-in is in flight, the already-signed-in effect stands
@@ -284,7 +284,7 @@ function Login() {
    * again, never saw the session cookie that had just been minted, and the
    * customer landed back on the public landing page looking signed out.
    *
-   * `router.refresh()` is not the fix either — it clears the cache for the
+   * `router.refresh()` is not the fix either - it clears the cache for the
    * CURRENT route, and the current route here is `/auth/login`, not the
    * destination. Signing in is a once-per-session event and a document load is
    * what actually guarantees the server re-renders with the new cookie.
@@ -294,7 +294,7 @@ function Login() {
    *
    * THE CLAIM IS TAKEN SYNCHRONOUSLY EVEN WHEN THE MOVE IS DELAYED. The
    * welcome beat runs between deciding to go and going, and `handleGoogle`'s
-   * `finally` runs inside that window — so if the claim waited for the
+   * `finally` runs inside that window - so if the claim waited for the
    * timeout, the guard effect would be re-armed mid-passage and would mint a
    * second session behind the welcome.
    */
@@ -306,14 +306,14 @@ function Login() {
   }, []);
 
   /**
-   * ALREADY SIGNED IN? NEVER SHOW THE DOOR TWICE — BUT NEVER LEAVE WITHOUT A
+   * ALREADY SIGNED IN? NEVER SHOW THE DOOR TWICE - BUT NEVER LEAVE WITHOUT A
    * SERVER SESSION EITHER.
    *
    * This effect used to navigate the moment `user` appeared in the store, and
    * that is what broke signing in. `onAuthStateChanged` fires INSIDE
    * `signInWithPopup`, so `AuthProvider` reaches `setUser` several round trips
    * before `handleGoogle` reaches `POST /api/session`. This effect then
-   * replaced the document while the cookie was still being minted — the
+   * replaced the document while the cookie was still being minted - the
    * request died with the page, the server saw no cookie, and `/` answered
    * with the public landing. Measured against the emulator: `setUser` at
    * +2.3s, the session POST at +13.3s.
@@ -323,8 +323,8 @@ function Login() {
    *
    * Two things fix it, and both are needed. `signingIn` keeps this effect out
    * of the way of a sign-in that is already handling its own session, and for
-   * every other arrival — a returning customer whose Firebase session is still
-   * on disk but whose cookie has expired — the cookie is minted HERE before
+   * every other arrival - a returning customer whose Firebase session is still
+   * on disk but whose cookie has expired - the cookie is minted HERE before
    * the navigation, which is what stops that customer bouncing between the
    * landing and the door forever.
    */
@@ -345,7 +345,7 @@ function Login() {
           /**
            * ONLY A REFUSAL DESTROYS THE SESSION.
            *
-           * Every failure used to end in `signOut` — so a dropped connection,
+           * Every failure used to end in `signOut` - so a dropped connection,
            * a studio with no Admin credentials, or a stale ID token all threw
            * away a Firebase session that was on disk and perfectly valid, and
            * the customer had to go through Google again to get back what they
@@ -417,7 +417,7 @@ function Login() {
         /**
          * THE SAME LAW AS THE EFFECT ABOVE, WHICH THIS USED TO BREAK.
          *
-         * Every one of these ended in `signOut` — so a customer whose phone
+         * Every one of these ended in `signOut` - so a customer whose phone
          * dropped its connection for the one second between Google answering
          * and `securetoken` being asked for a fresh token was signed out of a
          * credential that had JUST been granted, and had to go through Google
@@ -426,7 +426,7 @@ function Login() {
          * This is the door's own copy of that rule, and it now obeys it.
          *
          * The three cases are also genuinely different and were reported as
-         * one. `offline` is this browser failing to reach GOOGLE — the same
+         * one. `offline` is this browser failing to reach GOOGLE - the same
          * failure as `auth/network-request-failed`, and nothing to do with the
          * studio. `unavailable` is the studio holding no Admin credentials.
          * `refused` is the server saying no to this token, and only that one
@@ -455,7 +455,7 @@ function Login() {
         void claimReferral().catch(() => {});
       }
 
-      /* The session is open — so the welcome is a statement, not a hope. */
+      /* The session is open - so the welcome is a statement, not a hope. */
       setGreeting((profile.name ?? '').trim().split(/\s+/)[0] ?? '');
       setPhase('welcoming');
       enter(homeFor(profile.role), WELCOME_BEAT);
@@ -464,7 +464,7 @@ function Login() {
        * THE CODE IS NEVER THROWN AWAY AGAIN.
        *
        * This was four handled codes and an `else` that said "That did not go
-       * through" — so a disabled provider, an unauthorised domain, a browser
+       * through" - so a disabled provider, an unauthorised domain, a browser
        * refusing third-party storage and a Firestore rule refusing the profile
        * write all reached the customer as one sentence, and reached whoever
        * was on call as nothing at all. A production failure was reported in
@@ -481,7 +481,7 @@ function Login() {
       /* An abandoned pop-up is not a failure and says nothing (§20.2). */
       setError(fault.message);
     } finally {
-      /* Only released on a failure — on success the document is on its way out
+      /* Only released on a failure - on success the document is on its way out
          and re-arming the effect would give it a second navigation to make. */
       if (!leaving.current) {
         signingIn.current = false;
@@ -497,7 +497,7 @@ function Login() {
           position: 'relative',
           overflow: 'hidden',
           minHeight: '100svh',
-          /* No ground of its own — `body` is `--bg` and the ambient field sits
+          /* No ground of its own - `body` is `--bg` and the ambient field sits
              on it. Painting paper here would cover the field, which is the
              whole of what makes this the same room as everything behind it. */
           display: 'flex',
@@ -515,7 +515,7 @@ function Login() {
             the door look like a landing page for a different product, and
             every actual room on the other side of it is the application's own
             lit near-black. So the door now stands in the same room it opens
-            onto — the `Ambient` field `CustomerChrome` mounts — and the glass
+            onto - the `Ambient` field `CustomerChrome` mounts - and the glass
             panel below has the same thing to refract that it has everywhere
             else. The photograph of a car belongs where a car is the subject;
             here the subject is the way in. */}
@@ -568,7 +568,7 @@ function Login() {
                   tone="ink2"
                   style={{ marginTop: space.line, marginInline: 'auto', maxWidth: 320 }}
                 >
-                  Where your car lives — its care, its protection, its story.
+                  Where your car lives - its care, its protection, its story.
                 </Text>
 
                 {/* ── THE CONTROL ──────────────────────────────────────────
@@ -603,9 +603,9 @@ function Login() {
                   <GoogleMark />
                   Continue with Google
                 </button>
-                {/* §22.2 — the one offline note, said in line. This was a sixth
+                {/* §22.2 - the one offline note, said in line. This was a sixth
                     hand-written copy, reading `navigator.onLine` directly. */}
-                <OfflineNote inline caption="You’re offline — reconnect to sign in." />
+                <OfflineNote inline caption="You’re offline - reconnect to sign in." />
 
                 {error ? (
                   <>
@@ -629,7 +629,7 @@ function Login() {
                   </>
                 ) : (
                   <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
-                    One tap — no password to remember.
+                    One tap - no password to remember.
                   </Text>
                 )}
 
@@ -683,7 +683,7 @@ function Login() {
         </section>
 
         {/* ── THE STUDIO ───────────────────────────────────────────────────
-            The address was 9pt grey at the bottom of the screen — legally
+            The address was 9pt grey at the bottom of the screen - legally
             present, practically invisible. It is the studio's own name and
             street; it is what makes this a real place. And the way back is a
             control now, not a link in body type. */}

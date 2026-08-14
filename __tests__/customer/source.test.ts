@@ -20,7 +20,7 @@ jest.mock('@/lib/services/vehicles', () => ({
   getJobsForVehicle: (...a: unknown[]) => getJobsForVehicle(...a),
 }));
 jest.mock('@/lib/services/protections', () => ({ getProtections: (...a: unknown[]) => getProtections(...a) }));
-/* The papers the owner has sent, read beside the protections — a declaration
+/* The papers the owner has sent, read beside the protections - a declaration
    waiting on the studio produces no protection and is still the whole of what
    the car has to say about its certificate. */
 jest.mock('@/lib/services/declarations', () => ({ getDeclarations: (...a: unknown[]) => getDeclarations(...a) }));
@@ -30,7 +30,7 @@ jest.mock('@/lib/services/visits', () => ({
 }));
 jest.mock('@/lib/services/subscriptions', () => ({ getUserSubscription: (...a: unknown[]) => getUserSubscription(...a) }));
 jest.mock('@/lib/services/services', () => ({ getServices: (...a: unknown[]) => getServices(...a) }));
-/* §17.1 — read so an UNREAD record can be resolved to the surface that owns
+/* §17.1 - read so an UNREAD record can be resolved to the surface that owns
    it. No list is drawn from it; see `noticeOf`. */
 jest.mock('@/lib/services/notifications', () => ({ getUserNotifications: (...a: unknown[]) => getUserNotifications(...a) }));
 jest.mock('@/lib/store', () => ({ useAppStore: () => null }));
@@ -65,7 +65,7 @@ it('loads one picture covering every car', async () => {
   expect(getUserNotifications).toHaveBeenCalledWith('u1');
 });
 
-it('reads EVERY collection by vehicle id — never by plate', async () => {
+it('reads EVERY collection by vehicle id - never by plate', async () => {
   await loadPicture(USER);
   expect(getProtections.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
   expect(getDeclarations.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
@@ -74,7 +74,7 @@ it('reads EVERY collection by vehicle id — never by plate', async () => {
   expect(getJobsForVehicle.mock.calls.map(c => c[0])).toEqual(['v1', 'v2']);
 });
 
-it('does one query per car per collection — no N+1 walk', async () => {
+it('does one query per car per collection - no N+1 walk', async () => {
   await loadPicture(USER);
   expect(getVehicles).toHaveBeenCalledTimes(1);
   expect(getServices).toHaveBeenCalledTimes(1);

@@ -1,5 +1,5 @@
 /**
- * TYPOGRAPHY — AutoModz Design Language
+ * TYPOGRAPHY - AutoModz Design Language
  *
  * Source: docs/AUTOMODZ-OS.md §9.5, §3.2, §3.5, §21.2, §21.6
  *
@@ -7,7 +7,7 @@
  *
  * Derivation of the scale:
  *   BODY is the anchor at 17px. §21.2 says that if a focused input causes an
- *   unwanted zoom "the input is too small" — iOS zooms below 16px, so 16 is
+ *   unwanted zoom "the input is too small" - iOS zooms below 16px, so 16 is
  *   the floor and 17 is the floor plus margin.
  *
  *   The rest is a ~1.28 modular scale from that anchor:
@@ -21,12 +21,12 @@
  *   at the same nominal size, so matching body's optical weight means
  *   dropping the point size.
  *
- *   WHISPER is 13px — the quietest legible line. It is still normal text under
+ *   WHISPER is 13px - the quietest legible line. It is still normal text under
  *   WCAG, so it is still held to 4.5:1 (see colors.ts).
  *
  * Weights are restrained (§3.5), and the ratified design takes that further
  * than the scale originally did: Display is 200, not 620. A statement carries
- * because it is large and alone — weight was doing work that size and silence
+ * because it is large and alone - weight was doing work that size and silence
  * already do, and at 46px a heavy face reads as a shout. Thin is only legible
  * when it is large, so 200 appears nowhere below the Title step.
  *
@@ -58,7 +58,7 @@ export interface TypeRole {
 
 export const type = {
   /**
-   * The one statement per screen — the state of the car, the name of a thing.
+   * The one statement per screen - the state of the car, the name of a thing.
    * §9.5: "One Display per screen." §21.6: it is the single top-level heading.
    * Fluid across the scale's top: 34px on a small phone, 52px on a wide screen.
    */
@@ -112,8 +112,8 @@ export const type = {
   },
 } as const satisfies Record<string, TypeRole>;
 
-/* §21.2's 16px floor — "a focused input that triggers zoom is too small; the
-   fix is a larger input, never a disabled gesture" — is not a token here. It
+/* §21.2's 16px floor - "a focused input that triggers zoom is too small; the
+   fix is a larger input, never a disabled gesture" - is not a token here. It
    was one, unused, for as long as it existed. The rule is now ENFORCED instead,
    against `type.body.size`, in __tests__/design/language.test.ts. */
 

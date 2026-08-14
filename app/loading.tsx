@@ -1,7 +1,7 @@
 /**
  * THE LOADING STATE.
  *
- * Source: docs/AUTOMODZ-OS.md §19.1 — "loading is a state, not an absence."
+ * Source: docs/AUTOMODZ-OS.md §19.1 - "loading is a state, not an absence."
  *
  * A customer navigating between rooms sees the shape of the room arriving, not
  * a blank page and not a spinner. §19.3 permits a spinner only inside a control
@@ -21,11 +21,11 @@ export default function RoomLoading() {
       style={{
         /* Transparent, like every room. This painted `color.paper`, so each
          navigation flashed an opaque dark page and then revealed the ambient
-         field underneath — the one moment in the product where the room
+         field underneath - the one moment in the product where the room
          visibly changed material. */
       background: 'transparent',
         minHeight: '100svh',
-        /* The top inset, from the token — see ServerRoom. */
+        /* The top inset, from the token - see ServerRoom. */
         paddingTop: stack.top,
         paddingBottom: stack.contentFloor,
         display: 'flex',

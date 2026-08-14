@@ -5,7 +5,7 @@
  * Source: docs/AUTOMODZ-OS.md §19, §21.4, §21.6, §21.7 · ARCHITECTURE §1
  *
  * Not onboarding. One arrival, five short moments, each of which may be passed
- * over except the first — and the last one never forces a car.
+ * over except the first - and the last one never forces a car.
  *
  * EVERY STEP IS AN ADDRESS. The forward and pass controls are LINKS to
  * `?step=`, not state changes, which is what makes the flow deep-linkable,
@@ -13,7 +13,7 @@
  * customer was rather than at the beginning. That was the defect: the step was
  * `useState`, so Back left the welcome altogether.
  *
- * The renderer holds no wording and no addresses — both arrive in the model.
+ * The renderer holds no wording and no addresses - both arrive in the model.
  */
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -24,7 +24,7 @@ import { Heading, Text, Button } from '@/components/system';
 import type { WelcomeModel } from '@/lib/customer/welcome';
 import { authedFetch } from '@/lib/clientSession';
 
-/** Said the same way whichever path declined — one sentence, one place. */
+/** Said the same way whichever path declined - one sentence, one place. */
 const NOT_NOW = 'Not this time. You can turn it on later in You.';
 
 export function WelcomeScreen({ model }: { model: WelcomeModel }) {
@@ -36,7 +36,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
    *
    * Two faults, one cause. `initial={{ opacity: 0 }}` is rendered BY THE
    * SERVER, so the first screen a new customer ever sees was shipped
-   * invisible and depended on JavaScript arriving to reveal it — §7.1 says
+   * invisible and depended on JavaScript arriving to reveal it - §7.1 says
    * motion never gates content, and this gated all of it. On a slow phone
    * that is a blank screen; with JS blocked it is a permanently blank one.
    *
@@ -48,7 +48,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
    *
    * `initial={false}` tells the library to start AT the animate values, so
    * the server emits the visible state and the first client render agrees.
-   * Once mounted, every later panel animates exactly as before — which is
+   * Once mounted, every later panel animates exactly as before - which is
    * where the motion was actually wanted, since arriving at step two is a
    * transition and arriving at step one is just the page.
    */
@@ -66,7 +66,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
    * without having written it walks straight back into the welcome. A
    * best-effort mark would have made a failed write into an inescapable loop.
    *
-   * So a failure says so and offers to try again — and `router.refresh()`
+   * So a failure says so and offers to try again - and `router.refresh()`
    * discards the server render Home cached, or it would answer from the
    * picture it read before the flag was set.
    */
@@ -74,7 +74,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
     setBusy(true);
     setNote(null);
     try {
-      /* WAITED FOR, NOT GUESSED AT — and no longer refused when the wait
+      /* WAITED FOR, NOT GUESSED AT - and no longer refused when the wait
          comes back empty. This read `auth.currentUser` immediately after
          importing the SDK, and on a customer room nothing subscribes to auth
          state, so the persisted session had not been restored and it was
@@ -82,7 +82,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
          never written, and the arrival greeted them again on every sign-in for
          ever. `authedFetch` carries the token when the SDK has one and lets
          the same-origin session cookie identify the customer when it does not
-         — and the cookie is the very thing that rendered this screen. */
+         - and the cookie is the very thing that rendered this screen. */
       const res = await authedFetch('/api/welcome/complete', {
         method: 'POST',
         body: JSON.stringify({}),
@@ -90,21 +90,21 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
       if (!res.ok) throw new Error('mark-failed');
 
       /* A document load. `router.refresh()` clears the cache for the CURRENT
-         route — `/welcome` — while the destination is what needs re-rendering
+         route - `/welcome` - while the destination is what needs re-rendering
          against the flag that was just written. Home reads that flag to decide
          whether to send the customer back here, so a stale payload would loop
          them into the arrival they have just finished. */
       window.location.replace(href);
     } catch {
       setBusy(false);
-      setNote('That didn’t save. Try once more — we don’t want to greet you twice.');
+      setNote('That didn’t save. Try once more - we don’t want to greet you twice.');
     }
   };
 
   /**
    * Ask for notification permission.
    *
-   * APPLE 4.5.4 — this is optional and always skippable, and nothing behind it
+   * APPLE 4.5.4 - this is optional and always skippable, and nothing behind it
    * is gated on the answer. A refusal is not an error and is not treated as
    * one; it moves on exactly like the skip does.
    */
@@ -138,7 +138,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
       <main
         style={{
           minHeight: '100svh',
-        /* The top inset, from the token — see ServerRoom. */
+        /* The top inset, from the token - see ServerRoom. */
         paddingTop: stack.top,
           background: color.paper,
           display: 'flex',
@@ -152,7 +152,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
           <AnimatePresence mode="wait">
             <motion.section
               key={panel.step}
-              /* §21.6 — where you are in the arrival, for a screen reader,
+              /* §21.6 - where you are in the arrival, for a screen reader,
                  without drawing progress dots at anybody. */
               aria-label={`Step ${position.index} of ${position.total}`}
               initial={entered ? (still ? { opacity: 0 } : { opacity: 0, y: space.gap }) : false}
@@ -230,7 +230,7 @@ export function WelcomeScreen({ model }: { model: WelcomeModel }) {
                     </Button>
                   ) : (
                     /* A plain link, so passing over a step is a history entry
-                       like taking it — Back has to work in both directions. */
+                       like taking it - Back has to work in both directions. */
                     <Link
                       href={panel.passHref ?? homeHref}
                       style={{

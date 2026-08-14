@@ -6,8 +6,8 @@
  * ── WHY IT WAS REWRITTEN ─────────────────────────────────────────────────
  * The same era as the old `/offline`, and the same disagreements: `min-h-screen`
  * (`100vh`, which the rest of the product abandoned because it puts content
- * under a phone's browser bars), four hard-coded colours — `#08090b`, `#fff`,
- * `#0b0c0e` and a white `rgba` — where one of them is a near-miss of the
+ * under a phone's browser bars), four hard-coded colours - `#08090b`, `#fff`,
+ * `#0b0c0e` and a white `rgba` - where one of them is a near-miss of the
  * palette's own `#08090A`, a `font-hero` display at weight 800 where the
  * product's display face is Outfit 200, a `clamp(28px, 7vw, 44px)` type scale
  * that exists nowhere else, and a white filled button where the one filled
@@ -25,7 +25,7 @@ export default function NotFound() {
     <Screen top={space.rest} style={{ justifyContent: 'center' }}>
       <RoomHeader
         eyebrow="Nothing here"
-        supporting="This address doesn’t lead anywhere — it may have moved, or the link may be older than the page it points at. Everything else is where you left it."
+        supporting="This address doesn’t lead anywhere - it may have moved, or the link may be older than the page it points at. Everything else is where you left it."
       >
         We can’t find that
       </RoomHeader>

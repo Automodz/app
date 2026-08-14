@@ -69,7 +69,7 @@ const row = (c: CarPicture) =>
 /* ── THE LEDGER ROW ──────────────────────────────────────────────────────── */
 
 describe('the certificate’s row in the car’s own ledger', () => {
-  it('MISSING — the car says so, and offers the act', () => {
+  it('MISSING - the car says so, and offers the act', () => {
     const r = row(car());
     expect(r?.term).toBe('Not added');
     expect(r?.action).toEqual({ label: 'Declare certificate', href: '/vehicle/puc?car=v1' });
@@ -77,7 +77,7 @@ describe('the certificate’s row in the car’s own ledger', () => {
     expect(r?.remaining).toBeUndefined();
   });
 
-  it('PENDING — a submission is a wait, never a promise', () => {
+  it('PENDING - a submission is a wait, never a promise', () => {
     const r = row(car({ declarations: [decl({ expiresOn: '2099-01-01' })] }));
     expect(r?.term).toBe('Verification in progress');
     expect(r?.tone).not.toBe('assent');
@@ -86,7 +86,7 @@ describe('the certificate’s row in the car’s own ledger', () => {
     expect(r?.remaining).toBeUndefined();
   });
 
-  it('ACTIVE — the term engine’s own words, and no second date format', () => {
+  it('ACTIVE - the term engine’s own words, and no second date format', () => {
     const r = row(car({
       protections: [prot()], declarations: [decl({ status: 'verified' })],
     }));
@@ -95,7 +95,7 @@ describe('the certificate’s row in the car’s own ledger', () => {
     expect(r?.action?.label).toBe('See the certificate');
   });
 
-  it('EXPIRED — said as lapsed, and the act becomes a renewal', () => {
+  it('EXPIRED - said as lapsed, and the act becomes a renewal', () => {
     const r = row(car({
       protections: [prot({ term: { kind: 'dated', expiresOn: '2026-07-30' } })],
     }));
@@ -104,7 +104,7 @@ describe('the certificate’s row in the car’s own ledger', () => {
     expect(r?.action?.label).toBe('Renew certificate');
   });
 
-  it('RENEWING — the standing certificate still speaks, and the wait is reachable', () => {
+  it('RENEWING - the standing certificate still speaks, and the wait is reachable', () => {
     const r = row(car({
       protections: [prot()],
       declarations: [decl({ id: 'd1', status: 'verified' }), decl({ id: 'd2' })],
@@ -126,7 +126,7 @@ describe('the certificate’s row in the car’s own ledger', () => {
       protections: [{ ...prot({ id: 'p-c', kind: 'ceramic', declarationId: undefined }) }],
     }), picture(), NOW);
     expect(withOthers.protections.map(p => p.label)).toContain('Pollution certificate');
-    /* And exactly once — never both as a generic layer and as its own row. */
+    /* And exactly once - never both as a generic layer and as its own row. */
     expect(withOthers.protections.filter(p => p.label === 'Pollution certificate')).toHaveLength(1);
   });
 
@@ -137,7 +137,7 @@ describe('the certificate’s row in the car’s own ledger', () => {
   it('A PROMISE THAT HAS ENDED IS NOT "ACTIVE TO" ANYTHING', () => {
     /* The warranty tile read every dated term including lapsed ones, so a car
        whose only protection was a certificate that ran out on 30 July was
-       given "Active to July 2026" — directly under a ledger row saying
+       given "Active to July 2026" - directly under a ledger row saying
        "Lapsed 30 July 2026", on the same screen. */
     const dead = toVehicle(car({
       protections: [prot({ term: { kind: 'dated', expiresOn: '2026-07-30' } })],
@@ -153,7 +153,7 @@ describe('the certificate’s row in the car’s own ledger', () => {
 /* ── THE CERTIFICATE'S OWN ROOM ──────────────────────────────────────────── */
 
 describe('the certificate’s own room', () => {
-  it('MISSING — offers the form and says what will happen to it', () => {
+  it('MISSING - offers the form and says what will happen to it', () => {
     const m = toPuc(car(), picture(), NOW);
     expect(m.state).toBe('Not added');
     expect(m.declare?.vehicleId).toBe('v1');
@@ -162,10 +162,10 @@ describe('the certificate’s own room', () => {
     expect(m.record).toEqual([]);
   });
 
-  it('PENDING — the form is withdrawn while the studio holds one', () => {
+  it('PENDING - the form is withdrawn while the studio holds one', () => {
     const m = toPuc(car({ declarations: [decl()] }), picture(), NOW);
     expect(m.state).toBe('Verification in progress');
-    /* §10.5 — a control is never offered for an act the server would refuse. */
+    /* §10.5 - a control is never offered for an act the server would refuse. */
     expect(m.declare).toBeUndefined();
     /* Bare dates: the row's label is the word, so a value never repeats it. */
     expect(m.pending).toEqual({
@@ -176,7 +176,7 @@ describe('the certificate’s own room', () => {
     expect(m.standing).toBeUndefined();
   });
 
-  it('ACTIVE — the date is said in full, and the certificate number with it', () => {
+  it('ACTIVE - the date is said in full, and the certificate number with it', () => {
     const m = toPuc(car({
       protections: [prot()], declarations: [decl({ status: 'verified' })],
     }), picture(), NOW);
@@ -190,7 +190,7 @@ describe('the certificate’s own room', () => {
     });
   });
 
-  it('EXPIRED — and the way out of it is the form', () => {
+  it('EXPIRED - and the way out of it is the form', () => {
     const m = toPuc(car({
       protections: [prot({ term: { kind: 'dated', expiresOn: '2026-07-30' } })],
     }), picture(), NOW);
@@ -198,13 +198,13 @@ describe('the certificate’s own room', () => {
     expect(m.declare?.title).toBe('Renew it');
     /* A CERTIFICATE THAT HAS GONE IS NOT FILED UNDER "VALID". The room said
        "Expired 30 July" in its headline and "Valid · Valid until 30 July" two
-       lines below it — found by looking at the rendered screen, not by any
+       lines below it - found by looking at the rendered screen, not by any
        assertion that existed before. */
     expect(m.standing?.untilLabel).toBe('Ran out');
     expect(m.standing?.until).toBe('30 July 2026');
   });
 
-  it('RENEWING — both facts are said, and neither is the other', () => {
+  it('RENEWING - both facts are said, and neither is the other', () => {
     const m = toPuc(car({
       protections: [prot()],
       declarations: [
@@ -217,7 +217,7 @@ describe('the certificate’s own room', () => {
     expect(m.declare).toBeUndefined();
   });
 
-  it('REJECTED — the studio’s own sentence, verbatim, and never a person’s name', () => {
+  it('REJECTED - the studio’s own sentence, verbatim, and never a person’s name', () => {
     const m = toPuc(car({
       declarations: [decl({
         status: 'rejected',
@@ -256,7 +256,7 @@ describe('the certificate’s own room', () => {
     }), picture(), NOW);
     expect(m.record.map(r => r.id)).toEqual(['d2', 'd1']);
     expect(m.record.map(r => r.state)).toEqual(['Verified', 'Replaced']);
-    /* The superseded one keeps its OWN date — this is the whole point. */
+    /* The superseded one keeps its OWN date - this is the whole point. */
     expect(m.record[1].validity).toBe('Until 1 December 2026');
   });
 
@@ -267,7 +267,7 @@ describe('the certificate’s own room', () => {
     expect(m.declare).toBeDefined();
   });
 
-  it('every string it produces is plain — a Timestamp never crosses to a screen', () => {
+  it('every string it produces is plain - a Timestamp never crosses to a screen', () => {
     const m = toPuc(car({
       protections: [prot()], declarations: [decl({ id: 'd2' }), decl({ status: 'verified' })],
     }), picture(), NOW);
@@ -283,7 +283,7 @@ describe('the way back from the certificate', () => {
     expect(hrefForDestination({ to: 'vehicle.puc' })).toBe('/vehicle/puc');
   });
 
-  it('BACK GOES TO THE CAR IT WAS ABOUT — never to another one', () => {
+  it('BACK GOES TO THE CAR IT WAS ABOUT - never to another one', () => {
     expect(parentOf('/vehicle/puc?car=v1')).toEqual({ href: '/vehicle?car=v1', name: 'The car' });
     expect(parentOf('/vehicle/puc?car=v2')).toEqual({ href: '/vehicle?car=v2', name: 'The car' });
   });
@@ -299,7 +299,7 @@ describe('the way back from the certificate', () => {
   });
 
   it('a cold deep link with no car still lands somewhere real', () => {
-    /* No `?car=` — the room leads with the same car `/vehicle` does, so the
+    /* No `?car=` - the room leads with the same car `/vehicle` does, so the
        screen and its parent agree rather than handing over a different one. */
     expect(parentOf('/vehicle/puc')).toEqual({ href: '/vehicle', name: 'The car' });
   });
@@ -347,7 +347,7 @@ describe('the certificate flow obeys the product’s own laws', () => {
     expect(src).not.toMatch(/from ['"]@\/components/);
   });
 
-  it('THE BROWSER NEVER WRITES A PROTECTION — one door, and the server holds it', () => {
+  it('THE BROWSER NEVER WRITES A PROTECTION - one door, and the server holds it', () => {
     const rules = readFileSync('firestore.rules', 'utf8');
     const block = rules.slice(
       rules.indexOf('match /protections/{id}'),
@@ -357,7 +357,7 @@ describe('the certificate flow obeys the product’s own laws', () => {
     expect(block).not.toMatch(/termsSource == 'declared'/);
   });
 
-  it('and never writes a declaration either — every write is the server’s', () => {
+  it('and never writes a declaration either - every write is the server’s', () => {
     const rules = readFileSync('firestore.rules', 'utf8');
     const at = rules.indexOf('match /declarations/{id}');
     expect(at).toBeGreaterThan(-1);

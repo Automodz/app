@@ -5,36 +5,36 @@
  * Source: docs/AUTOMODZ-OS.md §3.1, §3.2, §3.5, §4.3, §5.2, §7.5, §8.4,
  *         §9.5, §11.2, §11.5, §12.1, §12.2, §12.3, §12.4, §18.1, §18.2,
  *         §18.3, §18.4, §21.1
- *         design "AutoModz App.dc.html" — screen 1h
+ *         design "AutoModz App.dc.html" - screen 1h
  *
  * ── WHAT THIS SCREEN IS ──────────────────────────────────────────────────
- * §12.1 — "The collection. Every car the customer owns, each present as a
+ * §12.1 - "The collection. Every car the customer owns, each present as a
  * photograph with its current state." And, since the design, the record
  * underneath it: what the studio has done, across every car, most recent
  * first.
  *
  * Those two belong on one screen because they are one question asked in two
- * tenses — what do I have, and what has been done to it. Splitting them was
+ * tenses - what do I have, and what has been done to it. Splitting them was
  * what gave History a tab of its own; screen 1h takes the tab back and puts
  * the answer where the question is (see navigation/routes.ts).
  *
  * ── DOMINANCE BELONGS TO THE POSITION, NOT TO THE CAR ────────────────────
- * §3.2 — one subject per surface; §9.5 — one Display per screen. The first
+ * §3.2 - one subject per surface; §9.5 - one Display per screen. The first
  * car is therefore the screen's subject and carries the photograph at size;
  * every car after it is a pane.
  *
- * §12.3 — "Cars are equals. No car is 'primary' — that is the studio's
+ * §12.3 - "Cars are equals. No car is 'primary' - that is the studio's
  * convenience, not the owner's feeling about their vehicles." Both hold at
  * once, because the emphasis is attached to the FIRST POSITION IN THE STRIP
  * rather than to whatever car is standing in it. The order is the studio's
- * attention — the car currently with us, or most recently — so a car moves
+ * attention - the car currently with us, or most recently - so a car moves
  * into and out of the lead as its situation changes. Nothing here, and nothing
  * in `GarageModel`, stores a primary flag.
  *
  * ── WHY EVERY WORD OVER A PHOTOGRAPH IS WHITE ────────────────────────────
  * `scrim.photoFloor` is solved for white on a pure-white image and clears AA
  * by a hair. Neither `over2` nor any state colour survives it. So urgency in
- * the collection is carried by WORDS, never by hue — with one exception the
+ * the collection is carried by WORDS, never by hue - with one exception the
  * design introduces and §21.6 permits: the state line under a lead car is
  * amber ON GLASS, not on the photograph, where the ground is known.
  *
@@ -56,9 +56,9 @@ export interface GarageVehicle {
   id: string;
   /** The customer's own words for their car. */
   name: string;
-  /** §5.5 — the registration is kept: "identity, not jargon". */
+  /** §5.5 - the registration is kept: "identity, not jargon". */
   plate: string;
-  /** §11.5 — absent until the studio has photographed it. */
+  /** §11.5 - absent until the studio has photographed it. */
   photo?: string;
   /** What is happening to it, in the present tense. §12.3, §5.3 #2 */
   state: string;
@@ -68,13 +68,13 @@ export interface GarageVehicle {
   relationship: string;
   /**
    * SOMETHING THE STUDIO SAID ABOUT THIS CAR THAT HAS NOT BEEN SEEN.
-   * §17.1 — the car is the inbox. Never a count, never a body, never a list.
+   * §17.1 - the car is the inbox. Never a count, never a body, never a list.
    */
   news?: boolean;
   href: string;
 }
 
-/** The vehicle as the form needs it — enough to correct, nothing more. */
+/** The vehicle as the form needs it - enough to correct, nothing more. */
 export interface GarageEditable {
   id: string;
   name: string;
@@ -98,7 +98,7 @@ export interface GarageRecord {
 
 export interface GarageModel {
   vehicles: GarageVehicle[];
-  /** §12.4 — where the invitation leads when there is no car yet. */
+  /** §12.4 - where the invitation leads when there is no car yet. */
   beginHref: string;
   addHref: string;
   editable: GarageEditable[];
@@ -110,7 +110,7 @@ export interface GarageModel {
 export function GarageScreen({ model }: { model: GarageModel }) {
   const { vehicles, beginHref, addHref, editable, record, historyHref } = model;
 
-  /* Correcting a car is addressable (§6.4) — `?edit=<id>` and `?add=1`, so the
+  /* Correcting a car is addressable (§6.4) - `?edit=<id>` and `?add=1`, so the
      back button closes the sheet and the Vehicle room can link straight into
      it. Kept exactly as it was; the design changed the collection, not the
      way a car is corrected. */
@@ -134,7 +134,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
   };
 
-  /* §12.4 — the composed absence. A garage with no car is an invitation, not
+  /* §12.4 - the composed absence. A garage with no car is an invitation, not
      an empty list, and it is the whole screen rather than a card on one. */
   if (vehicles.length === 0) {
     return (
@@ -148,7 +148,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
           }}
         >
           The place is ready. Add the car you want looked after, and everything
-          the studio does to it will collect here — the work, the papers, the
+          the studio does to it will collect here - the work, the papers, the
           photographs.
         </p>
         <div style={{ marginTop: space.rest, display: 'flex', flexDirection: 'column', gap: space.line }}>
@@ -171,7 +171,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
       </Statement>
 
       {/* ── THE LEAD ────────────────────────────────────────────────────
-          §11.2 — the photograph at size. The whole frame is the link (§4.3):
+          §11.2 - the photograph at size. The whole frame is the link (§4.3):
           a chevron or a "View" control would put an interface between an owner
           and their own car. */}
       <div style={{ marginTop: space.gap, display: 'flex', flexDirection: 'column', gap: space.line }}>
@@ -182,7 +182,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
             position: 'relative', display: 'block', height: 190,
             borderRadius: radius.sheet, overflow: 'hidden', textDecoration: 'none',
             border: `1px solid ${lead.news ? 'rgba(224,164,92,0.25)' : 'rgba(255,255,255,0.08)'}`,
-            /* §7.5 — the photograph moves between this frame and the car's own
+            /* §7.5 - the photograph moves between this frame and the car's own
                hero rather than crossfading. Declared per car so two frames can
                never claim the same name. */
             viewTransitionName: `car-${lead.id}`,
@@ -190,7 +190,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
         >
           {lead.photo ? (
             /* THROUGH THE PRIMITIVE. The composed absence below is still this
-               screen's own — it is the lit field §11.5 asks for — and the
+               screen's own - it is the lit field §11.5 asks for - and the
                primitive owns the other two states, including the failure the
                class-only path could not express. */
             <Photograph
@@ -200,7 +200,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
               sizes={imageSizes.inMeasure}
             />
           ) : (
-            /* §11.5 — the composed absence. A field lit from above: enough
+            /* §11.5 - the composed absence. A field lit from above: enough
                structure to read as awaiting rather than as a failed load. */
             <span
               aria-hidden
@@ -229,7 +229,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
                 style={{ fontSize: 16, color: color.over, display: 'flex', alignItems: 'center', gap: 8 }}
               >
                 {lead.name}
-                {/* §17.1 — one mark on the car, saying only that there is
+                {/* §17.1 - one mark on the car, saying only that there is
                     something here the customer has not seen. Never a count,
                     and white rather than amber: nothing coloured survives a
                     scrim solved for a white photograph. */}
@@ -250,7 +250,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
                 {lead.plate}
               </span>
             </span>
-            {/* The state, over the photograph, in WORDS — and white, because
+            {/* The state, over the photograph, in WORDS - and white, because
                 nothing coloured survives a scrim solved for a white image. */}
             <span
               className="am-label"
@@ -263,7 +263,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
 
         {/* What protects it, and how long it has been here. On glass, below
             the photograph, where colour is allowed because the ground is
-            known. §17.1 — the mark for unseen news is on the car itself. */}
+            known. §17.1 - the mark for unseen news is on the car itself. */}
         <Pane
           style={{
             padding: `${space.line + 2}px ${space.gap + 2}px`,
@@ -289,7 +289,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
         </Pane>
 
         {/* ── EVERY OTHER CAR ───────────────────────────────────────────
-            §12.3 — equals. A pane each, the same pane, in the studio's order
+            §12.3 - equals. A pane each, the same pane, in the studio's order
             of attention and in no other order. */}
         {rest.map(v => (
           <Pane
@@ -324,7 +324,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
           </Pane>
         ))}
 
-        {/* §12.2's invitation, as a control rather than a card — dashed, so it
+        {/* §12.2's invitation, as a control rather than a card - dashed, so it
             reads as a place for something that is not there yet. */}
         <button
           type="button"
@@ -347,7 +347,7 @@ export function GarageScreen({ model }: { model: GarageModel }) {
 
       {/* ── THE RECORD ──────────────────────────────────────────────────
           Screen 1h. Rows, not cards: a thing that happened is a line. Each
-          one opens the visit it names — §17.3, a doorway to the object. */}
+          one opens the visit it names - §17.3, a doorway to the object. */}
       {record.length > 0 ? (
         <section
           aria-labelledby="garage-record"

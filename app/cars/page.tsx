@@ -4,12 +4,12 @@ import { toMarket } from '@/lib/customer/market';
 import { currentSession } from '@/lib/server/session';
 
 /**
- * `/cars` — the showroom. PUBLIC, unlike every room in the customer
+ * `/cars` - the showroom. PUBLIC, unlike every room in the customer
  * application: a listing a stranger cannot open is a listing nobody buys.
  *
  * Dynamic because the filters arrive as search params and the saved list is
  * per-customer. It renders its content on the server, so the stock is in the
- * HTML for anyone — or anything — that reads the page without running it.
+ * HTML for anyone - or anything - that reads the page without running it.
  */
 export const dynamic = 'force-dynamic';
 

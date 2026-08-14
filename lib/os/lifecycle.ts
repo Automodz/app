@@ -1,5 +1,5 @@
 /**
- * THE STATE MACHINES — every legal transition in the product, in one place.
+ * THE STATE MACHINES - every legal transition in the product, in one place.
  *
  * Source: docs/DESIGN-PARITY-AUDIT.md §PHASE 4, §PHASE 9
  *
@@ -13,27 +13,27 @@
  *
  * Every machine here is a pure table plus a guard. The server calls the guard;
  * the projection calls the same guard to decide what to OFFER, so a control is
- * never shown for an act the server will refuse (§10.5 — nothing is inert).
+ * never shown for an act the server will refuse (§10.5 - nothing is inert).
  *
  * ── THE BOOKING MODEL IS NOT REPLACED ────────────────────────────────────
  * A second booking-status vocabulary would be the very drift this file exists
  * to end, so `BookingStatus` in lib/types.ts stays authoritative and is
- * EXTENDED by exactly one value — `expired` — which the audit found missing
+ * EXTENDED by exactly one value - `expired` - which the audit found missing
  * (three bookings sat `pending` 13–17 days past their date with no terminal
  * state to age into).
  *
  * The conceptual lifecycle named in the brief maps onto the objects that
  * already own each fact, rather than onto one flattened enum:
  *
- *   draft / quoted        → `estimates`  (lib/os/scope.ts) — before a booking
+ *   draft / quoted        → `estimates`  (lib/os/scope.ts) - before a booking
  *                                          exists there is nothing to book
  *   scheduled             → booking `pending`   (asked for, studio not yet in)
  *   confirmed             → booking `confirmed`
  *   in_progress           → booking `in_progress` / job `in_progress`
- *   awaiting_approval     → `approvals` (this file) — a condition ON a visit,
+ *   awaiting_approval     → `approvals` (this file) - a condition ON a visit,
  *                                          not a state the booking replaces
  *   ready                 → booking `ready_for_delivery`
- *   payment_pending/paid  → `payments` (this file) — money is its own axis, so
+ *   payment_pending/paid  → `payments` (this file) - money is its own axis, so
  *                                          a paid-but-not-collected car and a
  *                                          collected-but-unpaid one are both
  *                                          representable, and both happen
@@ -47,7 +47,7 @@ import type { BookingStatus, JobStatus, MembershipStatus, VisitStatus } from '@/
 
 /**
  * Every transition is attributed. `system` is the scheduled job that ages a
- * stale record out — it is named rather than being allowed to borrow the
+ * stale record out - it is named rather than being allowed to borrow the
  * studio's authority, so an automated expiry can never be mistaken in an audit
  * for a person having decided something.
  */
@@ -77,7 +77,7 @@ export const BOOKING_EXPIRED = 'expired' as const;
 
 /**
  * The booking vocabulary, named once so callers read intent rather than a bare
- * type alias. Identical to `BookingStatus` — deliberately, because a second
+ * type alias. Identical to `BookingStatus` - deliberately, because a second
  * vocabulary is the drift this file exists to end.
  */
 export type BookingState = BookingStatus;
@@ -109,8 +109,8 @@ export const BOOKING_TRANSITIONS: Record<BookingState, readonly BookingState[]> 
 /**
  * Who may cause each transition.
  *
- * A customer may only ever WITHDRAW. Every advance — accepting the request,
- * receiving the car, calling it ready, closing it — belongs to the studio,
+ * A customer may only ever WITHDRAW. Every advance - accepting the request,
+ * receiving the car, calling it ready, closing it - belongs to the studio,
  * because each one asserts something about the physical world that only
  * somebody standing in the studio can know.
  */
@@ -158,8 +158,8 @@ export function bookingTransition(
  *
  * IT MATTERS THAT THIS IS EXPLICIT. `scheduledDate` and `scheduledTime` are
  * wall-clock strings written by someone standing in the studio. Parsing them
- * with `new Date('2026-08-12T09:00:00')` reads them in the SERVER's zone —
- * UTC on Vercel — which would place a 09:00 appointment five and a half hours
+ * with `new Date('2026-08-12T09:00:00')` reads them in the SERVER's zone -
+ * UTC on Vercel - which would place a 09:00 appointment five and a half hours
  * early and hand a customer a free change five and a half hours after the rule
  * should have closed.
  */
@@ -170,7 +170,7 @@ export function scheduledEpochMs(date: string, time?: string): number | null {
   const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date ?? '');
   if (!d) return null;
   const t = /^(\d{1,2}):(\d{2})$/.exec(time ?? '');
-  /* A booking with no hour is a real record — the walk-in flow writes one — and
+  /* A booking with no hour is a real record - the walk-in flow writes one - and
      the studio opens at 09:00, so that is when the day's obligation starts. */
   const hours = t ? Number(t[1]) : 9;
   const minutes = t ? Number(t[2]) : 0;
@@ -179,7 +179,7 @@ export function scheduledEpochMs(date: string, time?: string): number | null {
     - STUDIO_UTC_OFFSET_MIN * 60_000;
 }
 
-/** "FREE until 24 hours before" — design screen 10. */
+/** "FREE until 24 hours before" - design screen 10. */
 export const CHANGE_WINDOW_HOURS = 24;
 const CHANGE_WINDOW_MS = CHANGE_WINDOW_HOURS * 60 * 60 * 1000;
 
@@ -200,8 +200,8 @@ export type ChangeVerdict =
  * May this booking still be moved, free, right now?
  *
  * THE BOUNDARY IS STRICT. A change is free while there is MORE than 24 hours
- * left; at exactly 24:00:00 the window has closed. The alternative — allowing
- * it at exactly 24 hours — puts the studio one millisecond of clock skew away
+ * left; at exactly 24:00:00 the window has closed. The alternative - allowing
+ * it at exactly 24 hours - puts the studio one millisecond of clock skew away
  * from having to honour a change it has already begun preparing for. A rule
  * about a bay being held has to fall on the side of the bay.
  *
@@ -267,8 +267,8 @@ export const APPROVAL_TRANSITIONS: Record<ApprovalStatus, readonly ApprovalStatu
  * THE WHOLE POINT OF THIS TABLE: the studio cannot answer for the customer.
  *
  * A request for more money and more time is binding, so only the person paying
- * may say yes or no. The studio may WITHDRAW its own request (`cancelled`) —
- * the film turned out to be fine after all — and the clock may retire one
+ * may say yes or no. The studio may WITHDRAW its own request (`cancelled`) -
+ * the film turned out to be fine after all - and the clock may retire one
  * nobody answered, but neither may produce an approval.
  */
 const APPROVAL_ACTORS: Record<ApprovalStatus, readonly Actor[]> = {
@@ -282,7 +282,7 @@ const APPROVAL_ACTORS: Record<ApprovalStatus, readonly Actor[]> = {
 export function approvalTransition(
   from: ApprovalStatus, to: ApprovalStatus, actor: Actor,
 ): TransitionVerdict {
-  /* Terminal first — a second approval must be refused as `already-approved`,
+  /* Terminal first - a second approval must be refused as `already-approved`,
      which is what makes a double tap distinguishable from a replay. */
   if (APPROVAL_TERMINAL.includes(from)) return no(`already-${from}`);
   if (from === to) return no('no-change');
@@ -315,7 +315,7 @@ export function approvalHasExpired(
  * A CUSTOMER MAY NEVER WRITE `active`.
  *
  * It is the third of the three writes in this file that a browser must never
- * reach — `paid` releases a car, `verified` grants a protection, and `active`
+ * reach - `paid` releases a car, `verified` grants a protection, and `active`
  * grants a standing entitlement: free washes and a discount on every visit,
  * against money the studio may never have received.
  *
@@ -324,7 +324,7 @@ export function approvalHasExpired(
  * check that `plan` is a real plan, that `endDate` is thirty days away rather
  * than in 2099, that `washesTotal` is what the plan grants rather than 999, or
  * that the customer does not already hold one. Every one of those was a field
- * the browser wrote, and the studio's activation screen then honoured them —
+ * the browser wrote, and the studio's activation screen then honoured them -
  * so the honest description of the old flow is that a customer could write
  * their own membership terms and ask the studio to rubber-stamp them.
  *
@@ -340,7 +340,7 @@ export const MEMBERSHIP_TERMINAL: readonly MembershipState[] = [
 /**
  * Note what does NOT lead back to `active`.
  *
- * An expired membership is not revived — rejoining creates a NEW subscription,
+ * An expired membership is not revived - rejoining creates a NEW subscription,
  * so the cycle that ended keeps its own dates, its own `paidAt` and its own
  * `amountPaid` for ever. That is the same reason a renewed pollution
  * certificate gets its own record: revenue and entitlement are history, and
@@ -355,7 +355,7 @@ export const MEMBERSHIP_TRANSITIONS: Record<MembershipState, readonly Membership
 };
 
 /**
- * `cancelled` is the customer's — leaving is theirs to decide — and also the
+ * `cancelled` is the customer's - leaving is theirs to decide - and also the
  * studio's, because an upgrade supersedes the membership it replaces and that
  * is the studio's act of activating the new one.
  */
@@ -371,7 +371,7 @@ export function membershipTransition(
   from: MembershipState, to: MembershipState, actor: Actor,
 ): TransitionVerdict {
   /* Terminal first, so re-activating a cancelled membership is refused as the
-     fact — `already-cancelled` — rather than as a shape error. */
+     fact - `already-cancelled` - rather than as a shape error. */
   if (MEMBERSHIP_TERMINAL.includes(from)) return no(`already-${from}`);
   if (from === to) return no('no-change');
   if (!MEMBERSHIP_TRANSITIONS[from]?.includes(to)) return no('illegal-transition');
@@ -386,7 +386,7 @@ export function membershipTransition(
  *
  * It is the protection machine's twin of `paid`: the single write that turns
  * something a customer typed into something the product asserts on its own
- * surfaces. `declareProtection()` had no such boundary — the browser wrote the
+ * surfaces. `declareProtection()` had no such boundary - the browser wrote the
  * Protection directly and `firestore.rules` could only check that it said
  * `declared`, which is a claim about provenance, not about truth. A customer
  * could have given themselves a pollution certificate valid until 2099.
@@ -410,7 +410,7 @@ export const DECLARATION_TERMINAL: readonly DeclarationState[] = [
  * ever, so "what was this car certified for in March" stays answerable.
  *
  * Nothing leads back to `submitted`. A refused declaration is not re-opened
- * and argued about — the customer sends the certificate again, which is a new
+ * and argued about - the customer sends the certificate again, which is a new
  * record of a new act.
  */
 export const DECLARATION_TRANSITIONS: Record<DeclarationState, readonly DeclarationState[]> = {
@@ -424,7 +424,7 @@ export const DECLARATION_TRANSITIONS: Record<DeclarationState, readonly Declarat
 /**
  * Who may cause each transition.
  *
- * The customer may only ever WITHDRAW their own submission — the same shape as
+ * The customer may only ever WITHDRAW their own submission - the same shape as
  * a booking, where every advance belongs to the studio because every advance
  * asserts something about the physical world. Only somebody holding the
  * certificate can say it is real.
@@ -444,7 +444,7 @@ export function declarationTransition(
   from: DeclarationState, to: DeclarationState, actor: Actor,
 ): TransitionVerdict {
   /* Terminal first, so a second decision on a refused declaration is
-     `already-rejected` — the fact — rather than `illegal-transition`, which
+     `already-rejected` - the fact - rather than `illegal-transition`, which
      tells a caller nothing about why. */
   if (DECLARATION_TERMINAL.includes(from)) return no(`already-${from}`);
   /* `verified → verified` lands here: a double tap on the studio's own control
@@ -460,12 +460,12 @@ export function declarationTransition(
 /**
  * Money is its own axis.
  *
- * `initiated` — the customer asked for a UPI intent; the studio has generated
+ * `initiated` - the customer asked for a UPI intent; the studio has generated
  *               one against ITS OWN figure.
- * `submitted` — the customer says they have paid and has given a reference.
+ * `submitted` - the customer says they have paid and has given a reference.
  *               This is a CLAIM, and the product treats it as one: nothing is
  *               settled and the car is not released by it.
- * `paid`      — the studio has seen the money. Only the studio may write it.
+ * `paid`      - the studio has seen the money. Only the studio may write it.
  */
 export type PaymentStatus =
   | 'unpaid' | 'initiated' | 'submitted' | 'paid' | 'failed' | 'expired';
@@ -575,7 +575,7 @@ export function jobTransition(
  *
  * A booking and its job are a permanent 1:1 (lib/types.ts), so a job reaching a
  * state and its booking claiming another is a contradiction on the customer's
- * own screen — Home saying "in the studio" while the Studio room offers to
+ * own screen - Home saying "in the studio" while the Studio room offers to
  * cancel it. Anything that advances a job advances its booking through this.
  */
 export const BOOKING_FOR_JOB: Record<JobStatus, BookingState | null> = {

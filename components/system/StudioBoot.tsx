@@ -1,13 +1,13 @@
 'use client';
 /**
- * THE ARRIVAL — the studio opening, once a session.
+ * THE ARRIVAL - the studio opening, once a session.
  *
  * Source: reference/customer-old/components/os/StudioBoot.tsx
  *         docs/AUTOMODZ-OS-ARCHITECTURE.md §7
  *
  * The old one was a SPLASH: it covered the screen while the client fetched the
  * customer's garage, and it existed because there was nothing to show yet. The
- * rooms render on the server now, so the facts are in the first byte of HTML —
+ * rooms render on the server now, so the facts are in the first byte of HTML -
  * and §7 forbids "motion that delays a fact the customer is waiting for."
  *
  * So the capability is restored, not the blocking. The mark lifts OVER content
@@ -15,7 +15,7 @@
  * has lost nothing, and one who does not gets the moment of arrival the old app
  * gave them. It runs once per session, and not at all under reduced motion.
  *
- * `pointerEvents: none` throughout — an arrival that could swallow a tap would
+ * `pointerEvents: none` throughout - an arrival that could swallow a tap would
  * be a splash wearing different clothes.
  */
 import { useEffect, useState } from 'react';

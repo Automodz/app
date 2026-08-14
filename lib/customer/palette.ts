@@ -1,16 +1,16 @@
 /**
- * THE PALETTE — everything a customer can reach, as one list.
+ * THE PALETTE - everything a customer can reach, as one list.
  *
  * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1, §5 · docs/AUTOMODZ-OS.md §21.4
  *
  * WHY THIS IS ITS OWN PROJECTION. The Desk's items used to be built inside
  * `toHome`, which made the palette a feature OF Home rather than of the
  * product: it existed at `/` and nowhere else, and it could only ever offer
- * what Home already had — the lead car. A customer standing in History could
+ * what Home already had - the lead car. A customer standing in History could
  * not summon it at all, and one with three cars could not find the other two.
  *
  * So the palette reads the whole `CustomerPicture`, not one car, and it is
- * projected once per room by `ServerRoom` — the single place every room
+ * projected once per room by `ServerRoom` - the single place every room
  * already loads that picture.
  *
  * NO ADDRESS IS WRITTEN HERE. Every item names a `Destination` and hands it to
@@ -70,7 +70,7 @@ export function toPalette(picture: CustomerPicture, now = new Date()): PaletteMo
   const many = cars.length > 1;
   const lead = cars[0];
 
-  /* The one next thing, whatever it happens to be — the same intent the Home
+  /* The one next thing, whatever it happens to be - the same intent the Home
      CTA carries, resolved by the same resolver. Never a second judgement. */
   const read = lead
     ? readOwnership(picture, lead, protectionsOf(lead, picture.catalogue, now), now)
@@ -96,7 +96,7 @@ export function toPalette(picture: CustomerPicture, now = new Date()): PaletteMo
     if (!live) continue;
     items.push({
       id: `live-${live.id}`,
-      label: many ? `${car.vehicle.name} — in the studio` : 'The visit happening now',
+      label: many ? `${car.vehicle.name} - in the studio` : 'The visit happening now',
       group: 'Care',
       href: hrefForDestination({ to: 'visit', visitId: live.id }),
       keywords: 'current live visit progress today status in studio ready collect',
@@ -133,7 +133,7 @@ export function toPalette(picture: CustomerPicture, now = new Date()): PaletteMo
 
   /* ── what has already happened ───────────────────────────────────────── */
 
-  /* `completedOf` already excludes cancellations and sorts newest-first — the
+  /* `completedOf` already excludes cancellations and sorts newest-first - the
      same reading History uses, so the palette can never disagree with it. */
   const completed = cars
     .flatMap(completedOf)
@@ -157,7 +157,7 @@ export function toPalette(picture: CustomerPicture, now = new Date()): PaletteMo
   items.push(picture.subscription
     ? at({ to: 'membership' }, 'club', 'The Club', 'Club',
         'membership subscription plan washes renew cancel upgrade benefits')
-    : at({ to: 'membership.join' }, 'club', 'The Club — have a look', 'Club',
+    : at({ to: 'membership.join' }, 'club', 'The Club - have a look', 'Club',
         'membership subscription join plan'));
 
   /* ── the showroom ────────────────────────────────────────────────────── */
@@ -188,7 +188,7 @@ export function toPalette(picture: CustomerPicture, now = new Date()): PaletteMo
   return {
     items,
     truth: read?.truth,
-    /* Addresses resolved here too — the log used to write `/history/{id}` by
+    /* Addresses resolved here too - the log used to write `/history/{id}` by
        hand, which is the same defect one line lower down. */
     log: (read?.log ?? []).slice(0, 12).map(e => ({
       id: e.id,

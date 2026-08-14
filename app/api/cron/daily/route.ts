@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
   /* 4b. EXPIRE MEMBERSHIPS THAT HAVE RUN OUT.
      `expireLapsedSubscriptions` existed but ran ONLY when an admin happened to
      open Admin → Memberships. Until someone did, a lapsed membership stayed
-     `active` in the database — the customer saw the truth (both the club engine
+     `active` in the database - the customer saw the truth (both the club engine
      and the read path compute expiry), but every QUERY that filters on status
      counted them as members. Nightly is where this belongs.
 
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
      the studio was not going to answer. A record with no terminal state does
      not resolve; it just stops being looked at.
 
-     `expired` is not `cancelled` (lib/os/lifecycle) — nobody decided this. The
+     `expired` is not `cancelled` (lib/os/lifecycle) - nobody decided this. The
      service is idempotent and re-checks the clock inside its own transaction,
      so a second sweep on the same day writes nothing. */
   const stale = await adminDb!.collection('bookings')

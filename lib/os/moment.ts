@@ -55,7 +55,7 @@ export function projectMoments(args: {
     if (!photos.length) continue;
 
     /**
-     * WHEN THE WORK HAPPENED — and `updatedAt` is not that.
+     * WHEN THE WORK HAPPENED - and `updatedAt` is not that.
      *
      * The comment below said "when the studio recorded it, not when we read
      * it", and then fell back to `updatedAt`, which is when the document was
@@ -66,8 +66,8 @@ export function projectMoments(args: {
      * production today.
      *
      * `completedAt` is a true event and every completed job in production
-     * carries one. `createdAt` — when the job was opened, which is when the car
-     * arrived — is the honest floor for one still in the bay. Neither can move
+     * carries one. `createdAt` - when the job was opened, which is when the car
+     * arrived - is the honest floor for one still in the bay. Neither can move
      * because somebody corrected a note.
      */
     const at = job.completedAt ?? job.createdAt;

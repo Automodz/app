@@ -1,8 +1,8 @@
 /**
  * THE RECORD KNOWS WHICH CAR IT IS ABOUT.
  *
- * Three addresses showed the record — `/history`, `/history?car=<id>` and
- * `/history/<visitId>` — and each resolved the subject for itself. The answers
+ * Three addresses showed the record - `/history`, `/history?car=<id>` and
+ * `/history/<visitId>` - and each resolved the subject for itself. The answers
  * did not agree:
  *
  *   · the album fell back to `leadCar` whenever the query was absent, so a
@@ -11,7 +11,7 @@
  *   · a visit page never learned which car it belonged to at all, so it had no
  *     context to hand to the control that leaves it
  *
- * One resolver now answers for all three. Ownership is `vehicleId` — never a
+ * One resolver now answers for all three. Ownership is `vehicleId` - never a
  * registration number, which is a label a customer retypes and two people can
  * share.
  */

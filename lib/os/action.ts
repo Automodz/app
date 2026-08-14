@@ -1,5 +1,5 @@
 /**
- * THE NEXT ACTION — an object, never a link.
+ * THE NEXT ACTION - an object, never a link.
  *
  * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §4
  *
@@ -9,8 +9,8 @@
  * An engine that knew `/studio` could never be reused by a surface where
  * arranging a visit is `/admin/bookings/new`.
  *
- * So this emits an intent and its parameters. `navigation/resolve.ts` — the one
- * place that owns the route table — turns it into an address. Change a route
+ * So this emits an intent and its parameters. `navigation/resolve.ts` - the one
+ * place that owns the route table - turns it into an address. Change a route
  * and exactly one file changes.
  */
 import type { OwnershipState } from './ownership';
@@ -49,7 +49,7 @@ export interface ActionInput {
   proposal: Proposal | null;
   liveVisitId?: string;
   agreedVisitId?: string;
-  /** docs/HOME-STATE-MAP.md — a proposal only speaks in the steady states. */
+  /** docs/HOME-STATE-MAP.md - a proposal only speaks in the steady states. */
   proposalApplies: boolean;
 }
 

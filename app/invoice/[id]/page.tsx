@@ -2,8 +2,8 @@
 /**
  * THE PAPER, HELD BY THE STUDIO.
  *
- * A customer reaches this from the record of their visit — "Receipt ·
- * AMZ-2026-0001" — and used to land somewhere else entirely: a light `#F5F5F5`
+ * A customer reaches this from the record of their visit - "Receipt ·
+ * AMZ-2026-0001" - and used to land somewhere else entirely: a light `#F5F5F5`
  * page, Tailwind utilities, a lucide printer icon, "PAID · CASH" in green, and
  * no way back. The application is an always-dark OS in monochrome; this looked
  * like a different product, because it was one.
@@ -20,7 +20,7 @@
  * GST, same total, same payment line, same GSTIN, same photographs.
  *
  * ── BACK ────────────────────────────────────────────────────────────────────
- * There was none. `history.back()` alone is not enough — this address is
+ * There was none. `history.back()` alone is not enough - this address is
  * shared, and whoever opens the link from a message has no history to go back
  * to. So: back to the visit when we came from one, and to History otherwise.
  */
@@ -54,7 +54,7 @@ export default function PublicInvoicePage() {
       .catch(e => setError(e.message));
   }, [id, token]);
 
-  /* One rule for both shared documents — see `publicParent`. This fell back
+  /* One rule for both shared documents - see `publicParent`. This fell back
      to `/history`, which is behind a session, so a stranger opening a receipt
      somebody sent them was pointed at a sign-in wall. */
   const parent = publicParent(from);
@@ -87,7 +87,7 @@ export default function PublicInvoicePage() {
           paddingInline: INSET, maxWidth: MEASURE + INSET * 2, marginInline: 'auto',
           minHeight: '70svh', display: 'flex', flexDirection: 'column', justifyContent: 'center',
         }}>
-          {/* §20.3 — ours or theirs, and this one is neither the customer's
+          {/* §20.3 - ours or theirs, and this one is neither the customer's
               fault nor a failure of their car. */}
           <Heading level="display">This paper isn’t here.</Heading>
           <Text role="body" tone="ink2" style={{ marginTop: space.line, maxWidth: MEASURE }}>
@@ -106,7 +106,7 @@ export default function PublicInvoicePage() {
     return (
       <Shell>
         <section style={{ minHeight: '70svh', display: 'grid', placeItems: 'center' }}>
-          {/* §19.1 — loading is a state, not an absence. */}
+          {/* §19.1 - loading is a state, not an absence. */}
           <Loading caption="Opening the paper" />
         </section>
       </Shell>
@@ -130,7 +130,7 @@ export default function PublicInvoicePage() {
         <Button tier="quiet" href={backHref} style={{ paddingInline: 0 }}>
           ← The visit
         </Button>
-        {/* §21.8 — the customer's word. Printing IS saving a PDF on a phone. */}
+        {/* §21.8 - the customer's word. Printing IS saving a PDF on a phone. */}
         <Button tier="forward" onClick={() => window.print()}>
           Print or save
         </Button>

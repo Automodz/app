@@ -150,7 +150,7 @@ function timingLine(a: {
   const durationMin = a.booking.serviceDurationMinutes;
   if (!durationMin) return null;
   const planned = plannedFinish(a.arrivedAt, durationMin);
-  if (a.now > planned) return 'Running longer than planned — the work sets the pace.';
+  if (a.now > planned) return 'Running longer than planned - the work sets the pace.';
   // a finish on another day names the day; today's needs only the clock
   const sameDay = planned.toDateString() === a.arrivedAt.toDateString();
   return sameDay

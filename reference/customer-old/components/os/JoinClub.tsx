@@ -53,7 +53,7 @@ export default function JoinClub({ vehicleName, washes, rejoining, onJoined }: J
 
   const join = async () => {
     if (!user || !chosen) return;
-    if (!online) { setError('You’re offline — reconnect to join the Club.'); return; }
+    if (!online) { setError('You’re offline - reconnect to join the Club.'); return; }
     setBusy(true); setError(null);
     const start = todayISO();
     const payload: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'> = {

@@ -1,12 +1,12 @@
 /**
- * WHICH CAR — asked, rather than guessed.
+ * WHICH CAR - asked, rather than guessed.
  *
  * Source: docs/AUTOMODZ-OS.md §12.3, §19.1, §21.8
  *
  * The record fell back to `leadCar` whenever the address did not name a car, so
  * a customer with several could be shown one car's visits under another's name
  * with nothing on screen to say the subject had changed. §12.3 makes cars
- * equals — there is no car whose record is the "default" record — and §19.1
+ * equals - there is no car whose record is the "default" record - and §19.1
  * makes an absence a state rather than a licence to choose.
  *
  * A customer with ONE car never meets this: there is nothing to ask.
@@ -24,7 +24,7 @@ import type { GarageModel } from './GarageScreen';
 export function ChooseCar(
   { model, because }: {
     model: GarageModel;
-    /** What the answer is for — "whose record to open". */
+    /** What the answer is for - "whose record to open". */
     because: string;
   },
 ) {
@@ -46,7 +46,7 @@ export function ChooseCar(
         {model.vehicles.map(v => (
           <Link
             key={v.id}
-            /* The car's own record, named by id — the address carries the
+            /* The car's own record, named by id - the address carries the
                answer so nothing downstream has to guess again. Built by the
                route table, which is the only thing that knows addresses. */
             href={hrefForDestination({ to: 'history.car', vehicleId: v.id })}
@@ -62,7 +62,7 @@ export function ChooseCar(
                 FAILED apart from one that was never taken. The class-only path
                 hid the alt TEXT and not the browser's own broken-image glyph,
                 so a car whose photograph 404s showed a torn-page icon in the
-                chooser — a browser's error mark, in the middle of the room. */}
+                chooser - a browser's error mark, in the middle of the room. */}
             <span
               aria-hidden
               style={{

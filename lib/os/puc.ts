@@ -1,5 +1,5 @@
 /**
- * THE POLLUTION CERTIFICATE — declaring, and what the car may say about it.
+ * THE POLLUTION CERTIFICATE - declaring, and what the car may say about it.
  *
  * Source: docs/AUTOMODZ-LIVING-STATES.md §2 (Protection is everything that
  *         shields a car), docs/AUTOMODZ-OS.md §14.2, §18.4, §19.1
@@ -7,8 +7,8 @@
  * ── WHAT WAS THERE BEFORE ────────────────────────────────────────────────
  * `kind: 'puc'` existed, `PROTECTION_TITLE` named it, and a car with one
  * rendered it in the ledger. Nothing could create one. The single act the
- * product offered was `declareHref` — a `wa.me` link that opened WhatsApp with
- * a sentence typed into it — so the answer to "how do I add my certificate"
+ * product offered was `declareHref` - a `wa.me` link that opened WhatsApp with
+ * a sentence typed into it - so the answer to "how do I add my certificate"
  * was "send us a message and hope". Meanwhile `declareProtection()` in
  * lib/services/protections.ts had no caller at all, and `firestore.rules` let
  * the browser write a Protection directly, which meant the one path that did
@@ -20,11 +20,11 @@
  * make the product assert it. Those are different acts and they are now
  * different objects:
  *
- *   Declaration   what the owner sent — a reference, two dates, a photograph
+ *   Declaration   what the owner sent - a reference, two dates, a photograph
  *   Protection    what AutoModz stands behind, created only by a studio
  *                 decision (`lib/server/pucService.ts`)
  *
- * Everything here is PURE. It validates, it reads, it derives — it never
+ * Everything here is PURE. It validates, it reads, it derives - it never
  * writes and never learns where anything lives.
  */
 import type { Declaration, DeclarationStatus, Protection, ProtectionKind } from '@/lib/types';
@@ -41,7 +41,7 @@ export const PUC: ProtectionKind = 'puc';
  *
  * `declared` and `renewing` are deliberately distinct. Both mean "the studio is
  * looking at it", but one is a car with nothing standing and the other is a car
- * that is still certified while its next certificate is checked — and telling
+ * that is still certified while its next certificate is checked - and telling
  * the second customer "verification in progress" and nothing else would hide a
  * fact they already have (§19.1: an absence is a state, and so is a wait).
  */
@@ -67,7 +67,7 @@ export interface PucReading {
   pending?: Declaration;
   /** The last refusal, when the last thing that happened was one. */
   refused?: Declaration;
-  /** Every declaration this car has, newest first — the record, unedited. */
+  /** Every declaration this car has, newest first - the record, unedited. */
   record: Declaration[];
 }
 
@@ -85,7 +85,7 @@ const byNewest = (a: Declaration, b: Declaration): number => {
  * declaration and no verified protection is `declared`, not `active`, however
  * confident the dates on it look.
  *
- * Two pending declarations can exist — two tabs, one instant — and the reading
+ * Two pending declarations can exist - two tabs, one instant - and the reading
  * is still one answer: the newest submission is the one being waited on, and
  * the studio's decision supersedes the rest. Deterministic by construction,
  * exactly as `oneProtectionPerKind` is.
@@ -119,7 +119,7 @@ export function readPuc(args: {
 /**
  * MAY THE CUSTOMER SEND ONE RIGHT NOW?
  *
- * Not while the studio is holding one — a second submission on top of a
+ * Not while the studio is holding one - a second submission on top of a
  * pending one is how a queue gets two answers to one question, and the
  * customer has nothing new to say until it is decided.
  *
@@ -137,7 +137,7 @@ export const mayDeclare = (reading: Pick<PucReading, 'state'>): boolean =>
 
 /**
  * Every way a declaration can be refused before it is stored. Machine-readable,
- * and the same string the API returns — one vocabulary for the refusal, so the
+ * and the same string the API returns - one vocabulary for the refusal, so the
  * screen's sentence and the server's answer cannot drift apart.
  */
 export type PucRefusal =
@@ -157,7 +157,7 @@ export interface PucDeclarationInput {
   reference: string;
   issuedOn: string;
   expiresOn: string;
-  /** Both or neither — a URL with no path cannot be proven to belong here. */
+  /** Both or neither - a URL with no path cannot be proven to belong here. */
   evidenceUrl?: string;
   evidencePath?: string;
   note?: string;
@@ -205,7 +205,7 @@ export const studioToday = (now: Date = new Date()): string =>
  * THE OUTER BOUND OF A CERTIFICATE'S LIFE.
  *
  * A pollution certificate in India runs six months, or a year for a new
- * vehicle. Twenty-four is therefore not the rule — it is the TYPO GUARD, set
+ * vehicle. Twenty-four is therefore not the rule - it is the TYPO GUARD, set
  * generously enough that no real certificate is ever refused by it and tight
  * enough that `2036` typed for `2026` cannot become ten years of protection
  * the studio would have had to notice by eye.
@@ -242,14 +242,14 @@ export function validateDeclaration(
   const { issuedOn, expiresOn } = input as { issuedOn: string; expiresOn: string };
 
   /* ISO dates compare as strings, and that is the whole reason the product
-     stores them this way — no parsing, no zone, no drift. */
+     stores them this way - no parsing, no zone, no drift. */
   if (expiresOn <= issuedOn) return refuse('expiry-not-after-issue');
 
   const today = studioToday(now);
   /* A certificate issued tomorrow is a certificate nobody has. */
   if (issuedOn > today) return refuse('issued-in-the-future');
   /* And one that has already run out protects nothing. The customer is not
-     refused a record here — they are told to go and be tested, which is the
+     refused a record here - they are told to go and be tested, which is the
      only thing that actually resolves it. */
   if (expiresOn <= today) return refuse('already-expired');
 
@@ -287,7 +287,7 @@ export function validateDeclaration(
  * `lib/server/cloudinary.ts#mayWrite`) and it already binds a customer's
  * uploads to their own uid. This narrows that by one more turn: the path also
  * carries the CAR, so a URL lifted from one car's declaration cannot be
- * submitted as another's — including another customer's, whose uid would not
+ * submitted as another's - including another customer's, whose uid would not
  * match either.
  *
  * The client builds the path with this function and the server checks it with
@@ -318,7 +318,7 @@ export function evidenceBelongsTo(
 
 /**
  * Two customers double-tapping and one customer correcting a typo look
- * identical from the outside — a second POST while a first is unanswered — and
+ * identical from the outside - a second POST while a first is unanswered - and
  * they must not have the same effect. This decides which, from the records
  * themselves, so the answer is the same however many times it is asked.
  */
@@ -370,7 +370,7 @@ export function resolveSubmission(
  * ONE DOCUMENT PER CERTIFICATE, and never the deterministic `${vehicleId}_puc`
  * slot the seed data uses.
  *
- * That slot holds ONE promise and a renewal would overwrite it — the `since`
+ * That slot holds ONE promise and a renewal would overwrite it - the `since`
  * gone, the old expiry gone, and no way to answer what the car was certified
  * for last March. `oneProtectionPerKind` already resolves a kind with several
  * documents (it was written for exactly this, after production carried two
@@ -382,7 +382,7 @@ export const protectionIdFor = (d: Pick<Declaration, 'id' | 'vehicleId'>): strin
 
 /**
  * The promise a verified certificate makes. Only the facts the customer
- * actually gave: no provider, no plan, no coverage — a testing centre's name
+ * actually gave: no provider, no plan, no coverage - a testing centre's name
  * was never asked for and inventing one would be a claim nobody made.
  */
 export function protectionFromDeclaration(
@@ -401,7 +401,7 @@ export function protectionFromDeclaration(
 
 /* ── WORDS ───────────────────────────────────────────────────────────────── */
 
-/** §21.8 — the customer's word for each state, never the enum. */
+/** §21.8 - the customer's word for each state, never the enum. */
 export const PUC_STATUS_WORD: Record<DeclarationStatus, string> = {
   submitted: 'With the studio',
   verified: 'Verified',

@@ -8,21 +8,21 @@ import type { Vehicle } from '../types';
  * `addVehicle`, `updateVehicle` and `deleteVehicle` STOOD HERE, and all three
  * wrote to `users/{uid}/vehicles/{id}` from a browser.
  *
- * That looked safe — a customer writing under their own uid — and it was the
+ * That looked safe - a customer writing under their own uid - and it was the
  * worst hole in the product. `ownsVehicle()` in `firestore.rules` is the
  * ownership primitive for protections, visits and declarations, and it asks
  * only whether a document EXISTS at that path. So a customer who knew another
  * customer's vehicle id could create a document at that id under their own uid
  * and read the other car's protections, its whole service history with the
  * studio's stage notes and photographs, and its declared certificates.
- * Squatting an id was an ownership claim — and vehicle ids travel in the
+ * Squatting an id was an ownership claim - and vehicle ids travel in the
  * customer's own addresses, so they are neither secret nor hard to come by.
  *
  * `/api/vehicle` (POST · PATCH) is the door, and the SERVER allocates the id,
  * which is the line that actually closes it: a browser cannot name the
  * document it creates, so it cannot name somebody else's.
  *
- * `forCreate` / `forUpdate` went with them — the "a cleared field is removed"
+ * `forCreate` / `forUpdate` went with them - the "a cleared field is removed"
  * rule lives in `lib/server/vehicleService.ts` now, beside the write it
  * governs.
  */
@@ -32,10 +32,10 @@ export const getVehicles = async (uid: string): Promise<Vehicle[]> => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Vehicle));
 };
 
-/* ── Vehicle 360 — everything ever done to one car, keyed by VEHICLE ID ──
+/* ── Vehicle 360 - everything ever done to one car, keyed by VEHICLE ID ──
    These read by `vehicleId`, never by registration. A plate is a display
    snapshot: mistyped, reissued, transferred between cars. Joining on one put a
-   "Honda City" booking in the BMW's room in production. §P1.6 — a registration
+   "Honda City" booking in the BMW's room in production. §P1.6 - a registration
    may never establish ownership, and §P1.10 applies the same rule to the
    studio's own Vehicle-360 as to the customer's garage.
 
@@ -107,11 +107,11 @@ export const getInvoicesForVehicle = async (vehicleId: string, uid?: string): Pr
  *
  * Two writes in one batch: the flag the projection reads, and a permanent log
  * entry. The log is what answers "was this public on the day that buyer saw
- * it" — a boolean cannot, because it only knows the present.
+ * it" - a boolean cannot, because it only knows the present.
  *
  * ONLY THE OWNER. `uid` scopes the path, so a caller cannot consent on behalf
  * of anyone else; the rules enforce the same thing server-side. The studio has
- * no way in here at all, which is deliberate — see lib/os/consent.ts.
+ * no way in here at all, which is deliberate - see lib/os/consent.ts.
  */
 export const setPublicHistoryConsent = async (
   uid: string, vid: string, granted: boolean,
@@ -135,7 +135,7 @@ export const setPublicHistoryConsent = async (
   await batch.commit();
 };
 
-/* ── THE PLATE SEARCH — a diagnostic, never an ownership claim ──────────── */
+/* ── THE PLATE SEARCH - a diagnostic, never an ownership claim ──────────── */
 
 /**
  * Everything the studio has ever done under one registration.
@@ -146,7 +146,7 @@ export const setPublicHistoryConsent = async (
  * still holds photographs of it, and still needs to find that record when the
  * same car returns. Fifteen of eighteen production jobs are exactly this.
  *
- * §P1.8 — a registration may be used for SEARCH and DIAGNOSIS. What it may
+ * §P1.8 - a registration may be used for SEARCH and DIAGNOSIS. What it may
  * never do is establish ownership, which is why this function is named for
  * what it is and returns records without asserting whose they are. A caller
  * that wants "this customer's car" must use `getJobsForVehicle(vehicleId)`.

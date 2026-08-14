@@ -1,5 +1,5 @@
 /**
- * STATUS CHIP — one of the four states.
+ * STATUS CHIP - one of the four states.
  *
  * Source: docs/AUTOMODZ-OS.md §9.2, §3.3, §21.6
  *
@@ -7,7 +7,7 @@
  * `tone` prop is closed to exactly those, so the component cannot be used to
  * introduce a fifth meaning or to colour something decoratively (§3.3).
  *
- * §21.6 — colour alone must never be the only carrier of meaning, so the chip
+ * §21.6 - colour alone must never be the only carrier of meaning, so the chip
  * always renders its label. There is no icon-only or dot-only mode; a dot on
  * its own is invisible to anyone who cannot separate these four hues.
  */
@@ -17,7 +17,7 @@ import type { StateTone } from '@/design';
 import { toneColor } from './tone';
 
 export interface StatusChipProps {
-  /** §9.2 — the four states, closed. */
+  /** §9.2 - the four states, closed. */
   tone: StateTone;
   /** The label. Required: colour is never the only signal (§21.6). */
   children: ReactNode;

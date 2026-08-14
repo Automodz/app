@@ -7,18 +7,18 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * PRICE A CHOICE — design screen 07.
+ * PRICE A CHOICE - design screen 07.
  *
  * Note what has no name here: `price`, `total`, `discount`, `workPrice`. A
  * caller cannot express them, so there is nothing to validate and nothing to
  * forget to validate. What a caller may say is WHICH coverage, WHICH panels
- * and WHICH extra stages — ids, each of which is looked up in the service
+ * and WHICH extra stages - ids, each of which is looked up in the service
  * document and refused when it is not there.
  *
  * The estimate that comes back is a stored, immutable record. The screen shows
  * what the server wrote; the booking later spends it by id.
  *
- * `preview: true` runs the SAME calculation and stores nothing — screen 07
+ * `preview: true` runs the SAME calculation and stores nothing - screen 07
  * restates the figure on every tap, and a document per tap would leave the
  * studio holding a collection of quotes nobody asked for. It comes back with
  * an empty id, so a caller that tries to spend one fails on a missing estimate
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  /* A bearer token, or the session cookie the rooms already use — the two
+  /* A bearer token, or the session cookie the rooms already use - the two
      lapse independently, and a customer signed in enough to SEE a screen is
      signed in enough to use it. Same-origin only; see lib/server/session.ts. */
   const uid = await sessionCaller(req, t => adminAuth!.verifyIdToken(t));
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   const s = (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined);
   /* Bounded. A thousand panel ids is not a quote, it is a denial of service
-     wearing one — and the studio does not fit a thousand panels. */
+     wearing one - and the studio does not fit a thousand panels. */
   const ids = (v: unknown) =>
     (Array.isArray(v) ? v : [])
       .filter((x): x is string => typeof x === 'string' && x.length > 0 && x.length <= 200)

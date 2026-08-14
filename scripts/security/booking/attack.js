@@ -204,7 +204,7 @@ const appt = (over = {}) => ({
       (await usedCount('p-three')) === threes, `${await usedCount('p-three')} vs ${threes}`);
   }
 
-  console.log('\n8 · MEMBERSHIP — ACTIVE, EXPIRED, EXHAUSTED');
+  console.log('\n8 · MEMBERSHIP - ACTIVE, EXPIRED, EXHAUSTED');
   {
     /* BEST-OF, never stacked. Gold is 15% (₹1,800); the open promo is 25%
        (₹3,000). The member must get the BETTER of the two, so the promo wins
@@ -244,7 +244,7 @@ const appt = (over = {}) => ({
     ok('  …and no wash was deducted', (await sub('sub-lapsed')).washesUsed === 0);
   }
 
-  console.log('\n9 · MEMBERSHIP WASH — SPENT ATOMICALLY, AND ONLY WHERE VALID');
+  console.log('\n9 · MEMBERSHIP WASH - SPENT ATOMICALLY, AND ONLY WHERE VALID');
   {
     const before = (await sub('sub-gold')).washesUsed;
     const r = await post(tok.gold, appt({
@@ -326,7 +326,7 @@ const appt = (over = {}) => ({
     ok('a malformed date is refused', r.json.error === 'bad-slot', JSON.stringify(r.json));
   }
 
-  console.log('\n13 · ATOMICITY — A REFUSAL COSTS NOTHING');
+  console.log('\n13 · ATOMICITY - A REFUSAL COSTS NOTHING');
   {
     /* This request reaches the promo read and the pricing decision, then dies
        at the slot check. If the writes were not one commit, the count would
@@ -352,7 +352,7 @@ const appt = (over = {}) => ({
       orphan.length === 0, JSON.stringify(orphan));
   }
 
-  console.log('\n14 · WALK-IN (staff) — negotiated prices, server-decided benefits');
+  console.log('\n14 · WALK-IN (staff) - negotiated prices, server-decided benefits');
   {
     const r = await post(tok.staff1, {
       kind: 'walkin', customerId: 'custB',
@@ -427,7 +427,7 @@ const appt = (over = {}) => ({
       `${b.pickupDropFee} ${b.totalAmount} ${JSON.stringify(b.discount)}`);
   }
 
-  console.log('\n16 · THE WIRE — what the client actually receives');
+  console.log('\n16 · THE WIRE - what the client actually receives');
   {
     const r = await post(tok.custA, appt({ serviceId: 'svc-detail' }));
     const b = r.json.booking;
@@ -468,7 +468,7 @@ const appt = (over = {}) => ({
       (await booking(first.json.id)).status === 'cancelled');
   }
 
-  console.log('\n18 · MEDIA — signed upload, real delete');
+  console.log('\n18 · MEDIA - signed upload, real delete');
   {
     const MEDIA_SIGN = API.replace('/booking/create', '/media/sign');
     const MEDIA_DEL = API.replace('/booking/create', '/media/delete');

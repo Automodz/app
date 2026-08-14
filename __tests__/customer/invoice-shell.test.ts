@@ -1,8 +1,8 @@
 /**
  * THE PAPER BELONGS TO THE STUDIO THAT ISSUED IT.
  *
- * A customer reaches `/invoice/[id]` from the record of their visit — "Receipt
- * · AMZ-2026-0001" — and landed somewhere else entirely: a light `#F5F5F5`
+ * A customer reaches `/invoice/[id]` from the record of their visit - "Receipt
+ * · AMZ-2026-0001" - and landed somewhere else entirely: a light `#F5F5F5`
  * page, Tailwind utilities, a lucide printer icon, "PAID · CASH" in green, and
  * no way back at all. The application is an always-dark OS in monochrome. This
  * looked like a different product because it was one.
@@ -26,7 +26,7 @@ const page = liveCodeOf('app/invoice/[id]/page.tsx');
  * The raw source, for the two assertions about the back-link guard.
  *
  * `liveCodeOf` strips `//` line comments with a regex, and the guard it needs
- * to see contains the literal string `'//'` — so the stripper eats the rest of
+ * to see contains the literal string `'//'` - so the stripper eats the rest of
  * that line and the assertion fails against code that is perfectly correct.
  * Worth writing down: a comment-stripper that does not understand strings will
  * do this to any line guarding against protocol-relative URLs.
@@ -51,7 +51,7 @@ describe('the shell is the OS', () => {
   it('loading and failure are states, not blank screens (§19.1, §20.3)', () => {
     expect(page).toMatch(/<Loading caption=/);
     expect(page).toMatch(/This paper isn’t here\./);
-    /* §20.4 — say the car is safe. */
+    /* §20.4 - say the car is safe. */
     expect(page).toMatch(/are safe/);
   });
 });
@@ -60,7 +60,7 @@ describe('there is a way back', () => {
   /**
    * THE RULE MOVED, AND GOT STRICTER.
    *
-   * These two assertions read the invoice's own inline implementation — the
+   * These two assertions read the invoice's own inline implementation - the
    * `'/history'` literal and the `startsWith` guard. Both now live in
    * `publicParent`, shared with `/chapter/<id>`, which is the OTHER address in
    * the product that gets sent to people and which had no way out at all.
@@ -88,7 +88,7 @@ describe('there is a way back', () => {
     expect(publicParent('javascript:alert(1)').href).toBe('/');
   });
 
-  it('the record tells the paper which visit sent it — through the resolver', () => {
+  it('the record tells the paper which visit sent it - through the resolver', () => {
     const href = hrefForDestination({
       to: 'invoice', invoiceId: 'i1', token: 'tok', fromVisitId: 'vis-9',
     });
@@ -111,7 +111,7 @@ describe('the document itself', () => {
     expect(page).toMatch(/window\.print\(\)/);
   });
 
-  it('carries no colour — the identity is monochrome', () => {
+  it('carries no colour - the identity is monochrome', () => {
     /* Green "PAID", amber "pending", mint and yellow photo captions. */
     for (const gone of ['#059669', '#D97706', '#6EE7B7', '#FCD34D']) {
       expect(doc).not.toContain(gone);

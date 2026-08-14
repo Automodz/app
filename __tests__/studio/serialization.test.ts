@@ -1,12 +1,12 @@
 /**
  * `/studio` THREW FOR EVERY SIGNED-IN CUSTOMER.
  *
- * Reported: the Studio room renders the error boundary — "Something went wrong
+ * Reported: the Studio room renders the error boundary - "Something went wrong
  * at our end." Anonymously it is fine (it shows the sign-in wall), so the
  * failure needs real data to appear.
  *
  * HYPOTHESIS UNDER TEST: `toStudio` forwards three values STRAIGHT from
- * Firestore — `picture.catalogue`, the vehicles, and the subscription — into a
+ * Firestore - `picture.catalogue`, the vehicles, and the subscription - into a
  * model consumed by `StudioScreen`, which is `'use client'`. Those documents
  * carry `Timestamp` CLASS INSTANCES (`Service.createdAt`, `Vehicle.createdAt`,
  * `Subscription.createdAt/updatedAt/paidAt`), and React Server Components
@@ -71,7 +71,7 @@ describe('the Studio model can cross to a client component', () => {
     expect(nonSerialisable(toStudio(picture()))).toEqual([]);
   });
 
-  it('the detector itself works — a Timestamp is caught', () => {
+  it('the detector itself works - a Timestamp is caught', () => {
     /* Guards against the assertion above passing because the walk is broken. */
     expect(nonSerialisable({ a: ts('2026-01-01T00:00:00Z') }))
       .toEqual(['$.a is a Timestamp instance']);

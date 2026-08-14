@@ -1,12 +1,12 @@
 /**
- * POLISH — motion discipline and dead weight.
+ * POLISH - motion discipline and dead weight.
  *
  * §7.3 is absolute: "Nothing may invent a duration. If a motion does not fit
  * one of these, question the motion." §7.2 permits exactly two curves.
  *
  * THE LANDING PAGE OBEYED NEITHER, and it is the first thing every visitor
- * sees. Its scroll reveal ran at `duration.morph` — 620ms, the token §7.5
- * reserves for a photograph carrying between two surfaces — and the hero used
+ * sees. Its scroll reveal ran at `duration.morph` - 620ms, the token §7.5
+ * reserves for a photograph carrying between two surfaces - and the hero used
  * hand-typed 750ms and 1000ms values, a third curve (`'easeInOut'`), and
  * index-based stagger chains that delayed later items by up to 210ms on top.
  *
@@ -31,7 +31,7 @@ const walk = (dir: string): string[] =>
 const SURFACES = [...walk('components/screens'), ...walk('components/system'),
   ...walk('components/market'), ...walk('components/vehicle')];
 
-describe('§7.3 — nothing invents a duration', () => {
+describe('§7.3 - nothing invents a duration', () => {
   it('the four durations are the constitution\'s, unchanged', () => {
     expect(duration).toEqual({ tick: 120, move: 280, scene: 480, morph: 620 });
   });
@@ -65,18 +65,18 @@ describe('§7.3 — nothing invents a duration', () => {
   });
 });
 
-describe('§7.2 — two curves, and only two', () => {
+describe('§7.2 - two curves, and only two', () => {
   it('the curves are unchanged', () => {
     expect(curve.ease).toEqual([0.22, 1, 0.36, 1]);
     expect(easing.ease).toBe('cubic-bezier(0.22, 1, 0.36, 1)');
   });
 
   it('no TRANSITION reaches for a named easing keyword', () => {
-    /* `'easeInOut'` is framer-motion's own curve — a third one, which §7.2
+    /* `'easeInOut'` is framer-motion's own curve - a third one, which §7.2
        forbids, and it was on the landing page's hero sweep.
 
        LOOPS ARE EXEMPT, and deliberately. §7.4 permits exactly two things to
-       loop — the live indicator and the loading breath — and a loop needs a
+       loop - the live indicator and the loading breath - and a loop needs a
        SYMMETRIC curve or it lurches. `curve.ease` decays hard and settles,
        which is right for an arrival and wrong for a breath. `Loading` and
        `Skeleton` are the two, both `repeat: Infinity`. */
@@ -97,7 +97,7 @@ describe('§7.2 — two curves, and only two', () => {
   });
 });
 
-describe('§7.1 — motion decorates, it never gates', () => {
+describe('§7.1 - motion decorates, it never gates', () => {
   it('nothing staggers content behind an index', () => {
     /* `delay: i * 0.07` makes the fourth item wait 210ms for no reason the
        customer can perceive as anything but slowness. */
@@ -121,7 +121,7 @@ describe('§7.1 — motion decorates, it never gates', () => {
 describe('nothing renders a boundary that cannot do anything', () => {
   it('no Suspense wraps a component that cannot suspend', () => {
     /* `/cars` wrapped a server component with no state, no effects and no
-       `useSearchParams` in `<Suspense fallback={null}>` — a tree for React to
+       `useSearchParams` in `<Suspense fallback={null}>` - a tree for React to
        walk and nothing for the customer. The ones that remain wrap a client
        component that really does read search params. */
     const cars = codeOf('app/cars/page.tsx');
@@ -140,8 +140,8 @@ describe('the stylesheet carries nothing dead', () => {
     .map(f => readFileSync(f, 'utf8')).join('\n');
 
   it('every class it defines is used somewhere', () => {
-    /* 62 classes survived three retired eras — the ember palette, the WebGL
-       hero, the old `st-` surfaces — and shipped on every page. */
+    /* 62 classes survived three retired eras - the ember palette, the WebGL
+       hero, the old `st-` surfaces - and shipped on every page. */
     const unused = defined.filter(c => !new RegExp(`\\b${c}\\b`).test(source));
     expect(unused).toEqual([]);
   });
@@ -158,14 +158,14 @@ describe('the stylesheet carries nothing dead', () => {
   });
 
   it('it is meaningfully smaller than it was', () => {
-    /* 60,071 chars before the dead-CSS pass, 41,632 after — a third of the
+    /* 60,071 chars before the dead-CSS pass, 41,632 after - a third of the
        stylesheet was rules for three retired eras, shipping on every page.
 
        The ceiling moved to 48,000 to admit the ambient field, the glass
        material, the press feedback and the focus ring, and to 54,000 for the
        ratified customer design: the four glass tones, the sweep, the breath,
        the dial and the two type classes, plus the warm token set they read.
-       Every one has a call site, which the assertion above proves — and that
+       Every one has a call site, which the assertion above proves - and that
        assertion, not this one, is what catches dead weight creeping back.
        This is the coarse backstop, and it is only ever raised alongside a
        named set of live rules. */

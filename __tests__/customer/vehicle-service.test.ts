@@ -1,5 +1,5 @@
 /**
- * A CAR IN A GARAGE — and the id nobody but the server may choose.
+ * A CAR IN A GARAGE - and the id nobody but the server may choose.
  *
  * `ownsVehicle()` is the ownership primitive for protections, visits and
  * declarations, and it asks only whether a document EXISTS at
@@ -31,7 +31,7 @@ const refOf = (path: string) => ({
   },
 });
 const collectionOf = (name: string) => ({
-  /* NO ARGUMENT — the id is the database's. That is the whole point. */
+  /* NO ARGUMENT - the id is the database's. That is the whole point. */
   doc: (id?: string) => refOf(`${name}/${id ?? `auto-${++allocated}`}`),
   get: async () => ({
     docs: [...store.keys()]
@@ -68,7 +68,7 @@ const cars = (uid: string) =>
   [...store.keys()].filter(k => k.startsWith(`users/${uid}/vehicles/`));
 
 describe('adding a car', () => {
-  it('THE SERVER ALLOCATES THE ID — nothing in the request names a document', async () => {
+  it('THE SERVER ALLOCATES THE ID - nothing in the request names a document', async () => {
     const r = await addCar('u1', {
       name: 'Kia Seltos', registrationNumber: ' gj01 ab 8539 ',
       /* Every field a caller might hope steers the document. */
@@ -84,7 +84,7 @@ describe('adding a car', () => {
        a plate is printed and read aloud with; matching removes it, because
        "GJ01AB8539" and "GJ01 AB 8539" are one car. The duplicate check
        compared the STORED form, so typing the plate a second time with
-       different spacing produced a second record — two histories for one car,
+       different spacing produced a second record - two histories for one car,
        which is the exact thing the check exists to prevent. */
     expect(normalisePlate(' gj01  ab 8539 ')).toBe('GJ01 AB 8539');
     expect(normalisePlate('gj01ab8539')).toBe('GJ01AB8539');
@@ -132,7 +132,7 @@ describe('adding a car', () => {
     expect(stored.createdAt).toBe('<server-time>');
   });
 
-  it('NO KEY IS WRITTEN AS `undefined` — Firestore refuses one outright', async () => {
+  it('NO KEY IS WRITTEN AS `undefined` - Firestore refuses one outright', async () => {
     /* The car form's optional fields are usually blank. Only the DELETE half
        of this rule came across when the write moved to the server, so the
        first real request through the new door was refused by the database for
@@ -147,7 +147,7 @@ describe('adding a car', () => {
       .toEqual(['createdAt', 'name', 'registrationNumber', 'updatedAt']);
   });
 
-  it('a garage is per customer — two people may hold the same plate', async () => {
+  it('a garage is per customer - two people may hold the same plate', async () => {
     await addCar('u1', { name: 'Kia Seltos', registrationNumber: 'GJ01AB8539' });
     const other = await addCar('u2', { name: 'Kia Seltos', registrationNumber: 'GJ01AB8539' });
     expect(other.vehicleId).toBe('auto-2');
@@ -159,7 +159,7 @@ describe('correcting a car', () => {
   const mine = async () =>
     (await addCar('u1', { name: 'Kia Seltos', registrationNumber: 'GJ01AB8539', odometer: '41208' })).vehicleId;
 
-  it('ANOTHER CUSTOMER’S CAR IS NOT FOUND — the path is the whole check', async () => {
+  it('ANOTHER CUSTOMER’S CAR IS NOT FOUND - the path is the whole check', async () => {
     const id = await mine();
     expect(await failure(() => correctCar('u2', id, { name: 'Theirs now', registrationNumber: 'GJ01AB8539' })))
       .toEqual({ code: 'not-found', status: 404 });

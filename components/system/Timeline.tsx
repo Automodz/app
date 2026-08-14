@@ -1,6 +1,6 @@
 'use client';
 /**
- * TIMELINE — an ordered sequence with one current step.
+ * TIMELINE - an ordered sequence with one current step.
  *
  * Source: docs/AUTOMODZ-OS.md §13.5, §16.1, §21.6, §21.7, §3.3
  *
@@ -9,13 +9,13 @@
  *   "A stage that can never be reached must not be shown. A permanently unlit
  *    step teaches the customer the interface is decorative."
  *
- * The second binds the caller — this component renders the steps it is given
+ * The second binds the caller - this component renders the steps it is given
  * and cannot know which are reachable. It is checklist question 16 ("is every
  * control's destination real?") applied to a display.
  *
- * §21.6 — the sequence is a real ordered list, so it is announced as one, and
+ * §21.6 - the sequence is a real ordered list, so it is announced as one, and
  * the current step is marked with aria-current rather than by colour alone.
- * §3.3 — a done step is ink, a pending step is ink3; nothing is coloured to
+ * §3.3 - a done step is ink, a pending step is ink3; nothing is coloured to
  * show progress.
  */
 import type { CSSProperties, ReactNode } from 'react';
@@ -26,7 +26,7 @@ import { Text } from './Text';
 export interface TimelineStep {
   id: string;
   label: ReactNode;
-  /** Optional second line — what was seen or done. */
+  /** Optional second line - what was seen or done. */
   detail?: ReactNode;
 }
 
@@ -34,7 +34,7 @@ export interface TimelineProps {
   steps: TimelineStep[];
   /** Index of the current step. Everything before it is complete. */
   current: number;
-  /** §3.3 — the tone of completed steps. State colours only where it IS a state. */
+  /** §3.3 - the tone of completed steps. State colours only where it IS a state. */
   tone?: Tone;
   className?: string;
   style?: CSSProperties;

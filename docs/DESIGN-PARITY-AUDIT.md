@@ -1,4 +1,4 @@
-# DESIGN PARITY AUDIT — FULL
+# DESIGN PARITY AUDIT - FULL
 
 **Specification:** `AutoModz App.dc.html`, 19 screens
 **Code baseline:** `9e8e55c` · **Production:** project `automodz`, read 2026-08-10
@@ -9,19 +9,19 @@
 - **[P]** verified against production data (read-only)
 - **[C]** established by reading the code
 - **[R]** rendered and observed in a browser
-- **[?]** not established — named so it is not mistaken for cleared
+- **[?]** not established - named so it is not mistaken for cleared
 
 ---
 
 # 0 · FINDING OF RECORD
 
 **The seal path has never run in production.** All four `visits` documents are
-seeded fixtures — ids `vis-demo-bmw-ceramic`, `vis-demo-ceramic`,
+seeded fixtures - ids `vis-demo-bmw-ceramic`, `vis-demo-ceramic`,
 `vis-demo-glass`, `vis-demo-ppf`, each `authoredBy: 'studio'`, none carrying a
 `jobId` **[P]**. Eight completed jobs exist; none has produced a visit **[P]**.
 
-Every screen downstream of a sealed visit — 11, 13, 15, the album, the service
-record, money reconciliation, notification routing — is therefore reading either
+Every screen downstream of a sealed visit - 11, 13, 15, the album, the service
+record, money reconciliation, notification routing - is therefore reading either
 fixtures or nothing. **This is the root of the majority of this audit.**
 
 Second structural fact: **the studio side and the customer side are joined only
@@ -44,13 +44,13 @@ Route column: current implementation. 🔴 = no route exists.
 
 ### 02 · Add your car
 - **Route** `/garage?add=1` · **Entry** first sign-in, Garage "Add a car" · **Exit** → 03, or Skip → 03 empty
-- **Primary** That's my car · **Secondary** Not this car — enter manually · Skip for now
+- **Primary** That's my car · **Secondary** Not this car - enter manually · Skip for now
 - **Fields** "Signed in as {email}", registration input, resolved `{model}`, `{year} · {colour}`
 - **Calculated** registration → make/model/year/colour
 - **States** empty · typing · resolving · resolved · unresolved(manual) · duplicate plate · saving · error
 - **Backend** `users/{uid}/vehicles` write; **registration resolution** (decided: manual entry)
 
-### 03 · Now — new customer
+### 03 · Now - new customer
 - **Route** `/` · **Entry** post-onboarding, no visits · **Exit** → 06, → 08
 - **Primary** Book a first visit · **Secondary** See what we do to cars
 - **Fields** car name, "Nothing in the studio yet", proposition copy, "Next opening · Thu 9:00 am"
@@ -58,7 +58,7 @@ Route column: current implementation. 🔴 = no route exists.
 - **States** no car · car but no visit
 - **Backend** availability; vehicle
 
-### 04 · Now — car in the studio
+### 04 · Now - car in the studio
 - **Route** `/` · **Entry** live job · **Exit** → 11, → 07 (advisory)
 - **Primary** Follow the visit · **Secondary** advisory card
 - **Fields** car, "Curing", **3h 40m**, "ready 6:20 pm", service + brand, "Bay 02", phase strip (Prep/Correction/Coat/Cure), advisory sentence
@@ -66,7 +66,7 @@ Route column: current implementation. 🔴 = no route exists.
 - **States** each act; overrunning; no photos yet
 - **Backend** job stage + timestamps, bay, service, protection %, advisory engine
 
-### 05 · Now — resting
+### 05 · Now - resting
 - **Route** `/` · **Entry** no live job · **Exit** → 08, → 07
 - **Primary** Book the studio · **Secondary** "Worth knowing" advisory
 - **Fields** car, "Nothing in the studio", statement, **82%**, "ceramic life", advisory, "Next opening · Thu, 9:00 am"
@@ -108,7 +108,7 @@ Route column: current implementation. 🔴 = no route exists.
 ### 10 · Manage booking 🟡
 - **Route** `/studio?manage=<id>` (sheet) · **Exit** → 08, → 09
 - **Primary** Move to another date · **Secondary** Change pickup time · Edit the work · Cancel
-- **Fields** status + work, dates, three action rows with sub-lines, "Next openings" chips, "No charge — the bay goes back to the calendar."
+- **Fields** status + work, dates, three action rows with sub-lines, "Next openings" chips, "No charge - the bay goes back to the calendar."
 - **Calculated** **24-hour free-change rule**, next openings
 - **States** changeable · locked (<24h) · in progress · cancelled
 - **Backend** reschedule rules, availability
@@ -118,7 +118,7 @@ Route column: current implementation. 🔴 = no route exists.
 - **Primary** Message the studio · **Secondary** Today's photos · 46
 - **Fields** "Visit 14 · Bay 02", service, live chip, caption, 4 timeline entries with **times** and **photo counts**, "Now · 3h 40m left", "Est. 6:20 PM"
 - **Calculated** visit ordinal, per-stage photo counts, remaining, estimate
-- **⚠️ Design names a technician** ("11:20 AM · Rahul K.") — **decided: unsigned**
+- **⚠️ Design names a technician** ("11:20 AM · Rahul K.") - **decided: unsigned**
 - **States** each act; overrun; no photos
 - **Backend** stages w/ timestamps + photo attribution, bay, visit number
 
@@ -126,7 +126,7 @@ Route column: current implementation. 🔴 = no route exists.
 - **Route** none · **Exit** → 11
 - **Primary** Approve · +₹6,000 · **Secondary** Skip it · film as planned
 - **Fields** "We found something under the film", two evidence photos ("Rear quarter", "Under light"), explanation, "Extra stage +₹6,000", "Extra time +2 hours · same day", requester identity
-- **Customer decision** approve / decline — **binding, priced, time-changing**
+- **Customer decision** approve / decline - **binding, priced, time-changing**
 - **States** requested · approved · declined · expired · superseded
 - **Backend** **approvals object; propagation to job → visit → invoice**
 
@@ -164,7 +164,7 @@ Route column: current implementation. 🔴 = no route exists.
 - **Route** `/cars/[id]` · **Exit** → enquiry
 - **Primary** Ask about this car
 - **Fields** badge, title, spec, price, **"Its record with us"**: detailed since, PPF life, "Visits on record 11 · 340 photos", "Paint · Original, no respray", "Full inspection report", photo count "+38"
-- **⚠️ Publishes a customer's service history publicly** — consent required
+- **⚠️ Publishes a customer's service history publicly** - consent required
 - **Backend** **listing ↔ vehicle service-record join; inspection report**
 
 ### 18 · Club
@@ -187,31 +187,31 @@ Route column: current implementation. 🔴 = no route exists.
 |---|---|---|---|---|---|---|---|
 | 06 | catalogue, price, duration, brand | StudioScreen | `toStudio` | `services.price/duration/brand/description` | admin services page | admin | 🟢 **[P]** 7 active |
 | 04/11 | stages, acts, timing | LiveVisitScreen | `os/stay` ← `jobs.statusHistory` | `jobs.status/statusHistory` | kiosk | staff | 🟢 **[C][R]** |
-| 04/11 | **bay number** | — | — | `jobs.bay` (33% set) | kiosk | staff | 🟡 **[P]** not projected |
-| 11 | **per-stage photo counts** | — | — | `jobs.photos` (11% set) | kiosk | staff | 🔴 **[P]** counts not derived |
-| 11 | **visit ordinal ("Visit 14")** | — | — | — | — | — | 🔴 **[C]** |
+| 04/11 | **bay number** | - | - | `jobs.bay` (33% set) | kiosk | staff | 🟡 **[P]** not projected |
+| 11 | **per-stage photo counts** | - | - | `jobs.photos` (11% set) | kiosk | staff | 🔴 **[P]** counts not derived |
+| 11 | **visit ordinal ("Visit 14")** | - | - | - | - | - | 🔴 **[C]** |
 | 05/14/15 | protection % | Dial/Meter | `remainingOf` | `protections.since`+`term` | `sealVisitForJob` | staff | 🟡 **[P]** `since` 43%; else a bucket |
-| 15 | warranty date | VehicleScreen | `toVehicle` | derived from protections | — | — | 🟢 **[C]** |
+| 15 | warranty date | VehicleScreen | `toVehicle` | derived from protections | - | - | 🟢 **[C]** |
 | 15 | **odometer** | VehicleScreen | `toVehicle` | `vehicles.odometer` | CarForm | customer | 🟡 **[P]** 0% populated |
-| 15/13 | album counts, service record | — | `toHistory` | `visits` | `sealVisitForJob` | staff | 🔴 **[P]** never sealed |
+| 15/13 | album counts, service record | - | `toHistory` | `visits` | `sealVisitForJob` | staff | 🔴 **[P]** never sealed |
 | 13 | line items, GST, total | VisitScreen | `toVisit` | `invoices.lineItems/gst/total` | admin invoice | admin | 🟡 **[P]** 1 invoice, no `visitId` |
-| 13 | **payment** | — | — | `invoices.paymentStatus` | admin | admin | 🟡 no customer path |
-| 13 | **rating** | RatingCard | — | `feedback` | customer | customer | 🟡 **[C]** on public invoice, not the visit |
-| 08/19 | **pickup address** | — | — | `bookings.pickupAddress` | — | — | ⚫ **[P]** 0% — declared, never written |
-| 08 | pickup/drop flags | — | — | `bookings.pickupRequired/dropRequired` | `bookingService` | server | 🟡 **[P]** written; read only by a WhatsApp template |
-| 07 | scopes, add-ons, estimate | — | — | — | — | — | 🔴 **[C]** |
-| 08 | multi-day | — | `availability` (day-level) | `bookings.scheduledDate` singular | `bookingService` | server | 🔴 **[C]** |
-| 10 | 24-hour rule | ManageVisit | — | — | — | — | 🔴 **[C]** |
-| 12 | approval | — | — | — | — | — | 🔴 **[C]** |
+| 13 | **payment** | - | - | `invoices.paymentStatus` | admin | admin | 🟡 no customer path |
+| 13 | **rating** | RatingCard | - | `feedback` | customer | customer | 🟡 **[C]** on public invoice, not the visit |
+| 08/19 | **pickup address** | - | - | `bookings.pickupAddress` | - | - | ⚫ **[P]** 0% - declared, never written |
+| 08 | pickup/drop flags | - | - | `bookings.pickupRequired/dropRequired` | `bookingService` | server | 🟡 **[P]** written; read only by a WhatsApp template |
+| 07 | scopes, add-ons, estimate | - | - | - | - | - | 🔴 **[C]** |
+| 08 | multi-day | - | `availability` (day-level) | `bookings.scheduledDate` singular | `bookingService` | server | 🔴 **[C]** |
+| 10 | 24-hour rule | ManageVisit | - | - | - | - | 🔴 **[C]** |
+| 12 | approval | - | - | - | - | - | 🔴 **[C]** |
 | 17 | service record on listing | ListingScreen | `os/market` | `carListings` (no vehicle ref) | admin | admin | 🔴 **[C]** |
 | 18 | washes, renewal, benefits | MembershipScreen | `os/club` | `subscriptions` + `MEMBERSHIP_PLANS` | admin | admin | 🟢 **[P]** since `9e8e55c` |
-| 19 | quiet mode / methods / addresses | — | — | — | — | — | 🔴 **[C]** |
-| — | notification → surface | — | `noticeOf`→`surfaceOf` | `notifications` | server | server | ⚠️ **[P]** null for completed-without-visit; 5 unread invisible |
-| — | next visit | — | `nextVisitOf` | `bookings` | — | — | 🟢 **[P]** one answer |
-| — | money reconciliation | — | `moneyOfVisits` | `visits`+`invoices` | — | — | ⚠️ **[P]** unreconcilable — invoice has no `visitId` |
-| — | `serviceHistory` | — | — | `users/{}/vehicles/{}/serviceHistory` | `services/bookings.ts:213` | client | ⚫ **[C]** written, no reader |
-| — | `bookingIntents` | — | — | `bookingIntents` (1 doc) | ? | ? | ⚫ **[P]** no reader |
-| — | `quotes` | — | — | `quotes` (1 doc) | admin | admin | ⚫ **[P]** no customer path |
+| 19 | quiet mode / methods / addresses | - | - | - | - | - | 🔴 **[C]** |
+| - | notification → surface | - | `noticeOf`→`surfaceOf` | `notifications` | server | server | ⚠️ **[P]** null for completed-without-visit; 5 unread invisible |
+| - | next visit | - | `nextVisitOf` | `bookings` | - | - | 🟢 **[P]** one answer |
+| - | money reconciliation | - | `moneyOfVisits` | `visits`+`invoices` | - | - | ⚠️ **[P]** unreconcilable - invoice has no `visitId` |
+| - | `serviceHistory` | - | - | `users/{}/vehicles/{}/serviceHistory` | `services/bookings.ts:213` | client | ⚫ **[C]** written, no reader |
+| - | `bookingIntents` | - | - | `bookingIntents` (1 doc) | ? | ? | ⚫ **[P]** no reader |
+| - | `quotes` | - | - | `quotes` (1 doc) | admin | admin | ⚫ **[P]** no customer path |
 
 ---
 
@@ -219,18 +219,18 @@ Route column: current implementation. 🔴 = no route exists.
 
 Existing objects are **extended**, never duplicated.
 
-### `users/{uid}` — EXTEND
+### `users/{uid}` - EXTEND
 Add `quietMode?: boolean`, `upiVpa?: string`.
 Owner: customer. Create: auth trigger. Modify: owner (prefs), admin (role).
 Read: owner + staff. Immutable: none. **[C]** rules already scope this correctly.
 
-### `users/{uid}/vehicles/{id}` — EXTEND (done, unpopulated)
+### `users/{uid}/vehicles/{id}` - EXTEND (done, unpopulated)
 `odometer?`, `year?` added at `b372119`; **0% populated [P]**.
 Immutable: `registrationNumber` once visits exist (it is the join key).
 ⚠️ **Integrity:** jobs attach by plate, so changing a plate silently re-parents
 history. Must be locked or migrated deliberately.
 
-### `services/{id}` — EXTEND for screen 07
+### `services/{id}` - EXTEND for screen 07
 ```
 scopes?:  [{ id, label, detail, price, durationMinutes }]
 addOns?:  [{ id, label, detail, price, durationMinutes, recommendedWith? }]
@@ -239,22 +239,22 @@ Scope is a **priced variant**, not a new service. "Custom panels · On quote"
 routes to the existing `quotes` object. Snapshot: scope label + price into the
 booking and the sealed visit. Create/modify: admin. Read: public.
 
-### `bookings/{id}` — EXTEND
+### `bookings/{id}` - EXTEND
 Add `endDate?` (multi-day), `scopeId?`, `addOnIds?[]`, populate `pickupAddress`.
-Add terminal status **`expired`** — 3 bookings sit `pending` 13–17 days past **[P]**.
+Add terminal status **`expired`** - 3 bookings sit `pending` 13–17 days past **[P]**.
 Immutable after completion: pricing snapshot. Create: customer via
 `bookingService`. Modify: owner (limited) + staff. Read: owner + staff.
 
-### `users/{uid}/addresses/{id}` — NEW
+### `users/{uid}/addresses/{id}` - NEW
 `{ label, line, lat?, lng?, isDefault }`. Owner-only. Screen 19 "2 saved",
 screen 08 selects one. **No address concept exists anywhere [C]**.
 
-### `jobs/{id}` — EXTEND
-`customerId` must be **required when the booking has one** — 15/18 lack it **[P]**,
+### `jobs/{id}` - EXTEND
+`customerId` must be **required when the booking has one** - 15/18 lack it **[P]**,
 which is why the customer app sees almost nothing. Add `approvalIds?[]`.
 Stages already carry history. Create/modify: staff. Read: staff + owner.
 
-### `approvals/{id}` — NEW
+### `approvals/{id}` - NEW
 ```
 jobId, visitId?, customerId, vehicleId, reason, photos[],
 priceDelta, timeDeltaMinutes,
@@ -265,29 +265,29 @@ requestedBy, requestedAt, respondedAt?
 `requested`, only on their own document. `priceDelta` is staff-set and
 customer-read. Must propagate: job total → sealed visit `amounts` → invoice line.
 
-### `visits/{id}` — AUTHORITATIVE, currently fixtures only
+### `visits/{id}` - AUTHORITATIVE, currently fixtures only
 Snapshot at seal: services, prices, `termsCaptured`, stages, amounts.
 **Immutable once `sealedAt` is set (§16.2).** Create: `sealVisitForJob` only.
-Required: `jobId` — the four production documents lack it **[P]**.
+Required: `jobId` - the four production documents lack it **[P]**.
 
-### `protections/{id}` — TIGHTEN
-`since` must become **required** — 43% populated **[P]** — because it is the
+### `protections/{id}` - TIGHTEN
+`since` must become **required** - 43% populated **[P]** - because it is the
 denominator of every percentage in the design. `termsSource` is
 `captured` (6) / `declared` (8) **[P]**; declared protections have no honest %.
 Immutable: `term`, `since`. Create: seal, or admin declaration.
 
-### `invoices/{id}` — TIGHTEN
+### `invoices/{id}` - TIGHTEN
 `visitId` must be set; currently unset on the only invoice **[P]**.
 Immutable once paid. Add `payment: { method, vpa?, markedBy, markedAt }`.
 
-### `subscriptions/{id}` — 🟢 resolved
+### `subscriptions/{id}` - 🟢 resolved
 `washesTotal` vs `washesIncluded` drift fixed at `9e8e55c`; catalogue authoritative.
 
-### `carListings/{id}` — EXTEND for screen 17
+### `carListings/{id}` - EXTEND for screen 17
 Add `vehicleId?`, `ownerConsent: boolean`, `inspection?: { points, reportUrl }`.
 ⚠️ Without `ownerConsent` this publishes a customer's history.
 
-### `notifications/{id}` — 🟢 shape fine, routing broken (Phase 4)
+### `notifications/{id}` - 🟢 shape fine, routing broken (Phase 4)
 
 ---
 
@@ -297,24 +297,24 @@ Add `vehicleId?`, `ownerConsent: boolean`, `inspection?: { points, reportUrl }`.
 - Availability: day-level, `washCapacity: 1`, 15-min buffer **[C]**
 - **Multi-day: absent.** Screen 08 needs a bay held across consecutive days 🔴
 - Conflicts: server-side in `bookingService` 🟢
-- Stale: correctly excluded from "upcoming" 🟢 **[P]** — but then shown nowhere,
+- Stale: correctly excluded from "upcoming" 🟢 **[P]** - but then shown nowhere,
   so a customer cannot cancel their own booking 🟡
 - Cancellation: exists 🟢 · **Reschedule + 24-hour rule: absent** 🔴
 - Lifecycle: no `expired` terminal state 🔴
 
-### Pricing — ONE AUTHORITY REQUIRED
+### Pricing - ONE AUTHORITY REQUIRED
 `decidePrice` is the single authority **[C]** and takes base, category,
 membership, promos. The design adds three inputs it does not accept:
 **scope price, add-on prices, approved mid-visit deltas.**
-⚠️ **GST appears on screen 13 and on invoices but is not in `decidePrice`** —
+⚠️ **GST appears on screen 13 and on invoices but is not in `decidePrice`** -
 so the estimate (07/08/09) and the invoice (13) are computed by different code
 and will drift. Must be unified or they contradict.
 
 ### Protection
 Start = `since` (43% **[P]**), expiry = `term.expiresOn`, life = fraction between.
-Without `since`, `remainingOf` returns health buckets 0.8/0.2/0.05/0 **[C]** —
+Without `since`, `remainingOf` returns health buckets 0.8/0.2/0.05/0 **[C]** -
 so "82%" would be a category wearing a number. Membership-as-protection: 🟢 on
-Home, 🔴 in Garage ("Nothing declared yet" ×4 **[P]**) — ⚠️ contradiction.
+Home, 🔴 in Garage ("Nothing declared yet" ×4 **[P]**) - ⚠️ contradiction.
 
 ### Visit
 `booking → job → visit` is built end-to-end and transactional **[C]**; it has
@@ -322,7 +322,7 @@ never executed **[P]**. Photographs exist on 11% of jobs **[P]**. Before/during/
 after kinds exist **[C]**. Rating exists but is attached to the public invoice,
 not the visit **[C]**.
 
-### Mid-visit approval — entire lifecycle 🔴
+### Mid-visit approval - entire lifecycle 🔴
 No object, no route, no admin action, no propagation. Screen 13's
 "Extra stage · approved ₹6,000" line has no source.
 
@@ -335,65 +335,65 @@ Plan, benefits, usage, renewal, grace, lapse, history all resolved by `os/club`.
 
 | Screen | Element | Required | Existing | Engine | Writer | Status | Fix |
 |---|---|---|---|---|---|---|---|
-| 01 | Google sign-in | provider | ✅ | — | `/api/session` | 🟢 | — |
-| 01 | Look around first | public route | ✅ `/cars` | — | — | 🟢 | — |
-| 02 | registration → model | lookup | ❌ | — | — | 🔴 | manual entry (decided) |
-| 02 | year / colour | `vehicles.year/color` | field ✅ data 0% | — | CarForm | 🟡 | capture in form |
-| 02 | duplicate plate guard | check | ✅ | — | CarForm | 🟢 | — |
-| 03 | next opening | availability | ✅ | `availability` | — | 🟡 | not projected to Home |
-| 03 | empty-state copy | — | ❌ | — | — | 🔴 | build screen |
-| 04 | remaining time | stage + duration | ✅ | `os/stay` | kiosk | 🟢 | — |
-| 04 | ready-at time | derived | ✅ | `os/stay` | — | 🟢 | — |
-| 04 | bay number | `jobs.bay` | 33% | — | kiosk | 🟡 | project it |
-| 04 | phase strip | acts | ✅ | `os/stay` | — | 🟢 | — |
-| 04 | advisory | protection % + catalogue | ⚠️ % unreal | `os/proposal` | — | 🟡 | needs `since` |
+| 01 | Google sign-in | provider | ✅ | - | `/api/session` | 🟢 | - |
+| 01 | Look around first | public route | ✅ `/cars` | - | - | 🟢 | - |
+| 02 | registration → model | lookup | ❌ | - | - | 🔴 | manual entry (decided) |
+| 02 | year / colour | `vehicles.year/color` | field ✅ data 0% | - | CarForm | 🟡 | capture in form |
+| 02 | duplicate plate guard | check | ✅ | - | CarForm | 🟢 | - |
+| 03 | next opening | availability | ✅ | `availability` | - | 🟡 | not projected to Home |
+| 03 | empty-state copy | - | ❌ | - | - | 🔴 | build screen |
+| 04 | remaining time | stage + duration | ✅ | `os/stay` | kiosk | 🟢 | - |
+| 04 | ready-at time | derived | ✅ | `os/stay` | - | 🟢 | - |
+| 04 | bay number | `jobs.bay` | 33% | - | kiosk | 🟡 | project it |
+| 04 | phase strip | acts | ✅ | `os/stay` | - | 🟢 | - |
+| 04 | advisory | protection % + catalogue | ⚠️ % unreal | `os/proposal` | - | 🟡 | needs `since` |
 | 05 | protection dial | `since`+`term` | 43% | `remainingOf` | seal | 🟡 | make `since` required |
-| 05 | "ceramic life" label | protection kind | ✅ | — | — | 🟢 | — |
-| 06 | 8 services | catalogue | 7 **[P]** | `toStudio` | admin | 🟢 | — |
-| 06 | "For the {car}" | selected car | ✅ | — | — | 🟡 | not shown today |
-| 07 | 3 coverages + prices | `services.scopes` | ❌ | — | admin | 🔴 | extend `services` |
-| 07 | add-ons | `services.addOns` | ❌ | — | admin | 🔴 | extend `services` |
-| 07 | estimate w/ discount | pricing | partial | `decidePrice` | — | 🟡 | add scope/add-on inputs |
-| 07 | "2 days in the bay" | duration→days | ❌ | — | — | 🔴 | derive |
-| 08 | consecutive days | multi-day capacity | ❌ | `availability` | — | 🔴 | extend |
-| 08 | time chips | slots | ✅ | `generateTimeSlots` | — | 🟢 | — |
-| 08 | concierge toggle | `pickupRequired` | ✅ written | — | `bookingService` | 🟡 | no UI |
-| 08 | saved address | `addresses` | ❌ | — | — | 🔴 | new collection |
-| 08 | pickup time | derived | ❌ | — | — | 🔴 | derive from slot |
-| 09 | confirmation facts | booking | ✅ | — | — | 🔴 | no route |
-| 09 | add to calendar | ICS | ❌ | — | — | 🔴 | build |
-| 10 | move date | reschedule | ❌ | — | — | 🔴 | build |
-| 10 | 24-hour rule | rule | ❌ | — | — | 🔴 | build |
-| 10 | next openings | availability | ✅ | `availability` | — | 🟡 | not surfaced |
-| 10 | cancel | cancel | ✅ | `bookingService` | — | 🟢 | — |
-| 11 | visit ordinal | count | ❌ | — | — | 🔴 | derive from sealed visits |
-| 11 | stage times | `statusHistory` | ✅ | `os/stay` | kiosk | 🟢 | — |
-| 11 | photo counts per stage | `jobs.photos` | 11% | — | kiosk | 🔴 | derive + require |
-| 11 | technician name | — | — | — | ⚠️ | §2.2 | **unsigned (decided)** |
-| 12 | entire screen | `approvals` | ❌ | — | — | 🔴 | new object + both UIs |
+| 05 | "ceramic life" label | protection kind | ✅ | - | - | 🟢 | - |
+| 06 | 8 services | catalogue | 7 **[P]** | `toStudio` | admin | 🟢 | - |
+| 06 | "For the {car}" | selected car | ✅ | - | - | 🟡 | not shown today |
+| 07 | 3 coverages + prices | `services.scopes` | ❌ | - | admin | 🔴 | extend `services` |
+| 07 | add-ons | `services.addOns` | ❌ | - | admin | 🔴 | extend `services` |
+| 07 | estimate w/ discount | pricing | partial | `decidePrice` | - | 🟡 | add scope/add-on inputs |
+| 07 | "2 days in the bay" | duration→days | ❌ | - | - | 🔴 | derive |
+| 08 | consecutive days | multi-day capacity | ❌ | `availability` | - | 🔴 | extend |
+| 08 | time chips | slots | ✅ | `generateTimeSlots` | - | 🟢 | - |
+| 08 | concierge toggle | `pickupRequired` | ✅ written | - | `bookingService` | 🟡 | no UI |
+| 08 | saved address | `addresses` | ❌ | - | - | 🔴 | new collection |
+| 08 | pickup time | derived | ❌ | - | - | 🔴 | derive from slot |
+| 09 | confirmation facts | booking | ✅ | - | - | 🔴 | no route |
+| 09 | add to calendar | ICS | ❌ | - | - | 🔴 | build |
+| 10 | move date | reschedule | ❌ | - | - | 🔴 | build |
+| 10 | 24-hour rule | rule | ❌ | - | - | 🔴 | build |
+| 10 | next openings | availability | ✅ | `availability` | - | 🟡 | not surfaced |
+| 10 | cancel | cancel | ✅ | `bookingService` | - | 🟢 | - |
+| 11 | visit ordinal | count | ❌ | - | - | 🔴 | derive from sealed visits |
+| 11 | stage times | `statusHistory` | ✅ | `os/stay` | kiosk | 🟢 | - |
+| 11 | photo counts per stage | `jobs.photos` | 11% | - | kiosk | 🔴 | derive + require |
+| 11 | technician name | - | - | - | ⚠️ | §2.2 | **unsigned (decided)** |
+| 12 | entire screen | `approvals` | ❌ | - | - | 🔴 | new object + both UIs |
 | 13 | line items | sealed visit | fixtures | `toVisit` | seal | 🔴 | run seal |
-| 13 | approved extra line | approval | ❌ | — | — | 🔴 | depends on 12 |
+| 13 | approved extra line | approval | ❌ | - | - | 🔴 | depends on 12 |
 | 13 | GST | invoice | ✅ on invoice | ❌ in `decidePrice` | admin | ⚠️ | unify |
-| 13 | Pay | UPI intent | ❌ | — | — | 🔴 | build (deep link) |
-| 13 | rate | `feedback` | ✅ | — | customer | 🟡 | move to visit |
+| 13 | Pay | UPI intent | ❌ | - | - | 🔴 | build (deep link) |
+| 13 | rate | `feedback` | ✅ | - | customer | 🟡 | move to visit |
 | 14 | protection headline | protections | 43% | `toGarage` | seal | 🟡 | needs `since` |
-| 14 | state chip | ownership | ✅ | `stateWordFor` | — | 🟢 | — |
-| 15 | odometer | `vehicles.odometer` | 0% | — | CarForm | 🟡 | capture |
-| 15 | warranty date | derived | ✅ | `toVehicle` | — | 🟢 | — |
+| 14 | state chip | ownership | ✅ | `stateWordFor` | - | 🟢 | - |
+| 15 | odometer | `vehicles.odometer` | 0% | - | CarForm | 🟡 | capture |
+| 15 | warranty date | derived | ✅ | `toVehicle` | - | 🟢 | - |
 | 15 | 3 protections %+months | protections | 43% | `remainingOf` | seal | 🟡 | needs `since` |
 | 15 | album counts | visits | fixtures | `toHistory` | seal | 🔴 | run seal |
-| 15 | last service | visits | fixtures | — | seal | 🔴 | run seal |
-| 15 | Renew the front PPF | proposal | ✅ | `os/proposal` | — | 🟡 | needs real % |
-| 16 | listings + price | `carListings` | 3 **[P]** | `os/market` | admin | 🟢 | — |
-| 16 | certified segment | flag | ❌ | — | admin | 🔴 | add flag |
-| 16 | "ceramic 82%" on card | protection join | ❌ | — | — | 🔴 | join |
-| 17 | record with us | vehicle join | ❌ | — | — | 🔴 | join + **consent** |
-| 17 | inspection report | doc | ❌ | — | admin | 🔴 | build |
-| 18 | washes / renewal | subscription | ✅ | `os/club` | admin | 🟢 | — |
-| 18 | tiers | catalogue | ✅ | — | — | 🟢 | — |
-| 19 | payment methods | `users.upiVpa` | ❌ | — | — | 🔴 | add |
-| 19 | addresses "2 saved" | `addresses` | ❌ | — | — | 🔴 | new |
-| 19 | quiet mode | `users.quietMode` | ❌ | — | — | 🔴 | add |
+| 15 | last service | visits | fixtures | - | seal | 🔴 | run seal |
+| 15 | Renew the front PPF | proposal | ✅ | `os/proposal` | - | 🟡 | needs real % |
+| 16 | listings + price | `carListings` | 3 **[P]** | `os/market` | admin | 🟢 | - |
+| 16 | certified segment | flag | ❌ | - | admin | 🔴 | add flag |
+| 16 | "ceramic 82%" on card | protection join | ❌ | - | - | 🔴 | join |
+| 17 | record with us | vehicle join | ❌ | - | - | 🔴 | join + **consent** |
+| 17 | inspection report | doc | ❌ | - | admin | 🔴 | build |
+| 18 | washes / renewal | subscription | ✅ | `os/club` | admin | 🟢 | - |
+| 18 | tiers | catalogue | ✅ | - | - | 🟢 | - |
+| 19 | payment methods | `users.upiVpa` | ❌ | - | - | 🔴 | add |
+| 19 | addresses "2 saved" | `addresses` | ❌ | - | - | 🔴 | new |
+| 19 | quiet mode | `users.quietMode` | ❌ | - | - | 🔴 | add |
 
 ---
 
@@ -403,30 +403,30 @@ Plan, benefits, usage, renewal, grace, lapse, history all resolved by `os/club`.
 |---|---|---|---|---|---|---|
 | 1 | Anonymous → sign in | 01 | session cookie | popup blocked | retry / look around | 🟢 |
 | 2 | New customer → add car | 02 | `vehicles` | duplicate plate | inline error | 🟡 no year/colour capture |
-| 3 | Select car | 14 | `?car=` | — | address restores | 🟢 |
-| 4 | Select service | 06 | — | empty catalogue | — | 🟢 |
-| 5 | Select scope | 07 | — | — | — | 🔴 |
-| 6 | Add-ons | 07 | — | — | — | 🔴 |
-| 7 | Estimate | 07 | — | drift vs invoice | — | 🟡 ⚠️ GST |
-| 8 | Select date | 08 | — | no slots | other day | 🟢 |
-| 9 | Multi-day | 08 | — | — | — | 🔴 |
-| 10 | Pickup/drop | 08 | `pickupRequired` | no address | — | 🟡 |
+| 3 | Select car | 14 | `?car=` | - | address restores | 🟢 |
+| 4 | Select service | 06 | - | empty catalogue | - | 🟢 |
+| 5 | Select scope | 07 | - | - | - | 🔴 |
+| 6 | Add-ons | 07 | - | - | - | 🔴 |
+| 7 | Estimate | 07 | - | drift vs invoice | - | 🟡 ⚠️ GST |
+| 8 | Select date | 08 | - | no slots | other day | 🟢 |
+| 9 | Multi-day | 08 | - | - | - | 🔴 |
+| 10 | Pickup/drop | 08 | `pickupRequired` | no address | - | 🟡 |
 | 11 | Confirm booking | 08 | `bookings` | capacity race | server rejects | 🟢 |
-| 12 | Confirmation | 09 | — | — | — | 🔴 |
-| 13 | Manage | 10 | — | — | — | 🟡 |
-| 14 | Reschedule | 10 | — | — | — | 🔴 |
+| 12 | Confirmation | 09 | - | - | - | 🔴 |
+| 13 | Manage | 10 | - | - | - | 🟡 |
+| 14 | Reschedule | 10 | - | - | - | 🔴 |
 | 15–18 | Arrive → received → looked over → in care | kiosk | `jobs.statusHistory` | staff forgets | none | 🟢 write / 🟡 no ageing |
-| 19 | Mid-visit approval | 12 | — | — | — | 🔴 |
-| 20 | Final checks | kiosk | job | — | — | 🟢 |
-| 21 | Ready | kiosk | job | — | — | 🟢 |
-| 22 | Payment | 13 | — | — | — | 🔴 |
-| 23 | Rating | 13 | `feedback` | — | — | 🟡 wrong surface |
+| 19 | Mid-visit approval | 12 | - | - | - | 🔴 |
+| 20 | Final checks | kiosk | job | - | - | 🟢 |
+| 21 | Ready | kiosk | job | - | - | 🟢 |
+| 22 | Payment | 13 | - | - | - | 🔴 |
+| 23 | Rating | 13 | `feedback` | - | - | 🟡 wrong surface |
 | 24 | Sealed visit | completion | `visits`+`protections` | **never fires** | backfill (never run) | 🔴 **[P]** |
-| 25 | Protection created | seal | `protections` | `since` optional | — | 🟡 |
-| 26 | History | 15 | — | no visits | — | 🔴 |
-| 27 | Membership | 18 | `subscriptions` | — | — | 🟢 |
-| 28 | Notification routing | any | `read` | no owning surface | **none — silently dropped** | ⚠️ **[P]** |
-| 29 | Marketplace/service record | 17 | — | — | — | 🔴 |
+| 25 | Protection created | seal | `protections` | `since` optional | - | 🟡 |
+| 26 | History | 15 | - | no visits | - | 🔴 |
+| 27 | Membership | 18 | `subscriptions` | - | - | 🟢 |
+| 28 | Notification routing | any | `read` | no owning surface | **none - silently dropped** | ⚠️ **[P]** |
+| 29 | Marketplace/service record | 17 | - | - | - | 🔴 |
 | 30 | Returning customer | 01→04/05 | session | cookie lapse | `SessionKeeper` | 🟢 |
 
 ---
@@ -468,7 +468,7 @@ Verified by reading `firestore.rules` **[C]**:
 | Notification ownership (`userId ==`) | 🟢 |
 | Booking cannot exceed capacity | 🟢 server-side `bookingService` |
 | Immutable historical records | 🟡 rules allow staff rewrite of sealed visits |
-| **Customer cannot approve for another customer** | 🔴 no object yet — rule must be written with it |
+| **Customer cannot approve for another customer** | 🔴 no object yet - rule must be written with it |
 | **Marketplace public/private boundary** | 🔴 screen 17 publishes a customer's history with no consent field |
 | Admin/location boundaries | **[?]** single location today |
 
@@ -480,29 +480,29 @@ Verified by reading `firestore.rules` **[C]**:
 
 | Screen | new | empty | loading | healthy | attention | expired | upcoming | live | completed | cancelled | failed | no-data |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 01 | 🟢 | — | 🟡 | — | — | — | — | — | — | — | 🟡 | — |
-| 02 | 🟢 | 🟢 | 🟡 | — | — | — | — | — | 🟢 | — | 🟢 | — |
-| 03 | 🔴 | 🔴 | 🟡 | — | — | — | — | — | — | — | 🟡 | 🔴 |
-| 04 | — | — | 🟡 | 🟢 | 🟡 | — | — | 🟢 | 🟢 | — | 🟡 | — |
-| 05 | 🟢 | 🟢 | 🟡 | 🧪 | 🧪 | 🧪 | — | — | — | — | 🟡 | 🟢 |
-| 06 | — | 🟢 | 🟡 | 🟢 | — | — | — | — | — | — | 🟡 | 🟢 |
-| 07 | 🔴 | 🔴 | 🔴 | 🔴 | — | — | — | — | — | — | 🔴 | 🔴 |
-| 08 | 🟢 | 🟢 | 🟢 | 🟢 | — | — | 🟢 | — | 🟢 | — | 🟢 | 🟢 |
-| 09 | 🔴 | — | 🔴 | 🔴 | — | — | 🔴 | — | — | — | 🔴 | — |
-| 10 | — | 🟡 | 🟡 | 🟡 | — | 🔴 | 🟡 | — | — | 🟢 | 🟡 | 🟡 |
-| 11 | — | — | 🟢 | — | — | — | — | 🟢 | 🔴 | — | 🟡 | 🟡 |
-| 12 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | — | — | 🔴 | — | 🔴 | 🔴 |
-| 13 | 🔴 | — | 🔴 | — | — | — | — | — | 🧪 | — | 🔴 | 🔴 |
-| 14 | 🟢 | 🟢 | 🟡 | 🟡 | 🟡 | 🧪 | — | 🟢 | — | — | 🟡 | 🟢 |
-| 15 | 🟢 | 🟢 | 🟡 | 🧪 | 🧪 | 🧪 | 🟢 | 🟢 | 🧪 | — | 🟡 | 🟢 |
-| 16 | — | 🟢 | 🟡 | 🟢 | — | — | — | — | — | — | 🟡 | 🟢 |
-| 17 | — | — | 🟡 | 🟡 | — | — | — | — | — | — | 🟡 | 🔴 |
-| 18 | 🟢 | 🟢 | 🟡 | 🟢 | 🟢 | 🟢 | — | — | — | 🟢 | 🟡 | 🟢 |
-| 19 | 🟢 | — | 🟡 | 🟢 | — | — | — | 🟢 | — | — | 🟡 | — |
+| 01 | 🟢 | - | 🟡 | - | - | - | - | - | - | - | 🟡 | - |
+| 02 | 🟢 | 🟢 | 🟡 | - | - | - | - | - | 🟢 | - | 🟢 | - |
+| 03 | 🔴 | 🔴 | 🟡 | - | - | - | - | - | - | - | 🟡 | 🔴 |
+| 04 | - | - | 🟡 | 🟢 | 🟡 | - | - | 🟢 | 🟢 | - | 🟡 | - |
+| 05 | 🟢 | 🟢 | 🟡 | 🧪 | 🧪 | 🧪 | - | - | - | - | 🟡 | 🟢 |
+| 06 | - | 🟢 | 🟡 | 🟢 | - | - | - | - | - | - | 🟡 | 🟢 |
+| 07 | 🔴 | 🔴 | 🔴 | 🔴 | - | - | - | - | - | - | 🔴 | 🔴 |
+| 08 | 🟢 | 🟢 | 🟢 | 🟢 | - | - | 🟢 | - | 🟢 | - | 🟢 | 🟢 |
+| 09 | 🔴 | - | 🔴 | 🔴 | - | - | 🔴 | - | - | - | 🔴 | - |
+| 10 | - | 🟡 | 🟡 | 🟡 | - | 🔴 | 🟡 | - | - | 🟢 | 🟡 | 🟡 |
+| 11 | - | - | 🟢 | - | - | - | - | 🟢 | 🔴 | - | 🟡 | 🟡 |
+| 12 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | - | - | 🔴 | - | 🔴 | 🔴 |
+| 13 | 🔴 | - | 🔴 | - | - | - | - | - | 🧪 | - | 🔴 | 🔴 |
+| 14 | 🟢 | 🟢 | 🟡 | 🟡 | 🟡 | 🧪 | - | 🟢 | - | - | 🟡 | 🟢 |
+| 15 | 🟢 | 🟢 | 🟡 | 🧪 | 🧪 | 🧪 | 🟢 | 🟢 | 🧪 | - | 🟡 | 🟢 |
+| 16 | - | 🟢 | 🟡 | 🟢 | - | - | - | - | - | - | 🟡 | 🟢 |
+| 17 | - | - | 🟡 | 🟡 | - | - | - | - | - | - | 🟡 | 🔴 |
+| 18 | 🟢 | 🟢 | 🟡 | 🟢 | 🟢 | 🟢 | - | - | - | 🟢 | 🟡 | 🟢 |
+| 19 | 🟢 | - | 🟡 | 🟢 | - | - | - | 🟢 | - | - | 🟡 | - |
 
-**Loading** is 🟡 throughout by design — rooms are server-rendered, so there is
+**Loading** is 🟡 throughout by design - rooms are server-rendered, so there is
 no customer-visible loading state. **Error is 🟡 throughout**: `app/error.tsx`
-and `app/not-found.tsx` exist at the root only **[C]** — no per-room boundary, so
+and `app/not-found.tsx` exist at the root only **[C]** - no per-room boundary, so
 a projection throw in any room yields one generic page.
 
 ---
@@ -565,16 +565,16 @@ services 7   subscriptions 2  tasks 2  users 9  visits 4  walkinCustomers 14
 
 # PHASE 12 · IMPLEMENTATION PLAN
 
-### P0 — integrity, security, contradiction
+### P0 - integrity, security, contradiction
 
 **P0.1 · Make the seal run**
 Problem: 8 completed jobs, 0 sealed visits; all visits are fixtures.
 
-Root cause — **CORRECTED 2026-08-10 after diagnosis.** The seal does not "fail
+Root cause - **CORRECTED 2026-08-10 after diagnosis.** The seal does not "fail
 silently". It shipped on **2026-07-30** (`c50fc93`), and the most recent job
 completion in production is **2026-07-22** **[P]**. No job has been completed
 since the code existed, so the trigger has never had the opportunity to fire.
-It is unproven, not broken. The admin role check would pass —
+It is unproven, not broken. The admin role check would pass -
 `hello.automodz@gmail.com` carries `role: admin` **[P]**.
 
 Consequence: the 8 unsealed jobs are all historical, and the **backfill** is the
@@ -609,16 +609,16 @@ record section.
 Problem: bookings carry another car's plate. **Verify:** every booking's
 `vehicleRegNo` matches a vehicle owned by `userId`.
 
-### P1 — the designed journey
+### P1 - the designed journey
 P1.1 scopes + add-ons (07) → P1.2 estimate → P1.3 multi-day + addresses (08)
 → P1.4 Booked (09) → P1.5 Manage + 24h (10) → P1.6 approvals (12)
 → P1.7 Ready·pay·rate (13) → P1.8 dock Car→Club + screen 03
 
-### P2 — supporting
+### P2 - supporting
 Stale booking/job expiry · surface cancellable bookings · quiet mode, methods,
 addresses (19) · certified detail (17) · `customerId` on every job
 
-### P3 — polish
+### P3 - polish
 Album counts · ICS export · bay number on 04/11 · remove or read `serviceHistory`
 and `bookingIntents`
 
@@ -639,7 +639,7 @@ P1.6 approvals ──► job total ──► sealed visit ──► P1.7 invoice
 P0.4 consent ──► 17     P0.5 plate ──► all car-scoped screens
 ```
 
-**Nothing in P1 is safe before P0.1 and P0.2** — 13 and 15 render sealed-visit
+**Nothing in P1 is safe before P0.1 and P0.2** - 13 and 15 render sealed-visit
 data, so building them first means building against fixtures, which is precisely
 how the present state arose.
 
@@ -648,7 +648,7 @@ how the present state arose.
 # 14 · EXACT IMPLEMENTATION ORDER
 
 1. P0.5 plate integrity (read-only report first)
-2. P0.1 seal — fix the trigger, then run the backfill, verified
+2. P0.1 seal - fix the trigger, then run the backfill, verified
 3. P0.2 `since` required
 4. P0.3 unify pricing incl. GST
 5. P0.4 consent field + rule
@@ -682,10 +682,10 @@ the design itself
 
 ---
 
-# 18 · DEPLOYMENT READY — DEFINITION
+# 18 · DEPLOYMENT READY - DEFINITION
 
 1. Every completed job seals a visit automatically, with `since` recorded.
-2. One calculation produces estimate, invoice and payment — GST included.
+2. One calculation produces estimate, invoice and payment - GST included.
 3. Every percentage is a measurement between two dates, not a bucket.
 4. No screen states a fact another screen contradicts.
 5. Every customer action has an admin counterpart that exists.
@@ -699,7 +699,7 @@ the design itself
 
 # 19 · STILL NOT ESTABLISHED **[?]**
 
-- Hydration, layout shift and mobile overflow on authenticated screens — the
+- Hydration, layout shift and mobile overflow on authenticated screens - the
   browser pass remains blocked by the session-permission denial.
 - Whether any admin surface can currently set `protections.since`.
 - Multi-location boundaries (single location today).

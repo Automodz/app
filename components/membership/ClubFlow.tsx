@@ -1,6 +1,6 @@
 'use client';
 /**
- * JOINING, UPGRADING, RENEWING — and leaving.
+ * JOINING, UPGRADING, RENEWING - and leaving.
  *
  * Source: reference/customer-old/components/os/JoinClub.tsx
  *
@@ -10,8 +10,8 @@
  * as a plan edit would be inventing a path the server refuses.
  *
  * ── THIS FILE COMPUTES NOTHING, AND THAT IS NEW ──────────────────────────
- * It used to assemble the whole subscription document — plan, start date, end
- * date, wash count, payment method — and write it straight to Firestore, which
+ * It used to assemble the whole subscription document - plan, start date, end
+ * date, wash count, payment method - and write it straight to Firestore, which
  * accepted it because it said `pending`. So the terms of a standing
  * entitlement were the browser's to write: `washesTotal: 999` and an `endDate`
  * in 2099 were one devtools session away, and the studio's activation screen
@@ -47,7 +47,7 @@ const REFUSAL: Record<string, string> = {
   'not-configured': 'The studio cannot be reached just now. Try again shortly.',
 };
 const SIGNED_OUT = 'Your session has expired. Sign in again and we\u2019ll pick this up.';
-const UNKNOWN = 'That didn\u2019t reach the studio — try again.';
+const UNKNOWN = 'That didn\u2019t reach the studio - try again.';
 
 /** What the customer is here to do. All three write the same shape. */
 export type ClubIntent = 'join' | 'upgrade' | 'renew';
@@ -59,7 +59,7 @@ const TITLE: Record<ClubIntent, string> = {
 };
 
 const LEAD: Record<ClubIntent, string> = {
-  join: 'A standing arrangement — washes kept, and the studio on hand.',
+  join: 'A standing arrangement - washes kept, and the studio on hand.',
   upgrade: 'Choose the plan you want next. It starts once the studio confirms.',
   renew: 'Carry it on for another cycle.',
 };
@@ -97,7 +97,7 @@ export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlow
 
   const submit = async () => {
     if (!chosen) return;
-    if (!online) { setError('You\u2019re offline — reconnect to do this.'); return; }
+    if (!online) { setError('You\u2019re offline - reconnect to do this.'); return; }
     setBusy(true);
     setError(null);
     try {
@@ -134,7 +134,7 @@ export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlow
           <div aria-live="polite">
             <Heading level="title">The studio has it.</Heading>
             <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
-              {chosen?.label} — {formatCurrency(chosen?.price ?? 0)} a month.
+              {chosen?.label} - {formatCurrency(chosen?.price ?? 0)} a month.
               We&rsquo;ll confirm once payment is settled at the studio.
             </Text>
             <Text role="whisper" tone="ink3" style={{ marginTop: space.gap }}>
@@ -153,7 +153,7 @@ export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlow
 
             <OfflineNote inline caption="You’re offline. This needs a connection." />
 
-            {/* THE PLANS, each with what it actually includes. §15.4 — the
+            {/* THE PLANS, each with what it actually includes. §15.4 - the
                 benefits are the plan's own `perks`, never a marketing list
                 written twice. */}
             <div style={{ marginTop: space.rest, display: 'grid', gap: space.gap }}>
@@ -201,7 +201,7 @@ export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlow
               })}
             </div>
 
-            {/* HOW IT IS PAID. Settled at the studio either way — there is no
+            {/* HOW IT IS PAID. Settled at the studio either way - there is no
                 gateway in the product, and saying so is honest. */}
             <div style={{ marginTop: space.rest }}>
               <Text role="data" tone="ink3">Paying</Text>
@@ -255,7 +255,7 @@ export function ClubFlow({ open, onClose, intent, currentPlan = null }: ClubFlow
 /**
  * LEAVING.
  *
- * §15.6 — "cancelling is available, plainly worded, and not defended by a
+ * §15.6 - "cancelling is available, plainly worded, and not defended by a
  * maze." One confirmation, because it cannot be undone, and then the one
  * service call the rules permit.
  */
@@ -278,7 +278,7 @@ export function LeaveClub({
     try {
       /* Through the same door as everything else. Leaving is a lifecycle
          transition like any other, and `membershipTransition` is what decides
-         whether this membership may take it — a cancelled one cannot be
+         whether this membership may take it - a cancelled one cannot be
          cancelled again, and an expired one is history rather than something
          to leave. */
       const res = await authedFetch('/api/membership', {

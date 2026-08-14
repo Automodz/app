@@ -4,10 +4,10 @@
  * `/membership` asked `os/club`. Three other surfaces did not, and each asked a
  * different question of the raw document instead:
  *
- *   `toYou`             `subscription ? …`            — any subscription at all
- *   `toHome.membership` `status === 'active'`         — a status, not a lifecycle
+ *   `toYou`             `subscription ? …`            - any subscription at all
+ *   `toHome.membership` `status === 'active'`         - a status, not a lifecycle
  *   `membershipAsProtection`
- *                       `status !== 'cancelled'`      — a third rule again
+ *                       `status !== 'cancelled'`      - a third rule again
  *
  * A customer in production whose Silver membership had been CANCELLED was told
  * on `/you`:
@@ -66,13 +66,13 @@ const asked = (subscription: Subscription | null) => {
     membershipHeld: toMembership(p, NOW).held,
     membershipTerm: toMembership(p, NOW).term,
     homeClub: home?.membership?.said,
-    /* §15.2 — the membership stands among the car's protections. */
+    /* §15.2 - the membership stands among the car's protections. */
     homeProtection: home?.protections.find(x => x.id.startsWith('membership_')),
   };
 };
 
 describe('the membership state', () => {
-  it('ACTIVE — every surface agrees it is held, with the engine’s count', () => {
+  it('ACTIVE - every surface agrees it is held, with the engine’s count', () => {
     const a = asked(sub({ washesUsed: 1 }));
 
     expect(a.membershipHeld).toBe(true);
@@ -85,7 +85,7 @@ describe('the membership state', () => {
     expect(a.homeProtection?.term).toBe('3 washes left');
   });
 
-  it('CANCELLED — nothing anywhere calls it a membership, and nothing renews', () => {
+  it('CANCELLED - nothing anywhere calls it a membership, and nothing renews', () => {
     /* The production contradiction, in one assertion. The end date is still in
        the future: a cancellation is not a date, which is exactly why asking
        `healthOf` about it returned "healthy". */
@@ -98,7 +98,7 @@ describe('the membership state', () => {
     expect(JSON.stringify(a)).not.toContain('Renews');
   });
 
-  it('EXPIRED — held, plainly lapsed, and never described as renewing', () => {
+  it('EXPIRED - held, plainly lapsed, and never described as renewing', () => {
     const a = asked(sub({ status: 'expired', endDate: '2026-07-01' }));
 
     expect(a.membershipHeld).toBe(true);
@@ -113,7 +113,7 @@ describe('the membership state', () => {
     expect(a.homeProtection?.tone).toBe('lapsed');
   });
 
-  it('LAPSED BY DATE while still marked active — the date wins', () => {
+  it('LAPSED BY DATE while still marked active - the date wins', () => {
     /* `status: 'active'` and an end date three weeks gone. Home used to read
        the status alone and go on offering washes on a cycle that had ended. */
     const a = asked(sub({ status: 'active', endDate: '2026-07-08', washesUsed: 0 }));
@@ -123,7 +123,7 @@ describe('the membership state', () => {
     expect(a.you?.join(' ')).not.toContain('Renews');
   });
 
-  it('PENDING — asked for, not yet confirmed, and never counted as active', () => {
+  it('PENDING - asked for, not yet confirmed, and never counted as active', () => {
     const a = asked(sub({ status: 'pending' }));
 
     expect(a.membershipHeld).toBe(true);
@@ -134,7 +134,7 @@ describe('the membership state', () => {
     expect(a.homeClub).toBeUndefined();
   });
 
-  it('NONE — no membership, and no empty frame for one', () => {
+  it('NONE - no membership, and no empty frame for one', () => {
     const a = asked(null);
 
     expect(a.membershipHeld).toBe(false);

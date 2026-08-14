@@ -1,5 +1,5 @@
 /**
- * ALL NINETEEN SCREENS — the deployment gate.
+ * ALL NINETEEN SCREENS - the deployment gate.
  *
  * `docs/DESIGN-PARITY-AUDIT.md` enumerates the design's nineteen screens and
  * marks five of them 🔴 "no route exists". This is the file that fails if one
@@ -8,9 +8,9 @@
  * through the one server read, must declare itself dynamic where it holds a
  * customer's own data, and must not build its own addresses.
  *
- * It also asserts the things the audit found WRONG rather than absent — a
+ * It also asserts the things the audit found WRONG rather than absent - a
  * technician named on a customer surface, a price computed in a renderer, a
- * booking written from a browser — because those are the failures that came
+ * booking written from a browser - because those are the failures that came
  * back twice.
  */
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
@@ -37,9 +37,9 @@ const SCREENS: {
 }[] = [
   { n: '01', name: 'Welcome', page: 'app/auth/login/page.tsx', customer: false },
   { n: '02', name: 'Add your car', page: 'app/garage/page.tsx', screen: 'components/garage/CarForm.tsx', customer: true },
-  { n: '03', name: 'Now — new customer', page: 'app/page.tsx', screen: 'components/screens/HomeScreen.tsx', customer: true },
-  { n: '04', name: 'Now — in the studio', page: 'app/page.tsx', screen: 'components/screens/HomeScreen.tsx', customer: true },
-  { n: '05', name: 'Now — resting', page: 'app/page.tsx', screen: 'components/screens/HomeScreen.tsx', customer: true },
+  { n: '03', name: 'Now - new customer', page: 'app/page.tsx', screen: 'components/screens/HomeScreen.tsx', customer: true },
+  { n: '04', name: 'Now - in the studio', page: 'app/page.tsx', screen: 'components/screens/HomeScreen.tsx', customer: true },
+  { n: '05', name: 'Now - resting', page: 'app/page.tsx', screen: 'components/screens/HomeScreen.tsx', customer: true },
   { n: '06', name: 'Studio', page: 'app/studio/page.tsx', screen: 'components/screens/StudioScreen.tsx', customer: true },
   { n: '07', name: 'Scope & quote', page: 'app/studio/scope/page.tsx', screen: 'components/studio/ScopeAndQuote.tsx', customer: true },
   { n: '08', name: 'Date & concierge', page: 'app/studio/page.tsx', screen: 'components/studio/BookingFlow.tsx', customer: true },
@@ -99,7 +99,7 @@ describe('a customer’s own screen is never static and never client-fetched', (
 
 /* ── nothing is inert ────────────────────────────────────────────────────── */
 
-describe('§10.5 — no control exists without a destination', () => {
+describe('§10.5 - no control exists without a destination', () => {
   const screens = SCREENS.map(s => s.screen).filter(Boolean) as string[];
 
   it.each([...new Set(screens)])('%s has no dead href', file => {
@@ -119,8 +119,8 @@ describe('§10.5 — no control exists without a destination', () => {
     /* FORMATTING a figure the projection handed over is a screen's job;
        ADDING UP is not. `reduce` over prices is the shape every one of the
        four disagreeing implementations had. The stronger guard is the import
-       check below — a screen without the pricing engine cannot apply a
-       discount, a fee or a tax — and this catches the hand-rolled version. */
+       check below - a screen without the pricing engine cannot apply a
+       discount, a fee or a tax - and this catches the hand-rolled version. */
     const src = codeOf(file);
     expect(src).not.toMatch(/\.reduce\(\([a-z]+, [a-z]+\) => [a-z]+ \+ [a-z]+\.(price|amount|total)/);
   });
@@ -128,10 +128,10 @@ describe('§10.5 — no control exists without a destination', () => {
 
 /* ── the rules the audit found broken ────────────────────────────────────── */
 
-describe('§2.2 — no individual is ever named on a customer surface', () => {
+describe('§2.2 - no individual is ever named on a customer surface', () => {
   /* `components/studio` is the CUSTOMER's studio surfaces. The staff tools
-     that used to sit beside them — the floor timeline, the technician drawer,
-     the occupancy hook — moved to `components/workspace`, so this folder walk
+     that used to sit beside them - the floor timeline, the technician drawer,
+     the occupancy hook - moved to `components/workspace`, so this folder walk
      means what it says and a staff surface cannot drift back in unnoticed. */
   const surfaces = [
     ...walk('components/screens'),
@@ -149,7 +149,7 @@ describe('§2.2 — no individual is ever named on a customer surface', () => {
   });
 });
 
-describe('§22.1 — money is decided by the server', () => {
+describe('§22.1 - money is decided by the server', () => {
   it('no customer screen imports the pricing engine', () => {
     /* A screen that could price could show a figure the server never agreed
        to, and the customer would be surprised at the counter. */
@@ -166,7 +166,7 @@ describe('§22.1 — money is decided by the server', () => {
   });
 });
 
-describe('§6.4 — every surface is addressable, and the dock still names five', () => {
+describe('§6.4 - every surface is addressable, and the dock still names five', () => {
   it('the dock is five slots, in the design’s order', () => {
     expect(slots).toEqual(['/', '/studio', '/garage', '/membership', '/you']);
   });

@@ -1,7 +1,7 @@
-# AUTOMODZ OS — ARCHITECTURE
+# AUTOMODZ OS - ARCHITECTURE
 
-**The single source of truth.** Every surface — Home, Vehicle, Garage,
-Membership, Notifications, History, Studio, and in time Admin — is built from
+**The single source of truth.** Every surface - Home, Vehicle, Garage,
+Membership, Notifications, History, Studio, and in time Admin - is built from
 what is written here. A feature that cannot be expressed in these terms is a
 signal that the architecture is wrong, not that the feature needs an exception.
 
@@ -21,15 +21,15 @@ backward.
 
 ```mermaid
 flowchart TD
-    subgraph SRC["SOURCE — the studio's records"]
+    subgraph SRC["SOURCE - the studio's records"]
         FS[("Firestore")]
     end
 
-    subgraph READ["READ — server only"]
+    subgraph READ["READ - server only"]
         CP["CustomerPicture<br/><i>lib/server/customerPicture</i>"]
     end
 
-    subgraph OS["ENGINES — lib/os/* · pure, tested, UI-blind"]
+    subgraph OS["ENGINES - lib/os/* · pure, tested, UI-blind"]
         OWN["ownership<br/><i>11 states</i>"]
         TERM["term<br/><i>dated · perpetual · balance</i>"]
         PROT["protection"]
@@ -41,13 +41,13 @@ flowchart TD
         STAY["stay"]
     end
 
-    subgraph PROJ["PROJECTIONS — lib/customer/* · shape, never decide"]
+    subgraph PROJ["PROJECTIONS - lib/customer/* · shape, never decide"]
         BRIDGE["ownership bridge"]
         PJ["project.ts"]
         RES["resolve<br/><i>intent → href</i>"]
     end
 
-    subgraph VIEW["RENDERERS — components/screens/* · draw only"]
+    subgraph VIEW["RENDERERS - components/screens/* · draw only"]
         HOME["Home"]
         VEH["Vehicle"]
         GAR["Garage"]
@@ -86,7 +86,7 @@ layer down.
 ## 2 · The objects
 
 Seven. Every surface is a projection of these and nothing else. New features
-extend an object or add a projection of one — they do not add an eighth.
+extend an object or add a projection of one - they do not add an eighth.
 
 | Object | Identity | Owned by |
 |---|---|---|
@@ -120,7 +120,7 @@ routes or screens. That is what makes them reusable across customer and admin.
 | `os/ownership` | **What is the position of this car?** | 11 states, fixed precedence. The centre of the system. |
 | `os/proposal` | Is there one true thing to recommend? | At most one per vehicle. A layer, never a state. |
 | `os/timeline` | What has happened, and what is coming? | Runs forward as well as back |
-| `os/action` | What is the single next thing to do? | Emits `NextAction` — an object, never a link |
+| `os/action` | What is the single next thing to do? | Emits `NextAction` - an object, never a link |
 | `os/stay` | When will the car be ready? | Respects business hours |
 
 ### The ownership state machine
@@ -154,7 +154,7 @@ flowchart TD
 
 `needs_care` is **not** a state. The proposal engine modifies the three steady
 states (`protected`, `settled`, `dormant`) only. A car cannot be both in the
-studio and overdue for a wash — live facts outrank recommendations.
+studio and overdue for a wash - live facts outrank recommendations.
 
 ---
 
@@ -173,16 +173,16 @@ contains **no decisions**, only shaping.
 | `toNotifications` | *(future)* | timeline events that crossed a threshold |
 
 Every projection reads the **same** `stateWordFor`. The same car says the same
-word on every screen — a test enforces it, because it has already broken once.
+word on every screen - a test enforces it, because it has already broken once.
 
 ### Live Activity
 
 What was called "Current Story" is **Live Activity**: what is happening to the
-car *now or most recently*. The rename is not cosmetic — "story" invited
+car *now or most recently*. The rename is not cosmetic - "story" invited
 narrative padding, "activity" is a fact with a time on it. It is the region that
 carries a live visit, and when nothing is live, the most recent finished work.
 
-### NextAction — an object, not a link
+### NextAction - an object, not a link
 
 The renderer must never build a URL. The engine emits an **intent**; a single
 resolver maps intent to address.
@@ -223,7 +223,7 @@ was there all along.
 | Anything → arranging a visit | Route to `/studio`, because it is a place |
 
 **Why expansion and not routes for objects.** Next.js App Router unmounts the
-outgoing tree on navigation, so Motion's `layoutId` cannot bridge two routes —
+outgoing tree on navigation, so Motion's `layoutId` cannot bridge two routes -
 verified, not assumed. Rather than fight that, the architecture takes it as
 confirmation of the right model: Apple Wallet and Photos do not navigate to a
 card, they open the one you are looking at.
@@ -242,7 +242,7 @@ linked, shared, and restored on reload. Addressable does not mean it is a page.
   `design/`. No Radix stylesheet is imported, ever.
 - **One implementation of anything.** There is one `Button`, one `BottomSheet`,
   one dismiss behaviour. A second is a defect, not a variant.
-- **Absence is silence.** A region with nothing to say renders nothing — never a
+- **Absence is silence.** A region with nothing to say renders nothing - never a
   placeholder, never an empty card.
 - **The customer's words.** No status codes, no catalogue SKUs, no internal
   vocabulary reaches a screen. Engines emit customer language or the projection
@@ -261,10 +261,10 @@ are correct. A screen that needs animation to feel finished is not finished.
 |---|---|
 | Shared element (`layoutId`) | The object you opened is the object you tapped |
 | Layout animation | Something changed size or place, and you should see which |
-| Spring physics | Weight — from `design/motion.ts`, never hand-tuned |
+| Spring physics | Weight - from `design/motion.ts`, never hand-tuned |
 | Scroll-linked | Parallax on the one photograph |
 | Staggered reveal | Order of reading, on first paint only |
-| Gesture | Direct manipulation — drag to dismiss |
+| Gesture | Direct manipulation - drag to dismiss |
 
 **Forbidden:** decorative fades, entrance animations on every element, motion
 that delays a fact the customer is waiting for, anything that cannot be disabled
@@ -277,7 +277,7 @@ component is a defect.
 
 ## 8 · Adding a feature
 
-1. **Which of the seven objects is this?** If none, stop — reconsider.
+1. **Which of the seven objects is this?** If none, stop - reconsider.
 2. **Which engine answers it?** Extend an engine; never add logic to a
    projection or a screen.
 3. **What does it project into?** Add to a model, or add a projection.
@@ -290,8 +290,8 @@ component is a defect.
 
 These are checked by tests, not by review alone:
 
-- No screen imports Firebase or the store — `perf/no-client-firebase.test.ts`
-- Every surface says the same state word — `customer/project.test.ts`
-- Every action reaches a real destination — `customer/project.test.ts`
-- Engines have no React import — *added with this document*
-- Renderers contain no route literals — *added with this document*
+- No screen imports Firebase or the store - `perf/no-client-firebase.test.ts`
+- Every surface says the same state word - `customer/project.test.ts`
+- Every action reaches a real destination - `customer/project.test.ts`
+- Engines have no React import - *added with this document*
+- Renderers contain no route literals - *added with this document*

@@ -1,6 +1,6 @@
 'use client';
 /**
- * §11.3 — the composition point, and the only reason the Vehicle needs a client
+ * §11.3 - the composition point, and the only reason the Vehicle needs a client
  * boundary at all: a `VehicleRendering` carries a COMPONENT, and a component
  * cannot cross the server boundary. So the server sends the serialisable
  * `PhotographSource` and this resolves it.

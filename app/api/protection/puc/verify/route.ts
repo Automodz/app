@@ -7,12 +7,12 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * THE STUDIO'S DECISION — verify, or refuse.
+ * THE STUDIO'S DECISION - verify, or refuse.
  *
  * The single most valuable write in the protection machine: it is what makes
  * the product say "this car is certified until March" on the customer's own
  * screen. So it belongs to the studio in the same way `paid` does, and for the
- * same reason — only somebody holding the paper can say it is real.
+ * same reason - only somebody holding the paper can say it is real.
  *
  * The caller's role is read from THEIR OWN PROFILE inside the service. There
  * is no field in this body that grants authority, and the car being certified

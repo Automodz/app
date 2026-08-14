@@ -1,5 +1,5 @@
 /**
- * THE TIMELINE — an OS object.
+ * THE TIMELINE - an OS object.
  *
  * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §2, §3
  *
@@ -14,8 +14,8 @@
  * back. A visit booked for next Tuesday and a warranty that lapses in March are
  * both timeline events, and both sort above today.
  *
- * It is a projection of the same seven objects every other surface projects —
- * Car, Protection, Visit, Membership — so it is reusable on Home, on the
+ * It is a projection of the same seven objects every other surface projects -
+ * Car, Protection, Visit, Membership - so it is reusable on Home, on the
  * Vehicle, and on History without any of them owning it.
  *
  * WHAT IT DOES NOT DO: it derives no lifecycle of its own. Health comes from
@@ -58,7 +58,7 @@ export interface TimelineEvent {
    * this into an address.
    */
   ref?: { object: 'visit' | 'membership'; id?: string };
-  /** True when `at` is in the future — the timeline runs forward too. */
+  /** True when `at` is in the future - the timeline runs forward too. */
   ahead: boolean;
 }
 

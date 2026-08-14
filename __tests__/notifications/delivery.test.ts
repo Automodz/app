@@ -1,11 +1,11 @@
 /**
- * NOTIFICATIONS — §17, ENFORCED.
+ * NOTIFICATIONS - §17, ENFORCED.
  *
- * §17.3: "A notification is a doorway. It opens the exact surface it is about —
+ * §17.3: "A notification is a doorway. It opens the exact surface it is about -
  * never the home screen, never a generic list."
  *
  * Every customer notification in the product pointed at `/app`. That was the
- * old customer root, and it stopped existing when the rooms moved to `/` — so a
+ * old customer root, and it stopped existing when the rooms moved to `/` - so a
  * booking confirmation, a car ready to collect and a missed appointment all
  * opened a 404. Nothing caught it, because a push destination is only wrong on
  * the device it is tapped on.
@@ -23,7 +23,7 @@ const walk = (dir: string): string[] =>
 const codeOf = (p: string) =>
   readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
-describe('§17.1 — there is no inbox', () => {
+describe('§17.1 - there is no inbox', () => {
   it('no surface renders a list of notifications', () => {
     /* "A list of notifications is the same mistake as a list of documents."
        State changes surface as state; the car is the inbox. */
@@ -34,7 +34,7 @@ describe('§17.1 — there is no inbox', () => {
   });
 });
 
-describe('§17.3 — every notification lands somewhere real', () => {
+describe('§17.3 - every notification lands somewhere real', () => {
   const shipping = [...walk('lib'), ...walk('app'), ...walk('components'), ...walk('navigation')]
     .filter(f => !f.includes('node_modules'));
 
@@ -56,7 +56,7 @@ describe('§17.3 — every notification lands somewhere real', () => {
     expect(notificationHref({ type: 'promotion' })).toBe('/');
   });
 
-  it('the bookingId wins over the type — the object is more specific', () => {
+  it('the bookingId wins over the type - the object is more specific', () => {
     expect(notificationHref({ type: 'membership', bookingId: 'b9' })).toBe('/history/b9');
   });
 
@@ -94,7 +94,7 @@ describe('the stored record and the push agree', () => {
   });
 });
 
-describe('§17.2 — push is spent only where it is earned', () => {
+describe('§17.2 - push is spent only where it is earned', () => {
   it('the service worker falls back to the car, never to a dead path', () => {
     expect(codeOf('app/firebase-messaging-sw.js/route.ts')).toMatch(/data\.url \|\| '\/'/);
   });
@@ -104,7 +104,7 @@ describe('§17.2 — push is spent only where it is earned', () => {
   });
 
   it('preferences are honoured by the job that would send', () => {
-    /* §17.4 — frequency is a budget, and the customer holds it. */
+    /* §17.4 - frequency is a budget, and the customer holds it. */
     expect(codeOf('lib/server/retention.ts')).toMatch(/typeAllowed/);
   });
 });
@@ -115,7 +115,7 @@ describe('crawlers are kept out of the customer rooms', () => {
     for (const room of ['/garage', '/vehicle', '/history', '/studio', '/you', '/membership']) {
       expect(robots).toContain(`'${room}'`);
     }
-    /* `/` stays OUT of the disallow list — signed out it is the public
+    /* `/` stays OUT of the disallow list - signed out it is the public
        landing. Asserted against the array itself: a looser pattern ran past
        the preview branch and matched the `allow: '/'` beside it. */
     const list = robots.slice(robots.indexOf('disallow: ['), robots.indexOf('],', robots.indexOf('disallow: [')));

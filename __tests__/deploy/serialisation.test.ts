@@ -6,14 +6,14 @@
  *
  * `loadListings` serialised Firestore documents with
  * `JSON.parse(JSON.stringify(...))`. An Admin SDK `Timestamp` survives that as
- * `{"_seconds":…,"_nanoseconds":…}` — an object that looks like data and
+ * `{"_seconds":…,"_nanoseconds":…}` - an object that looks like data and
  * behaves like nothing. The sitemap did `new Date(c.updatedAt)`, got an
  * Invalid Date, and Next's serialiser called `.toISOString()` on it inside the
  * prerender. The whole production build exited 1.
  *
  * IT PASSED LOCALLY, which is the part worth remembering: there are no Admin
  * credentials on this machine, so `loadListings` returns `[]` and no document
- * was ever serialised. The failure needed real data to appear — so the
+ * was ever serialised. The failure needed real data to appear - so the
  * serialiser now lives in its own module, free of `firebase-admin`, and is
  * exercised here against a document shaped exactly like a real one.
  */
@@ -21,7 +21,7 @@
 /**
  * A Firestore `Timestamp`, modelled.
  *
- * `firebase-admin` cannot be imported here — it pulls in ESM `jose`, which
+ * `firebase-admin` cannot be imported here - it pulls in ESM `jose`, which
  * Jest will not parse. What matters is the shape the real class presents: a
  * `toDate()` method, and `_seconds`/`_nanoseconds` as its only own enumerable
  * fields, which is precisely why a JSON round-trip reduced it to those two
@@ -56,7 +56,7 @@ describe('a Firestore document crosses to the client intact', () => {
     expect(plainValue(new FakeTimestamp(when))).toBe(when.toISOString());
   });
 
-  it('and that string makes a VALID Date — the whole bug in one line', () => {
+  it('and that string makes a VALID Date - the whole bug in one line', () => {
     const iso = plainValue(new FakeTimestamp(when)) as string;
     expect(Number.isNaN(new Date(iso).getTime())).toBe(false);
 
@@ -112,8 +112,8 @@ describe('the sitemap can never fail a build over a date', () => {
   });
 
   it('the guard it uses actually holds, for every shape a document can carry', () => {
-    /* `app/sitemap.ts` cannot be imported here — it reaches `firebase-admin`
-       through the loader — so the guard's own logic is exercised directly. */
+    /* `app/sitemap.ts` cannot be imported here - it reaches `firebase-admin`
+       through the loader - so the guard's own logic is exercised directly. */
     const dateOr = (value: unknown, fallback: Date): Date => {
       if (value instanceof Date) return Number.isNaN(value.getTime()) ? fallback : value;
       if (typeof value !== 'string' || value.trim() === '') return fallback;

@@ -9,7 +9,7 @@
  * renewal that goes backwards.
  *
  * ── WHY THE DATABASE IS FAKE ─────────────────────────────────────────────
- * `firebase-admin` cannot be imported under Jest — it pulls in ESM `jose`,
+ * `firebase-admin` cannot be imported under Jest - it pulls in ESM `jose`,
  * which Jest will not parse (see `__tests__/deploy/serialisation.test.ts` for
  * the same constraint). So the SHAPE the Admin SDK presents is modelled:
  * documents, a where-query, and a transaction whose reads all precede its
@@ -159,9 +159,9 @@ describe('declaring', () => {
     expect(stored.ownerUid).toBe('u1');
   });
 
-  it('ANOTHER CUSTOMER’S CAR IS NOT FOUND — cross-user access is impossible', async () => {
+  it('ANOTHER CUSTOMER’S CAR IS NOT FOUND - cross-user access is impossible', async () => {
     /* `v2` exists, and it is under `u2`. The lookup is `users/u1/vehicles/v2`,
-       which simply is not there — there is no ownership FIELD to compare and
+       which simply is not there - there is no ownership FIELD to compare and
        so nothing for a caller to set. */
     expect(await failure(() => declarePuc('u1', { ...GOOD, vehicleId: 'v2' }, NOW)))
       .toEqual({ code: 'vehicle-not-yours', status: 403 });
@@ -240,7 +240,7 @@ describe('a second submission', () => {
     expect(second.declarationId).not.toBe(first.declarationId);
     expect((store.get(`declarations/${first.declarationId}`) as Row).status).toBe('withdrawn');
     expect((store.get(`declarations/${second.declarationId}`) as Row).status).toBe('submitted');
-    /* WITHDRAWN, NOT DELETED — the facts it was sent with survive. */
+    /* WITHDRAWN, NOT DELETED - the facts it was sent with survive. */
     expect(store.get(`declarations/${first.declarationId}`)).toMatchObject({
       reference: 'GJ01-PUC-88213', issuedOn: '2026-08-01', expiresOn: '2027-02-01',
     });
@@ -270,7 +270,7 @@ describe('a second submission', () => {
 describe('deciding', () => {
   const declared = async () => (await declarePuc('u1', GOOD, NOW)).declarationId;
 
-  it('A CUSTOMER CANNOT VERIFY — not their own, not anybody’s', async () => {
+  it('A CUSTOMER CANNOT VERIFY - not their own, not anybody’s', async () => {
     const id = await declared();
     expect(await failure(() => decidePuc('u1', { declarationId: id, decision: 'verify' }, NOW)))
       .toEqual({ code: 'not-yours-to-make', status: 403 });
@@ -379,7 +379,7 @@ describe('a renewal, all the way through', () => {
     for (const k of ['reference', 'issuedOn', 'expiresOn', 'ownerUid', 'submittedAt']) {
       expect({ k, v: after[k] }).toEqual({ k, v: before[k] });
     }
-    /* AND THE PROTECTION IT CREATED IS UNTOUCHED — no `since` rewritten, no
+    /* AND THE PROTECTION IT CREATED IS UNTOUCHED - no `since` rewritten, no
        expiry moved. This is the whole reason a renewal writes a new document. */
     expect(store.get(`protections/v1_puc_${first}`)).toEqual(beforeProtection);
   });

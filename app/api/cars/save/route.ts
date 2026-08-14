@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * Keep a car, or stop keeping it.
  *
  * The saved list is read on the server when the marketplace renders, so it has
- * to be written on the server too — a client write would be invisible to the
+ * to be written on the server too - a client write would be invisible to the
  * next render until Firestore and the request raced to agree.
  *
  * Idempotent by construction: saving what is already saved rewrites the same
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (!listingId) return NextResponse.json({ error: 'bad-request' }, { status: 400 });
 
   try {
-    /* Only a listing that actually exists may be kept — otherwise the saved
+    /* Only a listing that actually exists may be kept - otherwise the saved
        list fills with ids that render nothing and can never be cleared. */
     if (saved && !(await loadListing(listingId))) {
       return NextResponse.json({ error: 'listing-unavailable' }, { status: 409 });

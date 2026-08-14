@@ -6,20 +6,20 @@
  *
  * The Desk was mounted inside `HomeScreen`, which meant ⌘K worked at `/` and
  * nowhere else. A customer reading their History, looking at a car or halfway
- * through the Club could not summon it — so it was a feature of one screen
+ * through the Club could not summon it - so it was a feature of one screen
  * rather than the way the product is navigated.
  *
  * It is mounted here instead: once, in the chrome, above every room. Three
  * pieces, because the data and the layer live on opposite sides of the server
  * boundary:
  *
- *   PaletteProvider — holds the items. Mounted in `CustomerChrome`.
- *   PaletteFeed     — publishes them. Rendered by `ServerRoom`, which is the
+ *   PaletteProvider - holds the items. Mounted in `CustomerChrome`.
+ *   PaletteFeed     - publishes them. Rendered by `ServerRoom`, which is the
  *                     one place every room already loads the picture. Nothing
  *                     per-page to remember, and the items are re-projected on
  *                     every navigation rather than going stale in a layout
  *                     that does not re-render.
- *   PaletteHost     — the layer itself, plus ⌘K and the address.
+ *   PaletteHost     - the layer itself, plus ⌘K and the address.
  *
  * ADDRESSABLE, like every other expansion (§6.4): `?open=desk` at whatever
  * room you are in, so it can be linked and survives a reload, and the back
@@ -93,7 +93,7 @@ function PaletteHost() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  /* §21.4 — every control reachable by keyboard alone. ⌘K is the one shortcut
+  /* §21.4 - every control reachable by keyboard alone. ⌘K is the one shortcut
      the product has, and it now answers at every address. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

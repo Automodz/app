@@ -8,7 +8,7 @@
  *   2. NOTHING HISTORICAL IS EVER REWRITTEN. A renewal adds; it does not edit.
  *
  * The engine is pure, so all of this is exercised directly rather than through
- * a database — the service test proves the writes, and these prove the rules
+ * a database - the service test proves the writes, and these prove the rules
  * those writes are made of.
  */
 import {
@@ -89,14 +89,14 @@ describe('what may be sent at all', () => {
     }
   });
 
-  it('THE EXPIRY MUST BE AFTER THE ISSUE — never equal, never before', () => {
+  it('THE EXPIRY MUST BE AFTER THE ISSUE - never equal, never before', () => {
     expect(validateDeclaration({ ...ok, issuedOn: '2026-06-01', expiresOn: '2026-06-01' }, NOW))
       .toEqual({ ok: false, reason: 'expiry-not-after-issue' });
     expect(validateDeclaration({ ...ok, issuedOn: '2026-06-01', expiresOn: '2026-05-01' }, NOW))
       .toEqual({ ok: false, reason: 'expiry-not-after-issue' });
   });
 
-  it('refuses a certificate issued tomorrow — nobody holds one', () => {
+  it('refuses a certificate issued tomorrow - nobody holds one', () => {
     expect(validateDeclaration({ ...ok, issuedOn: '2026-09-01', expiresOn: '2027-01-01' }, NOW))
       .toEqual({ ok: false, reason: 'issued-in-the-future' });
   });
@@ -107,7 +107,7 @@ describe('what may be sent at all', () => {
   });
 
   it('THE TYPO GUARD: a year mistyped cannot become ten years of protection', () => {
-    /* Not a rule about certificates — a rule about `2036` typed for `2026`.
+    /* Not a rule about certificates - a rule about `2036` typed for `2026`.
        Generous enough that no real certificate is refused by it. */
     expect(validateDeclaration({ ...ok, issuedOn: '2026-06-01', expiresOn: '2036-06-01' }, NOW))
       .toEqual({ ok: false, reason: 'term-too-long' });
@@ -201,7 +201,7 @@ describe('what may follow what, and who may cause it', () => {
       .toEqual({ ok: false, reason: 'already-withdrawn' });
   });
 
-  it('a verified certificate may only ever be SUPERSEDED — never edited away', () => {
+  it('a verified certificate may only ever be SUPERSEDED - never edited away', () => {
     expect(DECLARATION_TRANSITIONS.verified).toEqual(['superseded']);
     expect(declarationTransition('verified', 'rejected', 'studio'))
       .toEqual({ ok: false, reason: 'illegal-transition' });
@@ -213,7 +213,7 @@ describe('what may follow what, and who may cause it', () => {
     expect(declarationTransition('submitted', 'withdrawn', 'customer').ok).toBe(true);
     /* `superseded` is what happens to a VERIFIED certificate when the next one
        is verified. A pending one that is replaced is withdrawn, so this is not
-       merely the wrong actor — there is no such step. */
+       merely the wrong actor - there is no such step. */
     expect(declarationTransition('submitted', 'superseded', 'customer'))
       .toEqual({ ok: false, reason: 'illegal-transition' });
     expect(declarationTransition('submitted', 'rejected', 'customer'))
@@ -245,7 +245,7 @@ describe('a second submission on top of a first', () => {
     expect(resolveSubmission([], clean())).toEqual({ act: 'create' });
   });
 
-  it('A RENEWAL MUST EXTEND — one that does not is refused', () => {
+  it('A RENEWAL MUST EXTEND - one that does not is refused', () => {
     const standing = decl({ id: 'd0', status: 'verified', expiresOn: '2027-02-01' });
     expect(resolveSubmission([standing], clean({ expiresOn: '2027-01-01' })))
       .toEqual({ act: 'refuse', reason: 'not-later-than-current' });
@@ -255,7 +255,7 @@ describe('a second submission on top of a first', () => {
       .toEqual({ act: 'create' });
   });
 
-  it('a renewal is allowed while the current one still stands — people re-test early', () => {
+  it('a renewal is allowed while the current one still stands - people re-test early', () => {
     const standing = decl({ id: 'd0', status: 'verified', expiresOn: '2026-12-01' });
     expect(resolveSubmission([standing], clean({ expiresOn: '2027-02-01' })).act).toBe('create');
   });
@@ -282,7 +282,7 @@ describe('a renewal adds; it does not rewrite', () => {
     const second = decl({ id: 'd2', issuedOn: '2026-07-25', expiresOn: '2027-01-25' });
     expect(protectionIdFor(first)).toBe('v1_puc_d1');
     expect(protectionIdFor(second)).toBe('v1_puc_d2');
-    /* NOT the `${vehicleId}_puc` slot the seed data uses — that holds one
+    /* NOT the `${vehicleId}_puc` slot the seed data uses - that holds one
        promise, and a renewal into it would erase the `since` and the expiry of
        the certificate it replaced. */
     expect(protectionIdFor(second)).not.toBe('v1_puc');
@@ -320,7 +320,7 @@ describe('a renewal adds; it does not rewrite', () => {
     expect(p.provider).toBeUndefined();
     expect(p.plan).toBeUndefined();
     expect(p.coverage).toBeUndefined();
-    /* And it is never a captured term — that is the studio's record of what it
+    /* And it is never a captured term - that is the studio's record of what it
        sold, and AutoModz did not sell this. */
     expect(p.termsSource).not.toBe('captured');
   });
@@ -335,7 +335,7 @@ describe('the state a car is truly in', () => {
     expect(readPuc({ protections: [], declarations: [] }).state).toBe('missing');
   });
 
-  it('A SUBMISSION IS NOT A PROMISE — it reads as declared, never active', () => {
+  it('A SUBMISSION IS NOT A PROMISE - it reads as declared, never active', () => {
     const r = readPuc({ protections: [], declarations: [decl({ expiresOn: '2099-01-01' })] });
     expect(r.state).toBe('declared');
     expect(r.protection).toBeUndefined();

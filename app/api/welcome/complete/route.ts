@@ -14,11 +14,11 @@ export const dynamic = 'force-dynamic';
  *
  * RESET (`{ reset: true }`) is deliberately part of the same route, because a
  * flag that can only be set is a flag nobody can fix:
- *   - an ADMIN may reset anybody, by uid — the studio's own escape hatch;
+ *   - an ADMIN may reset anybody, by uid - the studio's own escape hatch;
  *   - anyone may reset THEMSELVES outside production, which is what makes the
  *     flow testable without hand-editing Firestore.
  * A customer cannot reset another customer, and in production cannot reset
- * even themselves — that would be a way to make the welcome reappear for
+ * even themselves - that would be a way to make the welcome reappear for
  * someone by handing them a link.
  */
 export async function POST(req: NextRequest) {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     if (!reset) {
       /* Recording an arrival is only ever about the caller. The `uid` in the
-         body is ignored here entirely — it exists for the reset path alone. */
+         body is ignored here entirely - it exists for the reset path alone. */
       await db.collection('users').doc(uid).set(
         { welcomedAt: new Date(), updatedAt: new Date() }, { merge: true },
       );
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    /* Deleted rather than set false — absent is what "never arrived" means
+    /* Deleted rather than set false - absent is what "never arrived" means
        everywhere else, and two spellings of the same fact is one too many. */
     const { FieldValue } = await import('firebase-admin/firestore');
     await db.collection('users').doc(target).set(

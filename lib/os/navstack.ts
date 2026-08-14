@@ -4,7 +4,7 @@
  * Source: docs/AUTOMODZ-OS.md §6.5, §6.6, §17.3
  *
  * ── THE TWO ANSWERS TO "BACK", AND WHY BOTH ARE NEEDED ───────────────────
- * `parentOf` answers "what is this screen UNDER" — a property of the address,
+ * `parentOf` answers "what is this screen UNDER" - a property of the address,
  * true whether the customer walked here or was sent by a notification. It is
  * the only safe answer for a cold entry, and it is why it exists.
  *
@@ -18,13 +18,13 @@
  * different vehicle's history than the one they were reading.
  *
  * So: the walked path when there is one, the parent when there is not. This
- * file is the first half — the walk — and it is pure, so the rules below are
+ * file is the first half - the walk - and it is pure, so the rules below are
  * asserted directly rather than by driving a browser.
  *
  * ── WHAT IT WILL NOT DO ──────────────────────────────────────────────────
  * NEVER the browser's history. `history.back()` from an address opened by a
  * notification leaves the application entirely, and from a shared link it does
- * nothing at all — and the two are indistinguishable from working when you
+ * nothing at all - and the two are indistinguishable from working when you
  * happen to have arrived through the front door (§17.3).
  *
  * NEVER an address that is not ours. An entry is kept only if it is a rooted,
@@ -42,7 +42,7 @@ export const STACK_LIMIT = 12;
  *
  * `?car=` is the whole point: the record, the car and the garage are one room
  * per vehicle, and a Back that drops it is a Back that changes the subject.
- * Everything else — `?panel=`, `?ask=`, `?club=`, `?add=` — describes an open
+ * Everything else - `?panel=`, `?ask=`, `?club=`, `?add=` - describes an open
  * sheet, and reopening a sheet is not going back.
  */
 export const CONTEXT_KEYS: readonly string[] = ['car', 'visit'];
@@ -52,7 +52,7 @@ export const CONTEXT_KEYS: readonly string[] = ['car', 'visit'];
  * navigate to directly?
  *
  * Deliberately strict. `//evil.example.com` is a protocol-relative URL that
- * `startsWith('/')` accepts and a browser treats as another origin — the same
+ * `startsWith('/')` accepts and a browser treats as another origin - the same
  * shape the sign-in redirect guard refuses, for the same reason.
  */
 export const isInternalHref = (href: unknown): href is string =>
@@ -81,7 +81,7 @@ export function canonical(href: string): string {
 /**
  * Record an arrival.
  *
- * Returns a NEW stack — the caller decides where to keep it, which is what
+ * Returns a NEW stack - the caller decides where to keep it, which is what
  * lets the same rules run in a test, in a provider and against a persisted
  * session without three copies of them.
  */
@@ -90,11 +90,11 @@ export function pushRoute(stack: readonly string[], href: string): string[] {
   const here = canonical(href);
   const next = [...stack];
 
-  /* Already standing here — a re-render, a replaced query, a sheet closing. */
+  /* Already standing here - a re-render, a replaced query, a sheet closing. */
   if (next[next.length - 1] === here) return next;
 
   /* GOING BACK IS NOT GOING SOMEWHERE NEW. If the customer has stepped to the
-     address directly behind them, the walk unwinds rather than growing — so
+     address directly behind them, the walk unwinds rather than growing - so
      Garage → Car → Garage leaves the stack at Garage, and a second Back does
      not bounce them between the two for ever. */
   if (next[next.length - 2] === here) {
@@ -110,8 +110,8 @@ export function pushRoute(stack: readonly string[], href: string): string[] {
 /**
  * Where Back goes, and the stack that remains after taking it.
  *
- * `null` means the customer did not walk here — they were sent, or this is the
- * first screen of the session — and the caller must fall back to `parentOf`.
+ * `null` means the customer did not walk here - they were sent, or this is the
+ * first screen of the session - and the caller must fall back to `parentOf`.
  */
 export function previousRoute(
   stack: readonly string[], here: string,

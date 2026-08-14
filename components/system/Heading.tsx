@@ -5,13 +5,13 @@
  *
  * Two levels, because §9.5 names two heading roles and no more:
  *
- *   display — "the one statement per screen". Renders the top-level heading.
- *   title   — "a section".
+ *   display - "the one statement per screen". Renders the top-level heading.
+ *   title   - "a section".
  *
  * §9.5 and §3.2 both bind the caller rather than this component: one Display
  * per screen, because a screen with two has two subjects, "which means it has
- * none". This component cannot enforce that — a component sees one screen's
- * worth of nothing — so it is a review-checklist item (§7 of the checklist),
+ * none". This component cannot enforce that - a component sees one screen's
+ * worth of nothing - so it is a review-checklist item (§7 of the checklist),
  * not a runtime guard.
  *
  * §21.6 requires headings to descend without skipping. The element comes from
@@ -23,7 +23,7 @@ import type { CSSProperties, ElementType, ReactNode } from 'react';
 import { type as typeScale } from '@/design';
 import { toneColor, type Tone } from './tone';
 
-/** §9.5 — the two heading roles. */
+/** §9.5 - the two heading roles. */
 export type HeadingLevel = 'display' | 'title';
 
 export interface HeadingProps {

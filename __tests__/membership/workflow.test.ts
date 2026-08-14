@@ -1,11 +1,11 @@
 /**
- * MEMBERSHIP — ONE SOURCE OF TRUTH, ENFORCED.
+ * MEMBERSHIP - ONE SOURCE OF TRUTH, ENFORCED.
  *
  * Membership arithmetic was spread across five files before this: the club
  * engine, the customer projection (twice), the server pricing decision, the
  * retention job and the walk-in kiosk each subtracted `washesUsed` from
  * `washesTotal` themselves. Five subtractions is five chances to disagree, and
- * the kiosk's had no floor at zero — an over-spent membership reported a
+ * the kiosk's had no floor at zero - an over-spent membership reported a
  * negative entitlement.
  *
  * These assertions are what stop that coming back.
@@ -61,7 +61,7 @@ describe('the arithmetic exists once', () => {
  * They read: "a self-purchase always lands as pending", and checked that
  * `firestore.rules` said `request.resource.data.status == 'pending'` while
  * `ClubFlow` wrote `status: 'pending'` into a document it assembled itself.
- * Both halves were true and the guarantee was worthless — rules can check that
+ * Both halves were true and the guarantee was worthless - rules can check that
  * ONE WORD and nothing else about the document, so `plan: 'Platinum'`,
  * `washesTotal: 999` and `endDate: '2099-12-31'` all travelled beside it
  * untouched, and the studio's activation screen honoured what it found.
@@ -78,7 +78,7 @@ describe('the customer cannot write their own membership', () => {
     rules.indexOf('match /', rules.indexOf('match /subscriptions/{subId}') + 10),
   );
 
-  it('NO CLIENT WRITES A SUBSCRIPTION AT ALL — not even a pending one', () => {
+  it('NO CLIENT WRITES A SUBSCRIPTION AT ALL - not even a pending one', () => {
     expect(block).toMatch(/allow create: if false;/);
     expect(block).toMatch(/allow update: if false;/);
     expect(block).toMatch(/allow delete: if false;/);
@@ -162,7 +162,7 @@ describe('the club engine decides the lifecycle', () => {
 
   it('the countdown comes from the engine', () => {
     const m = clubModel({ membership: sub(), completed: [], now: NOW });
-    /* Inclusive of the closing day — the engine's count, and the test defers
+    /* Inclusive of the closing day - the engine's count, and the test defers
        to it rather than asserting a second definition of "days left". */
     expect(cycleDaysLeft(m, NOW)).toBe(12);
   });
@@ -174,7 +174,7 @@ describe('a cancelled visit gives back what it consumed', () => {
 
   /* THE BUG THIS GUARDS. `settleBenefits` spends a membership wash and a promo
      when a booking is created. `cancelBooking` used to write only
-     `status: 'cancelled'` — so a customer who cancelled, or whose booking the
+     `status: 'cancelled'` - so a customer who cancelled, or whose booking the
      STUDIO refused, permanently lost a wash they had paid for. It could not be
      fixed client-side: the rules let a customer touch neither the subscription
      nor the promo. */
@@ -242,7 +242,7 @@ describe('membership revenue is its own line, on the payment date', () => {
 
   it('the payment stamp is written once, at activation', () => {
     /* Re-activating must not move revenue into a later month. Asserted on the
-       SERVICE now — the client stamp is gone, along with the client write. */
+       SERVICE now - the client stamp is gone, along with the client write. */
     const svc = codeOf('lib/server/membershipService.ts');
     expect(svc).toMatch(/held\.paidAt \? \{\} : \{ paidAt: Timestamp\.fromDate\(now\) \}/);
     expect(subs).not.toMatch(/paidAt/);
@@ -250,8 +250,8 @@ describe('membership revenue is its own line, on the payment date', () => {
 
   it('the amount is captured then, not looked up later', () => {
     /* Otherwise changing a plan's price rewrites past months. And it is the
-       figure the customer was TOLD they owed — derived from the catalogue at
-       the moment of the request — rather than today's price list. */
+       figure the customer was TOLD they owed - derived from the catalogue at
+       the moment of the request - rather than today's price list. */
     const svc = codeOf('lib/server/membershipService.ts');
     expect(svc).toMatch(/held\.amountPaid == null && price != null \? \{ amountPaid: price \}/);
     expect(svc).toMatch(/const price = held\.amountDue \?\? planOf\(held\.plan\)\?\.price;/);
@@ -281,8 +281,8 @@ describe('membership revenue is its own line, on the payment date', () => {
 
   it('the query needs no declared index, and must not declare one', () => {
     /* THIS ASSERTED THE OPPOSITE, AND THE FILE COULD NEVER BE DEPLOYED.
-       The revenue query is a range on ONE field —
-       `where('paidAt','>=').where('paidAt','<=')` — which Firestore serves
+       The revenue query is a range on ONE field -
+       `where('paidAt','>=').where('paidAt','<=')` - which Firestore serves
        from the automatic single-field index every field already has. Declaring
        it as a composite is not merely redundant: the API refuses it, with
        "this index is not necessary, configure using single field index
@@ -295,7 +295,7 @@ describe('membership revenue is its own line, on the payment date', () => {
     const q = reportsSrc.slice(reportsSrc.indexOf("where('paidAt'"));
     expect(q.slice(0, 300)).toMatch(/where\('paidAt', '>='/);
     expect(q.slice(0, 300)).toMatch(/where\('paidAt', '<='/);
-    /* No second field joins it — that is what would need a composite. */
+    /* No second field joins it - that is what would need a composite. */
     expect(q.slice(0, 300)).not.toMatch(/where\('(?!paidAt)/);
 
     const idx = JSON.parse(readFileSync('firestore.indexes.json', 'utf8')) as {
@@ -312,7 +312,7 @@ describe('the surface offers no dead ends', () => {
   const resolve = codeOf('navigation/resolve.ts');
 
   it('joining and leaving happen in-app, not on WhatsApp', () => {
-    /* Both were `waLink(...)` — the room handed the customer to another
+    /* Both were `waLink(...)` - the room handed the customer to another
        application because there was no in-app surface. There is one now. */
     expect(screen).not.toMatch(/waLink/);
     const toMembership = project.slice(project.indexOf('export function toMembership'));

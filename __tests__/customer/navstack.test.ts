@@ -4,7 +4,7 @@
  * Reported from production: Garage → the BMW → its history → Back landed on
  * Now, a room the customer had never been in. `/history?car=v1` resolved to
  * `/history`, which resolves to `/`, and the context that said WHICH car was
- * dropped on the way — so the generic record then showed whichever vehicle the
+ * dropped on the way - so the generic record then showed whichever vehicle the
  * product picks by default. Back could hand somebody a different car's history
  * than the one they were reading.
  *
@@ -68,7 +68,7 @@ describe('a cold arrival has no walk, and says so', () => {
     expect(previousRoute(walk('/'), '/')).toBeNull();
   });
 
-  it('null is the signal to use the parent map — never a guess', () => {
+  it('null is the signal to use the parent map - never a guess', () => {
     /* The caller falls back to `parentOf`; this must not invent a step. */
     expect(previousRoute(['/garage'], '/garage')).toBeNull();
   });
@@ -112,7 +112,7 @@ describe('the stack stays a walk rather than a log', () => {
   });
 
   it('an opened sheet is the same room', () => {
-    /* `?panel=`, `?ask=`, `?club=` describe what is open, not where you are —
+    /* `?panel=`, `?ask=`, `?club=` describe what is open, not where you are -
        and reopening a sheet is not going back. */
     expect(walk('/you', '/you?panel=profile', '/you')).toEqual(['/you']);
     expect(canonical('/you?panel=profile')).toBe('/you');

@@ -14,7 +14,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 /**
- * `/history/[id]` — one visit's account. §6.4 — addressable, which §16.4 also
+ * `/history/[id]` - one visit's account. §6.4 - addressable, which §16.4 also
  * needs. The id is searched across every car the customer owns, because a visit
  * id is unique across them and a shared link carries no car.
  *
@@ -54,8 +54,8 @@ export default async function VisitPage(
         }
 
         /* A BOOKING THAT HAS NOT BECOME A VISIT YET. Every notification written
-           before events existed addresses `/history/<bookingId>` — forty-two of
-           them in production — and a booking that is neither live nor sealed has
+           before events existed addresses `/history/<bookingId>` - forty-two of
+           them in production - and a booking that is neither live nor sealed has
            no visit under that id. They all landed on the no-car invitation,
            which reads as the customer's garage having been emptied. */
         if (ctx.kind === 'booked') {

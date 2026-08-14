@@ -98,7 +98,7 @@ export const createJobFromBooking = async (
     /**
      * THE TWO IDS THIS FUNCTION ALREADY HELD AND THREW AWAY.
      *
-     * It copied `vehicleName` and `vehicleRegNo` — display snapshots — and not
+     * It copied `vehicleName` and `vehicleRegNo` - display snapshots - and not
      * `vehicleId` or `customerId`, both of which are right there on the
      * booking. That omission is why 15 of 18 production jobs carry no
      * customer, and why the customer picture had to fall back to joining on a
@@ -211,7 +211,7 @@ export const updateJobStatus = async (
     /* THE SEAL. Server-side, atomic and idempotent (lib/server/sealVisit.ts):
        one transaction writes the sealed Visit and the Protections it creates,
        snapshotting the services, the pricing and the warranty terms as the
-       catalogue reads them right now. §14.5 — a later price-list edit must never
+       catalogue reads them right now. §14.5 - a later price-list edit must never
        change what this customer was promised.
 
        Awaited before the other side-effects so a failure is logged against the

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  *
  * A client cannot do this. `firestore.rules` lets a customer set a booking's
  * status to `cancelled`, but a membership wash lives on the SUBSCRIPTION and a
- * promo use lives on the PROMO — and the rules let a customer touch neither.
+ * promo use lives on the PROMO - and the rules let a customer touch neither.
  * So `cancelBooking` in lib/services/bookings.ts could only ever mark the
  * booking, and the wash was lost for good.
  *
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  /* A bearer token, or the session cookie the rooms already use — the two
+  /* A bearer token, or the session cookie the rooms already use - the two
      lapse independently, and a customer signed in enough to SEE a screen is
      signed in enough to use it. Same-origin only; see lib/server/session.ts. */
   const uid = await sessionCaller(req, t => adminAuth!.verifyIdToken(t));

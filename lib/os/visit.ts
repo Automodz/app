@@ -69,7 +69,7 @@ export const ACT_LINE: Record<CareAct, string> = {
      customer's word: seven customer-facing strings in the product say car and
      these two said vehicle, while every other sentence about the studio names
      it the way `PHASE_LINE` does immediately below. `in_care` is the most-read
-     line in the product — it is under the title for the whole of every visit —
+     line in the product - it is under the title for the whole of every visit -
      so it was the most visible place to be off-voice. */
   received:     'Your car has arrived safely.',
   looked_over:  'A careful look before any work begins.',
@@ -114,7 +114,7 @@ export function actFromJobStatus(status: JobStatus): CareAct | null {
  * THE CANONICAL EVENT DATE OF A SEALED VISIT.
  *
  * Every customer surface dated a visit with `longDate(isoOf(visit.createdAt))`
- * — the moment the DOCUMENT was written. When the backfill sealed two historic
+ * - the moment the DOCUMENT was written. When the backfill sealed two historic
  * jobs on 2026-08-10, the Garage record dated work done on 16 and 22 July as
  * "10 August 2026". The customer's own history was rewritten by an operation
  * they never saw.
@@ -124,17 +124,17 @@ export function actFromJobStatus(status: JobStatus): CareAct | null {
  * by every screen, so the answer cannot differ between them.
  *
  * ── THE ORDER, AND WHY STAGES OUTRANK THE BOOKED DAY ────────────────────
- * 1. `servicedOn` — snapshotted at seal. The authoritative answer for anything
+ * 1. `servicedOn` - snapshotted at seal. The authoritative answer for anything
  *    sealed from now on; the same value the protection's `since` is taken from,
  *    so a visit and the promise it created can never disagree about their day.
- * 2. THE LAST STAGE TIMESTAMP — when the work was recorded as finishing. This
+ * 2. THE LAST STAGE TIMESTAMP - when the work was recorded as finishing. This
  *    outranks the booked day deliberately: `requestedFor` is an INTENTION and
- *    the studio does not always work on the day booked. Production proves it —
+ *    the studio does not always work on the day booked. Production proves it -
  *    the Kia was booked for 20 July and completed on the 16th, the BMW booked
  *    for the 27th and completed on the 22nd. Dating either by the booking would
  *    contradict its own protection's `since`.
- * 3. `requestedFor.date` — the booked day, when no stage was ever recorded.
- * 4. `createdAt` — the last resort, and the only case where the record's own
+ * 3. `requestedFor.date` - the booked day, when no stage was ever recorded.
+ * 4. `createdAt` - the last resort, and the only case where the record's own
  *    date is allowed to stand in for the car's.
  *
  * Returns an ISO date (YYYY-MM-DD).
@@ -152,7 +152,7 @@ export function visitDateOf(visit: {
     return d && !Number.isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : null;
   };
 
-  /* The LAST stage — a visit ends when its final act does. Sorted rather than
+  /* The LAST stage - a visit ends when its final act does. Sorted rather than
      assumed, because `stages` is append-ordered by the writer, not by time. */
   const stamps = (visit.stages ?? []).map(s => iso(s.at)).filter((d): d is string => !!d).sort();
   if (stamps.length) return stamps[stamps.length - 1];

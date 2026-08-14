@@ -1,5 +1,5 @@
 /**
- * READY · PAY · RATE — design screen 13.
+ * READY · PAY · RATE - design screen 13.
  *
  * The handover is where the product touches money and a car changes hands, so
  * the guarantees are blunt:
@@ -23,7 +23,7 @@ const ts = (iso: string) => Timestamp.fromDate(new Date(iso));
 /* ── what is owed ────────────────────────────────────────────────────────── */
 
 describe('what is owed is decided once, from a stated order of authority', () => {
-  it('the invoice wins — it is the figure with paper behind it', () => {
+  it('the invoice wins - it is the figure with paper behind it', () => {
     const s = settlementOf({ invoiceTotal: 43622, jobTotal: 40000, bookingTotal: 37622 });
     expect(s).toMatchObject({ total: 43622, source: 'invoice', payable: 43622 });
   });
@@ -73,13 +73,13 @@ describe('a customer may never write `paid`', () => {
     expect(paymentTransition('submitted', 'paid', 'studio').ok).toBe(true);
   });
 
-  it('settled is terminal — a record that can be un-settled is not a record', () => {
+  it('settled is terminal - a record that can be un-settled is not a record', () => {
     expect(PAYMENT_TRANSITIONS.paid).toEqual([]);
   });
 
   it('"submitted" is never worded as paid', () => {
     /* There is no gateway. Saying "paid" would be the product confirming
-       something only a bank can confirm — and the car is not released on it. */
+       something only a bank can confirm - and the car is not released on it. */
     expect(PAYMENT_WORD.submitted).toBe('With the studio to confirm');
     expect(PAYMENT_WORD.submitted).not.toMatch(/paid/i);
     expect(PAYMENT_WORD.paid).toBe('Settled');
@@ -96,7 +96,7 @@ describe('a visit is rated once, by its owner, once it is sealed', () => {
       .toEqual({ ok: true });
   });
 
-  it('an unsealed visit cannot be rated — it has not happened yet', () => {
+  it('an unsealed visit cannot be rated - it has not happened yet', () => {
     expect(canRate({ visit: { ...sealed, status: 'open' }, ownsVehicle: true, alreadyRated: false, rating: 5 }))
       .toEqual({ ok: false, reason: 'not-sealed' });
     expect(canRate({ visit: null, ownsVehicle: true, alreadyRated: false, rating: 5 }))
@@ -270,7 +270,7 @@ describe('the money is the server’s, and the request cannot express it', () =>
     expect(screen).not.toMatch(/amount:/);
   });
 
-  it('one open intent per visit — a second tap re-uses the first', () => {
+  it('one open intent per visit - a second tap re-uses the first', () => {
     expect(service).toMatch(/where\('status', 'in', \['initiated', 'submitted'\]\)/);
   });
 
@@ -283,7 +283,7 @@ describe('the money is the server’s, and the request cannot express it', () =>
     expect(route).toMatch(/\['admin', 'employee'\]\.includes\(role\)/);
   });
 
-  it('rating once is structural — a create, on an id that IS the visit', () => {
+  it('rating once is structural - a create, on an id that IS the visit', () => {
     expect(rating).toMatch(/collection\('ratings'\)\.doc\(visitId\)\.create\(/);
   });
 

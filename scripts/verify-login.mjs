@@ -24,7 +24,7 @@ const AUTH = 'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1';
 
 let failures = 0;
 const check = (label, ok, detail = '') => {
-  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  — ' + detail : ''}`);
+  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  - ' + detail : ''}`);
   if (!ok) failures++;
 };
 

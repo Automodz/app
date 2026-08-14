@@ -6,7 +6,7 @@ import { stepFrom, shouldWelcome } from '@/lib/os/welcome';
 import { hrefForDestination } from '@/navigation/resolve';
 
 /**
- * `/welcome` — the first arrival.
+ * `/welcome` - the first arrival.
  *
  * SERVER-DECIDED. Whether this customer should be here at all is read from the
  * user document, not from `localStorage`, so it is the same answer on every
@@ -15,7 +15,7 @@ import { hrefForDestination } from '@/navigation/resolve';
  * bounced by an effect.
  *
  * `?step=` selects the moment; `?welcome=1` forces the arrival for a customer
- * who has already had one — the studio's reset, and how it is exercised in
+ * who has already had one - the studio's reset, and how it is exercised in
  * development.
  */
 export const dynamic = 'force-dynamic';

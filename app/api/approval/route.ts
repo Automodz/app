@@ -11,19 +11,19 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * MID-VISIT APPROVAL — design screen 12, both sides of it.
+ * MID-VISIT APPROVAL - design screen 12, both sides of it.
  *
  * POST   the studio ASKS      (staff only)
  * PATCH  the customer ANSWERS (owner only)
  *
  * The split is the whole security model and it is deliberately two verbs on
  * one route rather than two routes: the pair has to be read together, because
- * the guarantee is that no caller can do both. Staff cannot answer — the
- * transition table refuses `approved` and `declined` to the studio — and a
+ * the guarantee is that no caller can do both. Staff cannot answer - the
+ * transition table refuses `approved` and `declined` to the studio - and a
  * customer cannot ask, because asking sets a price.
  */
 /**
- * THE CALLER — a bearer token, or the session cookie the rooms already use.
+ * THE CALLER - a bearer token, or the session cookie the rooms already use.
  *
  * The two sessions lapse independently, so a customer can reach a room that
  * renders perfectly and find its one control claiming they are signed out.
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       price: Number(body.price),
       minutes: Number(body.minutes ?? 0),
       /* Recorded for the studio's own audit. It never reaches a customer
-         surface — §2.2, no individual is ever named. */
+         surface - §2.2, no individual is ever named. */
       byEmployeeId: s(body.byEmployeeId) || uid,
     });
 

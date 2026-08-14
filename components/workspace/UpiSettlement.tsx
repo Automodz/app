@@ -1,6 +1,6 @@
 'use client';
 /**
- * CONFIRMING A UPI PAYMENT — the studio side of design screen 13.
+ * CONFIRMING A UPI PAYMENT - the studio side of design screen 13.
  *
  * A customer can open their bank application and pay. Nothing in this product
  * can see that money: there is no gateway, so the application never learns
@@ -11,12 +11,12 @@
  * ── THAT CONTROL IS THE ONE THAT RELEASES A CAR ──────────────────────────
  * So it is deliberately not a tick beside a row. It states the amount the
  * SERVER is expecting, and settling sends that figure back to be checked
- * against the payment's own — a mismatch is refused rather than reconciled,
+ * against the payment's own - a mismatch is refused rather than reconciled,
  * because a settlement for the wrong amount leaves the books and the
  * customer's record disagreeing and only one of them gets looked at again.
  *
  * ── AND IT DOES NOT DUPLICATE THE COUNTER'S LEDGER ───────────────────────
- * `PaymentsSection` records money taken AT the counter — cash, a card machine,
+ * `PaymentsSection` records money taken AT the counter - cash, a card machine,
  * a UPI transfer the counter watched arrive. This is for the payments a
  * customer started in the app, which the counter did not watch. Settling one
  * writes into that same ledger, keyed by the payment id, so the two can never
@@ -33,7 +33,7 @@ import type { Job, Payment } from '@/lib/types';
 import { Section } from './parts';
 
 const WORD: Record<string, string> = {
-  initiated: 'Link opened — no reference yet',
+  initiated: 'Link opened - no reference yet',
   submitted: 'Customer says they have paid',
   failed: 'Their bank refused it',
   expired: 'The link ran out',
@@ -77,7 +77,7 @@ export function UpiSettlement({ job, onChange }: { job: Job; onChange?: () => vo
         toast.error(FAULT[(b as { error?: string }).error ?? ''] ?? 'Could not settle that.');
         return;
       }
-      toast.success('Settled — the customer has been told.');
+      toast.success('Settled - the customer has been told.');
       onChange?.();
     } catch {
       toast.error('Could not settle that. Check the connection.');
@@ -87,7 +87,7 @@ export function UpiSettlement({ job, onChange }: { job: Job; onChange?: () => vo
   }, [onChange]);
 
   const open = payments.filter(p => p.status !== 'paid');
-  /* §18.1 — nothing started in the app, nothing here. The counter's own ledger
+  /* §18.1 - nothing started in the app, nothing here. The counter's own ledger
      is where a cash payment is recorded, and a second empty card would be the
      same silence twice. */
   if (open.length === 0) return null;

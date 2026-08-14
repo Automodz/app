@@ -78,7 +78,7 @@ await put('bookings/bk-live', common({
   status: S('in_progress'), createdAt: ts('2026-07-30T09:00:00Z'),
 }));
 
-// a job WITH customerId, and one WITHOUT — the exact shape that used to deny
+// a job WITH customerId, and one WITHOUT - the exact shape that used to deny
 await put('jobs/job-done', {
   id: S('job-done'), bookingId: S('bk-done'), customerId: S(uid),
   vehicleRegNo: S('GJ01KP4471'), status: S('archived'),
@@ -94,7 +94,7 @@ await put('jobs/job-walkin', {
   photos: A([]), statusHistory: A([]), createdAt: ts('2025-01-01T09:00:00Z'),
 });
 
-// 4 · A SEALED VISIT — the document that used to break every customer's app
+// 4 · A SEALED VISIT - the document that used to break every customer's app
 await put('visits/vis-1', {
   id: S('vis-1'), vehicleId: S(V1), locationId: S('maninagar'),
   source: S('requested'), authoredBy: S('studio'),
@@ -129,7 +129,7 @@ await put('subscriptions/sub-1', {
   washesTotal: N(8), washesUsed: N(6), paymentMethod: S('upi'),
   createdAt: ts('2026-07-01T10:00:00Z'), updatedAt: ts('2026-07-01T10:00:00Z'),
 });
-/* The catalogue, in the shape `lib/types.ts#Service` actually declares —
+/* The catalogue, in the shape `lib/types.ts#Service` actually declares -
    `price` and `duration`, not `basePrice` and nothing. The old seed drifted
    from the type and the booking sheet rendered "NaN hour · ₹NaN" against it,
    which is how the missing guard downstream was found. */
@@ -148,7 +148,7 @@ await put('services/svc-wash', {
 });
 
 await put('services/svc-ppf', {
-  id: S('svc-ppf'), name: S('Paint protection film — front'), category: S('PPF'),
+  id: S('svc-ppf'), name: S('Paint protection film - front'), category: S('PPF'),
   price: N(48000), duration: N(1440), active: B(true), warranty: S('5 years'),
   description: S('Bonnet, bumper and mirrors, wrapped and sealed.'),
   popular: B(false), order: N(3), brand: S('XPEL'),

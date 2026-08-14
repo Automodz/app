@@ -3,7 +3,7 @@
  * vocabulary reaches the markup.
  *
  * The projections are unit-tested next door; this proves the screens actually
- * consume what the projections produce — the seam that a type can describe and
+ * consume what the projections produce - the seam that a type can describe and
  * still get wrong.
  */
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -102,7 +102,7 @@ function assertClean(html: string, label: string) {
   }
   /* `undefined` and `NaN` are checked case-SENSITIVELY and word-bounded: those
      are the exact spellings JS coercion produces, and lowercasing them matches
-     ordinary words — "maninagar" contains "nan". */
+     ordinary words - "maninagar" contains "nan". */
   expect(html).not.toMatch(/\bundefined\b/);
   expect(html).not.toMatch(/\bNaN\b/);
   expect(html.length).toBeGreaterThan(200);
@@ -124,8 +124,8 @@ it('Home renders the projected model', () => {
   expect(html).toContain('CLUB');
   expect(html).toContain('Gold');
   /* ONE primary action, never two competing. In the ratified design the
-     filled tier is the WARM pane — the only surface tinted by the studio's
-     own light — so the rule "one thing asks" is asserted on the class rather
+     filled tier is the WARM pane - the only surface tinted by the studio's
+     own light - so the rule "one thing asks" is asserted on the class rather
      than on a hex that a restyle would move. */
   expect((html.match(/am-glass-warm/g) ?? []).length).toBe(1);
 });
@@ -157,7 +157,7 @@ it('Vehicle renders through the renderer boundary', () => {
 /**
  * NO ROOM SHIPS A DEAD CONTROL.
  *
- * §10.5 — "if there is no destination yet, there is no control yet" — is
+ * §10.5 - "if there is no destination yet, there is no control yet" - is
  * guarded at runtime in `Button`, and the guard only writes to the console in
  * development, where a dozen identical lines across seven rooms is a warning
  * nobody can act on. Rendering every screen here turns it into a failing test
@@ -166,12 +166,12 @@ it('Vehicle renders through the renderer boundary', () => {
 /**
  * THE ARRIVAL IS VISIBLE WITHOUT JAVASCRIPT.
  *
- * §7.1 — motion never gates content. `initial={{ opacity: 0 }}` is rendered by
+ * §7.1 - motion never gates content. `initial={{ opacity: 0 }}` is rendered by
  * the SERVER, so the first screen a new customer ever sees was shipped
  * invisible and depended on JavaScript arriving to reveal it: a blank screen
  * on a slow phone, a permanently blank one with JS blocked. It also could not
- * survive hydration — the server wrote `opacity: "0"` where the client
- * computed `opacity: 0` — and React reported a mismatch it would not patch.
+ * survive hydration - the server wrote `opacity: "0"` where the client
+ * computed `opacity: 0` - and React reported a mismatch it would not patch.
  */
 it('Welcome is legible before its animation runs', () => {
   const model = toWelcome(picture, 'hello', false);
@@ -192,7 +192,7 @@ it('no screen renders a button that does nothing', () => {
     ['History', <HistoryScreen model={toHistory(car, picture.invoices)} />],
     ['Visit', <VisitScreen visit={toVisit(visitsOf(car)[0], car)} />],
     ['Studio', <StudioScreen model={toStudio(picture)} />],
-    /* `onSignOut` is how the room actually receives it — see YouRoom. Rendered
+    /* `onSignOut` is how the room actually receives it - see YouRoom. Rendered
        without it, the guard would fire on the harness rather than on the
        product. */
     ['You', <YouScreen model={toYou(picture)} onSignOut={() => {}} />],
@@ -215,7 +215,7 @@ it('no screen renders a button that does nothing', () => {
 });
 
 it('Vehicle says what the car has coming, and how to change it', () => {
-  /* The room named the car's STATE — "Booked in" — and then said nothing about
+  /* The room named the car's STATE - "Booked in" - and then said nothing about
      when, what for, or how to change it. A customer looking at their own car
      had to go to the Studio and find this visit among every other car's. */
   const model = toVehicle(car, picture);
@@ -227,14 +227,14 @@ it('Vehicle says what the car has coming, and how to change it', () => {
     expect(html).toContain(model.next.service);
     expect(html).toContain(model.next.when);
   } else {
-    /* §18.1 — nothing booked is an invitation, and the invitation is the act. */
+    /* §18.1 - nothing booked is an invitation, and the invitation is the act. */
     expect(html).toContain('Nothing booked');
     expect(html).toContain(model.arrangeHref);
   }
 });
 
 it('Vehicle never offers an act the server would refuse', () => {
-  /* `manageHref` mirrors firestore.rules — pending or confirmed only — the
+  /* `manageHref` mirrors firestore.rules - pending or confirmed only - the
      same rule `toStudio`'s `manageable` uses. A car whose visit has started
      must not be offered "change or cancel". */
   const model = toVehicle(car, picture);
@@ -255,7 +255,7 @@ it('History renders the album', () => {
 
 it('History states what the record adds up to', () => {
   /* §16.1 calls this "a series of transformations", and a series has a shape.
-     The room used to show none of it — a customer scrolled photographs with no
+     The room used to show none of it - a customer scrolled photographs with no
      idea how many visits there had been or how long their car had been cared
      for here, though every one of those facts was already in the model. */
   const model = toHistory(car, picture.invoices);
@@ -270,7 +270,7 @@ it('History is never a blank screen', () => {
      History SECTION, which is right for a section inside another room. This is
      a ROOM with its own address in the navigation bar: a customer who tapped
      History before their first visit was handed an empty black screen with
-     nothing on it whatsoever. §19.1 — an absence is not a state. */
+     nothing on it whatsoever. §19.1 - an absence is not a state. */
   const empty = { ...toHistory(car, picture.invoices), visits: [], count: 0, since: undefined, settledTotal: undefined };
   const html = renderToStaticMarkup(<HistoryScreen model={empty} />);
   assertClean(html, 'history-empty');
@@ -294,9 +294,9 @@ it('Studio renders the place with no price and no named person', () => {
   assertClean(html, 'studio');
   expect(html).toContain('Maninagar');
   expect(html).not.toMatch(/₹/);
-  /* §10.5 — the primary action must not point at the Studio's own address. */
+  /* §10.5 - the primary action must not point at the Studio's own address. */
   expect(html).not.toContain('href="/studio"');
-  /* RESTORED: this used to assert `wa.me`, which pinned a WORKAROUND — the
+  /* RESTORED: this used to assert `wa.me`, which pinned a WORKAROUND - the
      studio had no in-app booking surface, so the most important control in the
      product handed the customer to another application. Arranging a visit now
      happens here, so the control is a real button and not a link out. */
@@ -304,7 +304,7 @@ it('Studio renders the place with no price and no named person', () => {
   expect(html).toContain('Arrange a visit');
   /* Matched on the ELEMENT, not on attribute adjacency. This read
      `<button type="button"` and broke the moment `Button` gained a class for
-     its press feedback — the attribute order changed, the meaning did not. */
+     its press feedback - the attribute order changed, the meaning did not. */
   expect(html).toMatch(/<button[^>]*type="button"/);
 });
 
@@ -318,7 +318,7 @@ it('You renders identity with no avatar and no form', () => {
   /* Sign out is an ACTION, never a link to the sign-in page. */
   expect(html).toContain('Sign out');
   expect(html).not.toContain('href="/auth/login"');
-  /* §10.5 — no control may point at the address it is already on. */
+  /* §10.5 - no control may point at the address it is already on. */
   expect(html).not.toContain('href="/you"');
 });
 

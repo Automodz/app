@@ -56,7 +56,7 @@ const pending = (over: Partial<{ status: BookingStatus; scheduledDate: string; s
   ...over,
 });
 
-describe('free until 24 hours before — design screen 10', () => {
+describe('free until 24 hours before - design screen 10', () => {
   /* The slot is 2026-02-12 09:00 IST = 2026-02-12T03:30Z.
      The window therefore closes at 2026-02-11T03:30Z. */
 
@@ -65,7 +65,7 @@ describe('free until 24 hours before — design screen 10', () => {
     expect(v.allowed).toBe(true);
   });
 
-  it('EXACTLY 24 hours is refused — the boundary falls on the bay’s side', () => {
+  it('EXACTLY 24 hours is refused - the boundary falls on the bay’s side', () => {
     /* Allowing it at exactly 24 hours puts the studio one millisecond of clock
        skew away from having to honour a change it has already prepared for. */
     const v = changeWindowOf(pending(), at('2026-02-11T03:30:00Z'));
@@ -139,7 +139,7 @@ describe('the booking machine', () => {
     }
   });
 
-  it('expiry is the clock’s alone — neither party may declare it', () => {
+  it('expiry is the clock’s alone - neither party may declare it', () => {
     expect(bookingTransition('pending', BOOKING_EXPIRED, 'system').ok).toBe(true);
     expect(bookingTransition('pending', BOOKING_EXPIRED, 'customer').ok).toBe(false);
     expect(bookingTransition('pending', BOOKING_EXPIRED, 'studio').ok).toBe(false);
@@ -151,7 +151,7 @@ describe('the booking machine', () => {
     expect(BOOKING_TERMINAL).toContain('expired');
   });
 
-  it('a booking cannot skip the bay — no jump from confirmed to completed', () => {
+  it('a booking cannot skip the bay - no jump from confirmed to completed', () => {
     expect(bookingTransition('confirmed', 'completed', 'studio'))
       .toMatchObject({ ok: false, reason: 'illegal-transition' });
   });
@@ -180,7 +180,7 @@ describe('a request whose day has gone', () => {
 
 /* ── approvals ───────────────────────────────────────────────────────────── */
 
-describe('the approval machine — the studio cannot answer for the customer', () => {
+describe('the approval machine - the studio cannot answer for the customer', () => {
   it('only the customer may approve or decline', () => {
     expect(approvalTransition('requested', 'approved', 'customer').ok).toBe(true);
     expect(approvalTransition('requested', 'declined', 'customer').ok).toBe(true);
@@ -194,7 +194,7 @@ describe('the approval machine — the studio cannot answer for the customer', (
     expect(approvalTransition('requested', 'declined', 'studio').ok).toBe(false);
   });
 
-  it('a resolved request cannot be resolved again — no double approval', () => {
+  it('a resolved request cannot be resolved again - no double approval', () => {
     for (const from of ['approved', 'declined', 'expired', 'cancelled'] as const) {
       expect(approvalTransition(from, 'approved', 'customer'))
         .toMatchObject({ ok: false, reason: `already-${from}` });
@@ -211,14 +211,14 @@ describe('the approval machine — the studio cannot answer for the customer', (
     const beyond = requestedAtMs + (APPROVAL_VALID_HOURS + 1) * 3600_000;
     expect(approvalHasExpired({ status: 'requested', requestedAtMs }, within)).toBe(false);
     expect(approvalHasExpired({ status: 'requested', requestedAtMs }, beyond)).toBe(true);
-    /* One already answered never expires — the answer stands. */
+    /* One already answered never expires - the answer stands. */
     expect(approvalHasExpired({ status: 'approved', requestedAtMs }, beyond)).toBe(false);
   });
 });
 
 /* ── payment ─────────────────────────────────────────────────────────────── */
 
-describe('the payment machine — a customer may never write `paid`', () => {
+describe('the payment machine - a customer may never write `paid`', () => {
   it('the customer may start a payment and claim to have made it', () => {
     expect(paymentTransition('unpaid', 'initiated', 'customer').ok).toBe(true);
     expect(paymentTransition('initiated', 'submitted', 'customer').ok).toBe(true);
@@ -230,7 +230,7 @@ describe('the payment machine — a customer may never write `paid`', () => {
     expect(paymentTransition('submitted', 'paid', 'studio').ok).toBe(true);
   });
 
-  it('paid is terminal — a settled invoice is a record, not an opinion', () => {
+  it('paid is terminal - a settled invoice is a record, not an opinion', () => {
     for (const to of ['unpaid', 'initiated', 'submitted', 'failed', 'expired'] as const) {
       expect(paymentTransition('paid', to, 'studio'))
         .toMatchObject({ ok: false, reason: 'already-paid' });

@@ -10,7 +10,7 @@
  * The voice is the studio's: the car by name, reasons given, no urgency.
  */
 import type { Booking, Job, Subscription } from '@/lib/types';
-/* Repointed off the retired `lib/cx/protection` (§22.2 — one implementation).
+/* Repointed off the retired `lib/cx/protection` (§22.2 - one implementation).
    That module carried its own three-kind vocabulary and its own `Protection`
    shape; the stored model has ten kinds and one term engine. */
 import type { LiveProtection as Protection } from './protection';
@@ -63,14 +63,14 @@ export function conciergeLog(args: {
     /**
      * THE CONFIRMATION IS NOT WRITTEN DOWN, SO IT IS NOT SAID.
      *
-     * There was a line here — "The studio confirmed {date} for the {car}." —
+     * There was a line here - "The studio confirmed {date} for the {car}." -
      * dated from `b.updatedAt`. That is when the document was last WRITTEN, not
      * when the studio confirmed anything, and the log presents its `at` to the
      * customer as the day the thing happened. Nine of the eleven bookings in
      * production have been edited since they were created, so for nine of them
      * the date beside that sentence was simply the date of the last edit: Home
      * read "The studio confirmed 23 July 2026 for the Kia Seltos." stamped
-     * 8 August 2026 — a confirmation appearing to arrive a fortnight after the
+     * 8 August 2026 - a confirmation appearing to arrive a fortnight after the
      * visit it confirmed.
      *
      * MISSING FROM THE SCHEMA: `Booking.confirmedAt`, written once when a
@@ -87,7 +87,7 @@ export function conciergeLog(args: {
       const line = b.noShow
         ? `The ${b.serviceName} on ${fmtLong(b.scheduledDate)} was missed.`
         : b.rejectionReason
-        ? `The studio couldn’t take ${b.serviceName} on ${fmtLong(b.scheduledDate)}${b.rejectionReason ? ` — ${b.rejectionReason}` : ''}`
+        ? `The studio couldn’t take ${b.serviceName} on ${fmtLong(b.scheduledDate)}${b.rejectionReason ? ` - ${b.rejectionReason}` : ''}`
         : `${b.serviceName} on ${fmtLong(b.scheduledDate)} was cancelled.`;
       /* `cancelledAt` ONLY. It is the true event and every cancelled booking
          in production carries one; falling through to `updatedAt` would date
@@ -128,7 +128,7 @@ export function conciergeLog(args: {
       id: `protection-${p.kind}`,
       at: new Date(`${p.since ?? ''}T12:00:00`),
       line: p.term.kind === 'dated'
-        ? `${PROTECTION_WORD[p.kind]} applied — protected until ${new Date(`${p.term.expiresOn}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
+        ? `${PROTECTION_WORD[p.kind]} applied - protected until ${new Date(`${p.term.expiresOn}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
         : `${PROTECTION_WORD[p.kind]} applied to the ${vehicleName}.`,
     });
   });

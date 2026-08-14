@@ -64,7 +64,7 @@ const D = 86400000, NOW = Date.now();
 
 (async () => {
   /* ITS OWN CUSTOMERS. `custA` and `custB` are the RULES matrix's, and they
-     are seeded with a pending and an active membership on purpose — reusing
+     are seeded with a pending and an active membership on purpose - reusing
      them here would have this matrix arguing with that one's fixtures. */
   for (const [uid, name] of [['apiA', 'API A'], ['apiB', 'API B']]) {
     await auth.createUser({ uid, email: `${uid}@x.com` }).catch(() => {});
@@ -106,13 +106,13 @@ const D = 86400000, NOW = Date.now();
   ok('the same plate twice is refused 409', dupe.status === 409, dupe.status);
 
   const spaced = await call('POST', '/api/vehicle', { name: 'The Kia', registrationNumber: 'GJ 01 ZZ 0003' }, custA);
-  ok('  …and so is the SAME plate spaced differently — one car, one record',
+  ok('  …and so is the SAME plate spaced differently - one car, one record',
     spaced.status === 409, spaced.status);
 
   const theirs = await call('PATCH', '/api/vehicle', {
     vehicleId: 'theirs', name: 'Taken over', registrationNumber: 'GJ01ZZ0009',
   }, custA);
-  ok('ANOTHER CUSTOMER’S CAR IS NOT FOUND — 404', theirs.status === 404, theirs.status);
+  ok('ANOTHER CUSTOMER’S CAR IS NOT FOUND - 404', theirs.status === 404, theirs.status);
   ok('  …and it is untouched',
     (await db.doc('users/apiB/vehicles/theirs').get()).data().name === 'Their car');
 
@@ -142,12 +142,12 @@ const D = 86400000, NOW = Date.now();
   const selfActivate = await call('PUT', '/api/membership', {
     subscriptionId: forgedBody.subscriptionId, decision: 'activate',
   }, custA);
-  ok('THE CUSTOMER CANNOT ACTIVATE THEIR OWN — 403', selfActivate.status === 403, selfActivate.status);
+  ok('THE CUSTOMER CANNOT ACTIVATE THEIR OWN - 403', selfActivate.status === 403, selfActivate.status);
 
   const otherActivate = await call('PUT', '/api/membership', {
     subscriptionId: forgedBody.subscriptionId, decision: 'activate',
   }, custB);
-  ok('nor can another customer — 403', otherActivate.status === 403);
+  ok('nor can another customer - 403', otherActivate.status === 403);
 
   ok('  …and after both it is still merely pending',
     (await db.doc(`subscriptions/${forgedBody.subscriptionId}`).get()).data().status === 'pending');
@@ -162,7 +162,7 @@ const D = 86400000, NOW = Date.now();
   const otherClaim = await call('PATCH', '/api/membership', {
     subscriptionId: forgedBody.subscriptionId, reference: 'UPI-1',
   }, custB);
-  ok('but not on somebody else’s membership — 403', otherClaim.status === 403, otherClaim.status);
+  ok('but not on somebody else’s membership - 403', otherClaim.status === 403, otherClaim.status);
 
   const activated = await call('PUT', '/api/membership', {
     subscriptionId: forgedBody.subscriptionId, decision: 'activate',
@@ -183,7 +183,7 @@ const D = 86400000, NOW = Date.now();
   const staffStart = await call('POST', '/api/membership', {
     userId: 'apiB', plan: 'Silver', paymentMethod: 'cash',
   }, custA);
-  ok('A CUSTOMER NAMING ANOTHER CUSTOMER IS REFUSED — 403', staffStart.status === 403, staffStart.status);
+  ok('A CUSTOMER NAMING ANOTHER CUSTOMER IS REFUSED - 403', staffStart.status === 403, staffStart.status);
 
   const counter = await call('POST', '/api/membership', {
     userId: 'apiB', plan: 'Silver', paymentMethod: 'cash',
@@ -216,7 +216,7 @@ const D = 86400000, NOW = Date.now();
   ok('  …and it creates NO protection',
     !(await db.doc(`protections/${madeBody.vehicleId}_puc_${declaredBody.declarationId}`).get()).exists);
 
-  ok('THE CUSTOMER CANNOT VERIFY THEIR OWN — 403',
+  ok('THE CUSTOMER CANNOT VERIFY THEIR OWN - 403',
     (await call('POST', '/api/protection/puc/verify',
       { declarationId: declaredBody.declarationId, decision: 'verify' }, custA)).status === 403);
 

@@ -1,5 +1,5 @@
 /**
- * HISTORY IS PERMANENT — ENFORCED.
+ * HISTORY IS PERMANENT - ENFORCED.
  *
  * §16: a past visit must never change because pricing, warranties or the
  * catalogue changed. That is not a property you can check by looking at a
@@ -19,7 +19,7 @@ const codeOf = (p: string) =>
 const project = codeOf('lib/customer/project.ts');
 
 /**
- * The slice of the projection that History owns — `visitsOf` and its helpers,
+ * The slice of the projection that History owns - `visitsOf` and its helpers,
  * plus `toHistory`/`toVisit`. Bounded on both ends: an unbounded slice ran to
  * end-of-file and swept in Studio and Membership, which legitimately read the
  * catalogue.
@@ -36,7 +36,7 @@ const between = (from: string, to: string) => {
 
 const historySlice =
   between('export function visitsOf', 'export function toHome')
-  /* Bounded at `toLiveVisit`, which is NOT history — a visit in flight
+  /* Bounded at `toLiveVisit`, which is NOT history - a visit in flight
      legitimately reads the catalogue through the ownership engine. Only the
      sealed record is forbidden from consulting the present. */
   + between('export function toHistory', 'export function toLiveVisit');
@@ -87,7 +87,7 @@ describe('history reads only sealed visits', () => {
 describe('history never consults the present', () => {
   it('visitsOf takes no catalogue at all', () => {
     /* It used to take one and never read it (`_catalogue`), threaded through
-       four call sites — a parameter that exists but does nothing is an
+       four call sites - a parameter that exists but does nothing is an
        invitation to start using it. */
     expect(visitsOf.length).toBe(1);
     expect(project).not.toMatch(/_catalogue/);
@@ -103,7 +103,7 @@ describe('history never consults the present', () => {
   it('the amount comes from the visit, not from a service lookup', () => {
     /* BEHAVIOURAL, not a regex over the source. This matched the literal
        `visit.amounts.total`, which broke the moment that read moved into
-       `moneyOfVisits` — while proving nothing about the figure a customer
+       `moneyOfVisits` - while proving nothing about the figure a customer
        sees. The structural guard above already forbids the catalogue; this
        asserts the number itself, which is the fact §16 is about. */
     const sold = sealed({ amounts: { subtotal: 40000, discount: 0, total: 40000 } });
@@ -146,7 +146,7 @@ describe('a chapter carries what the visit sealed', () => {
     const v = toVisit(sealed(), car(), [invoice]);
     expect(v.documents?.[0].label).toContain('AMZ-2026-0001');
     /* The document, with its own share token. It also carries the visit that
-       sent them — the paper is a shared address and has no history behind it
+       sent them - the paper is a shared address and has no history behind it
        when it arrives in a message, so without this there is no way back. */
     expect(v.documents?.[0].href).toContain('/invoice/i1');
     expect(v.documents?.[0].href).toContain('t=tok');

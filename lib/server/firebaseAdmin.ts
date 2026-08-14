@@ -8,7 +8,7 @@ const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n')
 
 /**
  * The local suite accepts any caller, so it needs no service account. This is
- * what makes the server read path and the visit pipeline verifiable at all —
+ * what makes the server read path and the visit pipeline verifiable at all -
  * without it, exercising them required production credentials on a developer's
  * machine, which is why neither had ever been run.
  *

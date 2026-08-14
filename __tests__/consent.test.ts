@@ -3,7 +3,7 @@
  *
  * Screen 17 publishes a real customer's service record to strangers. These
  * assertions are the boundary: absent means no, revocation is immediate, and
- * a surface that forgets to check is handed `null` rather than a zero — because
+ * a surface that forgets to check is handed `null` rather than a zero - because
  * "0 visits" is itself a claim about the car.
  */
 import { hasPublicHistoryConsent, publicHistoryOf } from '@/lib/os/consent';
@@ -27,7 +27,7 @@ const history = (v: Pick<Vehicle, 'publicHistoryConsent'> | null | undefined) =>
     since: '2021',
   });
 
-describe('absent means no — nobody is grandfathered in', () => {
+describe('absent means no - nobody is grandfathered in', () => {
   it('a car with no consent record is private', () => {
     expect(hasPublicHistoryConsent(car(undefined))).toBe(false);
     expect(history(car(undefined))).toBeNull();
@@ -99,18 +99,18 @@ describe('consent is never inferred', () => {
   });
 });
 
-describe('null, never a zero — a count is itself a claim', () => {
+describe('null, never a zero - a count is itself a claim', () => {
   it('no consent returns null rather than an empty shape', () => {
     const h = history(car(undefined));
     expect(h).toBeNull();
     /* A caller that forgets to check gets nothing to read, so it cannot print
-       "0 visits" or "since —". */
+       "0 visits" or "since -". */
     expect(h?.visits).toBeUndefined();
     expect(h?.photographs).toBeUndefined();
     expect(h?.since).toBeUndefined();
   });
 
-  it('consent but no visits still returns null — there is no history to claim', () => {
+  it('consent but no visits still returns null - there is no history to claim', () => {
     expect(publicHistoryOf({
       vehicle: car({ granted: true, grantedAt: ts('2026-01-01') }),
       visits: [], protections: [], photographs: 0, since: '2021',
@@ -126,7 +126,7 @@ describe('null, never a zero — a count is itself a claim', () => {
 });
 
 describe('what a buyer may learn, and what they may not', () => {
-  it('counts and worded facts only — no documents, prices or customer', () => {
+  it('counts and worded facts only - no documents, prices or customer', () => {
     const h = history(car({ granted: true, grantedAt: ts('2026-01-01') }))!;
     const keys = Object.keys(h).sort();
     expect(keys).toEqual(['photographs', 'protections', 'since', 'visits']);

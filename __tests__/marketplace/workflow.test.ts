@@ -1,11 +1,11 @@
 /**
- * THE MARKETPLACE — §5.2, §15.7, §18.1, §20, §21 · ARCHITECTURE §1.
+ * THE MARKETPLACE - §5.2, §15.7, §18.1, §20, §21 · ARCHITECTURE §1.
  *
  * WHAT WAS ACTUALLY WRONG, and it was not "the pages were missing":
  *
  *   THE STUDIO WAS NEVER TOLD. `createCarLead` wrote a document and stopped.
- *   The single highest-value message this product can carry — someone asking
- *   to buy a car — landed in a collection nobody watched. Identical to the
+ *   The single highest-value message this product can carry - someone asking
+ *   to buy a car - landed in a collection nobody watched. Identical to the
  *   defect that made new bookings invisible.
  *
  *   ANYONE COULD WRITE A LEAD. `carLeads` allowed unauthenticated create so
@@ -68,7 +68,7 @@ describe('what may be shown at all', () => {
   });
 
   it('the ordinary case wears no badge', () => {
-    /* §15.7 — a badge on everything is a badge on nothing. */
+    /* §15.7 - a badge on everything is a badge on nothing. */
     expect(statusWord('available')).toBeUndefined();
     expect(statusWord('sold')).toBe('Sold');
     expect(statusWord('reserved')).toBe('Reserved');
@@ -157,7 +157,7 @@ describe('what the screens are handed', () => {
   });
 
   it('an empty showroom and an empty result are different facts', () => {
-    /* §18.1 — one is the studio's news, the other is the customer's own
+    /* §18.1 - one is the studio's news, the other is the customer's own
        filter, and only the second offers a way back out. */
     expect(toMarket([], {}).stock).toBe(0);
     expect(toMarket([], {}).filtered).toBe(false);
@@ -180,7 +180,7 @@ describe('what the screens are handed', () => {
   });
 
   it('every photograph carries a description a person could use', () => {
-    /* §21.6 — "image 1" tells a blind customer nothing about the car they are
+    /* §21.6 - "image 1" tells a blind customer nothing about the car they are
        being offered. */
     const m = toListing(listing({ photos: [{ url: 'a', path: 'x' }, { url: 'b', path: 'y' }] }));
     expect(m.photos[0].alt).toBe('2021 Hyundai Creta SX, photograph 1 of 2');
@@ -242,7 +242,7 @@ describe('what the customer has already offered', () => {
   });
 
   it('speaks the customer’s word for the status, not the studio’s queue word', () => {
-    /* §21.8 — `new` and `contacted` are the studio's words for its own list. */
+    /* §21.8 - `new` and `contacted` are the studio's words for its own list. */
     expect(toSell([req({ status: 'new' })]).offers[0].state).toBe('Received');
     expect(toSell([req({ status: 'contacted' })]).offers[0].state)
       .toBe('We’ve been in touch');
@@ -254,7 +254,7 @@ describe('what the customer has already offered', () => {
   });
 });
 
-describe('SECURITY — the client may no longer write any of this', () => {
+describe('SECURITY - the client may no longer write any of this', () => {
   const rules = readFileSync('firestore.rules', 'utf8');
   const slice = (name: string) => {
     const i = rules.indexOf(`match /${name}/`);
@@ -262,7 +262,7 @@ describe('SECURITY — the client may no longer write any of this', () => {
   };
 
   it('a lead cannot be created from a browser', () => {
-    /* It could, unauthenticated, with a shape check as the only guard — an
+    /* It could, unauthenticated, with a shape check as the only guard - an
        open write endpoint wired to the studio's notifications. */
     expect(slice('carLeads')).toMatch(/allow create: if false;/);
   });
@@ -284,7 +284,7 @@ describe('SECURITY — the client may no longer write any of this', () => {
   });
 });
 
-describe('SECURITY — the routes that now own those writes', () => {
+describe('SECURITY - the routes that now own those writes', () => {
   const lead = codeOf('app/api/cars/lead/route.ts');
   const sell = codeOf('app/api/cars/sell/route.ts');
   const save = codeOf('app/api/cars/save/route.ts');
@@ -292,7 +292,7 @@ describe('SECURITY — the routes that now own those writes', () => {
 
   it('an enquiry is deliberately open to signed-out callers', () => {
     /* Requiring an account before someone may ask about a car is a sale
-       thrown away. Open, but not unguarded — the write is server-side. */
+       thrown away. Open, but not unguarded - the write is server-side. */
     expect(lead).not.toMatch(/return NextResponse\.json\(\{ error: 'Unauthorized' \}/);
   });
 
@@ -335,7 +335,7 @@ describe('SECURITY — the routes that now own those writes', () => {
   });
 });
 
-describe('THE STUDIO IS TOLD — the defect that made bookings invisible', () => {
+describe('THE STUDIO IS TOLD - the defect that made bookings invisible', () => {
   const service = codeOf('lib/server/marketService.ts');
 
   it('both channels fire for an enquiry', () => {
@@ -360,7 +360,7 @@ describe('THE STUDIO IS TOLD — the defect that made bookings invisible', () =>
 
   it('a notification failure never loses the lead', () => {
     /* The document is written before anyone is told, and every notify is
-       wrapped — an enquiry that reached Firestore is not thrown away because
+       wrapped - an enquiry that reached Firestore is not thrown away because
        Meta was down. */
     const writeAt = service.indexOf('collection(\'carLeads\').add');
     const notifyAt = service.indexOf('await announceLead');
@@ -425,7 +425,7 @@ describe('ONE SOURCE OF TRUTH', () => {
 
   it('the marketplace uses the one media uploader', () => {
     const form = codeOf('components/market/SellForm.tsx');
-    /* Loaded lazily so the uploader never enters the first bundle — the import
+    /* Loaded lazily so the uploader never enters the first bundle - the import
        is dynamic, hence the looser match. */
     expect(form).toMatch(/import\('@\/lib\/services\/storage'\)/);
     expect(form).toMatch(/uploadImage\(/);
@@ -465,7 +465,7 @@ describe('the surfaces exist and behave like the rest of the product', () => {
     expect(codeOf('app/cars/[id]/page.tsx')).toMatch(/if \(!car\) notFound\(\)/);
   });
 
-  it('a listing is shareable — the link is worth pasting', () => {
+  it('a listing is shareable - the link is worth pasting', () => {
     const src = codeOf('app/cars/[id]/page.tsx');
     expect(src).toMatch(/export async function generateMetadata/);
     expect(src).toMatch(/openGraph/);
@@ -497,7 +497,7 @@ describe('the surfaces exist and behave like the rest of the product', () => {
       .toMatch(/params\.get\('ask'\)/);
   });
 
-  it('the renderer draws only — no engine, no addresses of its own', () => {
+  it('the renderer draws only - no engine, no addresses of its own', () => {
     /* Caught by the architecture test the first time: `MarketScreen` imported
        `lib/os/market` for the filter lists and assembled `/cars?fuel=…`
        itself. Both belong to the projection (ARCHITECTURE §1). */
@@ -517,7 +517,7 @@ describe('the surfaces exist and behave like the rest of the product', () => {
   });
 
   it('the filter controls announce which one is on', () => {
-    /* §21.6 — the pressed state must be in the accessibility tree, not only
+    /* §21.6 - the pressed state must be in the accessibility tree, not only
        in the colour. */
     expect(codeOf('components/screens/MarketScreen.tsx')).toMatch(/aria-current=/);
   });

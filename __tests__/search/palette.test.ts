@@ -1,5 +1,5 @@
 /**
- * SEARCH / COMMAND PALETTE — §21.4, ARCHITECTURE §1 and §5.
+ * SEARCH / COMMAND PALETTE - §21.4, ARCHITECTURE §1 and §5.
  *
  * TWO DEFECTS THESE ASSERTIONS EXIST TO PIN DOWN, both structural rather than
  * cosmetic, and neither visible from any single screen:
@@ -9,8 +9,8 @@
  *   you navigate AutoModz" was a feature of a single screen.
  *
  *   IT WROTE ITS OWN ADDRESSES. The items were assembled in `toHome` with
- *   their hrefs typed out inline — `'/vehicle'`, `'/studio'`, `/history/${id}`
- *   — a second copy of the route table living in a projection. Move a route
+ *   their hrefs typed out inline - `'/vehicle'`, `'/studio'`, `/history/${id}`
+ *   - a second copy of the route table living in a projection. Move a route
  *   and the palette keeps sending people to the old one, silently, because
  *   nothing renders an error for a link that merely goes somewhere wrong.
  */
@@ -93,7 +93,7 @@ describe('every customer destination is reachable', () => {
   });
 
   it('offers the next thing to do, from the same intent the Home CTA carries', () => {
-    /* Not a second judgement about what is next — `resolveAction` of the
+    /* Not a second judgement about what is next - `resolveAction` of the
        engine's `nextAction`, the identical call Home makes. */
     expect(byId(items, 'next')).toBeDefined();
   });
@@ -120,7 +120,7 @@ describe('every customer destination is reachable', () => {
     expect(visits).toEqual(['v-new', 'v-old']);
   });
 
-  it('a cancelled visit is not offered — it is not a visit that happened', () => {
+  it('a cancelled visit is not offered - it is not a visit that happened', () => {
     const { items: it } = toPalette(picture({
       cars: [car({ bookings: [booking({ id: 'x', status: 'cancelled' })] })],
     }), NOW);
@@ -135,7 +135,7 @@ describe('every customer destination is reachable', () => {
   });
 
   it('account settings, privacy, terms and deletion are all one search away', () => {
-    /* Apple 5.1.1(v) — deletion must be reachable in-app, and "reachable"
+    /* Apple 5.1.1(v) - deletion must be reachable in-app, and "reachable"
        includes findable. */
     for (const id of ['you-profile', 'you-notify', 'you-referral', 'privacy', 'terms', 'you-delete']) {
       expect(byId(items, id)).toBeDefined();
@@ -144,7 +144,7 @@ describe('every customer destination is reachable', () => {
   });
 
   it('the Marketplace is reachable now that it exists', () => {
-    /* This assertion used to check the OPPOSITE — that no row pointed at a
+    /* This assertion used to check the OPPOSITE - that no row pointed at a
        surface which had not been built. `/cars` shipped, so the rows ship
        with it. */
     expect(readdirSync('app')).toContain('cars');
@@ -163,7 +163,7 @@ describe('a garage with more than one car', () => {
   const { items } = toPalette(two, NOW);
 
   it('finds EVERY car, not just the one Home happens to show', () => {
-    /* The old palette was built from `leadCar` — a customer with three cars
+    /* The old palette was built from `leadCar` - a customer with three cars
        could search for exactly one of them. */
     expect(byId(items, 'car-v1')?.label).toBe('BMW M4');
     expect(byId(items, 'car-v2')?.label).toBe('Audi RS5');
@@ -206,14 +206,14 @@ describe('an empty garage still has somewhere to go', () => {
   });
 
   it('says nothing it cannot know', () => {
-    /* §18.1 — no truth line and no record for a garage with no history in it,
+    /* §18.1 - no truth line and no record for a garage with no history in it,
        rather than an empty heading. */
     expect(truth).toBeUndefined();
     expect(log).toEqual([]);
   });
 });
 
-describe('ARCHITECTURE §1 — the palette decides no addresses', () => {
+describe('ARCHITECTURE §1 - the palette decides no addresses', () => {
   const palette = codeOf('lib/customer/palette.ts');
 
   it('contains no route literal of its own', () => {
@@ -274,7 +274,7 @@ describe('ARCHITECTURE §1 — the palette decides no addresses', () => {
   });
 });
 
-describe('§21.4 — it is the way you navigate, not a feature of one screen', () => {
+describe('§21.4 - it is the way you navigate, not a feature of one screen', () => {
   const chrome = codeOf('navigation/CustomerChrome.tsx');
   const home = codeOf('components/screens/HomeScreen.tsx');
   const room = codeOf('components/screens/ServerRoom.tsx');
@@ -315,7 +315,7 @@ describe('§21.4 — it is the way you navigate, not a feature of one screen', (
   });
 
   it('⌘K is bound once, above the rooms', () => {
-    /* `/admin` is the studio's operations OS — a separate application with its
+    /* `/admin` is the studio's operations OS - a separate application with its
        own palette, deliberately. This is about the CUSTOMER application. */
     const binders = [...walk('app'), ...walk('components'), ...walk('navigation')]
       .filter(f => !f.includes('node_modules') && !f.startsWith('app/admin'))
@@ -323,7 +323,7 @@ describe('§21.4 — it is the way you navigate, not a feature of one screen', (
     expect(binders).toEqual(['navigation/Palette.tsx']);
   });
 
-  it('EVERY room feeds it — a room that does not would open ⌘K to nothing', () => {
+  it('EVERY room feeds it - a room that does not would open ⌘K to nothing', () => {
     /* The palette is mounted by the chrome but filled by the page, so a room
        added later without `ServerRoom` would summon an empty layer. Read the
        room table rather than a hand-kept list, so a new room fails here. */
@@ -333,7 +333,7 @@ describe('§21.4 — it is the way you navigate, not a feature of one screen', (
       .map(m => m[2]);
     expect(paths.length).toBeGreaterThanOrEqual(7);
     for (const path of paths) {
-      /* A room's address is a PREFIX, and some rooms have no index page —
+      /* A room's address is a PREFIX, and some rooms have no index page -
          a booking is always a booking, so `/booking` exists only as
          `/booking/[id]`. Every page under the prefix is checked, which is a
          stronger statement than checking one file: a room with three screens
@@ -347,13 +347,13 @@ describe('§21.4 — it is the way you navigate, not a feature of one screen', (
   });
 
   it('it is addressable, like every other expansion (§6.4)', () => {
-    /* `?open=desk` at whatever room you are in — linkable, restored on reload,
+    /* `?open=desk` at whatever room you are in - linkable, restored on reload,
        and closed by the back button because it is a real history entry. */
     expect(codeOf('navigation/Palette.tsx')).toMatch(/params\.get\('open'\) === 'desk'/);
   });
 });
 
-describe('§21.4 — reachable by keyboard alone', () => {
+describe('§21.4 - reachable by keyboard alone', () => {
   const desk = codeOf('components/system/Desk.tsx');
 
   it('opens with focus in the field, not on a result', () => {
@@ -397,7 +397,7 @@ describe('§21.4 — reachable by keyboard alone', () => {
   });
 });
 
-describe('§21.8 — it answers the word the customer arrives with', () => {
+describe('§21.8 - it answers the word the customer arrives with', () => {
   const { items } = toPalette(picture({
     subscription: member(),
   }), NOW);
@@ -422,7 +422,7 @@ describe('§21.8 — it answers the word the customer arrives with', () => {
     const hits = search(q);
     expect(hits.length).toBeGreaterThan(0);
     /* The room the product calls something else is reachable by the word the
-       customer used — "membership" must reach The Club. */
+       customer used - "membership" must reach The Club. */
     if (expected === 'club' || expected === 'you-notify' || expected === 'you-referral'
       || expected === 'you-delete' || expected === 'cars' || expected === 'sell') {
       expect(ids(hits)).toContain(expected);
@@ -456,7 +456,7 @@ describe('no row is a duplicate or a dead end', () => {
     subscription: member(),
   }), NOW);
 
-  it('every id is unique — React keys and Enter both depend on it', () => {
+  it('every id is unique - React keys and Enter both depend on it', () => {
     expect(ids(items)).toEqual([...new Set(ids(items))]);
   });
 

@@ -1,7 +1,7 @@
 /**
  * THE FIRST ARRIVAL, SHAPED FOR THE SCREEN.
  *
- * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1 — the projection owns the
+ * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §1 - the projection owns the
  * wording, the engine owns the decisions, and the renderer draws what it is
  * handed.
  *
@@ -41,13 +41,13 @@ export interface WelcomeModel {
   /** Who is arriving. Empty when the profile has no name yet. */
   greeting: string;
   panel: WelcomePanel;
-  /** Which of how many — for the accessible name, never as progress dots. */
+  /** Which of how many - for the accessible name, never as progress dots. */
   position: { index: number; total: number };
   /** Where the arrival ends. */
   homeHref: string;
   /** Where "yes, I have a car" goes. */
   addCarHref: string;
-  /** True when this customer already has a car — the last step changes. */
+  /** True when this customer already has a car - the last step changes. */
   hasCar: boolean;
 }
 
@@ -57,14 +57,14 @@ const stepHref = (step: WelcomeStep, forced: boolean) =>
 /**
  * THE THREE ROOMS, said once.
  *
- * The product's own names for them, with what each actually holds — the point
+ * The product's own names for them, with what each actually holds - the point
  * of this step is that a customer who has just arrived can tell where a thing
  * will be before they go looking for it.
  */
 const roomsOf = (): WelcomeRoom[] => [
   {
     name: 'My Car',
-    line: 'The car itself — its photographs, its papers, what protects it.',
+    line: 'The car itself - its photographs, its papers, what protects it.',
     href: hrefForDestination({ to: 'garage' }),
   },
   {
@@ -82,7 +82,7 @@ const roomsOf = (): WelcomeRoom[] => [
 const PANELS: Record<WelcomeStep, (ctx: { name: string; hasCar: boolean }) => Omit<WelcomePanel, 'step' | 'forwardHref' | 'passHref'>> = {
   hello: () => ({
     title: `Welcome to ${COMPANY.name}.`,
-    line: 'This is where your car lives — its care, its protection, its story. '
+    line: 'This is where your car lives - its care, its protection, its story. '
       + 'It takes a minute to show you round.',
     forward: 'Show me',
   }),
@@ -97,7 +97,7 @@ const PANELS: Record<WelcomeStep, (ctx: { name: string; hasCar: boolean }) => Om
 
   record: () => ({
     title: 'We keep the record.',
-    line: 'Every visit, every warranty, every photograph — written down as it '
+    line: 'Every visit, every warranty, every photograph - written down as it '
       + 'happens and kept for as long as you own the car. You never have to '
       + 'remember what was done or when. It is already here.',
     forward: 'Good',
@@ -120,7 +120,7 @@ const PANELS: Record<WelcomeStep, (ctx: { name: string; hasCar: boolean }) => Om
     }
     : {
       title: 'Do you have a car already?',
-      line: 'Add it and everything else follows — its protection, its visits, '
+      line: 'Add it and everything else follows - its protection, its visits, '
         + 'its record. If not, that is fine; you can add one whenever you like.',
       forward: 'Yes, add it',
       pass: 'Not yet',

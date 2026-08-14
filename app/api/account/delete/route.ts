@@ -10,11 +10,11 @@ export const dynamic = 'force-dynamic';
  *
  * Server-only, and it could not be anything else: a client can delete neither
  * its own Auth user's data across collections nor the business records that
- * must be anonymised — `firestore.rules` refuses both, correctly.
+ * must be anonymised - `firestore.rules` refuses both, correctly.
  *
  * ONLY THE ACCOUNT'S OWNER. The uid comes from the verified token and nothing
  * else; there is no id in the body to tamper with. Staff cannot delete a
- * customer here either — an operator erasing a customer's account is a
+ * customer here either - an operator erasing a customer's account is a
  * different act with different consequences, and it does not get to reuse this.
  */
 export async function POST(req: NextRequest) {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'staff-account' }, { status: 403 });
     }
   } catch {
-    /* No profile means nothing to protect — let the deletion proceed. */
+    /* No profile means nothing to protect - let the deletion proceed. */
   }
 
   try {

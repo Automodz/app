@@ -1,7 +1,7 @@
 /**
  * WHAT THE STUDIO TELLS A CUSTOMER, AS EVENTS.
  *
- * Source: docs/AUTOMODZ-OS.md §17.1, §17.3 · design screen 19 ("Quiet mode —
+ * Source: docs/AUTOMODZ-OS.md §17.1, §17.3 · design screen 19 ("Quiet mode -
  * only approvals and handover reach you")
  *
  * ── THIS IS NOT AN INBOX ─────────────────────────────────────────────────
@@ -9,13 +9,13 @@
  * back. An event is a FACT that happened to a car, written down so that:
  *
  *   · the surface that owns that fact can show it as state (`noticeOf`), and
- *   · delivery — push, WhatsApp — has something to be derived from.
+ *   · delivery - push, WhatsApp - has something to be derived from.
  *
  * A customer never reads this collection as a list. They read their car.
  *
  * ── IDENTITY IS DERIVED, WHICH IS WHAT MAKES IT IDEMPOTENT ───────────────
  * An event's id is `type + source`, so "this booking was confirmed" is ONE
- * document however many times the confirming code runs — a retried serverless
+ * document however many times the confirming code runs - a retried serverless
  * invocation, a double-tapped admin control, a replayed webhook. Nothing
  * de-duplicates afterwards because nothing can duplicate in the first place.
  *
@@ -67,7 +67,7 @@ export interface StudioEventInput {
  * already been announced" without a query.
  *
  * A booking can be rescheduled more than once, so that one type carries a
- * discriminator — otherwise the second move would silently collapse onto the
+ * discriminator - otherwise the second move would silently collapse onto the
  * first and the customer would never be told about it.
  */
 export function eventId(e: StudioEventInput, discriminator?: string): string {
@@ -76,16 +76,16 @@ export function eventId(e: StudioEventInput, discriminator?: string): string {
 }
 
 /**
- * WHAT BREAKS THROUGH QUIET MODE — design screen 19, verbatim: "Only approvals
+ * WHAT BREAKS THROUGH QUIET MODE - design screen 19, verbatim: "Only approvals
  * and handover reach you."
  *
  * Both are moments where SILENCE COSTS THE CUSTOMER something. An unanswered
  * approval holds a car on a bay; an unheard handover leaves a finished car in
  * the studio overnight; an unpaid handover is the same car, not released. That
- * is the whole test — not importance, but whether the customer loses by not
+ * is the whole test - not importance, but whether the customer loses by not
  * hearing it.
  *
- * Everything else — a confirmation, a completion, a settled payment — is news
+ * Everything else - a confirmation, a completion, a settled payment - is news
  * the customer can find when they next look, so quiet mode holds it.
  */
 export const BREAKS_QUIET: readonly StudioEventType[] = [
@@ -101,8 +101,8 @@ export const deliverable = (type: StudioEventType, quietMode: boolean | undefine
 /**
  * The coarse category the existing `notifications` documents carry.
  *
- * Kept so that every reader written before events existed — the service
- * worker, `notificationHref`, the admin surfaces — keeps working unchanged.
+ * Kept so that every reader written before events existed - the service
+ * worker, `notificationHref`, the admin surfaces - keeps working unchanged.
  * The precise `event` field sits alongside it; this is the bucket, not the
  * meaning.
  */
@@ -123,7 +123,7 @@ export const CATEGORY_OF: Record<StudioEventType, 'booking_update' | 'reminder' 
 /**
  * THE WORDS.
  *
- * In the studio's voice and never signed — §2.2 forbids naming an individual
+ * In the studio's voice and never signed - §2.2 forbids naming an individual
  * on a customer surface, and a notification is the surface most likely to be
  * read on a lock screen by whoever is holding the phone. For the same reason
  * no figure appears in a title: a price on a lock screen is a price shown to
@@ -137,17 +137,17 @@ export function wordsFor(e: StudioEventInput): { title: string; body: string } {
     case 'booking_confirmed':
       return {
         title: 'The bay is yours',
-        body: detail ? `${subject} — ${detail}.` : `${subject} is confirmed.`,
+        body: detail ? `${subject} - ${detail}.` : `${subject} is confirmed.`,
       };
     case 'booking_rescheduled':
       return {
         title: 'Your visit has moved',
-        body: detail ? `${subject} — now ${detail}.` : `${subject} has a new time.`,
+        body: detail ? `${subject} - now ${detail}.` : `${subject} has a new time.`,
       };
     case 'booking_cancelled':
       return {
         title: 'Visit cancelled',
-        body: detail ? `${subject} — ${detail}.` : `${subject} is no longer booked.`,
+        body: detail ? `${subject} - ${detail}.` : `${subject} is no longer booked.`,
       };
     case 'booking_expired':
       return {
@@ -157,7 +157,7 @@ export function wordsFor(e: StudioEventInput): { title: string; body: string } {
     case 'approval_requested':
       return {
         title: 'We found something',
-        body: detail ? `${subject} — ${detail}. It needs your word before we go on.`
+        body: detail ? `${subject} - ${detail}. It needs your word before we go on.`
           : `${subject} needs your word before we go on.`,
       };
     case 'approval_approved':
@@ -167,12 +167,12 @@ export function wordsFor(e: StudioEventInput): { title: string; body: string } {
     case 'vehicle_ready':
       return {
         title: 'Ready for you',
-        body: detail ? `${subject} is finished — ${detail}.` : `${subject} is finished.`,
+        body: detail ? `${subject} is finished - ${detail}.` : `${subject} is finished.`,
       };
     case 'payment_required':
       return { title: 'Ready to settle', body: `${subject} is done and waiting for you.` };
     case 'payment_settled':
-      return { title: 'Settled', body: `Thank you — ${subject} is paid in full.` };
+      return { title: 'Settled', body: `Thank you - ${subject} is paid in full.` };
     case 'visit_completed':
       return { title: 'Back with you', body: `${subject} is home. Its record is updated.` };
   }

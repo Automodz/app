@@ -85,7 +85,7 @@ export const spanDays = (startMin: number, durationMin: number): number =>
   expandIntervals({ date: '2000-01-01', startMin, durationMin }).length;
 
 /**
- * THE LAST DAY THE BAY IS HELD — design screen 08, "Wed 12 – Thu 13 Feb".
+ * THE LAST DAY THE BAY IS HELD - design screen 08, "Wed 12 – Thu 13 Feb".
  *
  * Derived from the work's own duration rather than stored as a separate
  * customer choice: a two-day PPF is two days because it takes two days, and a

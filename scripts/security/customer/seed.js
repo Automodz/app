@@ -1,6 +1,6 @@
 /* Seed the Firestore + Auth emulators for the pollution-certificate audit.
    Two customers with a car each, one technician, one owner. Nothing here is a
-   valid certificate — the point of the matrix is what the CLIENT may write. */
+   valid certificate - the point of the matrix is what the CLIENT may write. */
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
@@ -24,7 +24,7 @@ const users = [
   ['boss', { name: 'Owner', role: 'admin', email: 'hello.automodz@gmail.com' }],
 ];
 
-// Vehicles live UNDER their owner. That is what makes ownership unforgeable —
+// Vehicles live UNDER their owner. That is what makes ownership unforgeable -
 // `ownsVehicle()` is a document lookup, not a field comparison.
 const vehicles = [
   ['custA', 'carA', { name: 'Kia Seltos', registrationNumber: 'GJ01AB8539' }],

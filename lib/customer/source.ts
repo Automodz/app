@@ -1,20 +1,20 @@
 'use client';
 /**
- * THE CUSTOMER'S PICTURE — one read, one place.
+ * THE CUSTOMER'S PICTURE - one read, one place.
  *
  * Every customer room needs an overlapping slice of the same things: the
  * person, their cars, what protects each car, what has happened to each car,
  * and the membership. Seven routes each fetching their own slice would be seven
- * chances to disagree about one car (§22.2, §22.5 — truth is not recomputed).
+ * chances to disagree about one car (§22.2, §22.5 - truth is not recomputed).
  *
- * This fetches. It derives nothing — `project.ts` does that, from what is here.
+ * This fetches. It derives nothing - `project.ts` does that, from what is here.
  *
  * ── WHY BOOKINGS AND JOBS ARE STILL READ ─────────────────────────────────
  * `visits` is the anchor, but nothing writes to it yet: `writeDerivedVisit`
  * has no caller outside its own service. Reading only `visits` would show every
  * existing customer an empty History. So both are loaded and `project.ts`
  * prefers stored visits, falling back to the Booking+Job pair through the
- * service's own `visitFromPair` — the documented migration read path, using the
+ * service's own `visitFromPair` - the documented migration read path, using the
  * same projection the migration will persist.
  */
 import { useEffect, useState } from 'react';
@@ -36,7 +36,7 @@ export interface CarPicture {
   vehicle: Vehicle;
   protections: Protection[];
   /**
-   * THE PAPERS THE OWNER HAS SENT — and what the studio made of each.
+   * THE PAPERS THE OWNER HAS SENT - and what the studio made of each.
    *
    * Read beside the protections rather than derived from them, because a
    * declaration that is still waiting, or one the studio refused, produces no
@@ -59,12 +59,12 @@ export interface CustomerPicture {
   subscription: Subscription | null;
   /** Every subscription this owner has held, newest first. The record. */
   subscriptions: Subscription[];
-  /** This owner's invoices — the papers a chapter hands over. */
+  /** This owner's invoices - the papers a chapter hands over. */
   invoices: Invoice[];
   /**
    * WHAT THE STUDIO HAS SENT THEM.
    *
-   * NOT so a list can be drawn — §17.1 forbids one, and the enforcement test
+   * NOT so a list can be drawn - §17.1 forbids one, and the enforcement test
    * still stands. Read so that an UNREAD record can be resolved to the surface
    * that owns the fact it is about (§17.3) and surfaced there as state. Forty-
    * two of these had been written and nothing in the customer application read
@@ -75,7 +75,7 @@ export interface CustomerPicture {
   /** Consulted only to capture terms that were never recorded. */
   catalogue: Service[];
   /**
-   * WHERE THE STUDIO MAY COLLECT FROM — design screens 08 and 19.
+   * WHERE THE STUDIO MAY COLLECT FROM - design screens 08 and 19.
    *
    * Part of the one read rather than fetched by the two surfaces that need it,
    * so the booking sheet's chips and the settings list can never disagree
@@ -83,7 +83,7 @@ export interface CustomerPicture {
    */
   addresses: SavedAddress[];
   /**
-   * MID-VISIT REQUESTS WAITING ON THIS CUSTOMER — design screen 12.
+   * MID-VISIT REQUESTS WAITING ON THIS CUSTOMER - design screen 12.
    *
    * Read with the picture so a car on a bay can WEAR the question rather than
    * relying on a push having been seen. A notification the customer missed is
@@ -93,16 +93,16 @@ export interface CustomerPicture {
 }
 
 export type CustomerState =
-  /** §19.1 — loading is a state, not an absence. */
+  /** §19.1 - loading is a state, not an absence. */
   | { status: 'loading' }
   | { status: 'anonymous' }
-  /** §20.2 — always recoverable. */
+  /** §20.2 - always recoverable. */
   | { status: 'failed'; retry: () => void }
   | { status: 'ready'; picture: CustomerPicture };
 
 /**
  * The whole read, as a function. Separated from the hook so the orchestration
- * can be tested without a renderer — the hook does React, this does data.
+ * can be tested without a renderer - the hook does React, this does data.
  */
 export async function loadPicture(user: User): Promise<CustomerPicture> {
   const [vehicles, subscription, catalogue, notifications] = await Promise.all([
@@ -120,7 +120,7 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
       getProtections(vehicle.id),
       getDeclarations(vehicle.id),
       getVisitsForVehicle(vehicle.id),
-      /* §P1.6 — the ID, never the plate. See lib/server/customerPicture.ts. */
+      /* §P1.6 - the ID, never the plate. See lib/server/customerPicture.ts. */
       getBookingsForVehicle(vehicle.id, user.uid),
       getJobsForVehicle(vehicle.id, user.uid),
     ]);
@@ -131,7 +131,7 @@ export async function loadPicture(user: User): Promise<CustomerPicture> {
     user, cars, subscription,
     subscriptions: subscription ? [subscription] : [],
     invoices: [], notifications, catalogue,
-    /* The client twin is the legacy read path — every customer room renders on
+    /* The client twin is the legacy read path - every customer room renders on
        the server now (`lib/server/customerPicture.ts`), and only `Room.tsx`
        still calls this. Addresses are deliberately not fetched here rather
        than half-fetched: a surface that needs them is a server-rendered one. */
@@ -160,7 +160,7 @@ export function useCustomerPicture(): CustomerState {
         setState({ status: 'ready', picture });
       } catch (err) {
         if (!live) return;
-        /* §20.3 — "distinguish ours from theirs." A swallowed read error is one
+        /* §20.3 - "distinguish ours from theirs." A swallowed read error is one
            nobody can diagnose; the customer still sees the recoverable state,
            but the cause reaches the console in development. */
         if (process.env.NODE_ENV !== 'production') {

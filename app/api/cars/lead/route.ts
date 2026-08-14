@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
  * closed, and every field the studio reads is derived from the listing rather
  * than taken from the body.
  *
- * A token is USED IF PRESENT and never required — a signed-in customer's lead
+ * A token is USED IF PRESENT and never required - a signed-in customer's lead
  * is stamped with their uid so the studio can see the two are the same person.
  * The uid is only ever taken from a verified token, never from the body.
  */
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     try {
       userId = (await adminAuth!.verifyIdToken(authHeader.slice(7))).uid;
     } catch {
-      /* A bad token on an endpoint that does not need one is not an error —
+      /* A bad token on an endpoint that does not need one is not an error -
          the enquiry proceeds as an anonymous one rather than being refused. */
       userId = undefined;
     }

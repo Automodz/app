@@ -10,7 +10,7 @@ import { toGarage } from '@/lib/customer/project';
 export const dynamic = 'force-dynamic';
 
 
-/** `/garage` — the collection. §12.4's empty state is the screen's own. */
+/** `/garage` - the collection. §12.4's empty state is the screen's own. */
 export default function GaragePage() {
   return <ServerRoom>{p => <GarageScreen model={toGarage(p)} />}</ServerRoom>;
 }

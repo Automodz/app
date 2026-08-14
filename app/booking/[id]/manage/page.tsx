@@ -9,7 +9,7 @@ import { loadCustomerPicture } from '@/lib/server/customerPicture';
 export const dynamic = 'force-dynamic';
 
 /**
- * `/booking/[id]/manage` — design screen 10.
+ * `/booking/[id]/manage` - design screen 10.
  *
  * The openings are loaded HERE and not in the projection, because they depend
  * on every other customer's bookings and a projection may not read a database

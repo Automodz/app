@@ -5,18 +5,18 @@
  * Source: docs/AUTOMODZ-OS.md §6.2, §9.5, §21.3, §21.6, §21.8, §22.2
  *
  * ── WHY THIS EXISTS ──────────────────────────────────────────────────────
- * Ten screens opened with the same four lines — `<OfflineNote/>` and a
- * `<Statement eyebrow=… size=…/>` — and no two agreed on the numbers: the
+ * Ten screens opened with the same four lines - `<OfflineNote/>` and a
+ * `<Statement eyebrow=… size=…/>` - and no two agreed on the numbers: the
  * display was 28, 29 or 30 depending on the screen, and the room's top rhythm
  * was `space.gap` on six of them and `space.rest` on the rest. Nobody chose
- * those differences; they accumulated. §22.2 — one implementation of
+ * those differences; they accumulated. §22.2 - one implementation of
  * anything, and a title that is 30 in one room and 28 in the next is a scale
  * nobody tuned.
  *
  * ── AND WHY IT OWNS THE WAY BACK ─────────────────────────────────────────
  * The product had THREE back idioms and five screens with none:
  *
- *   · a `quiet` Action at the very bottom of the page — the studio's scope,
+ *   · a `quiet` Action at the very bottom of the page - the studio's scope,
  *     the approval, manage-a-booking, the live visit. A control you reach by
  *     scrolling past everything is not an escape route, it is a footer.
  *   · a `quiet` Button at the top of `/cars/<id>`, set flush with no glyph, so
@@ -25,12 +25,12 @@
  *   · nothing at all on `/history`, `/history/<id>`, `/vehicle`,
  *     `/booking/<id>` and `/dashboard/sell-car`.
  *
- * `/cars` and `/dashboard/sell-car` carry no dock either — deliberately, they
- * are public — so those two were closed rooms with no exit of any kind.
+ * `/cars` and `/dashboard/sell-car` carry no dock either - deliberately, they
+ * are public - so those two were closed rooms with no exit of any kind.
  *
  * The back affordance is therefore part of the header rather than a thing each
  * screen remembers to add: it is at the top, it is the same shape in every
- * room, it NAMES where it goes (§21.8 — the customer's word, never "Back"),
+ * room, it NAMES where it goes (§21.8 - the customer's word, never "Back"),
  * and it is a link to a deterministic parent rather than `history.back()`.
  * See `parentOf` for why that distinction matters to a notification.
  */
@@ -56,7 +56,7 @@ export function Back(
      * WHERE IT GOES, when the screen knows better than the address does.
      *
      * Omit it and the control asks the route table about the address it is
-     * standing at — which is the normal case and the reason a renderer never
+     * standing at - which is the normal case and the reason a renderer never
      * has to name a route (ARCHITECTURE §1: renderers draw, they do not build
      * addresses). Pass it only where the MODEL holds a truer answer than the
      * path: an approval knows its own visit, a listing knows the filtered
@@ -67,7 +67,7 @@ export function Back(
     /**
      * The room opens on a full-bleed photograph, so the control sits ON it.
      * Placing it above instead would push the photograph down the screen, and
-     * §11.2 makes the photograph the largest element — a back button is not
+     * §11.2 makes the photograph the largest element - a back button is not
      * allowed to cost it that. `over` ink plus its own scrim, because §21.1
      * solves for the WORST image and a photograph can be white.
      */
@@ -83,7 +83,7 @@ export function Back(
    * THE WALK FIRST, THE PARENT MAP SECOND.
    *
    * If the customer arrived from another room in this session, Back returns to
-   * that room — with the car it was about. If they were sent here by a
+   * that room - with the car it was about. If they were sent here by a
    * notification or a shared link there is no walk, and the deterministic
    * parent is the only safe answer (§17.3). An explicit `parent` still wins
    * over both: it is the model saying something truer than the address can.
@@ -98,14 +98,14 @@ export function Back(
     <Link
       href={to.href}
       className="am-tap"
-      /* §21.6 — the accessible name says where, because "back" read out of
+      /* §21.6 - the accessible name says where, because "back" read out of
          context tells a screen-reader user nothing about where they land. */
       aria-label={`Back to ${to.name}`}
       style={{
         /* BLOCK-LEVEL, NOT INLINE. `inline-flex` + `alignSelf` assumed a flex
            column parent; inside the album's plain `<header>` the control sat
            on the SAME LINE as the vehicle name that follows it, reading as one
-           run — "‹ Now BMW M340i xDrive Sport". `fit-content` keeps the target
+           run - "‹ Now BMW M340i xDrive Sport". `fit-content` keeps the target
            the size of its content while the box still owns its line, and in a
            flex column nothing changes at all. */
         display: 'flex',
@@ -113,8 +113,8 @@ export function Back(
         alignItems: 'center',
         gap: space.breath,
         minHeight: TARGET_MIN,
-        /* Pulled left by its own optical inset so the glyph — not the padding
-           — lines up with the gutter every other element sits on. */
+        /* Pulled left by its own optical inset so the glyph - not the padding
+           - lines up with the gutter every other element sits on. */
         marginLeft: over ? 0 : -space.breath,
         paddingInline: over ? space.line : space.breath,
         textDecoration: 'none',
@@ -137,7 +137,7 @@ export function Back(
         <path d="M15 6l-6 6 6 6" />
       </svg>
       {/* A PARENT'S NAME IS ONE LINE. Wrapped, the chevron centres itself
-          against the block and the control stops reading as a control — seen
+          against the block and the control stops reading as a control - seen
           on the harness with a deliberately long name. Every real parent is
           two or three words; this is the guard, not the expectation. */}
       <span
@@ -155,7 +155,7 @@ export function Back(
 export interface RoomHeaderProps {
   /** Where this room sits under. Absent on the five dock slots, by rule. */
   parent?: Parent | null;
-  /** The label above the title — the situation the title belongs to. */
+  /** The label above the title - the situation the title belongs to. */
   eyebrow?: ReactNode;
   /** Amber on the eyebrow: the studio is doing something right now (§3.3). */
   lit?: boolean;
@@ -167,15 +167,15 @@ export interface RoomHeaderProps {
    */
   supporting?: ReactNode;
   /**
-   * A control on the title's own line — the Desk on Home, and nothing else so
+   * A control on the title's own line - the Desk on Home, and nothing else so
    * far. §6.3 keeps the COMMITTING control elsewhere; this is for a control
    * that only opens something.
    */
   action?: ReactNode;
-  /** `h2` where the page's `h1` is elsewhere — §21.6 is the page's to decide. */
+  /** `h2` where the page's `h1` is elsewhere - §21.6 is the page's to decide. */
   as?: 'h1' | 'h2';
   /**
-   * The Display's size. Two named steps, and neither is a number here — the
+   * The Display's size. Two named steps, and neither is a number here - the
    * three that existed (28, 29, 30) were an accident, and the fix for an
    * accidental number is not a fourth one.
    *
@@ -186,7 +186,7 @@ export interface RoomHeaderProps {
   style?: CSSProperties;
 }
 
-/* The two steps, from `parts` — the header does not get its own copy of the
+/* The two steps, from `parts` - the header does not get its own copy of the
    scale, which is the whole reason it exists. */
 const SIZE = { room: DISPLAY.room, subject: DISPLAY.nested } as const;
 
@@ -198,7 +198,7 @@ export function RoomHeader({
     <header style={{ display: 'flex', flexDirection: 'column', ...style }}>
       {/* ALWAYS PLACED, NEVER CONDITIONAL. `Back` returns nothing at a root
           room because `parentOf` has no answer there, so a header does not
-          have to know which kind of room it is in — and a child room cannot
+          have to know which kind of room it is in - and a child room cannot
           lose its only exit by forgetting to pass a prop. That is exactly the
           bug this replaced: `Booked` composed the header without a `parent`,
           relying on the control to locate itself, and the header quietly drew

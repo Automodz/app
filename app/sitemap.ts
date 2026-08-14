@@ -6,12 +6,12 @@ import { loadListings } from '@/lib/server/marketplace';
  * The public map of the studio.
  *
  * Only pages a stranger is meant to find: the landing page, the showroom, and
- * each active car listing. `/store` was here and should never have been — it
+ * each active car listing. `/store` was here and should never have been - it
  * is the staff kiosk PIN lock, and advertising an auth surface to search
  * engines is not a page, it is a doorway. `/cars/[id]` is the one route that genuinely needs to be
  * discoverable, so it is enumerated rather than left to link-following.
  *
- * Listings come from `loadListings` — the ONE reader of `carListings` in the
+ * Listings come from `loadListings` - the ONE reader of `carListings` in the
  * product. This used to run its own `where('active','==',true)` query, which
  * meant the sitemap could advertise a car the showroom would not show. If the
  * read fails - no credentials on a preview, Firestore having a moment - the
@@ -26,12 +26,12 @@ export const revalidate = 3600;
  *
  * `lastModified` is passed to `toISOString()` by Next's serialiser, so an
  * Invalid Date throws `RangeError` and takes the whole production build with
- * it — which is exactly what happened. A sitemap entry with a slightly wrong
+ * it - which is exactly what happened. A sitemap entry with a slightly wrong
  * date is a nothing; a build that will not ship is not.
  */
 const dateOr = (value: unknown, fallback: Date): Date => {
   /* Only a real date-ish value is even attempted. `new Date(null)` and
-     `new Date('')` are not Invalid — they are 1 January 1970, which would be
+     `new Date('')` are not Invalid - they are 1 January 1970, which would be
      published as the day every listing was last touched. */
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? fallback : value;
   if (typeof value !== 'string' || value.trim() === '') return fallback;

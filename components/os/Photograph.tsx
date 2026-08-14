@@ -19,24 +19,24 @@
  * answers.
  *
  * So a URL that exists loads. The empty plates on production are visits the
- * studio has not photographed YET — and the interface was drawing that exactly
+ * studio has not photographed YET - and the interface was drawing that exactly
  * like a photograph that failed, which is the actual defect. §19.1: an absence
  * is a state, and it is not the same state as a failure.
  *
  * ── THE THREE STATES, KEPT APART ─────────────────────────────────────────
- *   `absent`   nothing was ever uploaded. §11.5's composed absence — a field
+ *   `absent`   nothing was ever uploaded. §11.5's composed absence - a field
  *              lit from above, never a grey box and never an apology.
  *   `loading`  a URL exists and is on its way. The same ground, breathing.
  *   `failed`   a URL exists and the browser could not load it. Said plainly,
  *              because pretending otherwise hides a real data fault from the
- *              studio — the thing the previous fallback did.
+ *              studio - the thing the previous fallback did.
  *
  * The frame owns the size in all three, so the composition never moves and
  * nothing reflows when a photograph arrives or does not.
  *
  * ── AND THE ALT TEXT STAYS INSIDE ────────────────────────────────────────
  * A broken `<img>` collapses to its alt text at body size and pushes the
- * layout apart. The text stays — a screen reader needs it (§21.6) — but it is
+ * layout apart. The text stays - a screen reader needs it (§21.6) - but it is
  * never allowed to lay anything out.
  */
 import { useState, type CSSProperties } from 'react';
@@ -46,10 +46,10 @@ import { color, ground, radius, space } from '@/design';
 export type PhotographState = 'absent' | 'loading' | 'ready' | 'failed';
 
 export interface PhotographProps {
-  /** The stored URL. Absent means never photographed — a different thing. */
+  /** The stored URL. Absent means never photographed - a different thing. */
   src?: string | null;
   /**
-   * §21.6 — what the photograph shows, for somebody who cannot see it. Empty
+   * §21.6 - what the photograph shows, for somebody who cannot see it. Empty
    * string only when the image is decorative and its meaning is already said
    * in text beside it.
    */
@@ -60,7 +60,7 @@ export interface PhotographProps {
   fill?: boolean;
   width?: number;
   height?: number;
-  /** The first photograph on the screen — the hero — is not lazy. */
+  /** The first photograph on the screen - the hero - is not lazy. */
   priority?: boolean;
   /** Shape of the frame. Defaults to the pane radius. */
   radius?: number | string;
@@ -89,7 +89,7 @@ export function Photograph({
         ...(fill ? { inset: 0 } : { display: 'block', width, height }),
         overflow: 'hidden',
         borderRadius: r ?? radius.pane,
-        /* §11.5 — a field lit from slightly above centre. The same ground for
+        /* §11.5 - a field lit from slightly above centre. The same ground for
            absent and for failed: the difference is said, not coloured. */
         background: ground.awaiting,
         ...style,

@@ -1,6 +1,6 @@
 'use client';
 /**
- * PROGRESS RING — determinate only.
+ * PROGRESS RING - determinate only.
  *
  * Source: docs/AUTOMODZ-OS.md §19.3, §7.6, §21.6, §21.7, §3.3
  *
@@ -9,12 +9,12 @@
  * `value` is required and the component has no indeterminate mode. It shows a
  * known fraction of something, and nothing else.
  *
- * §3.3 — the track and the arc are ink by default. A state colour is allowed
+ * §3.3 - the track and the arc are ink by default. A state colour is allowed
  * only where the progress ITSELF is one of the four states (§9.2); it is never
  * coloured to look lively.
  *
- * §21.6 — a ring is a graphic, so it carries a `label` and reports its value
- * through the progressbar role. §21.7 — a value that changes without the
+ * §21.6 - a ring is a graphic, so it carries a `label` and reports its value
+ * through the progressbar role. §21.7 - a value that changes without the
  * customer acting is announced politely.
  */
 import { motion, useReducedMotion } from 'framer-motion';
@@ -24,11 +24,11 @@ import { color, duration, easing, STROKE, curve,
 import { toneColor, type Tone } from './tone';
 
 export interface ProgressRingProps {
-  /** 0–1. Required — there is no indeterminate mode (§19.3). */
+  /** 0–1. Required - there is no indeterminate mode (§19.3). */
   value: number;
   /** Diameter in px. */
   size: number;
-  /** §21.6 — what this ring is measuring, in the customer's words. */
+  /** §21.6 - what this ring is measuring, in the customer's words. */
   label: string;
   tone?: Tone;
   /** Multiple of the icon stroke, so the ring matches the glyphs beside it. */

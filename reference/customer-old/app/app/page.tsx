@@ -689,7 +689,7 @@ function ManageVisitSheet({
 
   const doReschedule = async () => {
     if (!booking || !date || !time) return;
-    if (!online) { setError('You’re offline — reconnect to change this visit.'); return; }
+    if (!online) { setError('You’re offline - reconnect to change this visit.'); return; }
     setBusy(true); setError(null);
     try {
       await rescheduleBooking(booking.id, date, time);
@@ -703,7 +703,7 @@ function ManageVisitSheet({
 
   const doCancel = async () => {
     if (!booking) return;
-    if (!online) { setError('You’re offline — reconnect to cancel this visit.'); return; }
+    if (!online) { setError('You’re offline - reconnect to cancel this visit.'); return; }
     setBusy(true); setError(null);
     try {
       await cancelBooking(booking.id);
@@ -814,13 +814,13 @@ function ManageVisitSheet({
 const bookingError = (e: unknown): string => {
   const code = e instanceof Error ? e.message : '';
   switch (code) {
-    case 'slot-taken':      return 'That time just went — pick another and we’ll hold it.';
+    case 'slot-taken':      return 'That time just went - pick another and we’ll hold it.';
     case 'slot-in-the-past':
     case 'not-a-slot':
     case 'bad-slot':        return 'That time isn’t one we can work. Pick another.';
     case 'service-not-offered':
     case 'unknown-service': return 'We’ve stopped offering that one. Choose another service.';
-    case 'service-not-priced': return 'That service isn’t priced yet — call the studio and we’ll sort it.';
+    case 'service-not-priced': return 'That service isn’t priced yet - call the studio and we’ll sort it.';
     case 'vehicle-not-yours': return 'We couldn’t find that car in your garage.';
     case 'not-signed-in':   return 'Sign in again and we’ll pick this up where you left it.';
     default:                return 'That didn’t reach us - try again.';
@@ -948,7 +948,7 @@ function ArrangeSheet({
 
   const confirm = async () => {
     if (!user || !service || !date || !time) return;
-    if (!online) { setError('You’re offline — reconnect to arrange this visit.'); return; }
+    if (!online) { setError('You’re offline - reconnect to arrange this visit.'); return; }
     setBusy(true); setError(null);
     try {
       // intent only - the studio decides the price and returns the record

@@ -1,6 +1,6 @@
 /* THE CUSTOMER'S TRUST BOUNDARY, PROVEN AGAINST REAL FIRESTORE SEMANTICS.
  *
- * `npx jest` reads `firestore.rules` as TEXT — it can prove the file SAYS the
+ * `npx jest` reads `firestore.rules` as TEXT - it can prove the file SAYS the
  * right thing, and nothing more. This runs the real rules engine in the
  * emulator and asks it the questions that matter:
  *
@@ -10,7 +10,7 @@
  *   can they verify one?                               must be NO
  *   can they write themselves a protection?            must be NO
  *   can staff read the queue?                          must be YES
- *   can staff verify from the CLIENT?                  must be NO — the
+ *   can staff verify from the CLIENT?                  must be NO - the
  *                                                      server owns that write
  *
  * The last one is the one worth stating plainly: the studio's authority is
@@ -71,7 +71,7 @@ const CERT = {
   ok('CANNOT read the whole queue',
     await denied(() => getDocs(collection(db, 'declarations'))));
 
-  ok('CANNOT create a declaration — not even an honest one',
+  ok('CANNOT create a declaration - not even an honest one',
     await denied(() => addDoc(collection(db, 'declarations'), CERT)));
 
   ok('  …nor at a chosen id',
@@ -83,7 +83,7 @@ const CERT = {
   ok('CANNOT verify somebody else’s',
     await denied(() => updateDoc(doc(db, 'declarations', 'decl-B-open'), { status: 'verified' })));
 
-  ok('CANNOT withdraw one either — every write is the server’s',
+  ok('CANNOT withdraw one either - every write is the server’s',
     await denied(() => updateDoc(doc(db, 'declarations', 'decl-A-open'), { status: 'withdrawn' })));
 
   ok('CANNOT delete a declaration, so the record cannot be edited by deletion',
@@ -129,7 +129,7 @@ const CERT = {
       name: 'Mine', registrationNumber: 'GJ01ZZ9998',
     })));
 
-  ok('CANNOT rename the car they DO own — the plate check lives on the server',
+  ok('CANNOT rename the car they DO own - the plate check lives on the server',
     await denied(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), { name: 'Renamed' })));
 
   ok('CANNOT change its plate either',
@@ -137,7 +137,7 @@ const CERT = {
       registrationNumber: 'GJ01CD5678',
     })));
 
-  /* CONSENT IS THE OWNER'S ALONE — `lib/os/consent.ts` is explicit that the
+  /* CONSENT IS THE OWNER'S ALONE - `lib/os/consent.ts` is explicit that the
      studio has no way in, so this one field cannot move behind a staff door. */
   ok('CAN grant permission to publish their car’s record',
     await allowed(() => updateDoc(doc(db, 'users', 'custA', 'vehicles', 'carA'), {
@@ -174,7 +174,7 @@ const CERT = {
   ok('CANNOT read another customer’s membership',
     await denied(() => getDoc(doc(db, 'subscriptions', 'sub-B-active'))));
 
-  ok('CANNOT write themselves a membership — not even a `pending` one',
+  ok('CANNOT write themselves a membership - not even a `pending` one',
     await denied(() => setDoc(doc(db, 'subscriptions', 'forged-1'), {
       userId: 'custA', plan: 'Platinum', status: 'pending',
       startDate: '2026-08-01', endDate: '2099-12-31',
@@ -197,7 +197,7 @@ const CERT = {
   ok('CANNOT extend their own cycle',
     await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { endDate: '2099-12-31' })));
 
-  ok('CANNOT even cancel from the browser — leaving is a transition too',
+  ok('CANNOT even cancel from the browser - leaving is a transition too',
     await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { status: 'cancelled' })));
 
   ok('CANNOT stamp their own payment',
@@ -259,13 +259,13 @@ const CERT = {
   await signInWithCustomToken(auth, tokens.staff1);
   console.log('\nRULES · signed in as staff1 (role: employee)');
 
-  ok('CAN read the whole queue — the studio has to see what was sent',
+  ok('CAN read the whole queue - the studio has to see what was sent',
     await allowed(() => getDocs(collection(db, 'declarations'))));
 
   ok('CAN read any car’s declarations',
     await allowed(() => getDocs(query(collection(db, 'declarations'), where('vehicleId', '==', 'carB')))));
 
-  ok('CANNOT verify from a browser — the write is /api/protection/puc/verify’s',
+  ok('CANNOT verify from a browser - the write is /api/protection/puc/verify’s',
     await denied(() => updateDoc(doc(db, 'declarations', 'decl-A-open'), { status: 'verified' })));
 
   ok('CANNOT create a declaration on a customer’s behalf from a browser',
@@ -274,10 +274,10 @@ const CERT = {
   ok('CANNOT activate a membership from a browser either',
     await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { status: 'active' })));
 
-  ok('CAN read every membership — the counter has to see them',
+  ok('CAN read every membership - the counter has to see them',
     await allowed(() => getDocs(collection(db, 'subscriptions'))));
 
-  ok('CAN still write a protection — the seal runs as staff',
+  ok('CAN still write a protection - the seal runs as staff',
     await allowed(() => setDoc(doc(db, 'protections', 'carA_glass'), {
       vehicleId: 'carA', kind: 'glass', termsSource: 'captured',
       term: { kind: 'dated', expiresOn: '2029-01-01' }, visitId: 'visit-1',
@@ -290,13 +290,13 @@ const CERT = {
   ok('CANNOT verify from the admin console either',
     await denied(() => updateDoc(doc(db, 'declarations', 'decl-A-open'), { status: 'verified' })));
 
-  ok('CANNOT delete a declaration — the record is the record',
+  ok('CANNOT delete a declaration - the record is the record',
     await denied(() => deleteDoc(doc(db, 'declarations', 'decl-A-open'))));
 
   ok('CANNOT activate a membership from the admin console',
     await denied(() => updateDoc(doc(db, 'subscriptions', 'sub-A-pending'), { status: 'active' })));
 
-  ok('CANNOT create one either — /api/membership is the one door',
+  ok('CANNOT create one either - /api/membership is the one door',
     await denied(() => addDoc(collection(db, 'subscriptions'), {
       userId: 'custA', plan: 'Gold', status: 'active',
     })));

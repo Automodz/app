@@ -18,7 +18,7 @@ import 'server-only';
  * times for one booking. Side effects belong outside the retry.
  *
  * HOW IT CANNOT DOUBLE-FIRE. Two guards, and both are needed:
- *   1. The caller only invokes this when `replayed === false` — a retried
+ *   1. The caller only invokes this when `replayed === false` - a retried
  *      request returns the first booking and notifies nobody again.
  *   2. `notifyAdmins` is itself idempotent per `kind + dedupeKey`, writing to a
  *      deterministic document id. The booking id is the dedupe key, so even a
@@ -72,7 +72,7 @@ export async function announceBooking(booking: Booking): Promise<void> {
     const existing = await markerRef.get();
     if (!existing.exists) {
       const sent = await whatsAppToStudio(
-        `New booking — ${booking.serviceName}\n`
+        `New booking - ${booking.serviceName}\n`
         + `${booking.vehicleName || booking.vehicleRegNo}\n`
         + `${when}\n`
         + `${booking.userName || 'Customer'} · ${booking.userPhone || 'no phone'}`,
@@ -119,7 +119,7 @@ export async function announceBooking(booking: Booking): Promise<void> {
  *
  * Idempotent on the destination slot: replaying the same move announces once,
  * while a genuine second move to a different day is genuinely a second event.
- * That is why the discriminator is the new slot rather than a counter — a
+ * That is why the discriminator is the new slot rather than a counter - a
  * counter would make a retry look like a new decision.
  */
 export async function announceReschedule(

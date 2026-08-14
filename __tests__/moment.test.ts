@@ -48,7 +48,7 @@ describe('the Moment engine', () => {
   /**
    * A PHOTOGRAPH IS DATED BY THE WORK, NEVER BY THE LAST EDIT.
    *
-   * `at` fell back to `job.updatedAt` — when the document was last written —
+   * `at` fell back to `job.updatedAt` - when the document was last written -
    * and the Vehicle room groups photographs by MONTH under month headings. A
    * job opened on 23 July and touched on 8 August filed its three photographs
    * under "August 2026", which was live in production.

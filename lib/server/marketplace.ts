@@ -5,7 +5,7 @@ import 'server-only';
  * Source: docs/AUTOMODZ-OS.md §22.2 · docs/AUTOMODZ-OS-ARCHITECTURE.md §1
  *
  * `/cars` is the one part of the customer product a stranger can open, so it is
- * also the one part that has to be findable — which means it renders on the
+ * also the one part that has to be findable - which means it renders on the
  * server with its content in the HTML, not fetched into an empty page after
  * hydration. The client-side readers in `lib/services/cars.ts` could not do
  * that, and they are gone.
@@ -42,7 +42,7 @@ export const loadListings = cache(async (): Promise<CarListing[]> => {
  *
  * Returns null for a withdrawn car as well as a missing one, so an old link
  * cannot keep showing a listing the studio has taken down. The caller cannot
- * tell the two apart, which is correct — neither is for sale.
+ * tell the two apart, which is correct - neither is for sale.
  */
 export const loadListing = cache(async (id: string): Promise<CarListing | null> => {
   if (!adminDb || !id) return null;
@@ -52,7 +52,7 @@ export const loadListing = cache(async (id: string): Promise<CarListing | null> 
   return isPublic(listing) ? listing : null;
 });
 
-/** The listings this customer has kept. Ids only — the cars are already loaded. */
+/** The listings this customer has kept. Ids only - the cars are already loaded. */
 export const loadSavedIds = cache(async (uid: string): Promise<string[]> => {
   if (!adminDb || !uid) return [];
   const snap = await adminDb.collection('users').doc(uid).collection('savedCars').get();
@@ -62,7 +62,7 @@ export const loadSavedIds = cache(async (uid: string): Promise<string[]> => {
 /**
  * What this customer has offered the studio, newest first.
  *
- * §19 — a request that vanishes the moment it is sent is a request the customer
+ * §19 - a request that vanishes the moment it is sent is a request the customer
  * cannot believe in. The old form showed a thank-you and then forgot; this is
  * what lets the surface say "you offered us this, and here is where it stands".
  */
@@ -76,7 +76,7 @@ export const loadMySellRequests = cache(async (uid: string): Promise<SellRequest
 
 
 /* ────────────────────────────────────────────────────────────────────────────
-   THE CAR'S RECORD WITH US — design screen 17.
+   THE CAR'S RECORD WITH US - design screen 17.
 
    "Detailed here since 2021 · 11 visits · 340 photos · paint original, no
    respray", on a page anyone can open. Every one of those is a fact about a
@@ -87,7 +87,7 @@ export const loadMySellRequests = cache(async (uid: string): Promise<SellRequest
    A listing carries `vehicleId` and `vehicleOwnerId`, both set by the studio.
    `vehicleOwnerId` is not taken on faith: vehicles live UNDER their owner, so
    the pair is checked by reading `users/{ownerId}/vehicles/{vehicleId}`. A
-   listing naming a car that is not in that garage resolves to nothing — which
+   listing naming a car that is not in that garage resolves to nothing - which
    is exactly what should happen to a mistyped or a forged link between a
    listing and somebody else's car.
 
@@ -116,13 +116,13 @@ export const loadListingRecord = cache(async (
   const vehicleSnap = await adminDb
     .doc(`users/${vehicleOwnerId}/vehicles/${vehicleId}`).get();
   /* THE LINK IS INVALID. Not "assume it is fine" and not "search for a car
-     with this id somewhere else" — the second is how a plate join re-parented
+     with this id somewhere else" - the second is how a plate join re-parented
      three bookings in production. */
   if (!vehicleSnap.exists) return undefined;
   const vehicle = plainDoc<Vehicle>(vehicleSnap.id, vehicleSnap.data()!);
 
   /* CONSENT IS CHECKED BEFORE THE HISTORY IS EVEN READ. `publicHistoryOf` is
-     still the gate — this is not a second one — but reading a customer's
+     still the gate - this is not a second one - but reading a customer's
      visits in order to throw them away is work nobody asked for on a public
      page, and a record never loaded is a record that cannot leak. */
   if (!hasPublicHistoryConsent(vehicle)) return { vehicle, visits: [], protections: [], photographs: 0 };
@@ -136,12 +136,12 @@ export const loadListingRecord = cache(async (
     .map(d => plainDoc<Visit>(d.id, d.data()))
     .filter(v => v.status === 'sealed');
 
-  /* Counts only. No caption, no url, no note — a photograph published beside a
+  /* Counts only. No caption, no url, no note - a photograph published beside a
      stranger's car is the customer's own garage on a listing page. */
   const photographs = visits.reduce(
     (n, v) => n + (v.stages ?? []).reduce((m, s) => m + (s.media?.length ?? 0), 0), 0);
 
-  /* WORDED, NEVER RAW. A protection becomes "Full-body PPF · 68% life" — the
+  /* WORDED, NEVER RAW. A protection becomes "Full-body PPF · 68% life" - the
      kind and a measurement, and nothing about who paid for it or when it was
      invoiced. `measurementOf` returns null for a term with no honest start
      date, and a protection with no honest percentage is left out rather than

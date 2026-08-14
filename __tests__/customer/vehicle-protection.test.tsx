@@ -1,12 +1,12 @@
 /**
  * THE CAR'S OWN ROOM OWNS ITS PROTECTION.
  *
- * §11.1 — protection belongs to the car. It was projected into this room ONLY
+ * §11.1 - protection belongs to the car. It was projected into this room ONLY
  * as marks on the photograph, positioned by `regionsFor()`, which has never
  * returned a region because nobody has ever authored one for a real photograph.
  * And the projection first threw away every protection that does not sit
  * somewhere on the paint: insurance, the pollution certificate, the
- * registration and the FASTag — six of the ten kinds.
+ * registration and the FASTag - six of the ten kinds.
  *
  * Between the two, a Kia with seven live protections, one of them a PUC
  * nineteen days from lapsing, showed a name, a plate, one state word, "With
@@ -20,7 +20,7 @@
  * Two assertions here used to pin the §18.4 invitation: an empty-ledger pane
  * saying "Nothing declared yet · Tell us what protects it", over a `wa.me`
  * link. That was the product's ONLY declaration path and it ended in a
- * messaging application — nothing on the other side of it wrote a Protection.
+ * messaging application - nothing on the other side of it wrote a Protection.
  * A test that pins a workaround keeps the workaround.
  *
  * The certificate now carries its own row in the ledger whatever the car has,
@@ -51,8 +51,8 @@ const layer = (over: Partial<VehicleProtection> = {}): VehicleProtection => ({
 });
 
 /* Rendered through the renderer boundary, exactly as the room is. Asserted on
-   BOTH compositions — a car with a photograph and one still awaiting its
-   first — because protection lives below the fold in both and the §11.5
+   BOTH compositions - a car with a photograph and one still awaiting its
+   first - because protection lives below the fold in both and the §11.5
    absence used to take the whole room with it. */
 const withPhoto = photograph({ url: 'https://x.test/car.jpg', aspect: 1, regions: [] });
 const noPhoto = photograph({ aspect: 1, regions: [] });
@@ -76,7 +76,7 @@ describe('what protects the car, in the car’s own room', () => {
     }
   });
 
-  it('says when each one runs out — the expiry is the point', () => {
+  it('says when each one runs out - the expiry is the point', () => {
     const h = html({ protections: [
       layer({ id: 'a', term: '19 days left' }),
       layer({ id: 'b', label: 'Insurance', term: 'Through December 2026', region: undefined }),
@@ -95,7 +95,7 @@ describe('what protects the car, in the car’s own room', () => {
     expect(h).toContain('Lapsed 30 July 2026');
   });
 
-  it('NO DOCUMENT, NO DOCUMENT CONTROL — nothing writes one yet', () => {
+  it('NO DOCUMENT, NO DOCUMENT CONTROL - nothing writes one yet', () => {
     /* §14.6 offers the file behind one tap. Not one protection in production
        carries a `document`, so a control here would be a promise the product
        cannot keep. */
@@ -110,7 +110,7 @@ describe('what protects the car, in the car’s own room', () => {
   });
 
   it('a layer the customer can act on carries the way in, in the ledger', () => {
-    /* §10.5 — nothing is inert. The certificate is the first protection with
+    /* §10.5 - nothing is inert. The certificate is the first protection with
        something to do about it, and the row is where that lives. */
     const h = html({ protections: [
       layer({
@@ -153,7 +153,7 @@ describe('what protects the car, in the car’s own room', () => {
 
   it('a car still awaiting its first photograph says it just the same', () => {
     /* §11.5's composition is a different room, not this one with the picture
-       missing — and it renders `Acts` too, so the protection must survive it. */
+       missing - and it renders `Acts` too, so the protection must survive it. */
     const h = html({ protections: [
       layer({ label: 'Pollution certificate', term: 'Lapsed 30 July 2026', tone: 'lapsed', region: undefined }),
     ] }, noPhoto);

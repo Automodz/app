@@ -1,5 +1,5 @@
 /**
- * FINAL PRODUCTION AUDIT — the findings, pinned.
+ * FINAL PRODUCTION AUDIT - the findings, pinned.
  *
  * Each block corresponds to something this audit actually found in code that
  * was already called finished:
@@ -7,7 +7,7 @@
  *   SEVEN PERMANENT REDIRECTS POINTED AT A DELETED ADDRESS. `/dashboard/*`
  *   301'd to `/app*`, which stopped existing when the customer rooms moved to
  *   the root. A 301 is cached by the browser and never asked again, so every
- *   old bookmark went to a 404 — permanently. The earlier integration sweep
+ *   old bookmark went to a 404 - permanently. The earlier integration sweep
  *   missed it because it walked `lib`, `app`, `components` and `navigation`,
  *   and `next.config.js` is none of those.
  *
@@ -18,7 +18,7 @@
  *   A SECOND CLIENT-SIDE BOOKING PATH SURVIVED. `requestBooking` still wrote
  *   bookings straight from the browser, bypassing the pricing authority and
  *   the studio notification that `POST /api/booking/create` exists to
- *   guarantee. Unused — but one import away from recreating the defect that
+ *   guarantee. Unused - but one import away from recreating the defect that
  *   made new bookings invisible.
  *
  *   UPLOADS HAD NO SIZE CEILING. Everything is re-encoded to JPEG so what is
@@ -106,7 +106,7 @@ describe('a failure in an in-app browser says something possible', () => {
 
   it('the door tells them what actually works', () => {
     /* The sentences moved out of the door and into `lib/authError.ts` when the
-       generic `else` was replaced — see __tests__/auth/failure.test.ts. What
+       generic `else` was replaced - see __tests__/auth/failure.test.ts. What
        this block protects is unchanged and is asserted the better way: on the
        advice itself, not on where the string is typed. The door's remaining
        job is to say WHICH browser it is in, so the map can choose. */
@@ -122,7 +122,7 @@ describe('a failure in an in-app browser says something possible', () => {
 
 describe('there is one booking path, and it is the server', () => {
   it('the client can no longer write a booking', () => {
-    /* `requestBooking` wrote to `bookings` from the browser — no pricing
+    /* `requestBooking` wrote to `bookings` from the browser - no pricing
        authority, no promo ledger, no membership deduction, and nobody told. */
     const bookings = codeOf('lib/services/bookings.ts');
     expect(bookings).not.toMatch(/export const requestBooking/);

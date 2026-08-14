@@ -7,7 +7,7 @@
  *
  * That sentence was the `else` of four handled codes. A disabled provider, an
  * unauthorised domain, a browser refusing third-party storage and a Firestore
- * rule refusing the profile write all arrived as it — so there was nothing in
+ * rule refusing the profile write all arrived as it - so there was nothing in
  * the report to tell the causes apart by, and the one place the SDK's own code
  * was available threw it away.
  *
@@ -106,8 +106,8 @@ describe('the causes are distinguishable, which is the whole point', () => {
   });
 
   it('no two of the studio-side codes read identically to the customer by accident', () => {
-    /* They may share a sentence deliberately — a customer cannot act on the
-       difference between a disabled provider and a bad key — but the KIND and
+    /* They may share a sentence deliberately - a customer cannot act on the
+       difference between a disabled provider and a bad key - but the KIND and
        the CODE must still separate them for whoever is on call. */
     const a = authFault(err('auth/unauthorized-domain'));
     const b = authFault(err('permission-denied'));
@@ -148,8 +148,8 @@ describe('the door reports every failure it catches', () => {
   });
 
   it('the raw code is shown on screen only in development or behind ?debug=1', () => {
-    /* It reveals an error code and nothing else — no token, no address, no
-       account — but a customer has no use for it and should not meet it. */
+    /* It reveals an error code and nothing else - no token, no address, no
+       account - but a customer has no use for it and should not meet it. */
     expect(door).toMatch(/process\.env\.NODE_ENV !== 'production' \|\| params\.get\('debug'\) === '1'/);
     expect(door).toMatch(/showDiagnostic && diagnostic/);
   });
@@ -163,12 +163,12 @@ describe('the CSP trusts the auth hosts consistently', () => {
    *
    * The first version of this sliced `next.config.js` between the directive
    * names and was promptly defeated by the words "frame-src" appearing in a
-   * comment I had just written — a test that reads a file for a value the file
+   * comment I had just written - a test that reads a file for a value the file
    * COMPUTES is testing the prose around it.
    *
    * `headers()` is asked for its answer instead. It runs in a child node
    * process because `next.config.js` pulls in the PWA plugin, which jest's
-   * module runtime cannot parse — and with NODE_ENV=production, so what is
+   * module runtime cannot parse - and with NODE_ENV=production, so what is
    * measured is the production policy and not the looser development one.
    */
   const headers: { key: string; value: string }[] = JSON.parse(
@@ -190,7 +190,7 @@ describe('the CSP trusts the auth hosts consistently', () => {
 
   it('apis.google.com is trusted to RUN code and to be SPOKEN to', () => {
     /* A host in `script-src` but not `connect-src` is not a boundary, it is a
-       gap — and `apis.google.com` is a different host from `*.googleapis.com`,
+       gap - and `apis.google.com` is a different host from `*.googleapis.com`,
        so the wildcard never covered it. Measured against production: that URL
        is reported as a `connect-src` violation while loading fine as a
        script. */
@@ -209,7 +209,7 @@ describe('the CSP trusts the auth hosts consistently', () => {
   });
 
   it('the auth-domain iframe the credential returns through is allowed', () => {
-    /* `sendAuthEventViaIframeRelay` — leave this out and the pop-up completes
+    /* `sendAuthEventViaIframeRelay` - leave this out and the pop-up completes
        and the sign-in never resolves. */
     expect(directive('frame-src')).toContain('https://*.firebaseapp.com');
   });

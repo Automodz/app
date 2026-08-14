@@ -1,12 +1,12 @@
 /**
- * JOINING, UPGRADING AND RENEWING THE CLUB — the rules, with no database in
+ * JOINING, UPGRADING AND RENEWING THE CLUB - the rules, with no database in
  * sight.
  *
  * Source: docs/AUTOMODZ-OS.md §15, docs/AUTOMODZ-LIVING-STATES.md §2
  *
  * ── WHAT THIS REPLACES ───────────────────────────────────────────────────
  * There were no rules. `ClubFlow` assembled a subscription document in the
- * browser — plan, start date, end date, wash count, payment method — and wrote
+ * browser - plan, start date, end date, wash count, payment method - and wrote
  * it straight to Firestore, which accepted it because it said `pending`. The
  * studio's activation screen then honoured whatever it found. So the terms of
  * a standing entitlement were the customer's to write, and the only thing
@@ -16,7 +16,7 @@
  * already has: WHICH PLAN, and WHEN. This is that derivation, and the decision
  * about whether the request may be made at all.
  *
- * Pure — no Firebase, no React, no routes, no clock of its own.
+ * Pure - no Firebase, no React, no routes, no clock of its own.
  */
 import type { MembershipPlan, MembershipPlanConfig, Subscription } from '@/lib/types';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
@@ -35,7 +35,7 @@ export const studioToday = (now: Date = new Date()): string =>
 /* ── IS THIS MEMBERSHIP STILL STANDING? ──────────────────────────────────── */
 
 /**
- * A membership HOLDS while it is active and its cycle has not run out —
+ * A membership HOLDS while it is active and its cycle has not run out -
  * including the grace week, because grace is when a renewal is most likely and
  * refusing one then is the product working against itself.
  *
@@ -73,7 +73,7 @@ export type JoinRefusal =
   | 'reference-invalid';
 
 export type JoinIntent =
-  /** nothing standing, nothing pending — the ordinary first join */
+  /** nothing standing, nothing pending - the ordinary first join */
   | { act: 'join' }
   /** a cycle that has ended, or is in its grace week and being renewed */
   | { act: 'renew' }
@@ -90,7 +90,7 @@ export type JoinVerdict =
  * Three answers and no fourth:
  *
  *   JOIN     nothing stands. The ordinary case.
- *   RENEW    a cycle has ended, or is ending. A NEW subscription — the old one
+ *   RENEW    a cycle has ended, or is ending. A NEW subscription - the old one
  *            keeps its own dates and its own revenue.
  *   UPGRADE  one stands and the customer wants MORE of it. Allowed, because a
  *            member reaching for a bigger plan is the one request the studio
@@ -122,8 +122,8 @@ export function mayJoin(args: {
   const standing = standingMembership(args.held, now);
   if (!standing) {
     /* Held one before? Then this is a renewal rather than a first join. The
-       distinction is only ever a word to the customer — the record written is
-       identical — but the product should know which it is. */
+       distinction is only ever a word to the customer - the record written is
+       identical - but the product should know which it is. */
     return { ok: true, intent: { act: args.held.length > 0 ? 'renew' : 'join' } };
   }
 
@@ -144,7 +144,7 @@ export function mayJoin(args: {
  * NOTHING HERE COMES FROM A REQUEST except the plan name and the payment
  * method, and both are checked against a closed set before they arrive. The
  * price is the catalogue's, the dates are the clock's, the wash count is
- * `washesGrantedBy` — the same function every customer surface reads, so the
+ * `washesGrantedBy` - the same function every customer surface reads, so the
  * card and the entitlement cannot disagree.
  */
 export interface DerivedSubscription {
@@ -185,7 +185,7 @@ export function deriveSubscription(args: {
  * ONE REQUEST PER CUSTOMER PER PLAN PER DAY, by construction.
  *
  * The id is derived from those three facts, so a double tap lands on the SAME
- * document and Firestore's own write conflict resolves it — rather than two
+ * document and Firestore's own write conflict resolves it - rather than two
  * subscriptions, two notifications to the studio, and a counter choosing.
  */
 export const subscriptionIdFor = (
@@ -214,7 +214,7 @@ export const isReference = (raw: unknown): boolean =>
 
 /* ── WORDS ───────────────────────────────────────────────────────────────── */
 
-/** §21.8 — the customer's word for each state, never the enum. */
+/** §21.8 - the customer's word for each state, never the enum. */
 export const MEMBERSHIP_WORD: Record<Subscription['status'], string> = {
   pending: 'With the studio',
   active: 'Running',

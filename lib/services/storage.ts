@@ -12,7 +12,7 @@
 
 import { authedFetch } from '../clientSession';
 const idToken = async (): Promise<string> => {
-  /* Waited for, not guessed at — see lib/clientSession.ts. */
+  /* Waited for, not guessed at - see lib/clientSession.ts. */
   const { idToken: token } = await import('../clientSession');
   const t = await token();
   if (!t) throw new Error('not-signed-in');
@@ -76,7 +76,7 @@ export const deleteImage = async (path: string): Promise<void> => {
  * The largest file worth decoding.
  *
  * Everything is re-encoded to JPEG at `maxWidth`, so what is uploaded is
- * bounded whatever arrives — but the DECODE is not. A 100MB burst frame or a
+ * bounded whatever arrives - but the DECODE is not. A 100MB burst frame or a
  * RAW export is pulled into an `<img>` and a canvas first, and on a phone that
  * is how a tab dies. A modern photograph is comfortably under this.
  */

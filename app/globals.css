@@ -4,9 +4,9 @@
 
 /* ═══════════════════════════════════════════════════════════════════════
    AUTOMODZ v10 - LIQUID GLASS (always-dark, amber & champagne light)
-   Source: design "AutoModz App.dc.html" — Turn 1.
+   Source: design "AutoModz App.dc.html" - Turn 1.
    The room is a cool near-black. One warm light falls on it: AMBER, the
-   studio working, and CHAMPAGNE, its cooled reflection — what the studio
+   studio working, and CHAMPAGNE, its cooled reflection - what the studio
    has already done and that still holds. Surfaces are one glass: a lit top
    edge, a blurred fill, a shadow beneath. Nothing else is coloured.
    Fonts: Outfit (display, 200/300) · DM Sans (body) · DM Mono (labels)
@@ -24,7 +24,7 @@
   --accent-haze:   rgba(224,164,92,0.14);
   --accent-mist:   rgba(224,164,92,0.06);
 
-  /* The second light. Never asks for anything — see design/colors.ts. */
+  /* The second light. Never asks for anything - see design/colors.ts. */
   --champagne:     #E8D9BE;
   --champagne-hi:  #F3EADA;
   --champagne-haze:rgba(232,217,190,0.12);
@@ -49,7 +49,7 @@
   --lifted:        #3F434A;
   --peak:          #4E535B;
 
-  /* ── Ink spectrum (text hierarchy) — warm white, per the design ── */
+  /* ── Ink spectrum (text hierarchy) - warm white, per the design ── */
   --chrome:        #EDEBE7;
   --silver:        rgba(237,235,231,0.80);
   --pewter:        rgba(237,235,231,0.55);
@@ -82,8 +82,8 @@
   /* ── Glass layers (liquid glass: lighter fill, brighter edge) ──
      `--glass`/`--glass-2` stay FLAT FILLS: they are used as the background of
      layers that must stay readable with or without a backdrop filter (the
-     toast, the palette). The design's lit material — a 160° fall of white over
-     a blur — is `--pane`/`--pane-lit` below, and is applied through `.am-glass`
+     toast, the palette). The design's lit material - a 160° fall of white over
+     a blur - is `--pane`/`--pane-lit` below, and is applied through `.am-glass`
      so the sheen, the blur and the fallback travel with it. */
   --glass:         rgba(21,22,26,0.72);
   --glass-2:       rgba(16,17,20,0.88);
@@ -119,7 +119,7 @@
 
   /* design/typography.ts asks for `--font-text` and `--font-data` and nothing
      ever defined them, so every Body and Data line in the customer app fell
-     through to system-ui and the system monospace — the two faces the design
+     through to system-ui and the system monospace - the two faces the design
      is most specific about (DM Sans, DM Mono) were the two not being used.
      Aliases rather than a rename: the token module names the ROLE, this file
      names the family, and both spellings now resolve to one face. */
@@ -274,7 +274,7 @@ body {
   background-attachment: fixed;
 }
 /* ─── FOCUS · one ring, every interactive element, every ground ──────────
-   docs/AUTOMODZ-OS.md §21.5 — "every interactive element has a visible focus
+   docs/AUTOMODZ-OS.md §21.5 - "every interactive element has a visible focus
    state. The whole product is operable by keyboard."
 
    The predecessor was `1.5px solid var(--accent-glow)`, and measured against
@@ -284,7 +284,7 @@ body {
        paper  #0A0B0D      2.02:1
        surface #15181B     2.12:1
        a mid-grey photo    1.41:1
-       a bright photo      1.01:1   — invisible
+       a bright photo      1.01:1   - invisible
 
    A single stroke cannot be guaranteed against a photograph, because the
    photograph can be any colour. So the ring is drawn TWICE, white outside
@@ -300,7 +300,7 @@ body {
     0 0 0 2px #FFFFFF,
     0 0 0 4px rgba(0, 0, 0, 0.55);
   /* FOLLOWS THE CONTROL. This was a flat 4px, which drew a nearly-square ring
-     around every pill button in the product — and every control that renders
+     around every pill button in the product - and every control that renders
      through `Button` is a pill. `inherit` takes the element's own radius, so
      the ring traces the shape it is marking. Controls with no radius of their
      own fall back to the 4px they had. */
@@ -901,7 +901,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 .studio ::selection { background: var(--st-linen); }
 
 /* ═══════════════════════════════════════════════════════════════════
-   VIEW TRANSITIONS — the app is one object; routes morph, they never cut.
+   VIEW TRANSITIONS - the app is one object; routes morph, they never cut.
    The shared vehicle (view-transition-name: hero-vehicle) is lifted out and
    morphed between surfaces; everything else pushes in with depth / recedes.
    ═══════════════════════════════════════════════════════════════════ */
@@ -940,7 +940,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   THE OVERTURE — the photo-less hero rendered as a lit chrome monument.
+   THE OVERTURE - the photo-less hero rendered as a lit chrome monument.
    Brushed-metal text, a slow specular sweep, an ambient light bloom and
    a floor reflection. Monochrome, GPU-only, dropped under reduced motion.
    ═══════════════════════════════════════════════════════════════════ */
@@ -991,7 +991,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LIVING STATUS — a breathing indicator for a car in care / ready. The
+   LIVING STATUS - a breathing indicator for a car in care / ready. The
    only pulse in the product: a calm heartbeat, never a busy spinner.
    ═══════════════════════════════════════════════════════════════════ */
 .studio .st-live-dot {
@@ -1098,7 +1098,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
    The keyframe runs on the compositor; the lean is two custom properties
    written straight to the node. Neither costs a render.
 
-   §7.6 — reduced motion stops the MOVEMENT and keeps the light. The field is
+   §7.6 - reduced motion stops the MOVEMENT and keeps the light. The field is
    still magenta, it simply stands still. */
 .am-field {
   --lean-x: 0%;
@@ -1119,7 +1119,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* ── THE ONE GLASS ───────────────────────────────────────────────────────
-   §10.2 — one material. A card is this, a sheet is this. There is no
+   §10.2 - one material. A card is this, a sheet is this. There is no
    glassier variant, because two translucencies in one view is the stacking
    §3.6 forbids even when they are not literally nested.
 
@@ -1134,7 +1134,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   box-shadow: var(--pane-inset);
 }
 
-/* The lit one. Same material, closer to the light — for the layer a screen is
+/* The lit one. Same material, closer to the light - for the layer a screen is
    actually about (the dock, the card that carries the state). Never two of
    these in one view: §3.6, and the design only ever shows one. */
 .am-glass-lit {
@@ -1145,14 +1145,14 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
   box-shadow: var(--pane-inset), 0 20px 40px -18px rgba(0, 0, 0, 0.9);
 }
 
-/* Warm glass — the one surface on a screen that is asking for something. */
+/* Warm glass - the one surface on a screen that is asking for something. */
 .am-glass-warm {
   background: var(--pane-warm);
   border-color: rgba(224, 164, 92, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-/* Cool glass — a thing already in force. Champagne, so it states without asking. */
+/* Cool glass - a thing already in force. Champagne, so it states without asking. */
 .am-glass-cool {
   background: var(--pane-cool);
   border-color: rgba(232, 217, 190, 0.18);
@@ -1176,7 +1176,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* ── THE LIGHT MOVING ACROSS GLASS ───────────────────────────────────────
-   A soft band crossing the card that carries live work — the only thing on
+   A soft band crossing the card that carries live work - the only thing on
    a still screen that says the studio is working right now. On a `::after`
    so no element has to exist for it. One surface per screen. */
 .am-sweep { overflow: hidden; }
@@ -1208,12 +1208,12 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 .am-breathe { animation: am-breathe 3.2s ease-in-out infinite; }
 
 /* ── THE DIAL ────────────────────────────────────────────────────────────
-   Drawn once on arrival, never looped — a measurement being taken, not a
+   Drawn once on arrival, never looped - a measurement being taken, not a
    spinner. `--dial-len` is the circumference `Dial` computes, so this file
    never has to know the radius. */
 @keyframes am-dial { from { stroke-dashoffset: var(--dial-len, 553); } }
 
-/* §7.2 — the product's ease, not the one the design file happened to type
+/* §7.2 - the product's ease, not the one the design file happened to type
    (0.2,.8,.2,1). Two curves exist and this is one of them; a third that
    differs by two hundredths is a third curve nobody can defend. */
 .am-dial-arc {
@@ -1227,7 +1227,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* ── THE LABEL ───────────────────────────────────────────────────────────
-   Mono, uppercase, widely tracked — how every piece of metadata in the
+   Mono, uppercase, widely tracked - how every piece of metadata in the
    design is set. A class rather than a component so a span inside a
    sentence can wear it. */
 .am-label {
@@ -1243,7 +1243,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 
 /* ── THE DISPLAY ─────────────────────────────────────────────────────────
    Outfit at 200: every headline and large number in the design. Thin only
-   works large — this weight is not used below the Title step, where it stops
+   works large - this weight is not used below the Title step, where it stops
    being legible before it stops being beautiful. */
 .am-display {
   font-family: var(--font-display);
@@ -1255,14 +1255,14 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 
 /* ── THE DIAL'S NUMBER ───────────────────────────────────────────────────
    The ring is `min(size, 100%)`, so on a narrow phone it is NOT the size its
-   caller asked for — and a number sized from that prop is then too large for
+   caller asked for - and a number sized from that prop is then too large for
    the ring it is actually sitting in. Measured against the element instead,
    so the two can never disagree.
 
    `--dial-scale` is set by the component and is the same fraction the inline
    `font-size` uses; this only changes what it is a fraction OF. Everything is
    inside `@supports`, so a browser without container queries keeps the inline
-   px value — which is exactly the arithmetic that shipped before, and is
+   px value - which is exactly the arithmetic that shipped before, and is
    correct at every width where the ring got the size it asked for. */
 @supports (container-type: inline-size) and (width: 1cqw) {
   .am-dial { container-type: inline-size; }
@@ -1270,22 +1270,22 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 }
 
 /* ── A PHOTOGRAPH THAT DOES NOT ARRIVE ───────────────────────────────────
-   `.am-photo` STOOD HERE — `color: transparent; font-size: 0`, so a failed
+   `.am-photo` STOOD HERE - `color: transparent; font-size: 0`, so a failed
    image could not sprawl its alt text across the composition.
 
    It hid the TEXT and not the browser's own broken-image glyph, because that
    is replaced content rather than text. A car whose photograph 404s therefore
-   drew a torn-page icon in the car chooser, in the middle of the room — found
+   drew a torn-page icon in the car chooser, in the middle of the room - found
    by LOOKING at a render, with every geometric assertion passing.
 
-   `components/os/Photograph.tsx` owns all three states now — absent, ready and
-   failed — and every customer photograph goes through it, so there is nothing
+   `components/os/Photograph.tsx` owns all three states now - absent, ready and
+   failed - and every customer photograph goes through it, so there is nothing
    left for a class to do. The rule is gone rather than kept "just in case": a
    class nobody wears is a class the next screen will wear INSTEAD of using the
    primitive, which is how the product got here. */
 
 /* ── THE PRESS ───────────────────────────────────────────────────────────
-   §7.3 `tick` (120ms) is "acknowledgement — a press, a toggle", and until
+   §7.3 `tick` (120ms) is "acknowledgement - a press, a toggle", and until
    now nothing in the product used it. Every control rendered through
    `Button` changed nothing under a finger until the navigation happened,
    which is what makes an interface feel dead.
@@ -1313,7 +1313,7 @@ section[id] { scroll-margin-top: calc(var(--sat) + 76px); }
 
 /* ── THE SCRIM BEHIND A LAYER ────────────────────────────────────────────
    A layer used to darken the room and nothing more. Blurring it as well is
-   what makes the room RECEDE rather than merely dim — the difference between
+   what makes the room RECEDE rather than merely dim - the difference between
    a panel drawn over a page and a sheet held above a surface.
 
    Carries no text, so the blur costs no legibility. The darkening stays: it

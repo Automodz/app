@@ -8,7 +8,7 @@ import { SITE_URL } from '@/lib/company';
  * indexed. Everything behind the door is not: the customer rooms are one
  * person's garage, `/admin` is the studio's back office, and `/invoice` and
  * `/chapter` are shared by private link. None of them would rank and all of
- * them would leak a URL shape — so they are excluded rather than left to
+ * them would leak a URL shape - so they are excluded rather than left to
  * `noindex` alone.
  *
  * `/` is NOT excluded: signed out it is the public landing, and signed in it is
@@ -28,12 +28,12 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       /* The customer rooms moved to the root, so `/app` no longer exists and
          the real signed-in surfaces were being crawled. `/` itself stays
-         allowed — it is the public landing when signed out. */
+         allowed - it is the public landing when signed out. */
       disallow: [
         '/admin', '/admin/', '/api/', '/invoice/', '/chapter/', '/offline',
         '/garage', '/vehicle', '/history', '/studio', '/you', '/membership',
         '/welcome',
-        /* `/cars` and `/cars/[id]` stay OUT of this list deliberately — they
+        /* `/cars` and `/cars/[id]` stay OUT of this list deliberately - they
            are the public showroom. `/dashboard` is the signed-in half of the
            marketplace and belongs here with the other rooms. */
         '/dashboard',

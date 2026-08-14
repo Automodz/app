@@ -3,7 +3,7 @@ import { adminAuth, adminDb } from '@/lib/server/firebaseAdmin';
 import { resealVisitTerms } from '@/lib/server/sealVisit';
 
 /**
- * Remediate a visit sealed with a resolution defect. Admin only — it edits a
+ * Remediate a visit sealed with a resolution defect. Admin only - it edits a
  * sealed record, under the guards documented on `resealVisitTerms`.
  */
 export const runtime = 'nodejs';

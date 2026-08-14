@@ -9,8 +9,8 @@ import './globals.css';
 /**
  * WHAT THIS LAYOUT DELIBERATELY NO LONGER MOUNTS.
  *
- * `AuthProvider`, `ThemeProvider` and `Toaster` were here, so every route —
- * including every customer room — carried the Firebase client SDK, the Zustand
+ * `AuthProvider`, `ThemeProvider` and `Toaster` were here, so every route -
+ * including every customer room - carried the Firebase client SDK, the Zustand
  * store and react-hot-toast in its first load. The customer rooms are now read
  * on the server and import none of them.
  *
@@ -41,7 +41,7 @@ const unbounded = Unbounded({
   variable: '--font-hero-src', display: 'swap',
 });
 /* 200 and 300 are not decoration. The design sets every headline and every
-   large number in Outfit 200 — a weight the product did not previously carry,
+   large number in Outfit 200 - a weight the product did not previously carry,
    so those headlines were silently rendering at 400 and reading as bold. */
 const outfit = Outfit({
   subsets: ['latin'], weight: ['200', '300', '400', '500', '600', '700', '800'],
@@ -111,7 +111,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   /* `/` is two addresses in one: the public landing for a visitor, the
      customer's Home for an owner. Only the second wears the navigation bar, and
-     that decision has to be made here — above the page — because the bar is a
+     that decision has to be made here - above the page - because the bar is a
      sibling of the page, not a child of it. Presence of the cookie is enough to
      choose a shell; the page still verifies it. */
   const signedIn = await hasSessionCookie();
@@ -129,11 +129,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {/* This layout is shared with the operations application, so the
             customer shell is gated rather than mounted. `CustomerChrome`
-            mounts nothing at all at an address that is not a room — see
+            mounts nothing at all at an address that is not a room - see
             that file for why "nothing" is stronger than "hidden". */}
         {/* TWO SESSIONS, ONE OF WHICH EXPIRES FIRST. The Firebase session on
             this device outlives the server's fourteen-day cookie, and only the
-            cookie is readable by a room — so without this, a customer whose
+            cookie is readable by a room - so without this, a customer whose
             cookie lapsed was shown the public landing page and had to find the
             sign-in to recover a session they still had. Renders nothing, and
             loads no Firebase at all for a browser that has never signed in. */}

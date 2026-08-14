@@ -1,6 +1,6 @@
 'use client';
 /**
- * TOAST — the visible consequence.
+ * TOAST - the visible consequence.
  *
  * Source: docs/AUTOMODZ-OS.md §4.6, §9.3, §20.1, §21.7, §3.3
  *
@@ -8,16 +8,16 @@
  * A save says *saved*. If a mutation produces no visible change, the customer
  * will do it again."
  *
- * §9.3 — it sits in the `alert` band, the one nothing may sit above, because a
+ * §9.3 - it sits in the `alert` band, the one nothing may sit above, because a
  * confirmation the customer cannot see has not confirmed anything.
  *
- * §21.7 — announced politely. A confirmation that only exists visually is
+ * §21.7 - announced politely. A confirmation that only exists visually is
  * invisible to anyone not looking at the screen.
  *
- * §3.3, §9.2 — a toast may carry one of the four state tones when it IS a
+ * §3.3, §9.2 - a toast may carry one of the four state tones when it IS a
  * state. It is never coloured for emphasis.
  *
- * §20.1 — an error toast speaks like the studio. This component takes the
+ * §20.1 - an error toast speaks like the studio. This component takes the
  * words; it never composes them.
  */
 import { motion, useReducedMotion } from 'framer-motion';
@@ -29,7 +29,7 @@ import { Text } from './Text';
 
 export interface ToastProps {
   children: ReactNode;
-  /** §9.2 — only where the message IS a state. */
+  /** §9.2 - only where the message IS a state. */
   tone?: Tone;
   /** Rendered when the message needs a way forward (§20.2). */
   action?: ReactNode;

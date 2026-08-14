@@ -273,7 +273,7 @@ export default function AdminCarsPage() {
                   </div>
                 )}
 
-                {/* WHICH CAR IN WHICH GARAGE — design screen 17's "Its record
+                {/* WHICH CAR IN WHICH GARAGE - design screen 17's "Its record
                     with us". Linking says which car; it does NOT grant
                     permission to publish anything. Consent belongs to the car
                     and only its owner may give it. */}

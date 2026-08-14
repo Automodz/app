@@ -7,18 +7,18 @@
  *
  * THIS USED TO BE `JSON.parse(JSON.stringify(doc))`, and that broke the
  * production build. A `Timestamp` survives a JSON round-trip as
- * `{"_seconds":…,"_nanoseconds":…}` — an object that looks like data and
+ * `{"_seconds":…,"_nanoseconds":…}` - an object that looks like data and
  * behaves like nothing. `new Date(...)` on it is an Invalid Date, so the
  * sitemap's `lastModified` threw `RangeError: Invalid time value` inside
  * Next's prerender and the deploy exited 1. It also silently emptied every
  * date the offer list showed, because that code tests for a string.
  *
  * It lives in its own file, free of `firebase-admin`, so it can be tested
- * without pulling that package's ESM dependencies through Jest — the failure
+ * without pulling that package's ESM dependencies through Jest - the failure
  * only ever appeared with real documents, which no local run has.
  */
 
-/** Anything with a `toDate()` — the Admin and client `Timestamp` both qualify. */
+/** Anything with a `toDate()` - the Admin and client `Timestamp` both qualify. */
 const isTimestamp = (v: unknown): v is { toDate: () => Date } =>
   typeof v === 'object' && v !== null
   && typeof (v as { toDate?: unknown }).toDate === 'function';

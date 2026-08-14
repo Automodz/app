@@ -1,5 +1,5 @@
 /**
- * THE DECLARATION COLLECTION — read only, from any browser.
+ * THE DECLARATION COLLECTION - read only, from any browser.
  *
  * There is no `create`, `update` or `delete` in this file and there never will
  * be one: `firestore.rules` refuses every client write to `declarations`, and
@@ -26,7 +26,7 @@ export const getDeclarations = async (vehicleId: string): Promise<Declaration[]>
 };
 
 /**
- * The studio's queue — everything anybody has sent, newest first.
+ * The studio's queue - everything anybody has sent, newest first.
  *
  * ONE `orderBy` AND NO `where`, deliberately: a composite index is a
  * deployment step, and the studio's own screen can group by status in memory

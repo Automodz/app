@@ -42,7 +42,7 @@ export async function generateMetadata(
     const description = [
       price, c.kmDriven != null ? `${c.kmDriven.toLocaleString('en-IN')} km` : null,
       c.fuel, c.transmission,
-    ].filter(Boolean).join(' · ') + ` — inspected and detailed at ${COMPANY.name}, ${COMPANY.city}.`;
+    ].filter(Boolean).join(' · ') + ` - inspected and detailed at ${COMPANY.name}, ${COMPANY.city}.`;
     const image = c.photos?.[0]?.url;
 
     return {

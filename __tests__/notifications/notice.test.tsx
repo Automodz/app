@@ -1,12 +1,12 @@
 /**
  * §17.1 AND §17.3, TOGETHER.
  *
- * §17.1 — "A list of notifications is the same mistake as a list of documents.
+ * §17.1 - "A list of notifications is the same mistake as a list of documents.
  * It is a pile of things the customer must process, most of which they no
  * longer care about. State changes surface as state. The car is the inbox."
  *
- * §17.3 — "A notification is a doorway. It opens the exact surface it is about
- * — never the home screen, never a generic list."
+ * §17.3 - "A notification is a doorway. It opens the exact surface it is about
+ * - never the home screen, never a generic list."
  *
  * Forty-two notifications had been written and the customer application read
  * none of them: `getUserNotifications` and its two companions had been written,
@@ -20,7 +20,7 @@
  * WHICH surface owns the fact depends on the state of the object NOW, not on
  * the state it was in when the push went out. `notificationHref` resolves at
  * WRITE time and is right when it runs; by the time somebody taps, the visit it
- * addressed may have been sealed under a different id — or never sealed at all,
+ * addressed may have been sealed under a different id - or never sealed at all,
  * in which case there is no surface and no mark.
  */
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -77,7 +77,7 @@ const picture = (c: CarPicture, notifications: Notification[]): CustomerPicture 
 });
 
 describe('an unread notification surfaces as state on the car it belongs to', () => {
-  it('A VISIT IN FLIGHT — the doorway opens the visit', () => {
+  it('A VISIT IN FLIGHT - the doorway opens the visit', () => {
     const live = booking({ status: 'in_progress', scheduledDate: '2026-07-30' });
     const c = car({ bookings: [live] });
     const n = noticeOf(picture(c, [notif({ title: 'Quality Check' })]), c, NOW);
@@ -85,7 +85,7 @@ describe('an unread notification surfaces as state on the car it belongs to', ()
     expect(n).toEqual({ id: 'n1', title: 'Quality Check', href: '/history/b1' });
   });
 
-  it('A SEALED VISIT — the doorway opens the RECORD, not the booking', () => {
+  it('A SEALED VISIT - the doorway opens the RECORD, not the booking', () => {
     /* The notification names the booking; the record has an id of its own.
        `/history/b1` would render the no-car invitation. */
     const c = car({ bookings: [booking({ status: 'completed' })], visits: [sealedVisit()] });
@@ -95,7 +95,7 @@ describe('an unread notification surfaces as state on the car it belongs to', ()
     expect(n?.href).not.toBe('/history/b1');
   });
 
-  it('A VISIT STILL TO COME — the doorway opens the booking itself', () => {
+  it('A VISIT STILL TO COME - the doorway opens the booking itself', () => {
     /* It used to open `/studio?manage=b1`, a sheet over the Studio. A booking
        has its own address now (design screen 09), so the doorway opens the
        thing the notification is ABOUT rather than a room with a sheet on it. */
@@ -105,10 +105,10 @@ describe('an unread notification surfaces as state on the car it belongs to', ()
     expect(n?.href).toBe('/booking/b1');
   });
 
-  it('NO OWNING SURFACE, NO MARK — and no destination is invented', () => {
+  it('NO OWNING SURFACE, NO MARK - and no destination is invented', () => {
     /* Ten of the nineteen customer notifications in production are about a
        booking that was completed or cancelled and never sealed into a visit.
-       There is nothing to open, so nothing is offered — and it is emphatically
+       There is nothing to open, so nothing is offered - and it is emphatically
        not sent to Home, which §17.3 forbids by name. */
     const orphan = car({ bookings: [booking({ status: 'completed' })] });
     const p = picture(orphan, [notif()]);
@@ -118,7 +118,7 @@ describe('an unread notification surfaces as state on the car it belongs to', ()
     expect(toVehicle(orphan, p, NOW).notice).toBeUndefined();
   });
 
-  it('a cancelled booking is the same — nothing to open', () => {
+  it('a cancelled booking is the same - nothing to open', () => {
     const c = car({ bookings: [booking({ status: 'cancelled' })] });
     expect(noticeOf(picture(c, [notif({ title: 'Booking not accepted' })]), c, NOW))
       .toBeUndefined();
@@ -135,7 +135,7 @@ describe('an unread notification surfaces as state on the car it belongs to', ()
     expect(noticeOf(picture(c, [elsewhere]), c, NOW)).toBeUndefined();
   });
 
-  it('the NEWEST unread one wins — there is only ever one mark', () => {
+  it('the NEWEST unread one wins - there is only ever one mark', () => {
     const c = car({ bookings: [booking({ status: 'completed' })], visits: [sealedVisit()] });
     /* The loaders hand these over newest first. */
     const p = picture(c, [
@@ -171,7 +171,7 @@ describe('what the customer actually sees', () => {
     expect(html).toContain('/history/vis-1');
   });
 
-  it('THE BODY IS NEVER RENDERED — a mark is not a message', () => {
+  it('THE BODY IS NEVER RENDERED - a mark is not a message', () => {
     const { c, p } = withNotice();
     const html = renderToStaticMarkup(
       <VehicleScreen model={toVehicle(c, p, NOW)} rendering={rendering} />,
@@ -179,7 +179,7 @@ describe('what the customer actually sees', () => {
     expect(html).not.toContain('Come collect it at AutoModz');
   });
 
-  it('ONE MARK, NEVER A FEED — §17.1', () => {
+  it('ONE MARK, NEVER A FEED - §17.1', () => {
     const c = car({ bookings: [booking({ status: 'completed' })], visits: [sealedVisit()] });
     const p = picture(c, [
       notif({ id: 'a', title: 'Ready for Pickup' }),
@@ -205,7 +205,7 @@ describe('what the customer actually sees', () => {
     expect(html).not.toContain('Ready for Pickup');
   });
 
-  it('nothing unread, nothing drawn — §18.1', () => {
+  it('nothing unread, nothing drawn - §18.1', () => {
     const c = car({ bookings: [booking({ status: 'completed' })], visits: [sealedVisit()] });
     const p = picture(c, []);
     expect(toGarage(p, NOW).vehicles[0].news).toBe(false);

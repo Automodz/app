@@ -52,7 +52,7 @@ describe('no customer screen touches Firebase or the store', () => {
 
   it('YouRoom imports firebase LAZILY, so it is never in a first load', () => {
     const src = read('components/screens/YouRoom.tsx');
-    /* No STATIC import — that is what would put it in the first load. */
+    /* No STATIC import - that is what would put it in the first load. */
     expect(src).not.toMatch(/^import .*from 'firebase\//m);
     expect(src).not.toMatch(/^import .*from '@\/lib\/firebase'/m);
     /* And a dynamic one, so it arrives only when the customer signs out. */
@@ -78,7 +78,7 @@ describe('the root layout carries no browser session', () => {
 });
 
 describe('Button', () => {
-  /* Assertions are made against the IMPORTS and CALLS, never the prose — the
+  /* Assertions are made against the IMPORTS and CALLS, never the prose - the
      file explains why these were removed, so a text search for the name matches
      the explanation and passes vacuously. */
   const src = read('components/system/Button.tsx');

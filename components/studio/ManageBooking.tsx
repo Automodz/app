@@ -1,6 +1,6 @@
 'use client';
 /**
- * MANAGE BOOKING — design screen 10.
+ * MANAGE BOOKING - design screen 10.
  *
  * Source: docs/DESIGN-PARITY-AUDIT.md screen 10
  *
@@ -13,13 +13,13 @@
  *     navigation of its own, and the design draws screen 10 as a full screen
  *     with a title and a way back.
  *   · The sheet decided `changeable` for itself and offered "Move it" whenever
- *     the status looked right — with no notion of the 24-hour rule, no notion
+ *     the status looked right - with no notion of the 24-hour rule, no notion
  *     of whether the destination was free, and a `rescheduleBooking` behind it
  *     that wrote the new date straight to Firestore from the browser.
  *
  * The rule now lives in `lib/os/lifecycle` and is enforced by the Booking
  * Service. This screen ASKS the projection what may be done and renders the
- * answer, including the reason when the answer is no (§10.5 — a control that
+ * answer, including the reason when the answer is no (§10.5 - a control that
  * cannot explain itself is worse than no control).
  *
  * ── THE OPENINGS ARE REAL ────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export interface ManageOpening {
   date: string;
   /** HH:MM */
   time: string;
-  /** "Thu 12 Feb" — worded by the projection, never here. */
+  /** "Thu 12 Feb" - worded by the projection, never here. */
   label: string;
 }
 
@@ -138,13 +138,13 @@ export function ManageBooking({ model }: { model: ManageBookingModel }) {
           fails is worse than one that says why it cannot act. */}
       <OfflineNote />
       {/* MOVED UP FROM THE FOOT OF THE PAGE. It was a `quiet` Action after
-          everything else, which is a footer link and not an escape route — a
+          everything else, which is a footer link and not an escape route - a
           way out you reach by scrolling past the whole screen is one the
           customer has already given up looking for. One idiom, at the top,
           in every room. */}
       {/* One header: the way back, the eyebrow and the Display, at one
           scale. These five drew the same three elements by hand and disagreed
-          on the size — 28, 29 and 30 — which nobody chose. */}
+          on the size - 28, 29 and 30 - which nobody chose. */}
       <RoomHeader
         parent={{ href: model.backHref, name: 'Your booking' }}
         eyebrow={model.standing}

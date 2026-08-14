@@ -13,7 +13,7 @@ It is deliberately opinionated. A design system that permits everything decides 
 
 **AutoModz OS is the digital home for a car.**
 
-AutoModz is one studio, on one road, in Maninagar. It sees a car perhaps four to eight times a year. Everything between those visits is silence — and that silence is where almost every business like this loses the relationship.
+AutoModz is one studio, on one road, in Maninagar. It sees a car perhaps four to eight times a year. Everything between those visits is silence - and that silence is where almost every business like this loses the relationship.
 
 Most software built for this trade is a booking form with a logo on it. It is opened when the customer wants something and closed the moment they get it. It has no reason to exist on a Tuesday in November.
 
@@ -25,7 +25,7 @@ The test of every decision in this document:
 
 If the answer is no, the feature is decoration.
 
-**What this is not.** Not a marketplace. Not a social network for cars. Not a loyalty scheme wearing a design system. Not a CRM turned outward — the studio's operational reality is the studio's business, and exposing it to a customer is a failure of nerve, not transparency.
+**What this is not.** Not a marketplace. Not a social network for cars. Not a loyalty scheme wearing a design system. Not a CRM turned outward - the studio's operational reality is the studio's business, and exposing it to a customer is a failure of nerve, not transparency.
 
 ---
 
@@ -33,11 +33,11 @@ If the answer is no, the feature is decoration.
 
 ### 2.1 The car is the subject
 
-Every screen is a view of a vehicle or of the relationship that surrounds one. Nothing is organised by transaction, order, invoice or booking. Those are the studio's filing system, not the customer's mental model. Nobody thinks *"my booking"* — they think *"my car."*
+Every screen is a view of a vehicle or of the relationship that surrounds one. Nothing is organised by transaction, order, invoice or booking. Those are the studio's filing system, not the customer's mental model. Nobody thinks *"my booking"* - they think *"my car."*
 
 ### 2.2 AutoModz is the craftsman
 
-Work is spoken in the studio's voice. **No individual is ever named on any customer surface** — not a technician, not a manager, not the owner. The customer's confidence must attach to the place, because people change shifts and leave, and a promise attached to a person leaves with them.
+Work is spoken in the studio's voice. **No individual is ever named on any customer surface** - not a technician, not a manager, not the owner. The customer's confidence must attach to the place, because people change shifts and leave, and a promise attached to a person leaves with them.
 
 | Never | Always |
 |---|---|
@@ -45,7 +45,7 @@ Work is spoken in the studio's voice. **No individual is ever named on any custo
 | *Applied by Karan* | *Applied at AutoModz* |
 | *Amit activated your warranty* | *Your protection is now active* |
 
-The studio's own notes survive without a byline. *"Two-stage correction before the coat"* is exactly right. *"Two-stage correction before the coat — Ravi"* is not.
+The studio's own notes survive without a byline. *"Two-stage correction before the coat"* is exactly right. *"Two-stage correction before the coat - Ravi"* is not.
 
 ### 2.3 States, never documents
 
@@ -69,7 +69,7 @@ No placeholder cars. No sample photographs. No invented progress. No "0" where t
 
 The largest element on any vehicle surface is a photograph of that vehicle, taken by the studio. Not an illustration, not a stock render, not a manufacturer press shot. The emotional argument for premium detailing is visual and it cannot be made in type.
 
-Where no photograph exists yet, the absence is *designed* — a composition that reads as *awaiting*, never as broken.
+Where no photograph exists yet, the absence is *designed* - a composition that reads as *awaiting*, never as broken.
 
 ### 3.2 One subject per screen
 
@@ -89,7 +89,7 @@ Every element removed makes the rest louder. When a screen feels weak, the insti
 
 ### 3.6 Materials, not boxes
 
-Surfaces have weight and translucency. A sheet feels like glass laid over the room beneath it. But **glass never sits on glass** — a translucent surface inside another translucent surface reads as a rendering mistake, because it is one.
+Surfaces have weight and translucency. A sheet feels like glass laid over the room beneath it. But **glass never sits on glass** - a translucent surface inside another translucent surface reads as a rendering mistake, because it is one.
 
 ---
 
@@ -156,7 +156,7 @@ Everything belongs to one of three concepts. The rooms are the ergonomics of rea
 | **Vehicle** | one car | hero, current state, protection, latest work, media, entry to its history | anything about another car |
 | **Studio** | AutoModz the place | what the studio is and can do, credentials, services, hours, location, arranging a visit | a staff roster, any named individual |
 | **Membership** | the club | what it includes, what remains, what it is worth, how to join or leave | other people's cars |
-| **History** | what happened | every completed visit as a transformation, chronological, each opening to its full account | live visits — those are the car's current state |
+| **History** | what happened | every completed visit as a transformation, chronological, each opening to its full account | live visits - those are the car's current state |
 | **Profile** | the person | name, contact, how they are reached, devices, sign-out | anything about the car |
 
 ### 5.3 The hierarchy of a vehicle
@@ -194,7 +194,7 @@ While a car is with the studio, that fact is the vehicle's **current state**, an
 | Any raw file as a primary surface | states, never documents |
 | Queue positions, bay numbers, capacity | the studio's problem to solve, not to share |
 
-**Kept:** the registration number. It is the customer's own plate — identity, not jargon.
+**Kept:** the registration number. It is the customer's own plate - identity, not jargon.
 
 ---
 
@@ -210,7 +210,7 @@ The primary navigation is always present, always in the same place, and always s
 
 ### 6.3 One primary action
 
-Arranging a visit is the single most frequent deliberate act. It earns a permanent, distinct control — not a slot among equals. Everything else is reached by going somewhere.
+Arranging a visit is the single most frequent deliberate act. It earns a permanent, distinct control - not a slot among equals. Everything else is reached by going somewhere.
 
 ### 6.4 Every surface is addressable
 
@@ -222,7 +222,7 @@ Back returns to where the customer actually came from, not to a designer's idea 
 
 ### 6.6 The studio remembers the room
 
-A cold launch returns the customer to the car they were last looking at. An explicit link always wins over that memory — a link is an instruction, not a preference.
+A cold launch returns the customer to the car they were last looking at. An explicit link always wins over that memory - a link is an instruction, not a preference.
 
 ---
 
@@ -238,8 +238,8 @@ If every animation were disabled, every screen must render completely and correc
 
 | Curve | For | Feels like |
 |---|---|---|
-| **Spring** | anything a finger drives — drags, sheets, dismissals | the object has weight and follows the hand |
-| **Ease** | anything the system initiates — entrances, transitions, reveals | considered, deliberate, unhurried |
+| **Spring** | anything a finger drives - drags, sheets, dismissals | the object has weight and follows the hand |
+| **Ease** | anything the system initiates - entrances, transitions, reveals | considered, deliberate, unhurried |
 
 Finger-driven motion on an ease curve feels dead. System motion on a spring feels cheap.
 
@@ -247,7 +247,7 @@ Finger-driven motion on an ease curve feels dead. System motion on a spring feel
 
 | Name | Duration | Used for |
 |---|---|---|
-| Tick | ~120ms | acknowledgement — a press, a toggle |
+| Tick | ~120ms | acknowledgement - a press, a toggle |
 | Move | ~280ms | an element changing place or state |
 | Scene | ~480ms | a room becoming another room |
 | Morph | ~620ms | a photograph carrying between two surfaces |
@@ -263,11 +263,11 @@ A vehicle photograph is the one element permitted ambient motion, and only these
 - a slight response to device tilt
 - an occasional slow light sweep across the surface
 
-Nothing else animates on its own. **No looping, pulsing or breathing anywhere else** — with two exceptions: an indicator that a visit is *currently live*, and a loading state. Both are genuine state, not decoration.
+Nothing else animates on its own. **No looping, pulsing or breathing anywhere else** - with two exceptions: an indicator that a visit is *currently live*, and a loading state. Both are genuine state, not decoration.
 
 ### 7.5 Transitions carry the subject
 
-When a photograph appears on two consecutive surfaces, it moves between them. It does not fade out and fade in — the car did not disappear.
+When a photograph appears on two consecutive surfaces, it moves between them. It does not fade out and fade in - the car did not disappear.
 
 ### 7.6 Reduced motion
 
@@ -283,7 +283,7 @@ The customer application is a single column at every width. Additional width inc
 
 ### 8.2 The measure
 
-Reading content is capped at a comfortable line length regardless of screen width. Photographs and immersive surfaces are exempt — they go full-bleed.
+Reading content is capped at a comfortable line length regardless of screen width. Photographs and immersive surfaces are exempt - they go full-bleed.
 
 ### 8.3 Rhythm
 
@@ -296,7 +296,7 @@ Vertical space comes from a fixed scale, never from judgement:
 | Line | between lines of related text |
 | Gap | between elements in a group |
 | Rest | between groups |
-| Movement | between sections — where the eye is meant to pause |
+| Movement | between sections - where the eye is meant to pause |
 
 ### 8.4 Full-bleed versus inset
 
@@ -308,7 +308,7 @@ Vertical space comes from a fixed scale, never from judgement:
 
 ### 8.5 The stacking contract
 
-Fixed elements — navigation, banners, sheets — declare their height as a token. Scrolling content pads its bottom by the sum of those tokens, so **nothing is ever hidden behind anything.** No screen may position a fixed element by measuring another.
+Fixed elements - navigation, banners, sheets - declare their height as a token. Scrolling content pads its bottom by the sum of those tokens, so **nothing is ever hidden behind anything.** No screen may position a fixed element by measuring another.
 
 ### 8.6 Full-screen versus card
 
@@ -322,7 +322,7 @@ It deserves **neither** when it is a single fact. A fact is a line of text.
 
 ## 9 · Design Tokens
 
-Tokens are the vocabulary. **A value that is not a token is a defect.** If a design needs a value that does not exist, the correct action is to add it deliberately — not to inline it.
+Tokens are the vocabulary. **A value that is not a token is a defect.** If a design needs a value that does not exist, the correct action is to add it deliberately - not to inline it.
 
 ### 9.1 Ink and paper
 
@@ -331,11 +331,11 @@ The customer application is dark. A car photographed against black reads as a ca
 | Token family | Meaning |
 |---|---|
 | Paper | the ground everything sits on |
-| Surface | a raised material — panels, cards, sheets |
+| Surface | a raised material - panels, cards, sheets |
 | Edge | the hairline that separates a material from its ground |
-| Ink | primary text — the thing being said |
-| Ink-2 | secondary text — supporting, still fully legible |
-| Ink-3 | tertiary — labels and whispers only, **never body text** |
+| Ink | primary text - the thing being said |
+| Ink-2 | secondary text - supporting, still fully legible |
+| Ink-3 | tertiary - labels and whispers only, **never body text** |
 | Over | text on top of a photograph |
 
 **Rule:** Ink-3 exists for small structural labels. The moment it carries a sentence a customer must read, it is the wrong token.
@@ -385,10 +385,10 @@ Five roles. Everything is one of them.
 
 | Role | Purpose |
 |---|---|
-| **Display** | the one statement per screen — the state of the car, the name of a thing |
+| **Display** | the one statement per screen - the state of the car, the name of a thing |
 | **Title** | a section |
 | **Body** | what is being said |
-| **Data** | numbers, plates, dates, times — monospaced, so they align and read as facts |
+| **Data** | numbers, plates, dates, times - monospaced, so they align and read as facts |
 | **Whisper** | labels, captions, the quietest legible line |
 
 **One Display per screen.** If a screen has two, it has two subjects, which means it has none.
@@ -403,7 +403,7 @@ Fewer components, each doing more, beats many components each doing one thing. E
 
 ### 10.2 One surface material
 
-There is one raised surface in the product. Not a card *and* a panel *and* a tile *and* a well — one. Variation comes from what is inside it, not from a new container.
+There is one raised surface in the product. Not a card *and* a panel *and* a tile *and* a well - one. Variation comes from what is inside it, not from a new container.
 
 ### 10.3 Composition over configuration
 
@@ -439,22 +439,22 @@ Every vehicle surface opens with a full-bleed photograph of that car. It is:
 
 - taken by the studio, at the first visit
 - the largest element on the screen
-- alive — it settles, parallaxes, responds to tilt, catches light
+- alive - it settles, parallaxes, responds to tilt, catches light
 - tappable, opening full-screen for close inspection
 
 ### 11.3 The renderer is replaceable
 
 The photograph is *how a vehicle is presented today*, not *what a vehicle presentation is*. The surface asks for "the hero for this vehicle" and receives one. A future in which that becomes photogrammetry, a model, or something worn on the face must not require redesigning the product around it.
 
-**This is the single most important architectural line in the customer application.** A 3D car built because it is possible, rather than because it is better, is worse than a great photograph — and a great photograph is achievable today, on a phone, by the studio.
+**This is the single most important architectural line in the customer application.** A 3D car built because it is possible, rather than because it is better, is worse than a great photograph - and a great photograph is achievable today, on a phone, by the studio.
 
 ### 11.4 The car answers questions about itself
 
-Regions of the photograph correspond to what protects them — the paint, the glass, the wheels, the interior. Touching a region reveals the state of that region. This is discovered, never explained: no coach marks, no tutorial, no pulsing dots demanding a tap.
+Regions of the photograph correspond to what protects them - the paint, the glass, the wheels, the interior. Touching a region reveals the state of that region. This is discovered, never explained: no coach marks, no tutorial, no pulsing dots demanding a tap.
 
 ### 11.5 The car with no photograph
 
-A new customer has no professional photograph. This state must be composed, not defaulted. It reads as *awaiting the first visit* — deliberate, quiet, complete in itself. It is never a grey box, never a placeholder silhouette, never a large empty field with a small plate floating in it.
+A new customer has no professional photograph. This state must be composed, not defaulted. It reads as *awaiting the first visit* - deliberate, quiet, complete in itself. It is never a grey box, never a placeholder silhouette, never a large empty field with a small plate floating in it.
 
 ---
 
@@ -466,11 +466,11 @@ The collection. Every car the customer owns, each present as a photograph with i
 
 ### 12.2 One car is not a collection
 
-With a single vehicle, the Garage does not exist as a meaningful place — the customer goes straight to their car. A "collection" of one is a screen that wastes a tap to tell you what you already knew.
+With a single vehicle, the Garage does not exist as a meaningful place - the customer goes straight to their car. A "collection" of one is a screen that wastes a tap to tell you what you already knew.
 
 ### 12.3 With several
 
-Cars are equals. No car is "primary" — that is the studio's convenience, not the owner's feeling about their vehicles. Each shows its photograph, its name, its plate, and one line of state. Moving between them is direct and physical.
+Cars are equals. No car is "primary" - that is the studio's convenience, not the owner's feeling about their vehicles. Each shows its photograph, its name, its plate, and one line of state. Moving between them is direct and physical.
 
 ### 12.4 The first car
 
@@ -486,7 +486,7 @@ The live account of a car currently with AutoModz. It is the most emotionally lo
 
 ### 13.2 It takes the whole screen
 
-A live visit is a full-screen takeover. Navigation steps aside. This is not a card in a feed — it is the only thing happening.
+A live visit is a full-screen takeover. Navigation steps aside. This is not a card in a feed - it is the only thing happening.
 
 ### 13.3 What it must answer
 
@@ -500,13 +500,13 @@ In order of urgency:
 
 ### 13.4 The timing promise
 
-An estimated finish is a promise. It must respect the studio's working hours — a visit that cannot finish today finishes tomorrow morning, and says so. **A time outside opening hours is not an estimate; it is a bug that damages trust.**
+An estimated finish is a promise. It must respect the studio's working hours - a visit that cannot finish today finishes tomorrow morning, and says so. **A time outside opening hours is not an estimate; it is a bug that damages trust.**
 
 Where an estimate is not yet knowable, say that. *"We'll know once we've looked at it"* is trustworthy. A confident wrong number is not.
 
 ### 13.5 Stages
 
-Work is described in the customer's language, never the studio's operational statuses. The stages differ by service — a wash has no paint correction — and each carries what was seen and done.
+Work is described in the customer's language, never the studio's operational statuses. The stages differ by service - a wash has no paint correction - and each carries what was seen and done.
 
 A stage that can never be reached must not be shown. A permanently unlit step teaches the customer the interface is decorative.
 
@@ -520,19 +520,19 @@ When the work finishes, the visit becomes collectable: what it costs, whether it
 
 ### 14.1 The idea
 
-**What protects a car is physical, financial and legal at once.** Paint protection film, a ceramic coating, an insurance policy, a pollution certificate, a registration document, a toll balance, a manufacturer warranty — all of them are things that are currently fine or currently not.
+**What protects a car is physical, financial and legal at once.** Paint protection film, a ceramic coating, an insurance policy, a pollution certificate, a registration document, a toll balance, a manufacturer warranty - all of them are things that are currently fine or currently not.
 
-Showing them as a single family of living states is what makes this application worth opening in a month when nothing is booked. It also turns compliance — the most tedious part of owning a car — into something that reads as care.
+Showing them as a single family of living states is what makes this application worth opening in a month when nothing is booked. It also turns compliance - the most tedious part of owning a car - into something that reads as care.
 
 ### 14.2 The card
 
 Every protection is the same card, whatever its kind:
 
-- **What it is** — in the customer's words
-- **Its health** — fine, needs attention soon, needs attention now, or lapsed
-- **Its term** — expressed in the unit that makes sense for it
-- **Who provides it** — the studio, an insurer, an authority
-- **Its file** — one tap away, never on the surface
+- **What it is** - in the customer's words
+- **Its health** - fine, needs attention soon, needs attention now, or lapsed
+- **Its term** - expressed in the unit that makes sense for it
+- **Who provides it** - the studio, an insurer, an authority
+- **Its file** - one tap away, never on the surface
 
 ### 14.3 Terms come in three shapes
 
@@ -542,7 +542,7 @@ Every protection is the same card, whatever its kind:
 | **Perpetual** | for as long as you own it | lifetime film |
 | **Balance** | an amount remaining | a toll tag |
 
-**A balance must never be described in time.** A toll tag is not "expiring soon" — it is running low. Speaking a balance in days is the kind of small wrongness that tells a customer nobody thought about their situation.
+**A balance must never be described in time.** A toll tag is not "expiring soon" - it is running low. Speaking a balance in days is the kind of small wrongness that tells a customer nobody thought about their situation.
 
 ### 14.4 Precision is a promise
 
@@ -550,7 +550,7 @@ Say *"expires 20 April 2029."* Do not say *"expires in 1,043 days."* A countdown
 
 ### 14.5 Two sources, one appearance
 
-Some protections the studio sold and therefore knows exactly. Others the owner declares — their insurance, their certificate, their toll tag. **They look identical on the surface**, because to the owner they are the same kind of thing: something protecting their car.
+Some protections the studio sold and therefore knows exactly. Others the owner declares - their insurance, their certificate, their toll tag. **They look identical on the surface**, because to the owner they are the same kind of thing: something protecting their car.
 
 Internally they are not the same, and the difference matters: what the studio sold is a promise it must honour, and the terms of that promise are fixed at the moment of sale. **Changing a price list must never change what a past customer was promised.**
 
@@ -573,15 +573,15 @@ A membership is a protection. It has a health, a term, and a balance of what rem
 ### 15.3 What the customer must always know
 
 1. **That they have one**, and which tier
-2. **What remains** — washes left this cycle
+2. **What remains** - washes left this cycle
 3. **When it renews or lapses**
-4. **What it has been worth** — the honest, cumulative saving
+4. **What it has been worth** - the honest, cumulative saving
 
 The fourth is the one most products omit and the one that decides renewal. A member who cannot see what membership saved them is deciding on vibes.
 
 ### 15.4 Benefits are never stacked
 
-A member's included wash and a promotional discount are two ways of paying less for the same thing. The customer gets **the better of the two, never both.** This is stated plainly where the price is shown — silently choosing one and hiding the other is how a customer discovers, later, that they were quietly overcharged.
+A member's included wash and a promotional discount are two ways of paying less for the same thing. The customer gets **the better of the two, never both.** This is stated plainly where the price is shown - silently choosing one and hiding the other is how a customer discovers, later, that they were quietly overcharged.
 
 ### 15.5 Never punish the app
 
@@ -609,17 +609,17 @@ Opening an entry gives the full reading:
 
 - the car as it was finished
 - what was done, in plain language
-- the photographs — before, during, after
+- the photographs - before, during, after
 - what it promised, and for how long
 - what it cost and how it was settled
 
 ### 16.4 It is shareable
 
-A completed visit is the most persuasive artefact this business produces. It must be shareable as a link that shows the work and the evidence — and **never the money, the phone number, or anything internal.** A shared account is a beautiful thing sent to a friend, not a receipt forwarded by accident.
+A completed visit is the most persuasive artefact this business produces. It must be shareable as a link that shows the work and the evidence - and **never the money, the phone number, or anything internal.** A shared account is a beautiful thing sent to a friend, not a receipt forwarded by accident.
 
 ### 16.5 Media accumulates
 
-Every photograph and clip ever taken of a car belongs to that car for as long as it is owned — not to the job that produced it. Studio captures and owner uploads sit together, chronologically. Any photograph can answer *"what visit was this?"*
+Every photograph and clip ever taken of a car belongs to that car for as long as it is owned - not to the job that produced it. Studio captures and owner uploads sit together, chronologically. Any photograph can answer *"what visit was this?"*
 
 ---
 
@@ -644,7 +644,7 @@ Reaching a customer who is not currently looking requires push, and push permiss
 
 ### 17.3 Every notification lands somewhere
 
-A notification is a doorway. It opens the exact surface it is about — never the home screen, never a generic list.
+A notification is a doorway. It opens the exact surface it is about - never the home screen, never a generic list.
 
 ### 17.4 Frequency is a budget
 
@@ -658,9 +658,9 @@ Every message spends trust. The right number of messages per month is closer to 
 
 There are exactly two correct treatments for nothing:
 
-**Silence** — the section does not appear. A car with no completed visits has no History section. Not an empty one. None.
+**Silence** - the section does not appear. A car with no completed visits has no History section. Not an empty one. None.
 
-**Invitation** — when the emptiness is something the customer can resolve, one quiet line and one action.
+**Invitation** - when the emptiness is something the customer can resolve, one quiet line and one action.
 
 ### 18.2 Never an empty-state card
 
@@ -674,9 +674,9 @@ A bordered box containing the word "Empty," a shrugging illustration, or a dashe
 
 | Situation | Treatment |
 |---|---|
-| No cars | Invitation — the whole screen, warm, one action |
-| No photograph yet | Composed *awaiting* state — never a grey box |
-| No protection declared | Invitation — one line, one action |
+| No cars | Invitation - the whole screen, warm, one action |
+| No photograph yet | Composed *awaiting* state - never a grey box |
+| No protection declared | Invitation - one line, one action |
 | No completed visits | Silence |
 | No media | One quiet line explaining when photographs will appear |
 | No results in a search | The studio's voice, plus a way to ask a human |
@@ -691,7 +691,7 @@ The customer must always be able to tell **loading** from **empty** from **faile
 
 ### 19.2 The breath
 
-While the application establishes itself, it shows a calm, branded moment — quiet, unhurried, confident. Not a spinner. A spinner says *waiting*; a considered moment says *preparing*.
+While the application establishes itself, it shows a calm, branded moment - quiet, unhurried, confident. Not a spinner. A spinner says *waiting*; a considered moment says *preparing*.
 
 ### 19.3 One spinner, one place
 
@@ -711,12 +711,12 @@ A refresh that fails must keep showing what was already on screen, with an hones
 
 ### 20.1 Speak like the studio
 
-Errors are written in the same voice as everything else. Never a code, never a stack trace, never *"something went wrong"* — which tells the customer nothing and sounds like a shrug.
+Errors are written in the same voice as everything else. Never a code, never a stack trace, never *"something went wrong"* - which tells the customer nothing and sounds like a shrug.
 
 | Instead of | Say |
 |---|---|
-| Error 409: slot conflict | That time just went — pick another and we'll hold it |
-| Network request failed | That didn't reach us — try again |
+| Error 409: slot conflict | That time just went - pick another and we'll hold it |
+| Network request failed | That didn't reach us - try again |
 | Invalid vehicle | We couldn't find that car in your garage |
 | Unauthorized | Sign in again and we'll pick this up where you left it |
 
@@ -734,7 +734,7 @@ When something fails while a car is in the studio's care, say explicitly that th
 
 ### 20.5 A crash is contained
 
-A fault in one part of the product never drops the customer onto a browser error page. It is caught, spoken in the studio's voice, and offers a way back to the car — while telling the studio, silently, that it happened.
+A fault in one part of the product never drops the customer onto a browser error page. It is caught, spoken in the studio's voice, and offers a way back to the car - while telling the studio, silently, that it happened.
 
 ---
 
@@ -744,11 +744,11 @@ Accessibility is not a compliance exercise appended at the end. It is a descript
 
 ### 21.1 Contrast
 
-All text meets WCAG AA against its actual background — including text over photographs, which must carry a scrim sufficient for the worst image, not the best one. Tertiary ink is never used for anything a customer must read.
+All text meets WCAG AA against its actual background - including text over photographs, which must carry a scrim sufficient for the worst image, not the best one. Tertiary ink is never used for anything a customer must read.
 
 ### 21.2 Zoom is not ours to take
 
-Pinch-zoom is never disabled. If a focused input causes an unwanted zoom, the input is too small — that is the bug, and the fix is a larger input, not a disabled gesture.
+Pinch-zoom is never disabled. If a focused input causes an unwanted zoom, the input is too small - that is the bug, and the fix is a larger input, not a disabled gesture.
 
 ### 21.3 Targets
 
@@ -764,15 +764,15 @@ Every interactive element has a visible focus state. The whole product is operab
 
 ### 21.6 Semantics
 
-One top-level heading per screen — the Display. Headings descend without skipping. Landmarks are real. Images that carry meaning have descriptions; decorative images are marked decorative and left silent.
+One top-level heading per screen - the Display. Headings descend without skipping. Landmarks are real. Images that carry meaning have descriptions; decorative images are marked decorative and left silent.
 
 ### 21.7 Announce what changes
 
-When something updates without the customer acting — a visit stage advancing, a car becoming ready — it is announced politely to assistive technology. Silent changes are invisible changes.
+When something updates without the customer acting - a visit stage advancing, a car becoming ready - it is announced politely to assistive technology. Silent changes are invisible changes.
 
 ### 21.8 Never say the internal word
 
-A description read aloud must speak the customer's language. If a label would sound like a database column, it is wrong for everyone — it is simply only *audible* to some.
+A description read aloud must speak the customer's language. If a label would sound like a database column, it is wrong for everyone - it is simply only *audible* to some.
 
 ---
 
@@ -782,7 +782,7 @@ These bind implementation. They are not style preferences.
 
 ### 22.1 The server decides money
 
-Prices, discounts, benefits and totals are computed by the server, from the server's own data. The client expresses **intent** — which car, which service, when. Values sent by a client are not validated; they are **ignored**. There is no field a caller can set that changes what they pay.
+Prices, discounts, benefits and totals are computed by the server, from the server's own data. The client expresses **intent** - which car, which service, when. Values sent by a client are not validated; they are **ignored**. There is no field a caller can set that changes what they pay.
 
 ### 22.2 One implementation of anything
 
@@ -806,7 +806,7 @@ An action that touches several records either completes entirely or does not hap
 
 ### 22.7 Intent is idempotent
 
-Submitting the same intent twice yields one result. A double-tap, a retry, a reload mid-request — all resolve to the same single outcome.
+Submitting the same intent twice yields one result. A double-tap, a retry, a reload mid-request - all resolve to the same single outcome.
 
 ### 22.8 Never expose the studio's plumbing
 
@@ -841,7 +841,7 @@ A surface may ship only when every answer is yes.
 **Behaviour**
 13. Is loading distinguishable from empty, and both from failed?
 14. Does every action produce a visible consequence?
-15. Does absence render as silence or invitation — never as an empty card?
+15. Does absence render as silence or invitation - never as an empty card?
 16. Is every control's destination real?
 
 **Truth**
@@ -851,4 +851,4 @@ A surface may ship only when every answer is yes.
 
 ---
 
-*If a future decision contradicts this document, change this document first — deliberately, with the reason recorded. A constitution that is quietly ignored is worse than none, because it makes everyone believe the product has rules.*
+*If a future decision contradicts this document, change this document first - deliberately, with the reason recorded. A constitution that is quietly ignored is worse than none, because it makes everyone believe the product has rules.*

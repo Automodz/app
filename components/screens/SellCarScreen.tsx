@@ -1,6 +1,6 @@
 /**
- * A SERVER COMPONENT. It holds no state, no handlers and no motion — it is
- * handed a model and draws it — so marking it `'use client'` shipped its
+ * A SERVER COMPONENT. It holds no state, no handlers and no motion - it is
+ * handed a model and draws it - so marking it `'use client'` shipped its
  * markup to the browser twice and hydrated it for nothing. The interactive
  * pieces it renders carry their own directive.
  */
@@ -15,7 +15,7 @@
  * offers already made are the first thing on this screen for that reason.
  *
  * The garage is offered as a shortcut because the customer's own cars are
- * already known — asking someone to type the make and model of a car the
+ * already known - asking someone to type the make and model of a car the
  * product can already name is asking them to prove they own it twice.
  */
 import { space, INSET, MEASURE, color, HAIRLINE } from '@/design';
@@ -42,7 +42,7 @@ export function SellCarScreen({ model }: { model: SellModel }) {
     }}>
       <OfflineNote caption="You’re offline. Your car won’t send until you’re back." />
 
-      {/* Public, so no dock — this was the second room with no exit of any
+      {/* Public, so no dock - this was the second room with no exit of any
           kind. The `quiet` Button it used to be is the caption-shaped
           affordance the marketplace had; one idiom now. */}
       <Back parent={{ href: model.carsHref, name: 'Cars for sale' }} />
@@ -52,10 +52,10 @@ export function SellCarScreen({ model }: { model: SellModel }) {
       </Heading>
       <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
         Tell us what you have and roughly what you want for it. We will look at
-        it and come back to you — no obligation either way.
+        it and come back to you - no obligation either way.
       </Text>
 
-      {/* §19 — what has already been offered, and where it stands. Absent
+      {/* §19 - what has already been offered, and where it stands. Absent
           entirely for a first-time seller rather than shown as an empty list. */}
       {model.offers.length > 0 ? (
         <section style={{ marginTop: space.rest }}>

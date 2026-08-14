@@ -3,20 +3,20 @@
  *
  * The SDK restores the persisted session from IndexedDB asynchronously, so
  * `currentUser` is null for the first moments of every page load. Reading it
- * straight after an import does not return "signed out" — it returns "not
+ * straight after an import does not return "signed out" - it returns "not
  * yet", and the two are indistinguishable at the call site.
  *
  * On the admin and kiosk trees that was survivable: `ClientSession` mounts
  * `AuthProvider`, whose `onAuthStateChanged` subscription drives the restore
  * and holds the answer before anything is clickable. THE CUSTOMER ROOMS MOUNT
- * NONE OF IT — they render on the server and ship no provider — so nothing
+ * NONE OF IT - they render on the server and ship no provider - so nothing
  * ever subscribes and the race is live at every press.
  *
  * It produced three separate incidents that were each diagnosed as their own
  * bug before the cause was seen:
  *
  *   · finishing the first arrival threw `signed-out`, told the customer "that
- *     didn't save", and never wrote `welcomedAt` — so the welcome greeted them
+ *     didn't save", and never wrote `welcomedAt` - so the welcome greeted them
  *     again on every sign-in, for ever. This is the one the owner reported.
  *   · a booking went out with no Authorization header and came back 401.
  *   · the availability lookup behind it did the same, silently, so the sheet
@@ -43,7 +43,7 @@ describe('nothing in the browser reads currentUser without waiting', () => {
        known so the common case costs nothing. */
     expect(src).toMatch(/onAuthStateChanged/);
     expect(src).toMatch(/if \(auth\.currentUser\) return auth\.currentUser;/);
-    /* Unsubscribed on the first answer — a question, not a feed. */
+    /* Unsubscribed on the first answer - a question, not a feed. */
     expect(src).toMatch(/stop\(\);\s*resolve\(/);
   });
 
@@ -57,14 +57,14 @@ describe('nothing in the browser reads currentUser without waiting', () => {
   /**
    * The sweep. `lib/services/auth.ts` is the one permitted reader: it runs on
    * `/auth/login`, which DOES mount `ClientSession`, and it runs immediately
-   * after `signInWithPopup` has resolved — the single moment in the product
+   * after `signInWithPopup` has resolved - the single moment in the product
    * where `currentUser` is guaranteed to be populated.
    */
   it('no client file reaches for currentUser directly', () => {
     const allowed = new Set([
       /* Runs on `/auth/login`, which DOES mount `ClientSession`, and only ever
          straight after `signInWithPopup` resolves or once `AuthProvider` has
-         already put the user in the store — the two moments where the SDK is
+         already put the user in the store - the two moments where the SDK is
          known to have decided. */
       'lib/services/auth.ts',
       'app/auth/login/page.tsx',
@@ -84,7 +84,7 @@ describe('nothing in the browser reads currentUser without waiting', () => {
 
   it('the arrival records itself through the helper', () => {
     /* The reported bug, pinned: the write that ends the welcome must not ask
-       before the SDK knows who is asking — and must not REFUSE when the SDK
+       before the SDK knows who is asking - and must not REFUSE when the SDK
        still does not know. `authedFetch` waits for the token, carries it when
        there is one, and otherwise lets the same-origin session cookie identify
        the customer. That cookie is the very thing that rendered this screen,
@@ -104,7 +104,7 @@ describe('nothing in the browser reads currentUser without waiting', () => {
  * THE FLAG IS ONLY USEFUL IF SOMETHING READS IT.
  *
  * `loadCustomerPicture` built its `User` field by field and `as User` silenced
- * the compiler about every field it did not list — so `welcomedAt` never
+ * the compiler about every field it did not list - so `welcomedAt` never
  * reached the projection. `shouldWelcome` fell through to "has no car", and
  * every customer without a car in their garage was greeted by the first-arrival
  * flow ON EVERY SINGLE SIGN-IN, no matter how many times they finished it. The
@@ -115,7 +115,7 @@ describe('the first arrival happens once', () => {
 
   it('the profile is carried, not re-typed field by field', () => {
     /* The spread is the fix: a field added to `User` arrives here without
-       anybody remembering to add it — which is exactly what went wrong. */
+       anybody remembering to add it - which is exactly what went wrong. */
     expect(picture).toMatch(/const user: User = \{\s*\.\.\.\(profile \?\? \{\}\),/);
   });
 
@@ -130,21 +130,21 @@ describe('the first arrival happens once', () => {
 /**
  * A CONTROL ON A CUSTOMER ROOM MAY NOT DEPEND ON THE CLIENT STORE'S USER.
  *
- * `ClientSession` — and with it `AuthProvider`, the only thing that ever puts
- * a user in the Zustand store — is mounted by `/admin`, `/auth` and `/store`
+ * `ClientSession` - and with it `AuthProvider`, the only thing that ever puts
+ * a user in the Zustand store - is mounted by `/admin`, `/auth` and `/store`
  * alone. Every customer room renders on the server and mounts none of it, so
  * `useAppStore().user` is ALWAYS null there.
  *
  * Code written against it does not fail loudly. It returns at the guard and
  * the press does nothing at all:
  *
- *   · "Add the car" — a car could not be added to the garage, from the garage
- *   · joining the club — the one act that takes a standing payment
+ *   · "Add the car" - a car could not be added to the garage, from the garage
+ *   · joining the club - the one act that takes a standing payment
  *   · "Save" on your details, and every notification switch
  *   · the push toggle
  *   · the referral panel, which loaded no code and stayed empty for ever
  *
- * Five separate features, one cause, none of them reported by a test — each
+ * Five separate features, one cause, none of them reported by a test - each
  * was found only by pressing the button. This is the test that presses them.
  */
 describe('no customer-room control depends on the store user', () => {
@@ -161,8 +161,8 @@ describe('no customer-room control depends on the store user', () => {
       if (!/useAppStore/.test(src)) continue;
       /* The shapes that silently do nothing: an early return, or a uid taken
          straight off the store user without a fallback. */
-      if (/if \(!user[^)]*\)\s*(return|\{)/.test(src)) offenders.push(`${file} — guards on !user`);
-      if (/\buser\.uid\b/.test(src)) offenders.push(`${file} — writes with user.uid`);
+      if (/if \(!user[^)]*\)\s*(return|\{)/.test(src)) offenders.push(`${file} - guards on !user`);
+      if (/\buser\.uid\b/.test(src)) offenders.push(`${file} - writes with user.uid`);
     }
     expect(offenders).toEqual([]);
   });

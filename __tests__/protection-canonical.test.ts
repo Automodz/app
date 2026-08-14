@@ -4,7 +4,7 @@
  * Both invariants were previously carried by convention rather than by code:
  * "one protection per car per kind" by an id format any writer could ignore
  * (and one did), and "when the work happened" by whichever timestamp a screen
- * reached for. Production showed both failing at once — a car with two glass
+ * reached for. Production showed both failing at once - a car with two glass
  * coatings ten months apart, and July work dated 10 August.
  */
 import { oneProtectionPerKind, measurementOf } from '@/lib/os/protection';
@@ -27,7 +27,7 @@ describe('one protection per kind', () => {
     expect(oneProtectionPerKind([SEALED, SEEDED])).toHaveLength(1);
   });
 
-  it('the visit-linked, captured protection wins — the production case', () => {
+  it('the visit-linked, captured protection wins - the production case', () => {
     expect(oneProtectionPerKind([SEALED, SEEDED])[0].id).toBe(SEALED.id);
     expect(oneProtectionPerKind([SEEDED, SEALED])[0].id).toBe(SEALED.id);
   });
@@ -69,7 +69,7 @@ describe('one protection per kind', () => {
 
   it('never merges fields from two documents', () => {
     const [only] = oneProtectionPerKind([SEALED, SEEDED]);
-    /* The winner whole — not its `since` with the other's expiry. */
+    /* The winner whole - not its `since` with the other's expiry. */
     expect(only).toEqual(SEALED);
     expect(only.term).toEqual({ kind: 'dated', expiresOn: '2028-07-16' });
   });
@@ -93,7 +93,7 @@ describe('measured versus estimated', () => {
   it('a protection with `since` and a dated term is measured', () => {
     expect(measurementOf(SEALED)).toBe('measured');
   });
-  it('without `since` it is only estimated — a bucket, not a measurement', () => {
+  it('without `since` it is only estimated - a bucket, not a measurement', () => {
     expect(measurementOf({ since: undefined, term: { kind: 'dated', expiresOn: '2028-01-01' } })).toBe('estimated');
   });
   it('a perpetual term is never a percentage', () => {
@@ -112,7 +112,7 @@ describe('the canonical visit date', () => {
     })).toBe('2026-07-16');
   });
 
-  it('THE PRODUCTION CASE — the seal date never becomes the service date', () => {
+  it('THE PRODUCTION CASE - the seal date never becomes the service date', () => {
     /* Kia: worked on the 16th, sealed by a backfill on 10 August. */
     expect(visitDateOf({
       stages: [{ at: ts('2026-07-16') }],

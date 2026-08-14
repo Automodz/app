@@ -46,7 +46,7 @@ describe('engines are pure (ARCHITECTURE §1)', () => {
   it.each(engines)('%s knows no route', f => {
     const src = codeOf(f);
     /* A route literal is a quoted string starting with a slash. Regex literals
-       and paths inside imports are excluded — neither is a destination. */
+       and paths inside imports are excluded - neither is a destination. */
     const withoutImports = src.replace(/^import[\s\S]*?from\s+['"][^'"]*['"];?$/gm, '');
     expect(withoutImports).not.toMatch(/['"]\/(studio|garage|history|membership|vehicle|you|admin)\b/);
   });

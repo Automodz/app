@@ -30,13 +30,13 @@ export interface ServerSession {
 /**
  * Is there a session cookie at all?
  *
- * This does NOT verify it — an expired or revoked cookie still answers true.
+ * This does NOT verify it - an expired or revoked cookie still answers true.
  * It exists for the one decision that must be made ABOVE the page, in the root
  * layout: whether `/` is the public landing or the customer's Home, and so
  * whether the navigation bar exists at all. Verification still happens inside
  * the page, where a bad cookie lands on the sign-in wall exactly as before.
  *
- * The alternative was calling `currentSession()` twice per request — a second
+ * The alternative was calling `currentSession()` twice per request - a second
  * `verifySessionCookie` round trip to answer a question a cookie read already
  * answers well enough to choose a shell.
  */
@@ -58,7 +58,7 @@ export async function hasSessionCookie(): Promise<boolean> {
  *
  * `verifySessionCookie(raw, true)` is a network round trip to check revocation.
  * A page that needs both the picture AND something ownership-scoped beside it
- * — the manage screen needs the studio's openings — would otherwise pay for
+ * - the manage screen needs the studio's openings - would otherwise pay for
  * that twice for one render. `cache` is an RSC-only export, absent in a unit
  * test, so the wrapper degrades to the plain function rather than making the
  * module unimportable.
@@ -70,7 +70,7 @@ async function _currentSession(): Promise<ServerSession | null> {
   /* THE COOKIE IS READ FIRST, BEFORE ANY OTHER CHECK, AND THAT ORDER IS LOAD
      BEARING. `cookies()` is what tells Next this render depends on the request.
      With the check the other way round, a build without admin credentials
-     returned null before touching it — so Next saw no dynamic API and
+     returned null before touching it - so Next saw no dynamic API and
      PRERENDERED the signed-out screen into static HTML. Every signed-in
      customer would then have been served "your car is behind a sign-in" from
      the CDN, forever. Verified: `.next/server/app/index.html` contained exactly
@@ -82,7 +82,7 @@ async function _currentSession(): Promise<ServerSession | null> {
     const claims = await adminAuth.verifySessionCookie(raw, true);
     return { uid: claims.uid, email: claims.email, name: claims.name as string | undefined };
   } catch {
-    // expired, revoked or forged — all indistinguishable to the customer
+    // expired, revoked or forged - all indistinguishable to the customer
     return null;
   }
 }
@@ -97,7 +97,7 @@ async function _currentSession(): Promise<ServerSession | null> {
    with the SDK loaded is alive, while the cookie stands for fourteen days.
 
    A customer therefore reaches a room that renders perfectly and then finds
-   its one control saying "your session has expired" — which is both true and
+   its one control saying "your session has expired" - which is both true and
    useless, because they ARE signed in. Observed on the scope screen: the room
    drew the coverages and the estimate beside them refused to price.
 
@@ -111,7 +111,7 @@ async function _currentSession(): Promise<ServerSession | null> {
    origin post a form that books, cancels or pays as the customer. So the
    fallback is allowed ONLY for a same-origin request, proven by the browser's
    own `Sec-Fetch-Site` and by `Origin` matching the host. A request that
-   carries neither — a curl, a server-to-server call — is refused the cookie
+   carries neither - a curl, a server-to-server call - is refused the cookie
    path and must bring a token.
    ──────────────────────────────────────────────────────────────────────────── */
 
@@ -131,7 +131,7 @@ export async function callerOf(
     try {
       return (await verifyBearer(header.slice(7))).uid;
     } catch {
-      /* An expired token is not a refusal on its own — the cookie may still
+      /* An expired token is not a refusal on its own - the cookie may still
          stand, and the customer is still signed in. Fall through. */
     }
   }

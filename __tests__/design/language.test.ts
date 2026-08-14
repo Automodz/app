@@ -2,7 +2,7 @@
  * THE DESIGN LANGUAGE'S OWN INVARIANTS.
  *
  * `contrastFloor` and `reducedMotion` were each written with the note "held as
- * data so a test can assert it rather than a reviewer having to remember it" —
+ * data so a test can assert it rather than a reviewer having to remember it" -
  * and until this file existed, nothing did. They were dead exports describing
  * rules nobody checked. This is the check.
  */
@@ -29,7 +29,7 @@ const ratio = (a: number[], b: number[]) => {
 
 const PAPER = hex(color.paper);
 
-describe('§21.1 — every ink reads on paper at AA', () => {
+describe('§21.1 - every ink reads on paper at AA', () => {
   it.each(['ink', 'ink2', 'ink3'] as const)('%s', k => {
     expect(ratio(hex(color[k]), PAPER)).toBeGreaterThanOrEqual(contrastFloor.normalText);
   });
@@ -39,7 +39,7 @@ describe('§21.1 — every ink reads on paper at AA', () => {
   });
 });
 
-describe('§21.1 — the scrim is sufficient for the worst image', () => {
+describe('§21.1 - the scrim is sufficient for the worst image', () => {
   /* The worst image is pure white. White text through the scrim over it must
      still clear AA, which is the whole derivation of `photoFloor`. */
   const behind = (alpha: number) => [0, 1, 2].map(() => 255 * (1 - alpha));
@@ -53,7 +53,7 @@ describe('§21.1 — the scrim is sufficient for the worst image', () => {
     expect(scrim.photo).toBeGreaterThan(scrim.photoFloor);
   });
 
-  it('over2 does NOT clear it — this is why it is banned over photographs', () => {
+  it('over2 does NOT clear it - this is why it is banned over photographs', () => {
     const bg = behind(scrim.photoFloor);
     const composited = bg.map(c => 0.72 * 255 + 0.28 * c);
     expect(ratio(composited, bg)).toBeLessThan(contrastFloor.normalText);
@@ -64,8 +64,8 @@ describe('§21.1 — the scrim is sufficient for the worst image', () => {
   });
 });
 
-describe('§21.2 — zoom is not ours to take', () => {
-  /* "If a focused input causes an unwanted zoom, the input is too small — that
+describe('§21.2 - zoom is not ours to take', () => {
+  /* "If a focused input causes an unwanted zoom, the input is too small - that
      is the bug." iOS zooms a focused field below 16px, so the body size the
      scale is anchored to may never fall under it. */
   it('body type is at or above the iOS zoom floor', () => {
@@ -73,7 +73,7 @@ describe('§21.2 — zoom is not ours to take', () => {
   });
 });
 
-describe('§21.3 — the target floor', () => {
+describe('§21.3 - the target floor', () => {
   it('is 44 and is a multiple of nothing smaller than the base step', () => {
     expect(TARGET_MIN).toBe(44);
   });
@@ -83,17 +83,17 @@ describe('§21.3 — the target floor', () => {
   });
 });
 
-describe('§21.1 — a filled control holds its contrast at every point', () => {
+describe('§21.1 - a filled control holds its contrast at every point', () => {
   /* THE BUG THIS EXISTS FOR. The ratified design draws the one primary action
      as amber at 92%→64% ALPHA over the near-black room. Composited, the weak
      end of that gradient is #926C3E, where the label (#100C06) reads at
-     4.12:1 — under the floor, on the single most important control in the
+     4.12:1 - under the floor, on the single most important control in the
      product. A translucent fill has no fixed contrast, so it may carry
      decoration but never text; the shipped control uses two SOLID stops down
      the same ramp instead.
 
      READ OUT OF THE PALETTE, not out of a component. Both `Button` and
-     `Action` carried their own copy of these three literals — so the product's
+     `Action` carried their own copy of these three literals - so the product's
      single filled control was written in two places and could drift apart, and
      this assertion only ever watched one of them. `design/colors.fill` is the
      one place now, which is also the only place a contrast rule can be
@@ -129,7 +129,7 @@ describe('§21.1 — a filled control holds its contrast at every point', () => 
   });
 });
 
-describe('§7.6 — reduced motion loses nothing but movement', () => {
+describe('§7.6 - reduced motion loses nothing but movement', () => {
   it('transforms stop, opacity may remain, and everything collapses to zero', () => {
     expect(reducedMotion.disableTransforms).toBe(true);
     expect(reducedMotion.allowOpacity).toBe(true);

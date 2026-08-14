@@ -6,7 +6,7 @@
  * Firebase client session lives in IndexedDB under `browserLocalPersistence`
  * and effectively never lapses on its own. The server session is an httpOnly
  * cookie with Firebase's fourteen-day ceiling, and it is the only one the rooms
- * can read — so when the cookie goes, a customer whose Firebase session is
+ * can read - so when the cookie goes, a customer whose Firebase session is
  * perfectly intact is served the public landing page as though they had never
  * signed in.
  *
@@ -82,7 +82,7 @@ export function SessionKeeper({ signedIn }: { signedIn: boolean }) {
       if (cancelled) return;
 
       if (!user) {
-        /* The Firebase session is genuinely gone — cleared storage, a revoked
+        /* The Firebase session is genuinely gone - cleared storage, a revoked
            account, seven days of Safari inactivity. The marker is a lie now. */
         forgetDevice();
         return;
@@ -91,7 +91,7 @@ export function SessionKeeper({ signedIn }: { signedIn: boolean }) {
       /* FORCED. A cached ID token lives an hour and refreshes only near its
          expiry, so a device that slept through that boundary offers an expired
          one. (It is NOT true that a cookie mint refuses anything older than
-         five minutes — measured, 377 seconds old, accepted.) */
+         five minutes - measured, 377 seconds old, accepted.) */
       const token = await idToken(true);
       if (cancelled || !token) return;
 
@@ -107,7 +107,7 @@ export function SessionKeeper({ signedIn }: { signedIn: boolean }) {
          * A DOCUMENT LOAD, not `router.refresh()`.
          *
          * `refresh` would re-fetch THIS route and leave every other RSC payload
-         * in the client Router Cache exactly as it was — rendered a moment ago,
+         * in the client Router Cache exactly as it was - rendered a moment ago,
          * signed out. A soft navigation afterwards could then serve one of
          * those. `__tests__/auth/entry.test.ts` holds the whole product to this
          * rule ("nothing soft-navigates across a change the server must see"),

@@ -1,14 +1,14 @@
 /**
- * OFFLINE — §20.3, §20.4, §21.7 · §22.2.
+ * OFFLINE - §20.3, §20.4, §21.7 · §22.2.
  *
  * §20.3 is "distinguish ours from theirs": a customer who has lost signal must
  * never be told the studio failed. Every room is server-rendered, so what is
- * already on the screen stays true when the connection goes — only what
+ * already on the screen stays true when the connection goes - only what
  * happens NEXT is affected, and that is all the note is allowed to say.
  *
  * WHAT THIS FINISHED. The note existed on Home and the three marketplace
  * surfaces. The other eight rooms said nothing at all, and FIVE separate
- * copies had grown inside the sheets — `BookingFlow`, `ManageVisit`,
+ * copies had grown inside the sheets - `BookingFlow`, `ManageVisit`,
  * `AccountSettings` and `ClubFlow` (twice) each with `useOnline()` and a
  * hand-written `<Text aria-live>`, in four different wordings. One component
  * now, in two placements.
@@ -44,7 +44,7 @@ const setOnline = (v: boolean) => {
 /**
  * Mount for real.
  *
- * `useOnline` starts `true` and corrects in an effect — deliberately, because
+ * `useOnline` starts `true` and corrects in an effect - deliberately, because
  * `navigator` does not exist on the server and rendering "offline" there would
  * be a hydration mismatch. A static render therefore NEVER shows the note, so
  * these assertions mount into jsdom and let the effect run.
@@ -94,7 +94,7 @@ describe('every customer room says something when the connection goes', () => {
 
   it('the first arrival is exempt, because it already says it better', () => {
     /* Welcome cannot complete offline, and it says exactly that where it
-       happens — "That didn't save. Try once more." A generic bar above it
+       happens - "That didn't save. Try once more." A generic bar above it
        would be a second offline statement on one screen. */
     const w = codeOf('components/screens/WelcomeScreen.tsx');
     expect(w).not.toMatch(/<OfflineNote/);
@@ -102,7 +102,7 @@ describe('every customer room says something when the connection goes', () => {
   });
 });
 
-describe('§22.2 — one implementation, and only one', () => {
+describe('§22.2 - one implementation, and only one', () => {
   const ALL = [...walk('components'), ...walk('app')].filter(f => !f.includes('node_modules'));
 
   it('nothing renders its own offline markup', () => {
@@ -112,7 +112,7 @@ describe('§22.2 — one implementation, and only one', () => {
     const offenders = ALL.filter(f => {
       const src = codeOf(f);
       if (f.endsWith('OfflineNote.tsx')) return false;
-      /* THE OFFLINE PAGE IS NOT A ROOM DRAWING A NOTE — it IS the note, at the
+      /* THE OFFLINE PAGE IS NOT A ROOM DRAWING A NOTE - it IS the note, at the
          size of a document. `OfflineNote` is the inline banner a room shows
          when the connection drops mid-visit; this is the service worker's
          fallback, served when there is no room to put a banner in. The rule
@@ -127,7 +127,7 @@ describe('§22.2 — one implementation, and only one', () => {
   });
 
   it('every reader of the connection either shows the note or gates a control', () => {
-    /* `useOnline` is allowed anywhere — what is NOT allowed is drawing a
+    /* `useOnline` is allowed anywhere - what is NOT allowed is drawing a
        second note with it. Anything reading it must either render the one
        component or use the answer to stop a write that cannot succeed. */
     const readers = ALL.filter(f => /useOnline\(\)/.test(codeOf(f)))
@@ -142,7 +142,7 @@ describe('§22.2 — one implementation, and only one', () => {
     }
   });
 
-  it('the sheets still GATE their controls — that is not duplication', () => {
+  it('the sheets still GATE their controls - that is not duplication', () => {
     /* A note says what is happening; a blocked control stops a write that
        cannot succeed. Both are needed and they are not the same thing. */
     for (const f of ['components/studio/BookingFlow.tsx',
@@ -171,7 +171,7 @@ describe('§22.2 — one implementation, and only one', () => {
 describe('the note itself', () => {
   afterEach(() => { unmount(); setOnline(true); });
 
-  it('is ABSENT when connected — not hidden', () => {
+  it('is ABSENT when connected - not hidden', () => {
     /* A hidden element still sits in the accessibility tree and is still
        read out. Absent is the only thing that is actually silent. */
     setOnline(true);
@@ -207,7 +207,7 @@ describe('the note itself', () => {
   });
 
   it('is ANNOUNCED politely, never assertively', () => {
-    /* §21.7 — the customer did not act to cause this, so it must not
+    /* §21.7 - the customer did not act to cause this, so it must not
        interrupt whatever a screen reader is already saying. */
     setOnline(false);
     const note = mount(<OfflineNote />).firstElementChild!;
@@ -216,7 +216,7 @@ describe('the note itself', () => {
   });
 
   it('never claims the studio failed', () => {
-    /* §20.3 — ours or theirs. This is theirs, and saying "something went
+    /* §20.3 - ours or theirs. This is theirs, and saying "something went
        wrong" would blame the wrong party and frighten the customer about
        their car. */
     setOnline(false);
@@ -268,14 +268,14 @@ describe('the note itself', () => {
 
 describe('offline alongside the other states', () => {
   it('LOADING is still its own state, not replaced by the note', () => {
-    /* §19.1 — loading is a state, not an absence, and losing the connection
+    /* §19.1 - loading is a state, not an absence, and losing the connection
        does not make a room that is still fetching into a room that failed. */
     expect(codeOf('app/loading.tsx')).toMatch(/<Loading caption=/);
     expect(codeOf('app/cars/loading.tsx')).toMatch(/<Loading caption=/);
     expect(codeOf('app/loading.tsx')).not.toMatch(/OfflineNote/);
   });
 
-  it('EMPTY is still its own state — an empty garage offline is still empty', () => {
+  it('EMPTY is still its own state - an empty garage offline is still empty', () => {
     /* The note sits above the room's own content; it does not replace an
        invitation with an apology. */
     const room = codeOf('components/screens/ServerRoom.tsx');
@@ -286,7 +286,7 @@ describe('offline alongside the other states', () => {
   });
 
   it('FAILED is still distinguishable from offline', () => {
-    /* §20.4 — a read that throws is OURS and says so, and it says the car is
+    /* §20.4 - a read that throws is OURS and says so, and it says the car is
        safe. That is a different sentence from "you are offline". */
     const room = codeOf('components/screens/ServerRoom.tsx');
     expect(room).toMatch(/We could not reach your garage\./);

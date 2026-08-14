@@ -1,5 +1,5 @@
 /**
- * PRODUCTION INTEGRITY — READ ONLY. This script writes nothing, ever.
+ * PRODUCTION INTEGRITY - READ ONLY. This script writes nothing, ever.
  *
  * The audit's findings were about data, not code: 15 of 18 jobs with no
  * customer, bookings carrying another car's plate, three requests sitting
@@ -37,7 +37,7 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 const rows = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
-const pct = (n, of) => (of === 0 ? '—' : `${Math.round((n / of) * 100)}%`);
+const pct = (n, of) => (of === 0 ? '-' : `${Math.round((n / of) * 100)}%`);
 
 const findings = [];
 const check = (ok, screen, line) => {
@@ -95,7 +95,7 @@ const main = async () => {
     && b.scheduledDate < new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10));
   check(stale.length === 0, '10',
     `requests past their day and not yet expired: ${stale.length}`
-    + (stale.length ? ` — the nightly sweep retires these` : ''));
+    + (stale.length ? ` - the nightly sweep retires these` : ''));
 
   /* ── one calculation (screens 07, 09, 13) ── */
   const noBreakdown = B.filter(b => !b.breakdown);
@@ -105,7 +105,7 @@ const main = async () => {
   const scoped = S.filter(s => Array.isArray(s.scopes) && s.scopes.length > 0);
   check(true, '07',
     `services with coverages defined: ${scoped.length} of ${S.length}`
-    + (scoped.length === 0 ? ' — every service is bookable whole until one is' : ''));
+    + (scoped.length === 0 ? ' - every service is bookable whole until one is' : ''));
 
   /* ── protection percentages are measurements (screens 05, 14, 15, 17) ── */
   const withSince = P.filter(p => !!p.since);

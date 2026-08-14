@@ -1,6 +1,6 @@
 import 'server-only';
 /**
- * THE POLLUTION-CERTIFICATE SERVICE — the only thing that may turn a customer's
+ * THE POLLUTION-CERTIFICATE SERVICE - the only thing that may turn a customer's
  * paperwork into a promise the product makes.
  *
  * Source: docs/AUTOMODZ-LIVING-STATES.md §2, docs/AUTOMODZ-OS.md §18.4
@@ -21,7 +21,7 @@ import 'server-only';
  * A renewal writes a NEW declaration and a NEW protection document. The
  * previous declaration is marked `superseded`; its reference, its dates and
  * its photograph are left exactly as they were. No existing protection is
- * touched — not its `since`, not its `term` — which is what makes the record
+ * touched - not its `since`, not its `term` - which is what makes the record
  * of a car's certification a record rather than a current opinion.
  */
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -54,7 +54,7 @@ const db = () => {
  * THE DECLARATION'S OWN ID, DERIVED FROM THE CERTIFICATE.
  *
  * A car cannot hold two different pollution certificates issued on the same day
- * AND expiring on the same day — that is one certificate, described twice. So
+ * AND expiring on the same day - that is one certificate, described twice. So
  * the id is those three facts, and a double tap therefore lands on the SAME
  * document rather than racing to create two. Firestore locks a document a
  * transaction reads, so the collision is real rather than hoped for.
@@ -95,7 +95,7 @@ export async function declarePuc(
    * Vehicles live at `users/{uid}/vehicles/{id}`, so asking for the car under
    * THIS uid is the whole check: another customer's vehicle id simply is not
    * there. There is deliberately no collection-group query and no `ownerUid`
-   * comparison — those are ways to ask the same question that can be answered
+   * comparison - those are ways to ask the same question that can be answered
    * `true` by a document somebody else wrote.
    */
   const carRef = db().doc(`users/${uid}/vehicles/${clean.vehicleId}`);
@@ -132,8 +132,8 @@ export async function declarePuc(
      * Still open, or already standing: answer with what is there and write
      * nothing. That is what makes a double tap free.
      *
-     * Already CLOSED — withdrawn when a different certificate replaced it, or
-     * refused — is a different question, and refusing it would be a dead end:
+     * Already CLOSED - withdrawn when a different certificate replaced it, or
+     * refused - is a different question, and refusing it would be a dead end:
      * a customer who withdrew the right certificate by correcting it the wrong
      * way could never send it again. Re-sending a closed record is a new act,
      * so it gets a new record and the closed one keeps its own history.
@@ -155,7 +155,7 @@ export async function declarePuc(
     }
 
     /* A DIFFERENT certificate while one is pending replaces it. The withdrawn
-       one keeps every fact it was sent with — only its status moves, and only
+       one keeps every fact it was sent with - only its status moves, and only
        through the one table that says it may. */
     if (verdict.act === 'replace') {
       for (const old of verdict.withdraw) {
@@ -209,7 +209,7 @@ export async function isStudio(uid: string): Promise<boolean> {
 }
 
 /**
- * VERIFY OR REJECT — the studio's decision, and the only door to an
+ * VERIFY OR REJECT - the studio's decision, and the only door to an
  * authoritative pollution certificate.
  *
  * The vehicle is taken from the DECLARATION and from nowhere else, so there is

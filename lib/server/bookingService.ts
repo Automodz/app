@@ -78,7 +78,7 @@ export interface AppointmentIntent {
   /** A SAVED address of the caller's own. Read server-side and snapshotted. */
   pickupAddressId?: string;
   /**
-   * THE ESTIMATE THIS BOOKING IS BEING MADE FROM — design screen 07 → 08 → 09.
+   * THE ESTIMATE THIS BOOKING IS BEING MADE FROM - design screen 07 → 08 → 09.
    *
    * An id, never a figure. The estimate is a server-written, immutable record
    * of what the customer was quoted, so spending it by id means the booking
@@ -321,7 +321,7 @@ const createAppointment = async (
 
     /* ---- WHERE THE VAN GOES ----
        Read from UNDER the caller's own document, so a forged address id cannot
-       name somebody else's home — there is no path to it. Snapshotted onto the
+       name somebody else's home - there is no path to it. Snapshotted onto the
        booking, so a later correction to the saved address cannot rewrite where
        this visit was collected from. */
     let addressRef: Booking['pickupAddressRef'] | undefined;
@@ -402,7 +402,7 @@ const createAppointment = async (
     const totalAmount = breakdown.total;
 
     /* The benefit that was actually applied, as the settlement needs it. With
-       an estimate this comes out of the frozen breakdown — the promo the
+       an estimate this comes out of the frozen breakdown - the promo the
        customer was quoted is the promo that gets counted. */
     const priced = {
       washCovered: breakdown.washCovered,
@@ -432,7 +432,7 @@ const createAppointment = async (
       pickupAddress: pickupDropFee > 0
         ? (addressRef?.line ?? intent.pickupAddress?.trim() ?? '') : '',
       ...(addressRef ? { pickupAddressRef: addressRef } : {}),
-      /* DERIVED FROM THE SLOT, never chosen — a collection time a customer
+      /* DERIVED FROM THE SLOT, never chosen - a collection time a customer
          could set independently could fall after the work was due to start. */
       ...(pickup
         ? { pickupTime: pickupTimeFor(intent.scheduledTime, DAY_OPEN_MIN) ?? intent.scheduledTime }
@@ -444,7 +444,7 @@ const createAppointment = async (
          that finishes the same day, so every booking carries the field and no
          reader has to decide whether an absent one means "same day" or "we
          never worked it out". Derived from the duration by the availability
-         engine — the same expansion that reserves the bay. */
+         engine - the same expansion that reserves the bay. */
       endDate: spanEndDate(
         intent.scheduledDate,
         Number(intent.scheduledTime.slice(0, 2)) * 60 + Number(intent.scheduledTime.slice(3, 5)),
@@ -459,7 +459,7 @@ const createAppointment = async (
         ? { membershipId: priced.membershipId } : {}),
       ...(priced.discount ? { discount: priced.discount } : {}),
       /* WHAT WAS AGREED, FROZEN. The catalogue is authoritative for the next
-         quote and may never rewrite this one — the same rule the captured
+         quote and may never rewrite this one - the same rule the captured
          warranty terms follow, applied to money. */
       breakdown,
       ...(estimate ? { scope: estimate.scope, estimateId: estimate.id } : {}),
@@ -710,8 +710,8 @@ const settleBenefits = (
    GIVING BACK WHAT A CANCELLED VISIT CONSUMED.
 
    `settleBenefits` above SPENDS a membership wash and a promo redemption when a
-   booking is created. Nothing gave them back. A customer who cancelled — or
-   whose booking the STUDIO refused — permanently lost a wash they had paid for
+   booking is created. Nothing gave them back. A customer who cancelled - or
+   whose booking the STUDIO refused - permanently lost a wash they had paid for
    and a promo they had not used. `cancelBooking` in lib/services/bookings.ts
    only ever wrote `status: 'cancelled'`.
 
@@ -723,7 +723,7 @@ const settleBenefits = (
 
 export interface CancelResult {
   id: string;
-  /** true when the booking was ALREADY cancelled — nothing was given back. */
+  /** true when the booking was ALREADY cancelled - nothing was given back. */
   alreadyCancelled: boolean;
   washRestored: boolean;
   promoRestored: boolean;
@@ -734,7 +734,7 @@ export interface CancelResult {
  *
  * It used to be: a local `CANCELLABLE` array here, a duplicate list in
  * `firestore.rules`, and a third in `ManageVisit`'s `changeable` flag. The one
- * table lives in `lib/os/lifecycle` now, and every caller asks it — so the
+ * table lives in `lib/os/lifecycle` now, and every caller asks it - so the
  * sheet cannot offer an act the server refuses, and the rules cannot allow one
  * the service rejects.
  */
@@ -747,7 +747,7 @@ export interface CancelResult {
  * or a double tap cannot credit two washes.
  *
  * `byStaff` allows the studio to refuse a booking that a customer could no
- * longer cancel themselves — the refusal must still return the wash.
+ * longer cancel themselves - the refusal must still return the wash.
  */
 export const cancelBookingAuthoritative = async (
   callerUid: string,
@@ -769,7 +769,7 @@ export const cancelBookingAuthoritative = async (
     }
 
     /* Already cancelled: succeed, restore nothing. The caller asked for a state
-       the booking is already in, which is not an error — but crediting a second
+       the booking is already in, which is not an error - but crediting a second
        wash for it would be. */
     if (booking.status === 'cancelled') {
       return { id: bookingId, alreadyCancelled: true, washRestored: false, promoRestored: false };
@@ -845,14 +845,14 @@ export const cancelBookingAuthoritative = async (
 };
 
 /* ────────────────────────────────────────────────────────────────────────────
-   MOVING A VISIT — design screen 10.
+   MOVING A VISIT - design screen 10.
 
    THE RULE THIS ENFORCES IS NOT A UI RULE. Until now `rescheduleBooking` was
    `updateDoc(doc(db,'bookings',id), { scheduledDate, scheduledTime })` from the
    browser, permitted by a rule that checked only which KEYS changed. So a
    customer could move a visit to an hour the studio was already working, to a
-   date in the past, to a slot that does not exist, and — the one that costs
-   money — to two hours before a two-day PPF the studio had already ordered
+   date in the past, to a slot that does not exist, and - the one that costs
+   money - to two hours before a two-day PPF the studio had already ordered
    film for. The browser also decided whether the 24-hour window had closed,
    from the browser's own clock, which anybody can set.
 
@@ -904,7 +904,7 @@ export const rescheduleBookingAuthoritative = async (
 
     /* ── 2 · the 24-hour rule, on the SERVER's clock ──
        Measured from the booking's own scheduled timestamp, interpreted in
-       studio time. Staff may move a booking at any time — the studio ringing a
+       studio time. Staff may move a booking at any time - the studio ringing a
        customer to say "we can take you earlier" is the case this exists for,
        and it is the studio's own bay to give away. */
     if (!opts.byStaff) {
@@ -981,7 +981,7 @@ export const rescheduleBookingAuthoritative = async (
    studio was never going to answer. A record with no terminal state does not
    resolve; it just stops being looked at.
 
-   `expired` is deliberately NOT `cancelled` — see lib/os/lifecycle. A wash is
+   `expired` is deliberately NOT `cancelled` - see lib/os/lifecycle. A wash is
    returned here, because the studio held a bay nobody used only in the sense
    that the studio never accepted it: an unanswered request consumed nothing.
    ──────────────────────────────────────────────────────────────────────────── */

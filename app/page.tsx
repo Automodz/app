@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 
 
 /**
- * `/` — one address, two answers.
+ * `/` - one address, two answers.
  *
  * To a visitor it is the public landing: the studio, the craft, the prices, the
  * proof, and one way in. To an owner it is Home: their car, its state, and what
@@ -35,7 +35,7 @@ export default async function RootPage(
   { searchParams }: { searchParams: Promise<{ car?: string }> },
 ) {
   /* THE CAR THE CUSTOMER CHOSE. The garage rail writes `?car=<id>`, so which
-     car Home is about is an ADDRESS — linkable, restorable, and closed by the
+     car Home is about is an ADDRESS - linkable, restorable, and closed by the
      back button. Local state would lose all three. */
   const { car: selectedCar } = await searchParams;
   const session = await currentSession();
@@ -45,7 +45,7 @@ export default async function RootPage(
     return <LandingScreen prices={prices} />;
   }
 
-  /* THE STUDIO'S SOONEST OPENING — design screens 03 and 05, "Next opening ·
+  /* THE STUDIO'S SOONEST OPENING - design screens 03 and 05, "Next opening ·
      Thu 9:00 am". A real query against real occupancy, from the same source
      the Booking Service accepts against, so a day named here cannot be a day
      the writer then refuses. Loaded before the room because a `ServerRoom`
@@ -62,7 +62,7 @@ export default async function RootPage(
     <ServerRoom>
       {picture => {
         /* FIRST ARRIVAL. Decided on the server from the user document, so it
-           is the same answer on every device — and decided HERE because Home
+           is the same answer on every device - and decided HERE because Home
            is the only address allowed to interrupt (`welcomeInterrupts`).
            A client effect used to do this after mount, which meant a flash of
            somebody else's Home before the redirect. */
@@ -89,8 +89,8 @@ export default async function RootPage(
 /**
  * The market strip, filled.
  *
- * Separate because `ServerRoom`'s children are synchronous — it hands over a
- * picture, not a promise — and this needs one await. Three cars, because Home
+ * Separate because `ServerRoom`'s children are synchronous - it hands over a
+ * picture, not a promise - and this needs one await. Three cars, because Home
  * is a glance and the market itself is one tap away.
  */
 async function HomeMarket({ model }: { model: NonNullable<ReturnType<typeof toHome>> }) {

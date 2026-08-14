@@ -4,8 +4,8 @@ import 'server-only';
  *
  * Source: docs/AUTOMODZ-OS.md §19.1, §20.1, §20.2, §20.4, §22.2
  *
- * The client `Room` answered four questions — establishing, signed out, failed,
- * ready — and three of them existed only because the data arrived after the
+ * The client `Room` answered four questions - establishing, signed out, failed,
+ * ready - and three of them existed only because the data arrived after the
  * page did. On the server there is no establishing state: the request either
  * has a session and the documents, or it does not, and either way the first
  * byte of HTML is the answer.
@@ -34,13 +34,13 @@ function Centred({ children }: { children: ReactNode }) {
   return (
     <main
       style={{
-        /* Transparent, like every room — the ambient field is behind it. */
+        /* Transparent, like every room - the ambient field is behind it. */
         background: 'transparent',
         minHeight: '100svh',
         paddingBottom: stack.contentFloor,
         /* THE TOP INSET, ONCE. `Screen` has always reserved it for the rooms
            that use it; the shells that roll their own `<main>` did not, and the
-           product is installable — in standalone the first line sat under the
+           product is installable - in standalone the first line sat under the
            status bar. §8.5 keeps the inset in the token, never at a call site. */
         paddingTop: stack.top,
       }}
@@ -54,8 +54,8 @@ function Centred({ children }: { children: ReactNode }) {
           justifyContent: 'center',
         }}
       >
-        {/* On glass. These are the first surfaces a new customer meets — an
-            invitation and a sign-in — and as bare type on the field they read
+        {/* On glass. These are the first surfaces a new customer meets - an
+            invitation and a sign-in - and as bare type on the field they read
             as an error page rather than as somewhere to begin. */}
         <Glass pad="rest" round="sheet">
           {children}
@@ -66,7 +66,7 @@ function Centred({ children }: { children: ReactNode }) {
 }
 
 /**
- * §18.4 — a room that needs a car and has none. The old Home showed an
+ * §18.4 - a room that needs a car and has none. The old Home showed an
  * invitation here, not an error, and offered the act that resolves it: adding
  * the car. Arranging a visit for a car we do not have is the wrong first step.
  */
@@ -89,8 +89,8 @@ export function NoCar() {
 /**
  * Resolve the session, read the picture, hand it to the room.
  *
- * §20.3 — "distinguish ours from theirs." A missing session is not a failure and
- * does not pretend to be one; a read that throws is ours and says so (§20.4 —
+ * §20.3 - "distinguish ours from theirs." A missing session is not a failure and
+ * does not pretend to be one; a read that throws is ours and says so (§20.4 -
  * the car is safe, say it).
  */
 export async function ServerRoom(
@@ -111,9 +111,9 @@ export async function ServerRoom(
 
   /* ONLY THE READ IS GUARDED, and the scope is load-bearing.
      `children(picture)` used to be inside this `try`. `redirect()` and
-     `notFound()` work by THROWING, so a room that redirected — Home sending a
+     `notFound()` work by THROWING, so a room that redirected - Home sending a
      new customer to their first arrival, `/welcome` sending a returning one
-     home — had its redirect caught here and was shown "We could not reach your
+     home - had its redirect caught here and was shown "We could not reach your
      garage." instead. A brand-new customer's very first sign-in landed on that
      screen. The catch was only ever meant to cover the Firestore read. */
   let picture: CustomerPicture;
@@ -130,7 +130,7 @@ export async function ServerRoom(
           Your car and its records are safe. This is our connection, not your car.
         </Text>
         <div style={{ marginTop: space.gap }}>
-          {/* A server-rendered failure recovers by asking again for the page —
+          {/* A server-rendered failure recovers by asking again for the page -
               there is no client fetch left to retry. */}
           <Button tier="forward" href="/">Try again</Button>
         </div>
@@ -139,7 +139,7 @@ export async function ServerRoom(
   }
 
   /* Every room feeds the palette, because every room already has the
-     picture — the read is `cache`d, so this costs no extra queries. This
+     picture - the read is `cache`d, so this costs no extra queries. This
      is what makes ⌘K global without any page having to remember to wire
      it. Outside the `try`, so a redirect from a room still redirects. */
   return <><PaletteFeed model={toPalette(picture)} />{children(picture)}</>;

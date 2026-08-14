@@ -1,5 +1,5 @@
 /**
- * SCOPE & QUOTE — design screen 07, against the catalogue.
+ * SCOPE & QUOTE - design screen 07, against the catalogue.
  *
  * The engine that decides HOW MUCH OF THE CAR, and what that work is. It does
  * not decide what the customer pays: that is `priceVisit`, and there is one of
@@ -69,10 +69,10 @@ const plain = (over: Partial<Service> = {}): Service => ({
 /* ── every service stays bookable ────────────────────────────────────────── */
 
 describe('a service with no scopes is still bookable', () => {
-  it('offers exactly one coverage — itself', () => {
+  it('offers exactly one coverage - itself', () => {
     const only = scopesOf(plain());
     expect(only).toHaveLength(1);
-    /* The label answers "how much of the car", not "which service" — the
+    /* The label answers "how much of the car", not "which service" - the
        screen has already said the service's name in its title. */
     expect(only[0]).toMatchObject({ id: WHOLE_SCOPE, label: 'The whole car', price: 1200 });
   });
@@ -100,7 +100,7 @@ describe('each coverage prices deterministically, from the catalogue', () => {
     expect(r.ok && r.scope.bayDays).toBe(1);
   });
 
-  it('full body — and its two days come from its own duration', () => {
+  it('full body - and its two days come from its own duration', () => {
     const r = resolveScope(ppf(), { scopeId: 'full' });
     expect(r.ok && r.scope.workPrice).toBe(132000);
     /* 1200 minutes over a 600-minute working day is design 07's "2 days in
@@ -141,7 +141,7 @@ describe('a custom coverage is priced by its panels, never by a zero', () => {
     expect(r.ok && r.scope.panels).toHaveLength(1);
   });
 
-  it('NO PANELS IS NOT A FREE FULL BODY — it is an unanswered question', () => {
+  it('NO PANELS IS NOT A FREE FULL BODY - it is an unanswered question', () => {
     expect(resolveScope(ppf(), { scopeId: 'custom' }))
       .toEqual({ ok: false, reason: 'custom-needs-panels' });
     expect(resolveScope(ppf(), { scopeId: 'custom', panelIds: [] }))
@@ -249,7 +249,7 @@ describe('what it costs comes from priceVisit and nowhere else', () => {
 
   it('a member’s rate is the membership engine’s, never a number in a design', () => {
     /* The design draws "Gold −12%". The engine grants Gold 15%, and the engine
-       is what the customer is actually charged — so 15% it is. A screen does
+       is what the customer is actually charged - so 15% it is. A screen does
        not get to invent a discount rate. */
     const gold = quote({ membership: member('Gold') });
     expect(gold.discountAmount).toBe(Math.round(132000 * 0.15));
@@ -267,7 +267,7 @@ describe('what it costs comes from priceVisit and nowhere else', () => {
     expect(g.total).toBe(150000 - Math.round(150000 * 0.15) + 50);
   });
 
-  it('promo and membership do not stack — the better one stands alone', () => {
+  it('promo and membership do not stack - the better one stands alone', () => {
     const promo: Promo = {
       id: 'p1', code: 'BIG', label: '₹5,000 off', type: 'flat', value: 5000,
       scope: { kind: 'all' }, target: { kind: 'all' },
@@ -276,7 +276,7 @@ describe('what it costs comes from priceVisit and nowhere else', () => {
     } as unknown as Promo;
 
     const both = quote({ membership: member('Gold'), promos: [promo] });
-    /* Gold on ₹1,32,000 is ₹19,800, which beats ₹5,000, so the promo loses —
+    /* Gold on ₹1,32,000 is ₹19,800, which beats ₹5,000, so the promo loses -
        and crucially the two are not added together. */
     expect(both.discountAmount).toBe(19800);
     expect(both.discount?.source).toBe('membership');
@@ -286,7 +286,7 @@ describe('what it costs comes from priceVisit and nowhere else', () => {
     expect(promoWins.discount?.source).toBe('promo');
   });
 
-  it('each concierge leg is its own line — one fee, or two', () => {
+  it('each concierge leg is its own line - one fee, or two', () => {
     expect(quote({ pickup: true }).fees).toEqual([{ label: 'Pickup', amount: 50 }]);
     expect(quote({ pickup: true, drop: true }).fees).toEqual([
       { label: 'Pickup', amount: 50 }, { label: 'Drop', amount: 50 },
@@ -353,7 +353,7 @@ describe('the money is the server’s, and the request cannot express it', () =>
   const screen = readFileSync('components/studio/ScopeAndQuote.tsx', 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
-  it('the route reads no figure off the body — there is no name for one', () => {
+  it('the route reads no figure off the body - there is no name for one', () => {
     for (const forged of ['body.price', 'body.total', 'body.amount', 'body.discount', 'body.workPrice']) {
       expect(route).not.toContain(forged);
     }
@@ -364,7 +364,7 @@ describe('the money is the server’s, and the request cannot express it', () =>
     expect(service).not.toMatch(/\+ *breakdown|total *=/);
   });
 
-  it('the screen adds nothing up — every figure is the server’s answer', () => {
+  it('the screen adds nothing up - every figure is the server’s answer', () => {
     /* A component that summed prices would be a fifth implementation of the
        arithmetic, and the audit found four already disagreeing. */
     expect(screen).not.toMatch(/reduce\(/);

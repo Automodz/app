@@ -11,15 +11,15 @@ import 'server-only';
  * already read by `noticeOf` to surface an unread fact on the car it belongs
  * to, and is already the payload the service worker opens. Adding a parallel
  * `events` collection would mean two records of one fact, two rules blocks and
- * two readers — and the day they disagree, the customer's car says one thing
+ * two readers - and the day they disagree, the customer's car says one thing
  * and their phone says another. The event fields are added to the document
  * that already exists.
  *
  * ── IDEMPOTENT BY CONSTRUCTION ───────────────────────────────────────────
  * The document id IS the event's identity (`lib/os/events.eventId`), so this
  * function may be called any number of times for one fact and will write one
- * document. The transaction exists not to prevent duplicates — the id does
- * that — but to make sure a second call does not reset `read` to false on a
+ * document. The transaction exists not to prevent duplicates - the id does
+ * that - but to make sure a second call does not reset `read` to false on a
  * notice the customer has already seen.
  *
  * ── NOTHING HERE MAY THROW ───────────────────────────────────────────────
@@ -47,7 +47,7 @@ export interface RecordedEvent {
 /**
  * Write one event for one customer, and deliver it if quiet mode allows.
  *
- * `discriminator` distinguishes repeatable facts — a booking moved twice is
+ * `discriminator` distinguishes repeatable facts - a booking moved twice is
  * two events, and without it the second would collapse onto the first.
  */
 export async function recordEvent(
@@ -61,7 +61,7 @@ export async function recordEvent(
   const { title, body } = wordsFor(input);
   /* ADDRESSED ONCE, AT WRITE TIME, BY THE ONE FILE THAT KNOWS ADDRESSES.
      `notificationHref` sent every booking notification to `/history/<id>`,
-     which renders a visit — and a confirmed booking has no visit yet, so a
+     which renders a visit - and a confirmed booking has no visit yet, so a
      "the bay is yours" push opened the no-car invitation. */
   const url = opts.href ?? eventHref(input.type, input.source);
 
@@ -70,7 +70,7 @@ export async function recordEvent(
     created = await db.runTransaction(async t => {
       const ref = db.collection('notifications').doc(id);
       const snap = await t.get(ref);
-      /* Already recorded. Return without writing — re-setting the document
+      /* Already recorded. Return without writing - re-setting the document
          would mark a notice the customer has already read as unread again. */
       if (snap.exists) return false;
       t.set(ref, {

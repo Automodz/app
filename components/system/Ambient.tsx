@@ -2,8 +2,8 @@
 /**
  * THE ROOM.
  *
- * Three lights on the far wall — the studio's amber and its champagne
- * reflection, over a cool counterweight — drifting slowly and leaning very
+ * Three lights on the far wall - the studio's amber and its champagne
+ * reflection, over a cool counterweight - drifting slowly and leaning very
  * slightly toward wherever the customer is pointing. Everything else in the
  * application stands in front of this; nothing is ever drawn on top of the
  * content by it.
@@ -12,13 +12,13 @@
  * and a spring driving three radial gradients through React would repaint on
  * every frame for as long as the app is open. The drift is a CSS keyframe on
  * the compositor; the pointer lean is one CSS custom property written outside
- * React. Neither costs a re-render — the component renders once and then never
+ * React. Neither costs a re-render - the component renders once and then never
  * again.
  *
- * §7.6 — under reduced motion the field is STILL THERE and still coloured; it
+ * §7.6 - under reduced motion the field is STILL THERE and still coloured; it
  * simply stops moving. "The interface must lose nothing but movement."
  *
- * §3.6 — this is not glass. It is the lit ground glass sits on. One glass
+ * §3.6 - this is not glass. It is the lit ground glass sits on. One glass
  * layer over it, never two.
  */
 import { useEffect, useRef } from 'react';
@@ -37,7 +37,7 @@ export function Ambient() {
    * THE REACTION, written straight to the DOM.
    *
    * A pointer move can fire at 120Hz. Routed through `useState` that is 120
-   * re-renders a second of a component whose output never changes shape — so
+   * re-renders a second of a component whose output never changes shape - so
    * the handler writes two custom properties and React is not involved at all.
    *
    * Passive listeners, because this never calls `preventDefault` and a

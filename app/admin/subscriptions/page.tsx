@@ -34,7 +34,7 @@ export default function AdminSubscriptionsPage() {
    * ACTIVATING IS A SERVER WRITE, and this screen may not make it.
    *
    * `active` grants free washes and a standing discount. It also has to close
-   * any other membership the customer holds in the same commit — which a
+   * any other membership the customer holds in the same commit - which a
    * client write cannot do, and which is how a customer ends up with two wash
    * allowances. `firestore.rules` refuses every write here, including from an
    * admin console, so this asks `/api/membership` like everything else.
@@ -123,7 +123,7 @@ export default function AdminSubscriptionsPage() {
                     (the nightly job persists it the day a cycle ends) and
                     leaving belongs to the customer. A studio control that
                     ends somebody's paid month by hand is not a lifecycle, it
-                    is an override — and `membershipTransition` refuses it. */}
+                    is an override - and `membershipTransition` refuses it. */}
                 {s.status === 'pending' && (
                   <div className="flex gap-2 mt-4">
                     <button onClick={() => decide(s.id, 'activate')}

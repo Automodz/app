@@ -1,5 +1,5 @@
 /**
- * The projections are called several times per render — Home asks for a car's
+ * The projections are called several times per render - Home asks for a car's
  * protections and Garage asks again for every car. These assert the work happens
  * once per car per request.
  */
@@ -55,7 +55,7 @@ it('memoisation is keyed on the car, so two cars stay distinct', () => {
   expect(stateOf(live).word).toBe('In care');
 });
 
-it('a fresh picture recomputes — nothing is cached across requests', () => {
+it('a fresh picture recomputes - nothing is cached across requests', () => {
   const a = car('v1', [booking()]);
   const b = car('v1', [booking({ status: 'in_progress' })]);
   /* Different CarPicture objects, so a new request never sees a stale answer. */

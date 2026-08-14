@@ -1,7 +1,7 @@
 /**
  * PUBLIC HISTORY CONSENT.
  *
- * Design screen 17 shows, on a listing anyone can open: "Its record with us —
+ * Design screen 17 shows, on a listing anyone can open: "Its record with us -
  * detailed here since 2021 · full-body PPF 68% life · 11 visits, 340 photos ·
  * paint original, no respray". Every one of those is a fact about a REAL
  * CUSTOMER'S CAR, shown to strangers. It is the most sensitive thing the
@@ -22,7 +22,7 @@
  * ── THE RULES, AS THE OWNER SET THEM ────────────────────────────────────
  *   Consent belongs to the VEHICLE, never the listing.
  *   Default is private. Absent means no.
- *   Never inferred — not from owning the car, completing a visit, uploading
+ *   Never inferred - not from owning the car, completing a visit, uploading
  *   photographs, or creating a listing.
  *   Revocation is immediate.
  *   Nobody is grandfathered in.
@@ -44,7 +44,7 @@ export function hasPublicHistoryConsent(
   if (!c || !c.granted) return false;
   const granted = c.grantedAt?.toMillis?.() ?? 0;
   const revoked = c.revokedAt?.toMillis?.() ?? 0;
-  /* Revoked after it was granted — or revoked with no grant recorded at all. */
+  /* Revoked after it was granted - or revoked with no grant recorded at all. */
   if (revoked && revoked >= granted) return false;
   return true;
 }
@@ -57,13 +57,13 @@ export function hasPublicHistoryConsent(
  * not learn what the owner paid or who they are.
  */
 export interface PublicHistory {
-  /** "2021" — the year the studio first saw it. */
+  /** "2021" - the year the studio first saw it. */
   since: string;
   /** How many sealed visits. A count, never the visits themselves. */
   visits: number;
   /** How many photographs across those visits. */
   photographs: number;
-  /** Live protections, worded — "Full-body PPF · 68% life". */
+  /** Live protections, worded - "Full-body PPF · 68% life". */
   protections: { label: string; detail: string }[];
 }
 
@@ -71,7 +71,7 @@ export interface PublicHistory {
  * THE ONLY PLACE PUBLIC HISTORY IS PRODUCED.
  *
  * Returns `null` unless consent is currently granted. Not an empty object, not
- * zeroes — `null`, so a caller that forgets to check still renders nothing
+ * zeroes - `null`, so a caller that forgets to check still renders nothing
  * rather than "0 visits", which is itself a claim about the car.
  */
 export function publicHistoryOf(args: {
@@ -98,7 +98,7 @@ export function publicHistoryOf(args: {
  *
  * Written to `users/{uid}/vehicles/{id}/consentLog`. The question this exists
  * to answer is "was this car's history public on the day that buyer saw it",
- * and a boolean on the vehicle cannot answer it — only a log can.
+ * and a boolean on the vehicle cannot answer it - only a log can.
  */
 export interface ConsentEvent {
   id: string;

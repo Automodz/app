@@ -3,7 +3,7 @@
  *
  * Source: docs/AUTOMODZ-OS.md §9.1, §3.4
  *
- * §9.1 names Edge — "the hairline that separates a material from its ground".
+ * §9.1 names Edge - "the hairline that separates a material from its ground".
  * §3.4 constrains what it may do: depth comes from light, so a divider marks a
  * boundary and never creates a lift. It is the thinnest visible line and
  * nothing more.

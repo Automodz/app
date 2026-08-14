@@ -8,7 +8,7 @@ import 'server-only';
  * TWO DEFECTS THIS EXISTS TO CLOSE, both of which shipped:
  *
  *   NOBODY WAS TOLD. `createCarLead` wrote a document and stopped. A customer
- *   asking to buy a car — the highest-value message the product can carry —
+ *   asking to buy a car - the highest-value message the product can carry -
  *   landed in a collection the studio had to remember to open. This is exactly
  *   the defect that made new bookings invisible, and it has the same fix.
  *
@@ -78,7 +78,7 @@ export interface LeadIntent {
  * Record a customer's interest in a car, and make sure the studio knows.
  *
  * Returns the lead id. Throws `MarketError` with a code the route maps to a
- * status — no HTTP vocabulary in here.
+ * status - no HTTP vocabulary in here.
  */
 export async function createLeadAuthoritative(intent: LeadIntent): Promise<string> {
   if (!adminDb) throw new MarketError('not-configured');
@@ -188,7 +188,7 @@ const ADMIN_LEADS_URL = '/admin/cars/leads';
  * Both channels, each guarded by its own marker.
  *
  * A WhatsApp outage must not make the in-app notice look sent, and the marker
- * records the ATTEMPT rather than the success — writing it only on success
+ * records the ATTEMPT rather than the success - writing it only on success
  * would retry forever against a misconfigured number.
  */
 async function announceLead(
@@ -211,7 +211,7 @@ async function announceLead(
   try {
     if (!(await markerRef.get()).exists) {
       const sent = await whatsAppToStudio(
-        `${title} — ${lead.title}\n`
+        `${title} - ${lead.title}\n`
         + `${lead.name} · ${lead.phone}\n`
         + (lead.when ? `Wants to come: ${lead.when}` : 'Asking for details'),
       );
@@ -240,7 +240,7 @@ async function announceSellRequest(
   try {
     if (!(await markerRef.get()).exists) {
       const sent = await whatsAppToStudio(
-        `Car offered — ${offer.car}\n`
+        `Car offered - ${offer.car}\n`
         + `${offer.name} · ${offer.phone}\n`
         + (offer.expectedPrice ? `Wants about ₹${offer.expectedPrice}` : 'No price named'),
       );

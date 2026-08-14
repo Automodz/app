@@ -8,7 +8,7 @@ import { readApproval } from '@/lib/server/approvalService';
 export const dynamic = 'force-dynamic';
 
 /**
- * `/approval/[id]` — design screen 12.
+ * `/approval/[id]` - design screen 12.
  *
  * The approval is read HERE rather than out of the customer picture, because
  * an approval is about a visit in flight and the picture is a snapshot: a
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
  *
  * Ownership is checked inside `readApproval`, against the verified session. An
  * approval that is not the caller's returns null, which becomes the same 404
- * as one that does not exist — so this cannot be used to discover which
+ * as one that does not exist - so this cannot be used to discover which
  * approvals are real.
  */
 export default async function ApprovalPage(

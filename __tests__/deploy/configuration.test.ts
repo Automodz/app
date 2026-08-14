@@ -3,19 +3,19 @@
  *
  * `.env.example` is what somebody copies when they set the product up. A key
  * the code READS and that file does not NAME is a feature that silently does
- * not exist in production — and four of them were missing:
+ * not exist in production - and four of them were missing:
  *
  *   CLOUDINARY_API_KEY / _SECRET / CLOUDINARY_CLOUD_NAME
  *       `/api/media/sign` answers 503 without them, so NO photograph can be
  *       uploaded: not a certificate, not a car, not a sell request. The file
  *       still advertised `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, which was
- *       removed when uploads became signed — an invitation to re-create the
+ *       removed when uploads became signed - an invitation to re-create the
  *       unsigned preset that shipped the write permission in the bundle.
  *
  *   CRON_SECRET
  *       The nightly job FAILS CLOSED. Unset, it refuses every request, so no
  *       retention reminders, no membership expiry, no stale bookings aged out
- *       and no daily figures — for ever, silently.
+ *       and no daily figures - for ever, silently.
  *
  *   NEXT_PUBLIC_SITE_URL
  *       Canonicals, the sitemap and every shared link.
@@ -91,7 +91,7 @@ describe('every key the code reads is on the checklist', () => {
   it('and the nightly job’s secret is named, because it fails closed', () => {
     expect(documented.has('CRON_SECRET')).toBe(true);
     const cron = readFileSync('app/api/cron/daily/route.ts', 'utf8');
-    /* Fails CLOSED — an unset secret must refuse, never run for the world. */
+    /* Fails CLOSED - an unset secret must refuse, never run for the world. */
     expect(cron).toMatch(/if \(!secret \|\|/);
   });
 });

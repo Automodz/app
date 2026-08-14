@@ -2,7 +2,7 @@
  * THE COMPOSITION HOLDS ON A PHONE.
  *
  * Reported from production, Safari on an iPhone, a car in the studio:
- * "Running longer than planned — the work sets the pace." was set in 62px
+ * "Running longer than planned - the work sets the pace." was set in 62px
  * display type, wrapped over six lines, and drawn straight through the car's
  * own name, the state's sentence, the ring it was supposed to be inside, and
  * the card below it. The screen was unreadable and nothing was clipping it.
@@ -10,7 +10,7 @@
  * It was not a breakpoint, a `100vh`, a transform or a z-index. It was a
  * SENTENCE IN A NUMBER SLOT: `Dial` renders its children at a quarter of its
  * own diameter, `HomeScreen` handed it `state.timing`, and `state.timing` is
- * worded by the projection as prose — "Planned finish around 5:40 pm." on
+ * worded by the projection as prose - "Planned finish around 5:40 pm." on
  * plan, and the sentence above once the visit runs past it. Every live visit
  * was drawing this; the late wording was merely the longest.
  *
@@ -19,7 +19,7 @@
  *   1. THE SCREEN. The dial holds a measure, and the sentence is said once,
  *      in the pane that has always carried it.
  *   2. THE PRIMITIVE. Whatever a caller puts in that slot, it stays inside
- *      the ring — because a component whose layout depends on its caller
+ *      the ring - because a component whose layout depends on its caller
  *      behaving is not bounded, and this one was not.
  */
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -32,7 +32,7 @@ const codeOf = (p: string) =>
   readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
 /** The exact sentence from the production screenshot. `lib/os/stay.ts`. */
-const LATE = 'Running longer than planned — the work sets the pace.';
+const LATE = 'Running longer than planned - the work sets the pace.';
 const ON_PLAN = 'Planned finish around 5:40 pm.';
 
 const base: HomeModel = {
@@ -79,7 +79,7 @@ describe('the live dial holds a measure, not the sentence', () => {
     expect(dialValue(html())).not.toContain('the work sets');
   });
 
-  it('the on-plan wording is no more welcome — it was prose too', () => {
+  it('the on-plan wording is no more welcome - it was prose too', () => {
     /* Every live visit drew this. The late sentence was only the longest, so
        fixing "the long one" would have left the screen broken on plan. */
     const h = html({ state: { ...base.state, timing: ON_PLAN }, live: { ...base.live!, timing: ON_PLAN } });
@@ -87,7 +87,7 @@ describe('the live dial holds a measure, not the sentence', () => {
   });
 
   it('it holds how far through the visit the floor has got', () => {
-    /* Three of five acts done. The same number the ARC has always drawn — so
+    /* Three of five acts done. The same number the ARC has always drawn - so
        the ring and the reading inside it cannot disagree. */
     expect(dialValue(html())).toBe('60%');
   });
@@ -98,18 +98,18 @@ describe('the live dial holds a measure, not the sentence', () => {
 
   it('the timing sentence is still said, once, where it always was', () => {
     /* The fix adds no words to the screen and removes none: the pane below
-       the dial carries the sentence, exactly as before. §3.2 — one subject;
-       §22.2 — and one wording of it.
+       the dial carries the sentence, exactly as before. §3.2 - one subject;
+       §22.2 - and one wording of it.
 
-       Counted on what is DRAWN, with the attributes stripped — the same
+       Counted on what is DRAWN, with the attributes stripped - the same
        sentence is deliberately also in the dial's accessible name, which is
        the test above, and an accessible name is not a second wording on the
        screen. */
     const visible = html().replace(/<[^>]+>/g, '\n');
     expect((visible.match(/Running longer than planned/g) ?? []).length).toBe(1);
     /* It LEADS the pane now rather than following the pane's own title. The
-       title was "Follow the visit" — the exact words of the one action below
-       it, pointing at the same address — so the pane says the thing only it
+       title was "Follow the visit" - the exact words of the one action below
+       it, pointing at the same address - so the pane says the thing only it
        has instead, and the words appear once, on the action. */
     expect((visible.match(/Follow the visit/g) ?? []).length).toBe(1);
     expect(visible.indexOf('Running longer')).toBeLessThan(visible.indexOf('Follow the visit'));
@@ -136,7 +136,7 @@ describe('the live dial holds a measure, not the sentence', () => {
 describe('the act names line up with the bars they name', () => {
   it('each name shares the segments’ grid instead of taking width from its neighbours', () => {
     /* `space-between` on five content-width spans let "Looked over" squeeze
-       the four beside it — which is why the strip read as compressed on a
+       the four beside it - which is why the strip read as compressed on a
        phone. Asserted on the rule, since the widths themselves need a
        browser. */
     const screen = codeOf('components/screens/HomeScreen.tsx');
@@ -203,7 +203,7 @@ describe('nothing a caller puts in the dial can leave the ring', () => {
 
   it('and it says so out loud in development', () => {
     /* The production symptom of prose in this slot is a clipped word, which
-       is quiet enough to ship — and did. */
+       is quiet enough to ship - and did. */
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
     render(LATE);
     expect(spy).toHaveBeenCalledWith(expect.stringContaining('[Dial]'));
@@ -241,7 +241,7 @@ describe('the light theme cannot reach inside a room', () => {
    * applied only inside the ROOM branch. That was the smallest correct fix
    * for the reported screenshot and it was too small: `/cars`,
    * `/cars/<id>` and `/dashboard/sell-car` are drawn from the same one dark
-   * palette and carry no dock on purpose, so they were left in daylight —
+   * palette and carry no dock on purpose, so they were left in daylight -
    * measured on `/cars/<id>`, the title, the price and every value in the
    * specification list were white on white.
    *
@@ -268,7 +268,7 @@ describe('the light theme cannot reach inside a room', () => {
    *
    * Half of "the room" is the palette and the other half is the field, and
    * only the first half was reaching these surfaces. The door and the public
-   * landing took `RoomTheme` and stopped — so they were the room's near-black
+   * landing took `RoomTheme` and stopped - so they were the room's near-black
    * with none of the room's amber, which is the difference between the studio
    * and a black page. They are the first two things anybody sees.
    *
@@ -276,7 +276,7 @@ describe('the light theme cannot reach inside a room', () => {
    * just given: `Ambient` is fixed at `z-index: 0` and a positioned element
    * later in the DOM with an opaque background sits straight on top of it.
    * That is why mounting the field alone changed nothing until the landing's
-   * and the door's own `background: color.paper` came off — `body` is already
+   * and the door's own `background: color.paper` came off - `body` is already
    * `--bg`, and no room paints its own ground either (`os/Screen`).
    */
   it('and so does the field, on the same surfaces', () => {
@@ -284,13 +284,13 @@ describe('the light theme cannot reach inside a room', () => {
     /* Both non-room branches: the customer surface, and the signed-out home. */
     expect(chrome).toMatch(/isCustomerSurface\(pathname\)\s*\?\s*<><RoomTheme \/><Ambient \/>/);
     expect(chrome).toMatch(/!signedIn && pathname === HOME\) return <><RoomTheme \/><Ambient \/>/);
-    /* Three lights, one field — mounted once, never per screen. */
+    /* Three lights, one field - mounted once, never per screen. */
     expect(chrome.match(/<Ambient \/>/g)).toHaveLength(3);
   });
 
   it('and nothing under that field paints its own ground over it', () => {
     for (const f of ['components/screens/LandingScreen.tsx', 'app/auth/login/page.tsx']) {
-      /* `color.paper` may still be used — the landing's intro splash is meant
+      /* `color.paper` may still be used - the landing's intro splash is meant
          to be opaque. What may not exist is a root that fills itself with it. */
       expect({ f, opaqueRoot: /minHeight: '100svh',[\s\S]{0,80}background: color\.paper/.test(codeOf(f)) })
         .toEqual({ f, opaqueRoot: false });
@@ -316,7 +316,7 @@ describe('the light theme cannot reach inside a room', () => {
   });
 
   it('and the customer gets their own preference back on the way out', () => {
-    /* The stored choice is not overwritten and not discarded — the landing
+    /* The stored choice is not overwritten and not discarded - the landing
        page, the legal pages and an invoice still honour it. */
     const theme = codeOf('navigation/RoomTheme.tsx');
     expect(theme).toMatch(/return \(\) => wear\(storedTheme\(\)\)/);
@@ -326,7 +326,7 @@ describe('the light theme cannot reach inside a room', () => {
 
 describe('the dock names the four rooms you are not standing in', () => {
   it('their ink is the token with a measured contrast, not a literal', () => {
-    /* `rgba(237,235,231,0.42)` is primary ink at 42% — a number nobody had
+    /* `rgba(237,235,231,0.42)` is primary ink at 42% - a number nobody had
        measured, and about 2.6:1 on the dock's own glass. §21.1 wants 4.5:1
        and §22.4 wants no component writing its own colour value. */
     const dock = codeOf('navigation/BottomNavigation.tsx');
@@ -347,7 +347,7 @@ describe('the viewport assumptions were already right, and stay right', () => {
   it('no customer surface measures itself against the large viewport', () => {
     /* `100vh` on a phone is the height WITHOUT the browser's own bars, so the
        last of the page sits under them. Checked because it is the usual
-       suspect for this symptom and was, here, innocent — which is worth
+       suspect for this symptom and was, here, innocent - which is worth
        keeping true. */
     const surfaces = [
       'components/os/Screen.tsx', 'components/screens/Room.tsx',

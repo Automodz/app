@@ -61,7 +61,7 @@ export const DEV_DECLINED_BOOKING = {
   scheduledDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
   scheduledTime: '14:00',
   totalAmount: 1200, paymentMethod: 'cash', paymentStatus: 'pending',
-  rejectionReason: 'That afternoon was fully booked — mornings this week are wide open.',
+  rejectionReason: 'That afternoon was fully booked - mornings this week are wide open.',
   cancelledAt: tsMinAgo(60 * 20), createdAt: tsMinAgo(60 * 30), updatedAt: tsMinAgo(60 * 20),
 } as unknown as Booking;
 

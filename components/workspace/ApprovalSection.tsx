@@ -1,6 +1,6 @@
 'use client';
 /**
- * ASKING THE CUSTOMER — the studio side of design screen 12.
+ * ASKING THE CUSTOMER - the studio side of design screen 12.
  *
  * A customer cannot approve extra work the studio has never asked for, so this
  * is the operation that makes screen 12 more than a page: the bay opens a
@@ -16,7 +16,7 @@
  * ── AND IT CANNOT ANSWER ─────────────────────────────────────────────────
  * There is no control here that resolves a request. The transition table
  * refuses `approved` and `declined` to the studio, and this screen offers
- * neither — the studio may only WITHDRAW what it asked, which is a different
+ * neither - the studio may only WITHDRAW what it asked, which is a different
  * act with a different meaning.
  */
 import { useState } from 'react';
@@ -29,7 +29,7 @@ import { Section } from './parts';
 
 /** The studio's word for each refusal, so the counter is never shown a code. */
 const FAULT: Record<string, string> = {
-  'job-has-no-customer': 'This car has no account attached — ask them at the counter.',
+  'job-has-no-customer': 'This car has no account attached - ask them at the counter.',
   'visit-already-closed': 'This visit is finished; there is nothing left to change.',
   'price-required': 'What does the extra work cost?',
   'label-required': 'Name the extra work.',
@@ -51,7 +51,7 @@ export function ApprovalSection(
 
   /* The evidence comes from the photographs the bay has ALREADY taken. A
      separate upload here would be a second media path for one car, and the
-     customer is being asked to trust a photograph — it should be one that is
+     customer is being asked to trust a photograph - it should be one that is
      already part of the visit's record. */
   const available: JobPhoto[] = (job.photos ?? []).filter(p => p.kind !== 'before');
 
@@ -76,7 +76,7 @@ export function ApprovalSection(
         toast.error(FAULT[(b as { error?: string }).error ?? ''] ?? 'Could not send that.');
         return;
       }
-      toast.success('Asked — the customer has been told.');
+      toast.success('Asked - the customer has been told.');
       setOpen(false);
       setReason(''); setDetail(''); setLabel(''); setPrice(''); setMinutes(''); setChosen([]);
       onAsked?.();
@@ -146,7 +146,7 @@ export function ApprovalSection(
             <input
               type="number" value={minutes} onChange={e => setMinutes(e.target.value)}
               aria-label="Extra minutes"
-              title="Extra minutes — the customer is told whether it still fits today"
+              title="Extra minutes - the customer is told whether it still fits today"
               className="input-dark text-sm py-2 px-2 w-20 text-right"
             />
             <span className="font-body text-xs" style={{ color: 'var(--muted)' }}>min</span>
@@ -178,7 +178,7 @@ export function ApprovalSection(
             </div>
           ) : (
             <p className="font-body" style={{ fontSize: 12, color: 'var(--muted)' }}>
-              No photographs on this job yet. Take one first — a customer asked to
+              No photographs on this job yet. Take one first - a customer asked to
               spend more deserves to see why.
             </p>
           )}

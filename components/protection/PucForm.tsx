@@ -12,7 +12,7 @@
  *
  * ── AND WHY IT DECIDES NOTHING ───────────────────────────────────────────
  * Every rule this form appears to hold is a copy for the CUSTOMER's benefit
- * only — so a mistake is answered in the field rather than by a round trip.
+ * only - so a mistake is answered in the field rather than by a round trip.
  * The server validates the same input with the same function
  * (`lib/os/puc.ts#validateDeclaration`) and its answer is the one that counts;
  * this form cannot make a certificate acceptable by not checking it.
@@ -38,18 +38,18 @@ import {
  *
  * Keyed by the SAME codes the engine and the route return, so a refusal
  * invented on the server still arrives as a sentence rather than as a slug.
- * An unlisted code falls through to a plain apology and a way to try again —
+ * An unlisted code falls through to a plain apology and a way to try again -
  * §20.2, always recoverable.
  */
 const REFUSAL: Record<string, string> = {
   'vehicle-required': 'We could not tell which car this is for.',
-  'reference-invalid': 'The certificate number, as it reads on the paper — letters and digits.',
+  'reference-invalid': 'The certificate number, as it reads on the paper - letters and digits.',
   'issued-on-invalid': 'The day it was issued.',
   'expires-on-invalid': 'The day it runs to.',
   'expiry-not-after-issue': 'A certificate cannot run out before the day it was issued.',
   'issued-in-the-future': 'That issue date has not happened yet.',
   'already-expired': 'That certificate has already run out. Have the car tested, then send us the new one.',
-  'term-too-long': 'No pollution certificate runs that long — check the year.',
+  'term-too-long': 'No pollution certificate runs that long - check the year.',
   'note-too-long': 'A little shorter, please.',
   'evidence-invalid': 'That photograph could not be matched to this car. Attach it again.',
   'vehicle-not-yours': 'That car is not in your garage.',
@@ -61,7 +61,7 @@ const REFUSAL: Record<string, string> = {
 };
 
 const SIGNED_OUT = 'Your session has expired. Sign in again and we’ll keep this.';
-const UNKNOWN = 'That didn’t send. Your connection, most likely — try again.';
+const UNKNOWN = 'That didn’t send. Your connection, most likely - try again.';
 
 export function PucForm(
   { vehicleId, title, note, submit, canAttach = true }:
@@ -114,7 +114,7 @@ export function PucForm(
           const up = await uploadImage(evidencePathFor(uid, vehicleId, Date.now()), file);
           evidence = { evidenceUrl: up.url, evidencePath: up.path };
         } catch {
-          /* §19.1 — a photograph that would not upload is not a failed
+          /* §19.1 - a photograph that would not upload is not a failed
              declaration. The certificate's facts are what the studio checks;
              the photograph only makes that easier. So the customer is told
              what happened and offered the send without it, rather than being
@@ -147,7 +147,7 @@ export function PucForm(
     }
   };
 
-  /* §19.1 — the moment after. The room's own panes redraw from the server a
+  /* §19.1 - the moment after. The room's own panes redraw from the server a
      beat later; until they do, the screen says what happened rather than
      sitting on a form that looks unsent. */
   if (sent) {
@@ -206,15 +206,15 @@ export function PucForm(
           min={today}
         />
 
-        {/* §21.6 — the label sits above and says it is optional, because an
+        {/* §21.6 - the label sits above and says it is optional, because an
             unlabelled optional field reads as a requirement nobody explained.
 
             THE INPUT ITSELF IS HIDDEN and the label is the control, which is
             the idiom `components/market/SellForm` already uses: a native file
             control paints its own "Choose File" button in the browser's chrome
-            and reads as a grey box dropped into the room. §22.2 — one
+            and reads as a grey box dropped into the room. §22.2 - one
             implementation of anything. */}
-        {/* §10.5 — offered only where it can be sent. A deployment with no
+        {/* §10.5 - offered only where it can be sent. A deployment with no
             media keys answers 503 to every upload, so the field is absent
             rather than present and always failing. The certificate's FACTS
             are what the studio checks; the photograph only makes it easier. */}
@@ -276,7 +276,7 @@ export function PucForm(
   );
 }
 
-/** One field. The label sits above — a placeholder is not a label (§21.6). */
+/** One field. The label sits above - a placeholder is not a label (§21.6). */
 function Field({
   label, value, onChange, type = 'text', autoComplete, min, max,
 }: {

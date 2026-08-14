@@ -1,11 +1,11 @@
 /**
- * THE CLUB, READ FROM A BROWSER — and only read.
+ * THE CLUB, READ FROM A BROWSER - and only read.
  *
  * ── WHAT WAS HERE ────────────────────────────────────────────────────────
  * `createSubscription`, `updateSubscriptionStatus` and
  * `expireLapsedSubscriptions`. All three wrote to Firestore from a browser,
  * and the first was the serious one: it accepted a whole subscription document
- * from its caller — plan, start date, end date, wash count, status — and the
+ * from its caller - plan, start date, end date, wash count, status - and the
  * rules allowed it so long as the document said `pending`. Rules can check
  * that word and nothing else about it, so `washesTotal: 999` and an `endDate`
  * in 2099 were one devtools session away, and the studio's activation screen
@@ -15,7 +15,7 @@
  * `lib/server/membershipService.ts`, where the plan is checked against the
  * catalogue, the dates come from the studio's own clock, and `active` is a
  * write no browser can reach. Expiry moved to the nightly job, which is where
- * it always belonged — it used to run only when somebody in the studio
+ * it always belonged - it used to run only when somebody in the studio
  * happened to open a screen.
  */
 import {

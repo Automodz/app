@@ -1,9 +1,9 @@
 /**
- * ALL NINETEEN SCREENS, RENDERED. READ ONLY — this script writes nothing.
+ * ALL NINETEEN SCREENS, RENDERED. READ ONLY - this script writes nothing.
  *
  * The parity suite proves the routes exist and are wired; this proves they
  * actually render against real data, with a real session, in the real server.
- * "The page renders" was never the standard on its own — but a screen that
+ * "The page renders" was never the standard on its own - but a screen that
  * throws for a signed-in customer is not a screen either, and the audit's
  * §19 recorded that the browser pass had never been completed because the
  * session could not be established.
@@ -14,7 +14,7 @@
  *   ORIGIN=http://localhost:3002 node scripts/verify-screens.mjs
  *
  * Each row reports the status, and a marker the screen can only emit when its
- * projection produced something — not merely that HTML came back.
+ * projection produced something - not merely that HTML came back.
  */
 import { readFileSync } from 'fs';
 import { cert, initializeApp } from 'firebase-admin/app';
@@ -55,14 +55,14 @@ const session = async uid => {
     body: JSON.stringify({ idToken: ex.idToken }),
   });
   const cookie = /automodz-session-id=([^;]+)/.exec(s.headers.get('set-cookie') || '')?.[1];
-  if (!cookie) throw new Error('no session cookie — is the server running?');
+  if (!cookie) throw new Error('no session cookie - is the server running?');
   return `automodz-session-id=${cookie}`;
 };
 
 const text = h => h
   .replace(/<script[\s\S]*?<\/script>/g, '')
   .replace(/<[^>]+>/g, ' ')
-  .replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, '&').replace(/&mdash;/g, '—')
+  .replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, '&').replace(/&mdash;/g, '-')
   .replace(/\s+/g, ' ');
 
 const main = async () => {
@@ -93,7 +93,7 @@ const main = async () => {
   const SCREENS = [
     ['01', 'Welcome', '/auth/login', /Continue with Google|Sign in/i],
     ['02', 'Add your car', '/garage?add=1', /registration|Add (a|your) car/i],
-    /* Home says ONE of several true things depending on the car's state — a
+    /* Home says ONE of several true things depending on the car's state - a
        marker that demanded a particular one would be asserting the customer's
        situation rather than the screen. What every state shares is the one
        action and the studio's own sentence about the car. */
@@ -101,7 +101,7 @@ const main = async () => {
     ['06', 'Studio', '/studio', /What we do to cars/i],
     ['07', 'Scope & quote', null, /How much of the car|Estimate/i],
     /* THE SHEET IS A CLIENT OVERLAY. Radix portals it after hydration, so the
-       server's HTML carries the room and not the sheet — asserting the sheet's
+       server's HTML carries the room and not the sheet - asserting the sheet's
        words here would be asserting that a portal had been server-rendered,
        which it never is. The room is what this can prove; the sheet's contents
        are proven by `__tests__/studio/*` and by the estimate it renders. */
@@ -128,7 +128,7 @@ const main = async () => {
   let bad = 0;
   for (const [n, name, path, marker] of SCREENS) {
     if (!path) {
-      console.log(`  --  ${n.padEnd(6)} ${name.padEnd(20)} skipped — no record in production to open`);
+      console.log(`  --  ${n.padEnd(6)} ${name.padEnd(20)} skipped - no record in production to open`);
       continue;
     }
     const res = await fetch(`${ORIGIN}${path}`, { headers: { cookie }, redirect: 'follow' });
@@ -144,7 +144,7 @@ const main = async () => {
     );
   }
 
-  /* THE CALENDAR IS A FILE, not a page — checked as one. */
+  /* THE CALENDAR IS A FILE, not a page - checked as one. */
   if (booking) {
     const ics = await fetch(`${ORIGIN}/api/booking/${booking}/calendar`, { headers: { cookie } });
     const body = await ics.text();

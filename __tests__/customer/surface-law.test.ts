@@ -301,18 +301,33 @@ describe('the product says the same word for the same thing', () => {
     }
   });
 
-  it('a dash is an em dash, as it is everywhere else in the product', () => {
-    /* Three strings used a hyphen where the same FILE used an em dash a few
-       lines above - including the sentence from the original bug report.
-       Matched line by line: a regex spanning a whole file swallows code
-       between two apostrophes and reports the file back to you. */
+  /**
+   * A DASH IS A HYPHEN. THIS RULE USED TO SAY THE EXACT OPPOSITE.
+   *
+   * It required an em dash everywhere, on the grounds of internal consistency,
+   * and consistency was the only argument it had. The owner's is better and it
+   * overrides: an em dash reads as machine-written. Whatever the typographic
+   * merits, a studio's own voice sounding like it was generated is a worse
+   * outcome than a dash of the wrong width, and this is the owner's copy.
+   *
+   * So the law is inverted rather than deleted - the product still says the
+   * same thing the same way everywhere, which was always the point of having
+   * a rule here at all.
+   *
+   * THE CHARACTER IS WRITTEN AS `\u2014`, NOT TYPED.
+   *
+   * A literal one here does not survive: the sweep that removes em dashes from
+   * the product removed the em dash from THIS TEST's own regex, which quietly
+   * turned it into "no hyphens anywhere" and failed every line of prose it was
+   * meant to protect. An escape says the same thing to the regex engine and is
+   * invisible to anything looking for the character.
+   */
+  it('a dash is a hyphen, never an em dash', () => {
     for (const f of copy) {
-      const hyphenated = codeOf(f).split('\n')
-        /* Interpolations first: `${MONTHS[m - 1]}` is arithmetic, not prose. */
-        .map(l => l.replace(/\$\{[^}]*\}/g, '~'))
-        .filter(l => /(['`])[^'`]*\w - \w[^'`]*\1/.test(l))
+      const emDashed = codeOf(f).split('\n')
+        .filter(l => /(['`])[^'`]*\u2014[^'`]*\1/.test(l))
         .map(l => l.trim().slice(0, 60));
-      expect({ f, hyphenated }).toEqual({ f, hyphenated: [] });
+      expect({ f, emDashed }).toEqual({ f, emDashed: [] });
     }
   });
 });
@@ -441,12 +456,12 @@ describe('a photograph that does not arrive composes rather than reports', () =>
    * "BMW M340i xDrive Sport, finished at AutoModz" - beside a browser glyph.
    * The attribute stays, because that is what a screen reader reads.
    */
-  it('THE CAR’S HERO — the largest element in the product — says its failure', () => {
+  it('THE CAR’S HERO - the largest element in the product - says its failure', () => {
     /* It was the last raw `<Image>` on a customer surface. A car whose
        photograph 404s collapsed it to the ALT TEXT at 16px in full ink,
-       sprawled across half the display. It cannot use the primitive — the
+       sprawled across half the display. It cannot use the primitive - the
        cover box is bespoke, because the region marks live in the
-       photograph's own coordinates — so it borrows the vocabulary. */
+       photograph's own coordinates - so it borrows the vocabulary. */
     const src = readFileSync('components/vehicle/photograph.tsx', 'utf8');
     expect(src).toMatch(/onError=\{\(\) => setFailed\(true\)\}/);
     expect(src).toMatch(/fontSize: 0, color: 'transparent'/);
@@ -459,7 +474,7 @@ describe('a photograph that does not arrive composes rather than reports', () =>
     /* `.am-photo` hid the alt TEXT and not the browser's broken-image glyph,
        which is replaced content. The primitive keeps the same two
        declarations on the image it renders AND says the failure, so the class
-       has nothing left to do — and a class nobody wears is one the next screen
+       has nothing left to do - and a class nobody wears is one the next screen
        will wear instead of using the primitive. */
     const photograph = readFileSync('components/os/Photograph.tsx', 'utf8');
     expect(photograph).toMatch(/fontSize: 0, color: 'transparent'/);
@@ -476,12 +491,12 @@ describe('a photograph that does not arrive composes rather than reports', () =>
      *
      * `.am-photo` sets `color: transparent; font-size: 0`, which hides the alt
      * TEXT a failed image collapses to. It does NOT hide the browser's own
-     * broken-image glyph, because that is replaced content and not text — so a
+     * broken-image glyph, because that is replaced content and not text - so a
      * car whose photograph 404s drew a torn-page icon in the car chooser, in
      * the middle of the room. Found by LOOKING at the render; every geometric
      * assertion passed.
      *
-     * `Photograph` owns all three states — absent, ready, failed — and says
+     * `Photograph` owns all three states - absent, ready, failed - and says
      * the third rather than letting the browser draw it. The three screens
      * that still wore the class alone (the chooser, the record's hero and the
      * garage's lead tile) go through the primitive now, so the class is no

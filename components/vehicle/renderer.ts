@@ -21,14 +21,14 @@
  * any of them are produced:
  *
  *   1  something that draws the vehicle and fills its frame
- *   2  WHERE THE REGIONS ARE — §11.4's paint, glass, wheels, interior
+ *   2  WHERE THE REGIONS ARE - §11.4's paint, glass, wheels, interior
  *   3  a description, for anyone who cannot see it (§21.6)
  *
  * (2) is what makes this a real boundary rather than a decorative one. A
  * photograph knows where its wheels are because a human marked them once. A
  * photogrammetric model would derive them from geometry. An AR presentation
  * would project them onto the actual car in front of the customer. All three
- * answer the same question — "where, in your frame, is the interior?" — and
+ * answer the same question - "where, in your frame, is the interior?" - and
  * the screen is written against the question, never against an answer.
  *
  * Positions are FRACTIONS OF THE FRAME, not pixels, for the same reason: a
@@ -39,13 +39,13 @@
 /**
  * §11.4 names the regions and this list is closed to them: "the paint, the
  * glass, the wheels, the interior". They are parts of a car, not categories
- * of product, which is why there is no `insurance` or `membership` here —
+ * of product, which is why there is no `insurance` or `membership` here -
  * those protect the whole vehicle and belong to the surfaces that show it
  * whole (§14).
  */
 export type RegionId = 'paint' | 'glass' | 'wheels' | 'interior';
 
-/** §21.8 — the customer's word for each region, never an internal one. */
+/** §21.8 - the customer's word for each region, never an internal one. */
 export const REGION_NAME: Record<RegionId, string> = {
   paint: 'The paint',
   glass: 'The glass',
@@ -56,7 +56,7 @@ export const REGION_NAME: Record<RegionId, string> = {
 /**
  * Where a region sits, in the rendering's OWN space.
  *
- * `x` and `y` are fractions from 0 to 1 of whatever that space is — for a
+ * `x` and `y` are fractions from 0 to 1 of whatever that space is - for a
  * photograph, of the photograph itself, not of the frame it is cropped into.
  * A fraction survives a change of medium, a resolution and an aspect ratio
  * where a pixel would leak one renderer's idea of size outward.
@@ -76,8 +76,8 @@ export interface RenderedRegion {
 /**
  * What a rendering is told about the moment it is being drawn in.
  *
- * Deliberately thin. It carries intent — "the customer is asking about the
- * wheels" — and never presentation. A renderer may respond to `focus` however
+ * Deliberately thin. It carries intent - "the customer is asking about the
+ * wheels" - and never presentation. A renderer may respond to `focus` however
  * its medium allows: a photograph dims around the region, a model could
  * rotate toward it, an AR presentation could outline the real wheel. None of
  * that is the screen's business.
@@ -90,10 +90,10 @@ export interface RenderingProps {
   /**
    * WHAT THE SCREEN WANTS PUT AT EACH REGION, PLACED BY THE RENDERING.
    *
-   * §10.3 — composition over configuration. The screen supplies the mark; it
+   * §10.3 - composition over configuration. The screen supplies the mark; it
    * never supplies a coordinate, and it never reads one. This is not a
    * nicety: a photograph drawn to COVER its frame is cropped, so a region at
-   * 0.30 of the image can sit at 0.15 of the frame — measured, on a phone,
+   * 0.30 of the image can sit at 0.15 of the frame - measured, on a phone,
    * with the placeholder photograph. Any screen positioning marks by fraction
    * of the frame would scatter them off the car the moment the aspect ratio
    * moved, and would do it silently.
@@ -107,7 +107,7 @@ export interface RenderingProps {
 }
 
 /**
- * A rendering of one vehicle. §11.3 — this is what "the hero for this
+ * A rendering of one vehicle. §11.3 - this is what "the hero for this
  * vehicle" resolves to.
  */
 export interface VehicleRendering {
@@ -117,13 +117,13 @@ export interface VehicleRendering {
    */
   Surface: (props: RenderingProps) => React.ReactElement;
   /**
-   * §11.4 — where the regions are. Empty when the medium cannot locate them,
+   * §11.4 - where the regions are. Empty when the medium cannot locate them,
    * which is not a failure: it means the car cannot be asked about itself yet,
    * and the screen must stay whole without the interaction.
    */
   regions: readonly RenderedRegion[];
   /**
-   * §11.5 — false when there is nothing of this car to show yet. The screen
+   * §11.5 - false when there is nothing of this car to show yet. The screen
    * composes an awaiting state rather than rendering an empty frame; it is the
    * RENDERER that knows whether it has anything, so it says so here.
    */
@@ -132,7 +132,7 @@ export interface VehicleRendering {
 
 /**
  * Order the regions the way a person moves around a car rather than the way
- * an object happens to list its keys — top to bottom, then left to right.
+ * an object happens to list its keys - top to bottom, then left to right.
  *
  * This is the boundary's job, not the screen's: it fixes keyboard and
  * screen-reader order (§21.5, "operable by keyboard, in a logical order")

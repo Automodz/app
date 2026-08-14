@@ -4,8 +4,8 @@ import 'server-only';
  *
  * The landing shows "FROM ₹x" under each of the four disciplines, where x is
  * the cheapest ACTIVE service in that category. The old page read that on the
- * client with `getServices()`, which meant the marketing page — the one address
- * every visitor arrives at — carried the whole Firebase client SDK.
+ * client with `getServices()`, which meant the marketing page - the one address
+ * every visitor arrives at - carried the whole Firebase client SDK.
  *
  * Same numbers, same silent-failure rule, read on the server instead. If the
  * read fails or Admin is not configured, the caller falls back to the static

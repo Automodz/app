@@ -32,7 +32,7 @@ export interface Opening {
  * `excludeBookingId` lets the Manage screen offer the days a booking could move
  * to without its own reservation standing in the way of the move.
  *
- * Returns `[]` — never a guess — when the database is unreachable. An invented
+ * Returns `[]` - never a guess - when the database is unreachable. An invented
  * opening is a customer told to come on a day the studio is full.
  */
 export async function nextOpenings(args: {

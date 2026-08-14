@@ -12,7 +12,7 @@
  * anywhere in the customer pipeline. The host is allowed in `remotePatterns`
  * and in the CSP's `img-src`, and it answers. A URL that exists loads.
  *
- * So the empty plates are visits the studio has not photographed yet — and the
+ * So the empty plates are visits the studio has not photographed yet - and the
  * interface was drawing that exactly like a photograph that failed. The fix is
  * to tell the two apart, not to make the empty one prettier.
  */
@@ -70,7 +70,7 @@ describe('the composition never moves', () => {
 
   it('and the alt text can never lay the page out', () => {
     /* A broken `<img>` collapses to its alt at body size and pushes the layout
-       apart — the leak seen on the live visit's frame strip. */
+       apart - the leak seen on the live visit's frame strip. */
     const h = html({ src: 'https://res.cloudinary.com/x/a.jpg' });
     expect(h).toMatch(/font-size:0/);
     expect(h).toMatch(/color:transparent/);
@@ -114,7 +114,7 @@ describe('the pipeline this was written against', () => {
  * `Photograph` fills its frame with `position: absolute; inset: 0`, which
  * anchors to the nearest POSITIONED ancestor. The film-strip frame in
  * `HomeScreen` set a width, a height and `overflow: hidden` but no `position`,
- * so the photograph climbed past it — past every other static ancestor — to the
+ * so the photograph climbed past it - past every other static ancestor - to the
  * initial containing block, and covered the viewport. `sizes="104px"` had
  * already told `next/image` to fetch a 104px-wide source, so the escape
  * upscaled it about fourfold: hence a wallpaper, and hence a blurred one.

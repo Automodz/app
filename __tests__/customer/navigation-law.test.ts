@@ -2,16 +2,16 @@
  * NO ROOM IS A DEAD END.
  *
  * Reported: "There is no obvious way back from the vehicle detail page to the
- * Cars screen." That was true, and it was not one screen's oversight — it was
+ * Cars screen." That was true, and it was not one screen's oversight - it was
  * the absence of a rule. The audit it triggered found:
  *
  *   · THREE back idioms. A `quiet` Action at the very FOOT of the studio's
  *     scope, the approval, manage-a-booking and the live visit; a `quiet`
  *     Button at the TOP of `/cars/<id>` and `/dashboard/sell-car`, set flush
  *     with no glyph so it read as a caption; and nothing at all elsewhere.
- *   · FIVE screens with no way back of any kind — `/history`, `/history/<id>`,
+ *   · FIVE screens with no way back of any kind - `/history`, `/history/<id>`,
  *     `/history/<id>/settle`, `/vehicle`, `/booking/<id>`.
- *   · TWO of those with no dock either, because they are public on purpose —
+ *   · TWO of those with no dock either, because they are public on purpose -
  *     `/cars` and `/dashboard/sell-car` were closed rooms with no exit.
  *
  * These are the rules that replaced it, asserted rather than remembered.
@@ -27,7 +27,7 @@ const codeOf = (p: string) =>
  * Does this screen draw the way out?
  *
  * Two shapes, one control: `<Back />` placed directly, or `<RoomHeader>` with
- * a parent — the header composes the same primitive, which is the point of it
+ * a parent - the header composes the same primitive, which is the point of it
  * existing. A screen that does neither is a screen you cannot leave.
  */
 const drawsBack = (file: string) => {
@@ -66,7 +66,7 @@ const ROOT = new Set(slots as string[]);
 /**
  * THE ONE EXCEPTION, STATED RATHER THAN FORGOTTEN.
  *
- * The first arrival has no parent because there is nothing behind it — it is
+ * The first arrival has no parent because there is nothing behind it - it is
  * the first screen a customer ever sees, reached by being sent there rather
  * than by walking. A back control would point at a room they have not been
  * given yet. It is not a dead end: every step carries a skip and a forward,
@@ -90,7 +90,7 @@ describe('every screen answers "how do I go back?"', () => {
   it.each(children.map(s => [s.name, s.file, s.route] as const))(
     '%s draws the one back control',
     (_name, file, route) => {
-      /* Either it places the control, or it is a root — and it is not. */
+      /* Either it places the control, or it is a root - and it is not. */
       expect({ route, back: drawsBack(file) }).toEqual({ route, back: true });
     },
   );
@@ -98,7 +98,7 @@ describe('every screen answers "how do I go back?"', () => {
   it.each([...ROOT].map(r => [r] as const))(
     '%s is a root room and grows no back control',
     route => {
-      /* §6.2 — a back control on a dock slot either does nothing or leaves the
+      /* §6.2 - a back control on a dock slot either does nothing or leaves the
          product. `parentOf` returning null is what makes `<Back />` safe to
          place unconditionally. */
       expect(parentOf(route)).toBeNull();
@@ -123,7 +123,7 @@ describe('the way back is deterministic, never the browser’s history', () => {
   });
 
   it('nothing in the product calls history.back() to escape a room', () => {
-    /* §17.3 — a notification is a doorway, and an approval, a booking and an
+    /* §17.3 - a notification is a doorway, and an approval, a booking and an
        invoice are all opened cold from a lock screen. `back()` there leaves
        the app or does nothing, and it is indistinguishable from working when
        you happen to have walked in through the front door. */
@@ -134,7 +134,7 @@ describe('the way back is deterministic, never the browser’s history', () => {
   });
 
   it('a parent is named for the customer, never "Back"', () => {
-    /* §21.8 — the customer's word. "Back" says nothing about where you land,
+    /* §21.8 - the customer's word. "Back" says nothing about where you land,
        which is the whole thing a screen reader needs to hear. */
     for (const { route } of SCREENS) {
       const p = parentOf(route);
@@ -163,7 +163,7 @@ describe('there is ONE back idiom', () => {
 
   it('and so are the caption-shaped ones', () => {
     /* `<Button tier="quiet" … style={{ paddingInline: 0 }}>All cars</Button>`
-       — the reported "no obvious way back". */
+       - the reported "no obvious way back". */
     for (const file of [
       'components/screens/ListingScreen.tsx', 'components/screens/SellCarScreen.tsx',
     ]) {
@@ -184,7 +184,7 @@ describe('there is ONE back idiom', () => {
   it('the header composes the same primitive rather than its own', () => {
     /* Five screens moved to `RoomHeader`; it must not grow a second back. */
     const src = codeOf('components/os/RoomHeader.tsx');
-    /* Unconditionally — a header must not be able to lose the exit by having
+    /* Unconditionally - a header must not be able to lose the exit by having
        a prop left off. `Back` is the one that knows when to draw nothing. */
     expect(src).toMatch(/<Back parent=\{parent \?\? undefined\}/);
     expect(src).not.toMatch(/\{parent \? <Back/);
@@ -200,11 +200,11 @@ describe('there is ONE back idiom', () => {
 describe('a renderer still builds no addresses (ARCHITECTURE §1)', () => {
   it('the back control locates itself rather than being told where it is', () => {
     /* The first cut of this had `parentOf('/history')` inside the renderer,
-       which is a renderer naming a route — the architecture suite caught it.
+       which is a renderer naming a route - the architecture suite caught it.
        The control reads its own address and asks the one route table. */
     const src = codeOf('components/os/RoomHeader.tsx');
-    /* It reads its own address — path AND search, because the car is part of
-       the address — and asks the one route table. It never receives a route
+    /* It reads its own address - path AND search, because the car is part of
+       the address - and asks the one route table. It never receives a route
        from a renderer. */
     expect(src).toMatch(/usePathname\(\)/);
     expect(src).toMatch(/useSearchParams\(\)/);
@@ -236,8 +236,8 @@ describe('the light and the dock are two questions, from one table', () => {
   });
 
   it('the two that carry no dock still carry the light', () => {
-    /* Public on purpose — four slots leading to a sign-in wall are four dead
-       ends — but still drawn in the room's one dark palette. */
+    /* Public on purpose - four slots leading to a sign-in wall are four dead
+       ends - but still drawn in the room's one dark palette. */
     for (const route of ['/cars', '/cars/c1', '/dashboard/sell-car']) {
       expect({ route, dock: Boolean(roomFor(route)) }).toEqual({ route, dock: false });
       expect({ route, light: isCustomerSurface(route) }).toEqual({ route, light: true });
@@ -259,7 +259,7 @@ describe('the hybrid model: the walk, then the map', () => {
    * Approved after the owner reported Garage → the BMW → its record → Back
    * landing on Now. Two sources, one control, and a strict order:
    *
-   *   1. an explicit `parent` — the MODEL knows something the address cannot
+   *   1. an explicit `parent` - the MODEL knows something the address cannot
    *   2. the walk this session actually took
    *   3. the deterministic parent map
    *
@@ -289,7 +289,7 @@ describe('the hybrid model: the walk, then the map', () => {
     expect(parentOf('/history')?.href).toBe('/');
   });
 
-  it('and a sheet is not context — only the room is', () => {
+  it('and a sheet is not context - only the room is', () => {
     expect(parentOf('/history?car=v1&panel=x')?.href).toBe('/vehicle?car=v1');
   });
 });

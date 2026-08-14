@@ -1,8 +1,8 @@
 /**
- * ONE ENTITY, ONE ANSWER — across every screen that names it.
+ * ONE ENTITY, ONE ANSWER - across every screen that names it.
  *
  * §22.5: truth is not recomputed. The audit's most expensive findings were not
- * missing features, they were two screens disagreeing about one fact — the
+ * missing features, they were two screens disagreeing about one fact - the
  * album totalling ₹11,990 more than the visits a customer could open, Home
  * saying "Cared for" over a Friday that had gone, the Garage saying "nothing
  * declared" about a membership Home was counting as protection.
@@ -85,7 +85,7 @@ describe('every screen names the same day for one booking', () => {
     const studio = toStudio(p, NOW);
 
     /* The booking spans two days, and every surface that mentions it says so
-       or says nothing — none of them may claim one. */
+       or says nothing - none of them may claim one. */
     expect(booked.when).toContain(shortDay('2026-02-12'));
     expect(manage.when).toBe(booked.when);
     expect(studio.manageable[0].when).toBe(booked.when);
@@ -93,7 +93,7 @@ describe('every screen names the same day for one booking', () => {
 
   it('and Home says it ONCE, in its own state rather than twice', () => {
     /* The hero already names the visit, so the NEXT VISIT block is suppressed
-       — "both true, and both said once". This is the rule that stopped Home
+       - "both true, and both said once". This is the rule that stopped Home
        announcing a booking directly under a sentence about the same booking. */
     const home = toHome(p, NOW)!;
     expect(home.state.line).toContain('12 February 2026');
@@ -101,8 +101,8 @@ describe('every screen names the same day for one booking', () => {
   });
 
   it('and every surface points at the same booking', () => {
-    /* The ADDRESSES differ by intent — Home's one action is "Manage the
-       visit", the Studio's row is a doorway to the booking — and that is the
+    /* The ADDRESSES differ by intent - Home's one action is "Manage the
+       visit", the Studio's row is a doorway to the booking - and that is the
        point of two screens. What may never differ is WHICH booking. */
     const home = toHome(p, NOW)!;
     const studio = toStudio(p, NOW);
@@ -240,7 +240,7 @@ describe('every screen names the same car', () => {
   });
 
   it('and the person’s room counts it without describing it', () => {
-    /* §5.2 — the car's DETAILS are barred from the PERSON's room. Its rows
+    /* §5.2 - the car's DETAILS are barred from the PERSON's room. Its rows
        count cars and never describe one.
 
        `consentCars` is the exception and it is not a loophole: consent belongs
@@ -282,7 +282,7 @@ describe('a car on a bay reads the same everywhere', () => {
   });
 
   it('and NOTHING offers to arrange a next visit over the top of it', () => {
-    /* A car that is booked in does not need to be told to book in — the audit
+    /* A car that is booked in does not need to be told to book in - the audit
        found exactly this contradiction on Home. */
     expect(toHome(p, at)!.next).toBeUndefined();
     expect(toHome(p, at)!.nextOpening).toBeUndefined();

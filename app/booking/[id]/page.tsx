@@ -11,7 +11,7 @@ import { toBooked } from '@/lib/customer/project';
 export const dynamic = 'force-dynamic';
 
 /**
- * `/booking/[id]` — design screen 09.
+ * `/booking/[id]` - design screen 09.
  *
  * OWNERSHIP IS STRUCTURAL. `CustomerPicture` was built by querying `bookings`
  * where `userId` equals the verified session's uid, so another customer's

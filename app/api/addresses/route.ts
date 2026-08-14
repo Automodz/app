@@ -9,18 +9,18 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * SAVED PICKUP AND DROP ADDRESSES — design screens 08 and 19.
+ * SAVED PICKUP AND DROP ADDRESSES - design screens 08 and 19.
  *
  * Every write goes through here because two of the rules cannot be written as
  * Firestore rules: keeping exactly one default is a write to documents the
  * request never named, and refusing to delete an address a van is due at needs
  * a query. See lib/server/addressService.
  *
- * Ownership is the verified uid and nothing else — no body field names a user,
+ * Ownership is the verified uid and nothing else - no body field names a user,
  * so there is no `userId` to forge.
  */
 /**
- * THE CALLER — a bearer token, or the session cookie the rooms already use.
+ * THE CALLER - a bearer token, or the session cookie the rooms already use.
  *
  * The two sessions lapse independently, so a customer can reach a room that
  * renders perfectly and find its one control claiming they are signed out.

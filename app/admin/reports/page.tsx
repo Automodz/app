@@ -32,7 +32,7 @@ interface MonthReport {
      for itself.
 
      REPORTED ON THE PAYMENT DATE. `paidAt` is stamped once, when an admin
-     activates the subscription — the moment money actually changed hands. No
+     activates the subscription - the moment money actually changed hands. No
      amortisation and no deferred revenue: a cycle paid for in March is March's
      revenue in full, even though the washes are used in April. */
   membershipRevenue: number;
@@ -204,7 +204,7 @@ export default function AdminReportsPage() {
           {/* ── MEMBERSHIP REVENUE ──────────────────────────────────────
               Its own section, on the payment date, kept apart from detailing.
               A membership is a standing arrangement rather than work on a car:
-              folded together, neither number means anything. No amortisation —
+              folded together, neither number means anything. No amortisation -
               a cycle paid for this month is this month's revenue in full. */}
           <div className="mb-4">
             <p className="font-display font-700 mb-2" style={{ color: 'var(--chrome)' }}>
@@ -230,7 +230,7 @@ export default function AdminReportsPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
             {[
-              /* DETAILING revenue only — membership has its own section below,
+              /* DETAILING revenue only - membership has its own section below,
                  and mixing them would make revenue-per-visit meaningless. */
               { l: 'Detailing revenue', v: formatCurrency(revenue), c: 'var(--ember)' },
               { l: `Bookings (${report.bookingCount})`, v: formatCurrency(report.bookingRevenue), c: 'var(--chrome)' },

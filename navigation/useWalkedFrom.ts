@@ -7,7 +7,7 @@
  * This adapts the first into the shape the control already speaks, so the
  * control stays a control and the choice between the two is one line.
  *
- * Returns `undefined` — not `null` — so `walked ?? parentOf(here)` reads as
+ * Returns `undefined` - not `null` - so `walked ?? parentOf(here)` reads as
  * "the walk, or else the map".
  */
 import { useNavigationOptional } from './NavigationProvider';
@@ -15,7 +15,7 @@ import { previousRoute } from '@/lib/os/navstack';
 import { parentOf, type Parent } from './resolve';
 
 export function useWalkedFrom(here: string): Parent | undefined {
-  /* No provider means no walk to consult — a screen rendered on its own, or a
+  /* No provider means no walk to consult - a screen rendered on its own, or a
      surface outside the customer shell. The parent map answers instead. */
   const nav = useNavigationOptional();
   const step = nav ? previousRoute(nav.walk, here) : null;

@@ -6,7 +6,7 @@
  * in an App Store submission without being retyped.
  *
  * IT DESCRIBES WHAT THE CODE ACTUALLY DOES. Every claim below is one this
- * repository can be checked against — the collections named are the ones that
+ * repository can be checked against - the collections named are the ones that
  * exist, the deletion described is `lib/server/deleteAccount.ts`, and the
  * payment sentence is true because there is no gateway in the product.
  */
@@ -24,7 +24,7 @@ export const PRIVACY: LegalSection[] = [
     heading: 'What we hold',
     body: [
       'Your name, email address and phone number, so we can reach you about your car.',
-      'The cars you add — their name and registration — and the photographs we take of them during a visit.',
+      'The cars you add - their name and registration - and the photographs we take of them during a visit.',
       'Your visits, what was done, what it cost, and any warranty it carries.',
       'Your membership, if you hold one, and how many washes remain in the cycle.',
       'Your notification preferences, and the device tokens needed to send a push notification if you turn them on.',
@@ -51,7 +51,7 @@ export const PRIVACY: LegalSection[] = [
     body: [
       'You can delete your account from Profile at any time. Nothing needs to be requested from us.',
       'Your profile, your cars, your photographs, your notifications and your push tokens are erased.',
-      'Records the studio is required to keep — invoices, completed visits and memberships that were paid for — are kept, with your name, email and phone removed from them. They no longer identify you.',
+      'Records the studio is required to keep - invoices, completed visits and memberships that were paid for - are kept, with your name, email and phone removed from them. They no longer identify you.',
       'Deleting your account also signs you out everywhere and cannot be undone.',
     ],
   },

@@ -38,13 +38,13 @@ service cloud.firestore {
         (request.resource.data.role == 'customer' ||
          (request.resource.data.role == 'admin' && isOwnerEmail()));
       // A customer may edit their own profile but may NOT set their own
-      // `welcomedAt` — that is written only by POST /api/welcome/complete,
+      // `welcomedAt` - that is written only by POST /api/welcome/complete,
       // which is also the only place the studio's reset lives. A client that
       // could write it could skip its own first arrival, or force somebody
       // else's back by clearing it.
       //
       // `upiVpa` and `quietMode` are server-written too, and for reasons rules
-      // cannot cover. A malformed payment address is not a cosmetic problem —
+      // cannot cover. A malformed payment address is not a cosmetic problem -
       // it is a customer tapping "Pay" at the counter and their bank
       // application refusing to open. And `quietMode` is read BY THE SERVER
       // when it decides whether a push may be delivered, so a preference the
@@ -96,12 +96,12 @@ service cloud.firestore {
       }
 
       // Vehicles subcollection
-      // ── A CAR IN A GARAGE — and the ownership primitive itself ────────
+      // ── A CAR IN A GARAGE - and the ownership primitive itself ────────
       //    THIS IS THE MOST CONSEQUENTIAL RULE IN THE FILE, and it read as
       //    obviously safe: a customer writing under their own uid.
       //
-      //    `ownsVehicle()` asks one question — does a document exist at
-      //    `users/{me}/vehicles/{thatId}` — and three collections read it:
+      //    `ownsVehicle()` asks one question - does a document exist at
+      //    `users/{me}/vehicles/{thatId}` - and three collections read it:
       //    protections, visits and declarations. So while a browser could
       //    CHOOSE the id it was creating, a customer who knew another
       //    customer's vehicle id could write an empty document at that id
@@ -114,7 +114,7 @@ service cloud.firestore {
       //    addresses (`/vehicle?car=<id>`, `/history?car=<id>`), so they are
       //    in browser history, in screenshots and in any shared link.
       //
-      //    THE FIX IS `allow create: if false` — the server allocates the id
+      //    THE FIX IS `allow create: if false` - the server allocates the id
       //    (/api/vehicle → addCar), so a browser cannot name the document it
       //    creates and therefore cannot name somebody else's. That one line is
       //    what closes it: an UPDATE cannot squat, because Firestore only
@@ -124,11 +124,11 @@ service cloud.firestore {
       //    So the owner keeps exactly one write, and it is the one that must
       //    be theirs: PERMISSION TO PUBLISH THIS CAR'S RECORD. `lib/os/
       //    consent.ts` is explicit that the studio has no way in there at all
-      //    — an admin who could consent on a customer's behalf would defeat
-      //    the point of asking — so consent cannot be moved behind a staff
+      //    - an admin who could consent on a customer's behalf would defeat
+      //    the point of asking - so consent cannot be moved behind a staff
       //    door, and it is narrowed by key rather than by trust.
       //
-      //    Everything else about the car — its name, its plate, its odometer —
+      //    Everything else about the car - its name, its plate, its odometer -
       //    goes through /api/vehicle, where the duplicate-plate check lives.
       match /vehicles/{vehicleId} {
         allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
@@ -152,7 +152,7 @@ service cloud.firestore {
         //    question "was this public on the day that buyer saw it" has an
         //    answer. APPEND-ONLY: not even the owner may edit or delete an
         //    entry, because a consent trail that can be rewritten is not a
-        //    trail. The studio cannot write here at all — an admin who could
+        //    trail. The studio cannot write here at all - an admin who could
         //    grant consent on a customer's behalf would defeat the point of
         //    asking. See lib/os/consent.ts.
         match /consentLog/{eventId} {
@@ -177,7 +177,7 @@ service cloud.firestore {
     //    keys changed. It could not check their values, and every value here
     //    is a business rule: the destination must be a slot that exists, that
     //    the studio is not already working, and that is more than 24 hours
-    //    away — measured against the booking's own timestamp on a clock the
+    //    away - measured against the booking's own timestamp on a clock the
     //    customer does not control. A browser deciding any of those is a
     //    browser deciding whether a bay is free.
     //    Cancelling was equally unsound here: a cancellation must return the
@@ -205,7 +205,7 @@ service cloud.firestore {
     //        client that could create a payment could name its own figure and
     //        rules could only check that it is a number;
     //      · settling adds a ledger entry to the job and moves `amountPaid`
-    //        in the SAME commit, which rules cannot do — a client write would
+    //        in the SAME commit, which rules cannot do - a client write would
     //        leave the payment settled and the job still owed.
     //
     //    Reading is the owner's and the studio's: the customer must see what
@@ -225,7 +225,7 @@ service cloud.firestore {
     //    Written server-side (POST /api/rating) because eligibility is three
     //    facts rules cannot reach together: the visit must be SEALED, the
     //    caller must own the VEHICLE the visit is keyed by, and the rating
-    //    must not already exist. Read by its owner and by the studio — an
+    //    must not already exist. Read by its owner and by the studio - an
     //    opinion nobody at the studio can read is an opinion wasted.
     match /ratings/{visitId} {
       allow read: if request.auth != null &&
@@ -239,7 +239,7 @@ service cloud.firestore {
     //
     //    NOBODY WRITES FROM A CLIENT. Not the customer, and not the studio:
     //      · A customer answering directly would set `status` and skip the
-    //        propagation entirely — the job's total, the booking's total and
+    //        propagation entirely - the job's total, the booking's total and
     //        the breakdown behind them all move in the SAME commit as the
     //        answer, and rules cannot do that. The job would keep the old
     //        figure and the approval would claim the new one.
@@ -249,7 +249,7 @@ service cloud.firestore {
     //        anything if there is no way around it.
     //
     //    /api/approval is the one door: POST to ask (staff), PATCH to answer
-    //    (owner). Reading is the owner's and the studio's — the customer must
+    //    (owner). Reading is the owner's and the studio's - the customer must
     //    see what they are being asked, and the bay must see the answer.
     match /approvals/{id} {
       allow read: if request.auth != null &&
@@ -395,7 +395,7 @@ service cloud.firestore {
     //    paid for (`components/intake/WalkInFlow`), and it only worked because
     //    the shared tablet rides the owner's admin session. A technician on
     //    their own device is allowed into `/admin/walkin` and would have been
-    //    refused — the counter has to be able to see what the customer in
+    //    refused - the counter has to be able to see what the customer in
     //    front of them is owed.
     match /subscriptions/{subId} {
       allow read: if request.auth != null &&
@@ -571,7 +571,7 @@ service cloud.firestore {
     // ── Car leads - public inquiry form with field-shape validation ─────
     // Created ONLY by POST /api/cars/lead, which uses the Admin SDK and is not
     // subject to these rules. This used to allow unauthenticated create so the
-    // public form could work — an open write endpoint wired straight to the
+    // public form could work - an open write endpoint wired straight to the
     // studio's WhatsApp. The form now posts to the route instead.
     match /carLeads/{id} {
       allow create: if false;

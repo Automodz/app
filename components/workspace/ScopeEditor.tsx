@@ -1,6 +1,6 @@
 'use client';
 /**
- * DEFINING WHAT THE STUDIO SELLS — the admin counterpart to design screen 07.
+ * DEFINING WHAT THE STUDIO SELLS - the admin counterpart to design screen 07.
  *
  * A customer cannot choose a coverage the studio has never described, and the
  * audit's PHASE 7 is explicit that every customer capability needs an admin
@@ -9,13 +9,13 @@
  * ── IT WRITES THE CATALOGUE, NOT A PRICE A CUSTOMER SEES ─────────────────
  * Everything saved here is authoritative for the NEXT quote and reaches no
  * estimate or booking already given: those carry their own snapshot. So an
- * edit is safe by construction — there is no version of this control that can
+ * edit is safe by construction - there is no version of this control that can
  * reprice work somebody has already agreed to.
  *
  * ── A CUSTOM COVERAGE HAS NO PRICE, AND THAT IS THE POINT ────────────────
  * `custom` is priced by the panels the customer picks. The price field is
  * therefore hidden for it rather than left blank, because a blank field in a
- * price column invites somebody to type a zero — and a zero would mean the
+ * price column invites somebody to type a zero - and a zero would mean the
  * studio wraps a car for nothing.
  */
 import { useState } from 'react';
@@ -79,7 +79,7 @@ export function ScopeEditor({ service, onSaved }: {
       };
       await updateDoc(doc(db, 'services', service.id), clean);
       onSaved(clean);
-      toast.success('Coverages saved — the next quote uses them');
+      toast.success('Coverages saved - the next quote uses them');
     } catch {
       toast.error('Could not save');
     } finally {
@@ -153,7 +153,7 @@ export function ScopeEditor({ service, onSaved }: {
               <input
                 type="number" value={s.durationMinutes ?? ''}
                 onChange={e => setScope(i, { durationMinutes: Number(e.target.value) })}
-                title="Minutes of work — this is what holds the bay"
+                title="Minutes of work - this is what holds the bay"
                 aria-label="Coverage duration in minutes"
                 className="input-dark text-sm py-1.5 px-2 w-20 text-right"
               />

@@ -5,7 +5,7 @@
  *
  * The engines say what should happen (`lib/os/action.ts`). This is the only
  * place that knows where. It lives in `navigation/` because that is where the
- * route table lives — putting it anywhere else would mean two files knowing the
+ * route table lives - putting it anywhere else would mean two files knowing the
  * product's addresses, and the second one always drifts.
  *
  * A renderer never calls this. The projection does, so a screen receives a
@@ -21,7 +21,7 @@ import {
 const visit = (id?: string) => (id ? `/history/${id}` : '/history');
 
 /**
- * A booking's own two screens — the confirmation and the place it is changed.
+ * A booking's own two screens - the confirmation and the place it is changed.
  *
  * `manage_visit` used to resolve to `${STUDIO}?manage=${id}`, a sheet over the
  * Studio. One address per screen, so a notification, a share and the back
@@ -32,7 +32,7 @@ const bookingManage = (id: string) => `${booking(id)}/manage`;
 /** The calendar file for a booking. A FILE, not a room. */
 const bookingCalendar = (id: string) => `/api/booking/${encodeURIComponent(id)}/calendar`;
 /**
- * Settling a visit — design screen 13. UNDER the visit, because settling is
+ * Settling a visit - design screen 13. UNDER the visit, because settling is
  * something you do TO one: the address reads as what it is and the back button
  * lands on the record.
  */
@@ -43,7 +43,7 @@ const approval = (id: string) => `${APPROVAL}/${encodeURIComponent(id)}`;
 /**
  * The marketplace, with a search already applied.
  *
- * §6.4 — every filtered view is a real address, so a shortlist can be sent to
+ * §6.4 - every filtered view is a real address, so a shortlist can be sent to
  * whoever is actually paying for the car. Empty filters are omitted rather
  * than written as blanks, so the plain list has one canonical URL.
  */
@@ -60,7 +60,7 @@ const cars = (f: { query?: string; fuel?: string; upto?: number }) => {
  * A paper that opens for whoever holds the link.
  *
  * The share token travels in the address because these two are the only
- * customer surfaces reachable without a session — the same token the studio
+ * customer surfaces reachable without a session - the same token the studio
  * sends. Without one the address still resolves, and the route refuses it.
  */
 const shared = (base: string, id: string, token?: string) =>
@@ -69,7 +69,7 @@ const shared = (base: string, id: string, token?: string) =>
 /**
  * The first arrival, at one of its steps.
  *
- * `?step=` is what makes the flow deep-linkable and the back button work — the
+ * `?step=` is what makes the flow deep-linkable and the back button work - the
  * step used to be component state, so Back left the welcome entirely and a
  * reload started it over. `?welcome=1` travels with it so a forced arrival
  * stays forced as the customer moves through it.
@@ -99,7 +99,7 @@ const studioScope = (serviceId: string, vehicleId?: string) => {
 /**
  * Every intent, resolved. Exhaustive by construction: `ActionIntent` is a union
  * and this record must cover it, so adding an intent without an address is a
- * compile error rather than a dead button (§10.5 — nothing is inert).
+ * compile error rather than a dead button (§10.5 - nothing is inert).
  */
 const RESOLVERS: Record<ActionIntent, (a: NextAction) => string> = {
   add_car:             () => `${GARAGE}?add=1`,
@@ -130,14 +130,14 @@ export const hrefForRef = (ref?: { object: 'visit' | 'membership'; id?: string }
 /**
  * EVERY PLACE THE PALETTE CAN SEND SOMEONE.
  *
- * ARCHITECTURE §1 — a renderer builds no addresses, and neither does a
+ * ARCHITECTURE §1 - a renderer builds no addresses, and neither does a
  * projection. The Desk's items were assembled in `toHome` with their hrefs
  * typed out inline (`'/vehicle'`, `'/studio'`, `'/history'`), which is a second
  * copy of the route table living in a projection. Change a route and the
  * palette silently keeps sending people to the old one.
  *
  * A destination names WHAT it wants to reach. Only this file knows where that
- * is — the same rule `NextAction` already follows.
+ * is - the same rule `NextAction` already follows.
  */
 export type Destination =
   | { to: 'home' }
@@ -156,7 +156,7 @@ export type Destination =
         | 'addresses' | 'payment' | 'privacy' }
   | { to: 'vehicle'; vehicleId?: string }
   /**
-   * The car's pollution certificate — declared, renewed, and read.
+   * The car's pollution certificate - declared, renewed, and read.
    *
    * UNDER the car, because it is something you do TO one: the address reads as
    * what it is, and `parentOf` therefore returns the customer to the SAME car
@@ -178,12 +178,12 @@ export type Destination =
   | { to: 'history.car'; vehicleId: string }
   | { to: 'garage.edit'; vehicleId: string }
   /**
-   * `fromVisitId` — the visit that sent them, when one did.
+   * `fromVisitId` - the visit that sent them, when one did.
    *
    * The paper is a SHARED address: opened from a message it has no history
    * behind it, so `history.back()` is not a way out. Told which visit sent
    * them, the page can offer the record itself. Built here because addresses
-   * are built here and nowhere else — a projection that assembled this query
+   * are built here and nowhere else - a projection that assembled this query
    * string would be a second route table (`__tests__/integration/product`).
    */
   | { to: 'invoice'; invoiceId: string; token?: string; fromVisitId?: string }
@@ -200,7 +200,7 @@ export const hrefForDestination = (d: Destination): string => {
     case 'studio':           return STUDIO;
     case 'studio.category':  return studio(d.category);
     case 'studio.scope':     return studioScope(d.serviceId, d.vehicleId);
-    /* Screen 08 is the arrange sheet over the Studio — an address, so it is
+    /* Screen 08 is the arrange sheet over the Studio - an address, so it is
        linkable, restored on reload and closed by the back button (§6.4). */
     case 'studio.arrange':   return `${STUDIO}?arrange=1`;
     case 'membership':       return MEMBERSHIP;
@@ -235,8 +235,8 @@ export const hrefForDestination = (d: Destination): string => {
 /**
  * WHERE A NOTIFICATION LANDS.
  *
- * §17.3 — "A notification is a doorway. It opens the exact surface it is about
- * — never the home screen, never a generic list."
+ * §17.3 - "A notification is a doorway. It opens the exact surface it is about
+ * - never the home screen, never a generic list."
  *
  * Every customer notification in the product pointed at `/app`, the old
  * customer root, which has not existed since the rooms moved to `/`. A booking
@@ -250,7 +250,7 @@ export const eventHref = (
 ): string => {
   /* A booking's own screen while it is still a booking; the visit's while the
      car is here or after it has been sealed. The distinction is the event, not
-     the collection the id came from — `vehicle_ready` names a booking id and
+     the collection the id came from - `vehicle_ready` names a booking id and
      yet belongs on the visit, because that is the surface that owns the fact
      (§17.3). */
   switch (event) {
@@ -316,7 +316,7 @@ export const resolveAction = (action: NextAction): ResolvedAction => ({
  * confirmation and an invoice are all opened cold from a phone's lock screen,
  * and `back()` there either leaves the app or does nothing at all. A shared
  * link has the same shape. So the parent is a PROPERTY OF THE ADDRESS, and
- * this is the one place it is written — for the same reason every other
+ * this is the one place it is written - for the same reason every other
  * address in the product is written here and nowhere else.
  *
  * The five dock slots have no parent and must not grow one: they are where
@@ -324,7 +324,7 @@ export const resolveAction = (action: NextAction): ResolvedAction => ({
  * nothing or leaves the product (§6.2).
  *
  * A screen may override the href when it holds a truer answer than the path
- * does — an approval knows its own visit; nothing in `/approval/<id>` does.
+ * does - an approval knows its own visit; nothing in `/approval/<id>` does.
  */
 export interface Parent {
   href: string;
@@ -345,7 +345,7 @@ export const parentOf = (pathname: string): Parent | null => {
    *
    * `/history?car=v1` used to resolve to `/history`, which resolves to `/`,
    * and the customer who had walked Garage → the BMW → its record landed on
-   * Now — a room they had never been in. Worse, the generic record then shows
+   * Now - a room they had never been in. Worse, the generic record then shows
    * whichever vehicle the product picks by default, so Back could hand them a
    * DIFFERENT car's history than the one they were reading.
    *
@@ -383,7 +383,7 @@ export const parentOf = (pathname: string): Parent | null => {
   /**
    * THE CERTIFICATE BELONGS TO A CAR, SO BACK GOES TO THAT CAR.
    *
-   * `withCar` carries `?car=` upward, exactly as the record already does — and
+   * `withCar` carries `?car=` upward, exactly as the record already does - and
    * for the same reason. Without it a customer who walked Garage → the second
    * car → its certificate would land on `/vehicle`, which resolves to whichever
    * car the product leads with, and Back would silently hand them a DIFFERENT
@@ -395,7 +395,7 @@ export const parentOf = (pathname: string): Parent | null => {
   if (path === VEHICLE) return { href: GARAGE, name: 'Your garage' };
 
   /* The marketplace is public, so its root goes to whatever `/` is for whoever
-     is standing there — the landing to a visitor, Now to an owner. Named for
+     is standing there - the landing to a visitor, Now to an owner. Named for
      the studio rather than for either, because it is the one word that is true
      in both cases. */
   if (seg[0] === 'cars') {
@@ -412,7 +412,7 @@ export const parentOf = (pathname: string): Parent | null => {
  *
  * An invoice and a chapter are the two addresses in the product that leave it:
  * they are sent to a spouse, a buyer, an insurer. So the reader may be someone
- * with no account, no session and no history behind them — `back()` does
+ * with no account, no session and no history behind them - `back()` does
  * nothing for them, and the room they came from does not exist.
  *
  * The rule, one implementation for both:
@@ -420,8 +420,8 @@ export const parentOf = (pathname: string): Parent | null => {
  *   · `?from=` when the product itself put it there and it is a safe internal
  *     path. That is the customer who opened their own document from their own
  *     record, and they go back to it.
- *   · `/` otherwise. It is the one address that answers for both readers — the
- *     landing to a visitor, Now to an owner — and it is the same reasoning
+ *   · `/` otherwise. It is the one address that answers for both readers - the
+ *     landing to a visitor, Now to an owner - and it is the same reasoning
  *     `parentOf` already uses for the public marketplace.
  *
  * The invoice previously fell back to `/history`, which is behind a session:

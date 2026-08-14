@@ -11,7 +11,7 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * PAYING — design screen 13.
+ * PAYING - design screen 13.
  *
  * POST   the customer asks for an intent   (owner; the SERVER decides the amount)
  * PATCH  the customer gives a reference    (owner; a CLAIM, releases nothing)
@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic';
  * to validate.
  */
 /**
- * THE CALLER — a bearer token, or the session cookie the rooms already use.
+ * THE CALLER - a bearer token, or the session cookie the rooms already use.
  *
  * The two sessions lapse independently, so a customer can reach a room that
  * renders perfectly and find its one control claiming they are signed out.
@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest) {
 /**
  * THE STUDIO SETTLES.
  *
- * Staff are recognised from their OWN profile, never from the request body —
+ * Staff are recognised from their OWN profile, never from the request body -
  * the same rule the cancel and reschedule routes follow. This is the write
  * that releases a car, so it is the one that most needs its caller proven.
  */
@@ -125,7 +125,7 @@ export async function PUT(req: NextRequest) {
       paymentId,
       {
         /* What the counter believes it received. A mismatch is REFUSED rather
-           than reconciled — a settlement for the wrong amount leaves the books
+           than reconciled - a settlement for the wrong amount leaves the books
            and the customer's record disagreeing, and only one gets looked at
            again. */
         expectedAmount: typeof body?.expectedAmount === 'number' ? body.expectedAmount : undefined,

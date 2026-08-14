@@ -1,10 +1,10 @@
 'use client';
 /**
- * CONTEXTUAL EXPANSION — the object you tapped, opened.
+ * CONTEXTUAL EXPANSION - the object you tapped, opened.
  *
  * Source: docs/AUTOMODZ-OS-ARCHITECTURE.md §5, §6
  *
- * §5 — "Do not navigate when you can open." A protection, a timeline event, a
+ * §5 - "Do not navigate when you can open." A protection, a timeline event, a
  * membership and a chapter are all objects already on the screen. Routing to
  * them would make them somewhere you go; opening them keeps them something you
  * have. Apple Wallet and Photos do the same, and it is the whole reason the
@@ -12,14 +12,14 @@
  *
  * BEHAVIOUR IS BORROWED, APPEARANCE NEVER IS (§6).
  * Radix supplies the focus trap, the dismiss layer, the scroll lock, the
- * `aria-modal` wiring and the Escape handling — the parts that are easy to get
+ * `aria-modal` wiring and the Escape handling - the parts that are easy to get
  * subtly wrong and that `useDismissable` reimplemented by hand. Not one Radix
  * stylesheet is imported: every value here comes from `design/`.
  *
  * WHY THIS AND NOT `BottomSheet`. A sheet is a surface that arrives from
  * offscreen; an expansion is a surface that GROWS FROM the thing you touched.
  * They are different gestures and the difference is the point. `BottomSheet`
- * keeps its job (arranging, managing — acts that are not an object on screen).
+ * keeps its job (arranging, managing - acts that are not an object on screen).
  */
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -35,13 +35,13 @@ export interface ExpansionProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /**
-   * §21.6 — the accessible name. Also the visible heading, because an object
+   * §21.6 - the accessible name. Also the visible heading, because an object
    * that opens should say what it is.
    */
   title: string;
   /**
    * The shared element id. The row that opened this carries the same
-   * `layoutId`, so Motion morphs one into the other rather than crossfading —
+   * `layoutId`, so Motion morphs one into the other rather than crossfading -
    * §7's "the object you opened is the object you tapped".
    */
   layoutId?: string;
@@ -137,7 +137,7 @@ export function Expansion({ open, onOpenChange, title, layoutId, children }: Exp
 
                     <Dialog.Close asChild>
                       <IconButton label="Close">
-                        {/* A line, not an icon set. §22.4 — no third-party glyph
+                        {/* A line, not an icon set. §22.4 - no third-party glyph
                             vocabulary enters the product for one control. */}
                         <svg width={20} height={20} viewBox="0 0 20 20" aria-hidden>
                           <path

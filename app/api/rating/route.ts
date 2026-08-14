@@ -7,11 +7,11 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * RATE A VISIT — design screen 13.
+ * RATE A VISIT - design screen 13.
  *
  * The rating attaches to the SEALED visit and to nothing else. The old one
  * hung off the public invoice, so anybody holding a shared link could rate
- * somebody else's work, and a visit with no invoice — most of them — could not
+ * somebody else's work, and a visit with no invoice - most of them - could not
  * be rated at all.
  *
  * Once is structural: the rating's document id IS the visit id, so a second
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  /* A bearer token, or the session cookie the rooms already use — the two
+  /* A bearer token, or the session cookie the rooms already use - the two
      lapse independently, and a customer signed in enough to SEE a screen is
      signed in enough to use it. Same-origin only; see lib/server/session.ts. */
   const uid = await sessionCaller(req, t => adminAuth!.verifyIdToken(t));

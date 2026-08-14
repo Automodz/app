@@ -25,7 +25,7 @@ export const cloudinaryConfigured = () => !!(CLOUD && API_KEY && API_SECRET);
  * CAN THIS DEPLOYMENT ACCEPT A PHOTOGRAPH AT ALL?
  *
  * The same question `cloudinaryConfigured` answers, named for the surfaces
- * that ask it rather than for the service behind it — and it is asked because
+ * that ask it rather than for the service behind it - and it is asked because
  * §10.5 says nothing is inert. Without the API secret `/api/media/sign`
  * answers 503, so a customer who taps "Choose a photograph", picks one from
  * their phone and presses send is told it would not upload. That is a control
@@ -33,7 +33,7 @@ export const cloudinaryConfigured = () => !!(CLOUD && API_KEY && API_SECRET);
  * deployment cannot do.
  *
  * Read on the SERVER and handed to the form, so it corrects itself the moment
- * the keys are set — the alternative, hiding the control by hand, would need
+ * the keys are set - the alternative, hiding the control by hand, would need
  * un-hiding by hand.
  */
 export const canAcceptPhotographs = cloudinaryConfigured;

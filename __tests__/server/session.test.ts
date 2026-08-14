@@ -1,5 +1,5 @@
 /**
- * The session cookie — the seam that makes server rendering possible.
+ * The session cookie - the seam that makes server rendering possible.
  *
  * These assert the contract the routes depend on, with the Admin SDK mocked:
  * a cookie is only minted from a verified token, an unreadable cookie is a

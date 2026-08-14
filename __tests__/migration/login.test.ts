@@ -1,12 +1,12 @@
 /**
- * LOGIN — PARITY WITH `reference/customer-old/app/auth/login/page.tsx`.
+ * LOGIN - PARITY WITH `reference/customer-old/app/auth/login/page.tsx`.
  *
  * The migration rule is that the UI is replaced and the behaviour is not. This
  * suite is what makes "and not" checkable: it reads both files and asserts that
  * every call, branch and message the old door had still exists in the new one.
  *
  * It is a source assertion rather than a render test because the behaviour in
- * question is a sequence of calls against Firebase — mounting it would test the
+ * question is a sequence of calls against Firebase - mounting it would test the
  * mocks, not the door.
  */
 import { readFileSync, existsSync } from 'fs';
@@ -52,8 +52,8 @@ describe('every service call the old door made, the new one makes', () => {
 
   it('hands the server a session cookie before redirecting', () => {
     /* The navigation is a DOCUMENT load now, not `router.replace`. A soft
-       navigation was served from the client Router Cache — which still held
-       the signed-out landing — so the server never saw the cookie that had
+       navigation was served from the client Router Cache - which still held
+       the signed-out landing - so the server never saw the cookie that had
        just been minted. See __tests__/auth/entry.test.ts. */
     expect(src).toMatch(/fetch\('\/api\/session'/);
     const session = src.indexOf("'/api/session'");
@@ -74,10 +74,10 @@ describe('every message the old door could show', () => {
   const door = src + codeOf('lib/authError.ts');
 
   it.each([
-    'You’re offline — reconnect to sign in.',
+    'You’re offline - reconnect to sign in.',
     'The studio could not open your account. Please try again.',
     'Allow pop-ups for AutoModz, then try again.',
-    'That didn’t reach Google — check your connection and try again.',
+    'That didn’t reach Google - check your connection and try again.',
     'That did not go through. Please try again.',
   ])('still exists: %s', message => {
     expect(door).toContain(message);
@@ -94,7 +94,7 @@ describe('every message the old door could show', () => {
   it('keeps the welcome, the sub and the reassurance', () => {
     expect(src).toContain('Your studio');
     expect(src).toContain('Where your car lives');
-    expect(src).toContain('One tap — no password to remember.');
+    expect(src).toContain('One tap - no password to remember.');
     expect(src).toContain('Back to AutoModz');
   });
 });
@@ -146,7 +146,7 @@ describe('the door is a state, never an absence', () => {
   });
 
   it('never shows the door twice to someone already signed in', () => {
-    /* The guard still stands down for a session that has not resolved yet —
+    /* The guard still stands down for a session that has not resolved yet -
        but it no longer navigates on the spot. It opens the server session
        first; see __tests__/auth/entry.test.ts for why that ordering is the
        whole of the bug it used to cause. */

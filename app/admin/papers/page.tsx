@@ -1,18 +1,18 @@
 'use client';
 /**
- * PAPERS — the certificates customers have sent, and the studio's decision.
+ * PAPERS - the certificates customers have sent, and the studio's decision.
  *
  * ── WHY THIS SCREEN EXISTS ───────────────────────────────────────────────
  * A customer may state a fact about their own paperwork. Only the studio may
  * make the product assert it. This is the second half of that separation: the
  * queue of declarations, the certificate itself where one was photographed,
- * and the two acts — verify, refuse.
+ * and the two acts - verify, refuse.
  *
  * Verifying is what writes a Protection. Nothing else in the product can, and
  * neither can this screen: it POSTs to `/api/protection/puc/verify`, which
  * reads the caller's role from their own profile and does the write with the
  * Admin SDK. `firestore.rules` refuses every client write to `declarations`
- * and to `protections`, including from a signed-in admin console — so a
+ * and to `protections`, including from a signed-in admin console - so a
  * mis-click here cannot become a promise, and neither can a devtools session.
  *
  * A refusal is given a REASON, and the reason is shown to the customer
@@ -38,7 +38,7 @@ const STATUS_COLOR: Record<DeclarationStatus, string> = {
 
 const day = (t?: { toMillis?: () => number }): string => {
   const ms = t?.toMillis?.() ?? 0;
-  return ms ? new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  return ms ? new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 };
 
 export default function AdminPapersPage() {
@@ -72,7 +72,7 @@ export default function AdminPapersPage() {
         toast.error(body.error || 'Could not save that');
         return;
       }
-      toast.success(decision === 'verify' ? 'Verified — it now stands on the car' : 'Refused');
+      toast.success(decision === 'verify' ? 'Verified - it now stands on the car' : 'Refused');
       setRefusing(null);
       setReason('');
       load();

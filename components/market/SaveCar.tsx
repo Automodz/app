@@ -3,7 +3,7 @@
  * KEEPING A CAR.
  *
  * The `savedCars` subcollection has existed since before the rebuild, is
- * cleared when an account is deleted, and had no way to write to it — the
+ * cleared when an account is deleted, and had no way to write to it - the
  * capability was declared and never built.
  *
  * Optimistic, because the answer is a foregone conclusion and waiting for a

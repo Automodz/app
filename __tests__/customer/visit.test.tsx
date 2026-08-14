@@ -1,17 +1,17 @@
 /**
- * ONE VISIT — the permanent record.
+ * ONE VISIT - the permanent record.
  *
  * The trust surface. A customer opening a finished visit is asking what was
  * done to their car, what it looked like before and after, and what they were
- * actually charged — and until now the last of those lived at another address,
+ * actually charged - and until now the last of those lived at another address,
  * so they had to leave the record of the work to learn what the work cost.
  *
  * Two things were connected rather than invented, and both were already in the
  * backend:
  *
  *   THE COMPARISON. Before/during/after is recorded on the JOB. `framesOfVisit`
- *   prefers stage media, which carries `kind: 'photo'` — the moment is not on
- *   it — so for every visit whose stages held any media the distinction was
+ *   prefers stage media, which carries `kind: 'photo'` - the moment is not on
+ *   it - so for every visit whose stages held any media the distinction was
  *   shadowed and no comparison could be drawn. Read separately now.
  *
  *   THE RECEIPT. Line items, the discount by name, GST and payment status were
@@ -57,17 +57,17 @@ describe('the visit record', () => {
   });
 
   describe('before and after', () => {
-    it('both sides — the comparison is drawn', () => {
+    it('both sides - the comparison is drawn', () => {
       const h = html({ comparison: { before: 'https://x.test/b.jpg', after: 'https://x.test/a.jpg' } });
       expect(h).toContain('role="slider"');
       expect(h).toContain('Before');
       expect(h).toContain('After');
-      /* Legible before hydration — the seam starts at the midpoint, so a
+      /* Legible before hydration - the seam starts at the midpoint, so a
          customer whose JavaScript never arrives still sees both halves. */
       expect(h).toContain('aria-valuenow="50"');
     });
 
-    it('before only — no comparison, and no invented other half', () => {
+    it('before only - no comparison, and no invented other half', () => {
       /* The projection refuses to build one; the screen simply has nothing.
          Filling the missing side from another frame would be a lie about the
          customer's own car. */
@@ -76,12 +76,12 @@ describe('the visit record', () => {
       expect(h).toContain('Before');
     });
 
-    it('after only — same', () => {
+    it('after only - same', () => {
       const h = html({ photos: [{ url: 'https://x.test/a.jpg', description: 'x', caption: 'After' }] });
       expect(h).not.toContain('role="slider"');
     });
 
-    it('no photographs at all — nothing is drawn for nothing', () => {
+    it('no photographs at all - nothing is drawn for nothing', () => {
       const h = html();
       expect(h).not.toContain('role="slider"');
       expect(h).not.toContain('<figure');
@@ -106,7 +106,7 @@ describe('the visit record', () => {
     });
 
     it('the breakdown is stated, and it is complete', () => {
-      /* IT USED TO BE BEHIND A TAP, summarised by the invoice number — so the
+      /* IT USED TO BE BEHIND A TAP, summarised by the invoice number - so the
          one question a receipt exists to answer took a tap, and the control
          that revealed it was labelled with a reference code. Design 1j states
          the whole account on one pane, which is what a receipt is. */
@@ -127,7 +127,7 @@ describe('the visit record', () => {
       expect(h).not.toContain('>Paid<');
     });
 
-    it('no invoice — the sealed total still stands, without a breakdown', () => {
+    it('no invoice - the sealed total still stands, without a breakdown', () => {
       /* Most visits never have paper raised for them. A sealed visit knows
          what it came to regardless, and hiding that would have been a
          regression the album's own test caught. */
@@ -136,7 +136,7 @@ describe('the visit record', () => {
       expect(h).not.toContain('<details');
     });
 
-    it('no invoice and no total — no money anywhere', () => {
+    it('no invoice and no total - no money anywhere', () => {
       const h = html();
       expect(h).not.toContain('<details');
       expect(h).not.toContain('₹');
@@ -145,7 +145,7 @@ describe('the visit record', () => {
     it('the total is stated once, not twice', () => {
       /* `settled` said the same figure before this; the album still uses it,
          where a visit is a line rather than an account. Here the receipt owns
-         the money — one fact, one place. */
+         the money - one fact, one place. */
       const h = html({ receipt, settled: '₹13,240' });
       expect((h.match(/₹13,240/g) ?? []).length).toBe(1);
     });
@@ -174,14 +174,14 @@ describe('the visit record', () => {
     expect(html()).not.toContain('Share this chapter');
   });
 
-  it('no card-stack — the record is photography and type', () => {
+  it('no card-stack - the record is photography and type', () => {
     /* `am-glass` is the one raised material. A record made of eight of them
        is the dashboard this screen exists not to be.
 
        ONE is now permitted, and only one: design 1j puts the account on a
        pane, because a column of figures needs an edge to be read as a
        document rather than as more prose. The invariant being protected was
-       never "zero glass" — it was that the record is photography and type
+       never "zero glass" - it was that the record is photography and type
        with at most a single raised surface in it. */
     const h = html({ receipt, comparison: { before: 'https://x.test/b.jpg', after: 'https://x.test/a.jpg' } });
     expect((h.match(/class="am-glass"/g) ?? []).length).toBeLessThanOrEqual(1);

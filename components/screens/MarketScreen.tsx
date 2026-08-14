@@ -1,21 +1,21 @@
 /**
- * A SERVER COMPONENT. It holds no state, no handlers and no motion — it is
- * handed a model and draws it — so marking it `'use client'` shipped its
+ * A SERVER COMPONENT. It holds no state, no handlers and no motion - it is
+ * handed a model and draws it - so marking it `'use client'` shipped its
  * markup to the browser twice and hydrated it for nothing. The interactive
  * pieces it renders carry their own directive.
  */
 /**
- * THE MARKETPLACE — the stock, as photographs.
+ * THE MARKETPLACE - the stock, as photographs.
  *
  * Source: docs/AUTOMODZ-OS.md §5.2, §15.7, §18.1, §21.6
  *
  * The same album grammar as the Garage and History: a car is a photograph, and
  * what it costs belongs on it. A table of specifications is how a classifieds
- * site shows stock, and this is not one — the three facts that decide a
+ * site shows stock, and this is not one - the three facts that decide a
  * shortlist (year, distance, fuel) sit under the title and the rest waits
  * inside.
  *
- * §6.4 — the filters live in the URL, so a shortlist can be sent to whoever is
+ * §6.4 - the filters live in the URL, so a shortlist can be sent to whoever is
  * actually paying for the car. The controls are links, not buttons holding
  * state: that makes them work with the back button, survive a reload, and
  * render identically on the server.
@@ -41,7 +41,7 @@ export function MarketScreen({ model }: { model: MarketModel }) {
     <main style={{
       paddingInline: INSET,
       /* THE TOP SAFE AREA. `Screen` reserves it for every room; these three
-         hand-rolled `<main>`s never did, and the product is installable — on
+         hand-rolled `<main>`s never did, and the product is installable - on
          a notched phone in standalone the first control sat under the status
          bar. §8.5 puts the inset in the token, not at the call site. */
       paddingTop: `calc(${space.rest}px + env(safe-area-inset-top, 0px))`,
@@ -51,7 +51,7 @@ export function MarketScreen({ model }: { model: MarketModel }) {
     }}>
       <OfflineNote caption="You’re offline. This is the stock as we last knew it." />
 
-      {/* THE MARKETPLACE CARRIES NO DOCK — it is public, and four slots that
+      {/* THE MARKETPLACE CARRIES NO DOCK - it is public, and four slots that
           all lead to a sign-in wall are four dead ends (see routes.ts). That
           made it a room with no exit for a signed-in customer who arrived
           from Home. The parent is the address itself: `/` is the landing to a
@@ -64,7 +64,7 @@ export function MarketScreen({ model }: { model: MarketModel }) {
         before you decide.
       </Text>
 
-      {/* §21.6 — a search field is a form, so Enter submits it and a screen
+      {/* §21.6 - a search field is a form, so Enter submits it and a screen
           reader is told what it searches. It is a GET to the same address,
           which is what keeps the result addressable. */}
       <form action="/cars" method="get" role="search" style={{ marginTop: space.gap }}>
@@ -97,7 +97,7 @@ export function MarketScreen({ model }: { model: MarketModel }) {
       <Filters label="Price" options={budgets} />
 
       {cars.length === 0 ? (
-        /* §18.1 — the two empty cases are not the same sentence. Nothing in
+        /* §18.1 - the two empty cases are not the same sentence. Nothing in
            stock is the studio's news; nothing matching is the customer's own
            filter, and it must offer the way back out. */
         <div style={{ paddingBlock: space.rest }}>
@@ -118,7 +118,7 @@ export function MarketScreen({ model }: { model: MarketModel }) {
         </div>
       )}
 
-      {/* Design 1k's foot — one row, not a section with a heading over it.
+      {/* Design 1k's foot - one row, not a section with a heading over it.
           A customer who wants to sell knows they want to sell; the row is a
           door, and a paragraph in front of a door is a queue. */}
       <Link
@@ -159,7 +159,7 @@ function Filters({ label, options }: { label: string; options: MarketFilter[] })
           <Link
             key={o.key}
             href={o.href}
-            /* §21.6 — the pressed state has to be in the accessibility tree,
+            /* §21.6 - the pressed state has to be in the accessibility tree,
                not only in the colour. */
             aria-current={o.on ? 'true' : undefined}
             scroll={false}
@@ -172,7 +172,7 @@ function Filters({ label, options }: { label: string; options: MarketFilter[] })
               borderRadius: radius.chip,
               border: `${HAIRLINE}px solid ${o.on ? 'rgba(224,164,92,0.4)' : color.edge}`,
               /* The lit one wears the studio's own light, not an inverted
-                 fill — §3.3, colour is information, and "this filter is on"
+                 fill - §3.3, colour is information, and "this filter is on"
                  is information. */
               background: o.on
                 ? 'linear-gradient(160deg, rgba(224,164,92,0.28), rgba(224,164,92,0.1))'
@@ -192,7 +192,7 @@ function Filters({ label, options }: { label: string; options: MarketFilter[] })
 }
 
 function Card({ car }: { car: MarketCard }) {
-  /* Design 1k — the photograph, then a pane of glass carrying the title, the
+  /* Design 1k - the photograph, then a pane of glass carrying the title, the
      price and the one line that decides a shortlist. The pane is UNDER the
      image rather than over it, so nothing has to survive a scrim: the price
      is champagne, which it could not be laid over an unknown photograph. */
@@ -213,7 +213,7 @@ function Card({ car }: { car: MarketCard }) {
         {car.photo ? (
           <Photograph src={car.photo} alt={car.title} sizes={imageSizes.inMeasure} />
         ) : (
-          /* §15.7 — a car with no photograph is silent, not a broken frame.
+          /* §15.7 - a car with no photograph is silent, not a broken frame.
              §11.5's composed absence: a field lit from above, never a grey box. */
           <div
             style={{

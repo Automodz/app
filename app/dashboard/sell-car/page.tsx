@@ -4,11 +4,11 @@ import { loadMySellRequests } from '@/lib/server/marketplace';
 import { toSell } from '@/lib/customer/market';
 
 /**
- * `/dashboard/sell-car` — offering your car to the studio.
+ * `/dashboard/sell-car` - offering your car to the studio.
  *
  * Signed in, unlike the rest of the marketplace. An offer is the start of a
  * relationship the studio has to be able to come back to, and what the
- * customer has already offered is shown here — so there has to be someone to
+ * customer has already offered is shown here - so there has to be someone to
  * show it to. `ServerRoom` supplies the sign-in wall and the picture.
  */
 export const dynamic = 'force-dynamic';

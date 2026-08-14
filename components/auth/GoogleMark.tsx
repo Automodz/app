@@ -4,8 +4,8 @@
  * The one place in the product where colour is neither state nor photograph.
  * It is not decoration and it is not ours to restyle: Google's identity
  * guidelines require the four-colour G, unaltered, whenever a control offers
- * Google sign-in. A monochrome G — which is what the design system would
- * otherwise demand — is specifically disallowed, and a customer reads the
+ * Google sign-in. A monochrome G - which is what the design system would
+ * otherwise demand - is specifically disallowed, and a customer reads the
  * coloured mark as "this really is Google" without having to trust us.
  *
  * So §3.3 is not broken here, it is scoped: this is a third-party trust mark,

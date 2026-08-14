@@ -8,11 +8,11 @@ import { reportError } from '@/lib/server/report';
 export const dynamic = 'force-dynamic';
 
 /**
- * MOVING A VISIT — design screen 10.
+ * MOVING A VISIT - design screen 10.
  *
  * A client cannot do this, and until now it did. `rescheduleBooking` wrote
  * `scheduledDate` and `scheduledTime` straight from the browser under a rule
- * that checked only which KEYS had changed — so the destination was never
+ * that checked only which KEYS had changed - so the destination was never
  * tested for capacity, the 24-hour rule was decided from a clock the customer
  * controls, and the past was a legal destination. That door is closed in
  * `firestore.rules`; this is the only way through.
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  /* A bearer token, or the session cookie the rooms already use — the two
+  /* A bearer token, or the session cookie the rooms already use - the two
      lapse independently, and a customer signed in enough to SEE a screen is
      signed in enough to use it. Same-origin only; see lib/server/session.ts. */
   const uid = await sessionCaller(req, t => adminAuth!.verifyIdToken(t));
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'bad-request' }, { status: 400 });
   }
 
-  /* Staff are recognised from their OWN profile, never from the request body —
+  /* Staff are recognised from their OWN profile, never from the request body -
      the same rule the cancel route follows. The studio may move a booking
      inside the 24-hour window; a customer may not, and a body that claims to
      be staff is just a body. */
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const result = await rescheduleBookingAuthoritative(
       uid, bookingId, { scheduledDate, scheduledTime }, { byStaff },
     );
-    /* Announced only when something actually moved — a double tap on the same
+    /* Announced only when something actually moved - a double tap on the same
        slot returns `unchanged` and must not tell the customer twice. */
     if (!result.unchanged) await announceReschedule(bookingId, result.to);
     return NextResponse.json(result);

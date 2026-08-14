@@ -5,13 +5,13 @@
  * Source: reference/customer-old/app/chapter/[id]/page.tsx
  *
  * The one customer surface with NO SESSION. Whoever holds the link sees it, so
- * it reads through `/api/invoice/[id]?view=chapter` — a route that already
+ * it reads through `/api/invoice/[id]?view=chapter` - a route that already
  * validates the share token and already strips amounts, the customer's phone
  * and every internal reference before anything reaches the wire. Nothing is
  * re-derived here and no second privacy rule is written; if the endpoint says
  * no, this shows the same nothing it would to a stranger.
  *
- * §16 — immutable. What the endpoint returns is the sealed record, so a
+ * §16 - immutable. What the endpoint returns is the sealed record, so a
  * forwarded link shows the visit as it was, whatever the price list says today.
  */
 import { useEffect, useState } from 'react';
@@ -39,7 +39,7 @@ export default function SharedChapterPage() {
   const params = useSearchParams();
   const token = params.get('t');
   /* A CHAPTER IS SENT TO PEOPLE. It is the one screen in the product a
-     stranger is most likely to open cold, and it had no way out of any kind —
+     stranger is most likely to open cold, and it had no way out of any kind -
      no dock, no back, nothing. Same rule as the invoice: the visit they came
      from when the product put them here, the front door otherwise. */
   const parent = publicParent(params.get('from'));
@@ -66,7 +66,7 @@ export default function SharedChapterPage() {
   }
 
   if (state === 'gone' || !chapter) {
-    /* §20.3 — a bad or expired link is not the reader's fault and not an
+    /* §20.3 - a bad or expired link is not the reader's fault and not an
        error page. It says what happened and stops. */
     return (
       <main style={{
@@ -98,7 +98,7 @@ export default function SharedChapterPage() {
       }}
     >
       {/* Over the photograph when there is one, in the gutter when there is
-          not — the same two placements every other room uses. */}
+          not - the same two placements every other room uses. */}
       <div
         style={{
           position: hero ? 'absolute' : 'static', zIndex: 2,
@@ -141,7 +141,7 @@ export default function SharedChapterPage() {
         ) : null}
       </section>
 
-      {/* BEFORE AND AFTER, side by side — the pairing is the whole point of
+      {/* BEFORE AND AFTER, side by side - the pairing is the whole point of
           sharing a chapter. Shown only when both exist; one alone is a
           photograph, not a comparison. */}
       {before.length > 0 && after.length > 0 ? (

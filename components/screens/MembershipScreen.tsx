@@ -4,9 +4,9 @@
  *
  * Source: docs/AUTOMODZ-OS.md §5.2, §8.6, §9.5, §10.4, §15.1, §15.2, §15.3,
  *         §15.6, §18.1, §21.6
- *         design "AutoModz App.dc.html" — screen 1i
+ *         design "AutoModz App.dc.html" - screen 1i
  *
- * §5.2 — the club: "what it includes, what remains, what it is worth, how to
+ * §5.2 - the club: "what it includes, what remains, what it is worth, how to
  * join or leave". §15.3 names the four facts a member must always know, and
  * three of them are here; the fourth is recorded below as absent rather than
  * invented.
@@ -17,14 +17,14 @@
  * moving across it. Everything under the card is a plain row.
  *
  * That division is the whole design of this room. §15.1 is that a membership
- * is a RELATIONSHIP, and a relationship is embodied, not tabulated — so the
+ * is a RELATIONSHIP, and a relationship is embodied, not tabulated - so the
  * one thing that is beautiful here is the card, and the benefits it carries
  * are stated as flatly as possible underneath. A room of equally decorated
  * benefit tiles would be a pricing page, which is §15.6's warning.
  *
  * ── HOW THIS INTEGRATES WITH VEHICLE PROTECTION ──────────────────────────
- * §15.2 — "A membership is a protection. It appears alongside everything else
- * protecting the car." It guards no panel — it guards the relationship — so it
+ * §15.2 - "A membership is a protection. It appears alongside everything else
+ * protecting the car." It guards no panel - it guards the relationship - so it
  * is not a region answer on the Vehicle. It appears instead on Home, beside
  * the coating and the insurance. This room is the detail behind that line.
  *
@@ -54,21 +54,21 @@ export interface MembershipHistoryEntry {
 }
 
 export interface MembershipModel {
-  /** §18.1 — no membership is silence plus an invitation, never a sales page. */
+  /** §18.1 - no membership is silence plus an invitation, never a sales page. */
   held: boolean;
-  /** §15.3 #1 — that they have one, and which tier. The one Display. */
+  /** §15.3 #1 - that they have one, and which tier. The one Display. */
   tier?: string;
   /** Whose card it is. Design 1i. */
   holder?: string;
-  /** The membership's own number — the subscription's id, shortened. */
+  /** The membership's own number - the subscription's id, shortened. */
   memberNo?: string;
   /** The year the relationship started. */
   memberSince?: string;
-  /** §15.3 #2 — what remains, from `os/club`. */
+  /** §15.3 #2 - what remains, from `os/club`. */
   remaining?: string;
   /** How much of the cycle's washes are left, 0–1. Drawn, not described twice. */
   share?: number;
-  /** §15.3 #3 — when it renews or lapses. */
+  /** §15.3 #3 - when it renews or lapses. */
   term?: string;
   /** The countdown, from `os/club.cycleDaysLeft`. Absent when it does not apply. */
   countdown?: string;
@@ -77,7 +77,7 @@ export interface MembershipModel {
   /** The reference the customer has already given, when they have given one. */
   paymentClaimed?: string;
   tone?: StateTone;
-  /** What this plan includes — the plan's own perks, never a second list. */
+  /** What this plan includes - the plan's own perks, never a second list. */
   benefits?: readonly string[];
   /** Booking a wash that is already paid for. */
   bookWashHref?: string;
@@ -122,7 +122,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
     club === 'upgrade' ? 'upgrade' : club === 'renew' ? 'renew' : 'join';
   const flowOpen = club === 'join' || club === 'upgrade' || club === 'renew';
 
-  /* §18.1 — no membership is silence plus an invitation, never a sales page.
+  /* §18.1 - no membership is silence plus an invitation, never a sales page.
      §15.1 is what a membership IS; this room does not argue for one. */
   if (!held) {
     return (
@@ -135,7 +135,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
             fontSize: 15, lineHeight: 1.65, color: color.ink2,
           }}
         >
-          A standing arrangement — washes kept, and the studio on hand.
+          A standing arrangement - washes kept, and the studio on hand.
         </p>
         <div style={{ marginTop: space.rest }}>
           <Action onClick={() => go('join')}>What the club includes</Action>
@@ -161,7 +161,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
 
       {/* ── THE CARD ────────────────────────────────────────────────────
           The one object in the room. Champagne, because a membership is
-          something already in force — amber would make it ask for something,
+          something already in force - amber would make it ask for something,
           and it asks for nothing until it lapses. */}
       <Pane
         tone="cool"
@@ -220,7 +220,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
         </div>
       </Pane>
 
-      {/* §16 — pending is not the same promise as confirmed. A membership the
+      {/* §16 - pending is not the same promise as confirmed. A membership the
           studio has not taken payment for says so, in the one place it
           matters, rather than presenting itself as active. */}
       {awaitingPayment ? (
@@ -234,7 +234,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
         </Pane>
       ) : null}
 
-      {/* §10.5 — a true sentence with nothing to do about it is a dead end.
+      {/* §10.5 - a true sentence with nothing to do about it is a dead end.
           Somebody who has just paid at the counter has something to tell the
           studio, and this is where they tell it. It grants nothing. */}
       {awaitingPayment && subscriptionId ? (
@@ -242,7 +242,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
       ) : null}
 
       {/* ── WHAT REMAINS ────────────────────────────────────────────────
-          §15.3 #2. The cycle drawn as a proportion and said as a sentence —
+          §15.3 #2. The cycle drawn as a proportion and said as a sentence -
           the bar is the shape, the words are the fact, and neither repeats
           the other's job. */}
       {remaining ? (
@@ -259,7 +259,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
           )}
           {bookWashHref ? (
             <div style={{ marginTop: space.gap }}>
-              {/* §15.6 — the benefit is used, not admired. */}
+              {/* §15.6 - the benefit is used, not admired. */}
               <Action href={bookWashHref} style={{ fontSize: 14 }}>Book a wash</Action>
             </div>
           ) : null}
@@ -267,7 +267,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
       ) : null}
 
       {/* ── WHAT IT INCLUDES ────────────────────────────────────────────
-          Rows. §15.6 — a benefit stated plainly is a benefit; a benefit in a
+          Rows. §15.6 - a benefit stated plainly is a benefit; a benefit in a
           decorated tile is an advertisement for itself. */}
       {benefits.length > 0 ? (
         <section
@@ -285,7 +285,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
 
       {/* ── THE OTHER TIERS ─────────────────────────────────────────────
           Named, not sold. A tier above says what it costs; a tier below says
-          it is below. Neither carries a control — changing tier is one
+          it is below. Neither carries a control - changing tier is one
           deliberate act, and it lives under them. */}
       {others.length > 0 ? (
         <section
@@ -322,7 +322,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
       ) : null}
 
       {/* ── EVERY MEMBERSHIP HELD ───────────────────────────────────────
-          §16 — the record. Rows, newest first, and no control on any of them:
+          §16 - the record. Rows, newest first, and no control on any of them:
           a past membership is a fact, not an offer. */}
       {history.length > 0 ? (
         <section
@@ -348,7 +348,7 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
       ) : null}
 
       {/* ── CHANGING IT ─────────────────────────────────────────────────
-          §10.4 — one primary act. Leaving is a real control and is not hidden,
+          §10.4 - one primary act. Leaving is a real control and is not hidden,
           but it is not dressed as an equal to renewing. */}
       <div
         style={{

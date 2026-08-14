@@ -2,7 +2,7 @@
  * OWNERSHIP IS AN ID. A REGISTRATION IS A STRING SOMEBODY TYPED.
  *
  * Production carried three bookings whose stored plate and name disagreed with
- * the vehicle their own `vehicleId` named — a "Honda City" on the BMW's plate
+ * the vehicle their own `vehicleId` named - a "Honda City" on the BMW's plate
  * pointing at the i20. Every `vehicleId` was correct. The customer projection
  * joined by `vehicleRegNo`, so the BMW's room filled with another car's work.
  *
@@ -77,7 +77,7 @@ describe('a registration establishes nothing', () => {
     expect(byId(CORRUPTED, renamed.id)).toHaveLength(before);
   });
 
-  it('a missing vehicleId resolves to NO vehicle — never a plate lookup', () => {
+  it('a missing vehicleId resolves to NO vehicle - never a plate lookup', () => {
     const walkIn = { id: 'j1', vehicleRegNo: BMW.registrationNumber } as unknown as Job;
     for (const v of GARAGE) expect(byId([walkIn], v.id)).toEqual([]);
     /* And it must not be rescued by the plate, which would re-parent it. */

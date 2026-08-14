@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 
 /**
- * `/you` — the person. The path matches the room's own name in
+ * `/you` - the person. The path matches the room's own name in
  * `navigation/routes.ts`; `/profile` was a word from §5.2's internal table, and
  * §21.8 applies to addresses too.
  */

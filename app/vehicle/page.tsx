@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 
 /**
- * `/vehicle` — one car. `?car=` selects which; the search param is read on the
+ * `/vehicle` - one car. `?car=` selects which; the search param is read on the
  * server, so no Suspense bail-out and no client fetch.
  */
 export default async function VehiclePage(

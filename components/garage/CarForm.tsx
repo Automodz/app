@@ -1,6 +1,6 @@
 'use client';
 /**
- * THE CAR FORM — add a car, or correct one.
+ * THE CAR FORM - add a car, or correct one.
  *
  * Source: reference/customer-old/components/os/CarForm.tsx
  *         docs/AUTOMODZ-OS-ARCHITECTURE.md §1, §6
@@ -8,20 +8,20 @@
  * WRITES THROUGH `/api/vehicle`, AND THE ID IS NOT ITS TO CHOOSE.
  *
  * It used to call `addVehicle` / `updateVehicle`, which wrote to Firestore
- * directly at `users/{uid}/vehicles/{id}` — and because the rules allowed a
+ * directly at `users/{uid}/vehicles/{id}` - and because the rules allowed a
  * customer to write anywhere under their own uid, a browser could CREATE a
  * document at any id it liked. `ownsVehicle()` is the ownership primitive for
  * protections, visits and declarations, so squatting another customer's
  * vehicle id was an ownership claim over their car's whole record.
  *
  * The server allocates the id now. The checks below survive as the CUSTOMER's
- * copy — a mistake answered in the field rather than by a round trip — and the
+ * copy - a mistake answered in the field rather than by a round trip - and the
  * server runs the same ones, including the duplicate plate, because a customer
  * with two records for one car has two histories for one car.
  *
  * It is a CLIENT ISLAND. The Garage renders on the server and stays there; only
  * this needs a browser session, so only this carries one. That is why it lives
- * in `components/garage/` rather than `components/screens/` — it is not a
+ * in `components/garage/` rather than `components/screens/` - it is not a
  * renderer of a projection, it is an act.
  */
 import { useEffect, useState } from 'react';
@@ -37,22 +37,22 @@ import {
 
 /** Every way the studio can refuse, in the customer's words. */
 const REFUSAL: Record<string, string> = {
-  'name-required': 'The car needs a name — “Mercedes-AMG C 43”.',
+  'name-required': 'The car needs a name - “Mercedes-AMG C 43”.',
   'registration-required': 'The registration, as it reads on the plate.',
   'registration-taken': 'That car is already in your garage.',
   'not-found': 'We could not find that car in your garage.',
   'not-configured': 'The studio cannot be reached just now. Try again shortly.',
 };
 
-/** The plate as it is STORED — the customer's own spacing survives. */
+/** The plate as it is STORED - the customer's own spacing survives. */
 const normPlate = (s: string) => s.toUpperCase().replace(/\s+/g, ' ').trim();
 
-/** The plate as it is COMPARED — "GJ01AB8539" and "GJ01 AB 8539" are one car.
+/** The plate as it is COMPARED - "GJ01AB8539" and "GJ01 AB 8539" are one car.
  *  The same rule the server uses (`lib/server/vehicleService.plateKey`). */
 const plateKey = (s: string) => s.toUpperCase().replace(/\s+/g, '');
 
 /**
- * WHAT THE FORM NEEDS OF A CAR — not a whole `Vehicle`.
+ * WHAT THE FORM NEEDS OF A CAR - not a whole `Vehicle`.
  *
  * The Garage projects a small editable shape and this reads exactly five
  * fields of it. Asking for a full `Vehicle` forced every caller to cast a
@@ -104,13 +104,13 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
 
   const save = async () => {
     /* NOT `user` FROM THE STORE. The Garage renders on the SERVER and mounts no
-       `AuthProvider`, so the store's user is always null here — and this method
+       `AuthProvider`, so the store's user is always null here - and this method
        opened with `if (!user) return`, which meant pressing "Add the car" did
        nothing at all, silently, for every customer. A car could not be added to
        the garage from the garage. See lib/clientSession.ts. */
     let ok = true;
     if (name.trim().length < 2) {
-      setNameErr('The car needs a name — “Mercedes-AMG C 43”.');
+      setNameErr('The car needs a name - “Mercedes-AMG C 43”.');
       ok = false;
     }
     const p = normPlate(plate);
@@ -127,7 +127,7 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
     setError(null);
     try {
       /* An emptied field must REMOVE the number, not leave the old one
-         standing — the server deletes what arrives empty. Anything
+         standing - the server deletes what arrives empty. Anything
          unparseable is treated as empty: a car whose odometer reads "about
          40k" has no odometer. */
       const res = await authedFetch('/api/vehicle', {
@@ -150,7 +150,7 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
         if (body.error === 'registration-taken') {
           setPlateErr('That car is already in your garage.');
         } else {
-          setError(REFUSAL[body.error ?? ''] ?? 'That didn\u2019t save. Your connection, most likely — try again.');
+          setError(REFUSAL[body.error ?? ''] ?? 'That didn\u2019t save. Your connection, most likely - try again.');
         }
         return;
       }
@@ -165,7 +165,7 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
          server has been asked again. */
       router.refresh();
     } catch {
-      setError('That didn\u2019t save. Your connection, most likely — try again.');
+      setError('That didn\u2019t save. Your connection, most likely - try again.');
     } finally {
       setBusy(false);
     }
@@ -199,7 +199,7 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
             error={plateErr}
             autoComplete="off"
           />
-          {/* Both optional, and said so — an unlabelled optional field reads
+          {/* Both optional, and said so - an unlabelled optional field reads
               as a requirement nobody explained. `inputMode` gives a phone the
               number pad without forbidding "41,208". */}
           <Field
@@ -235,7 +235,7 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
   );
 }
 
-/** One field. The label sits above — a placeholder is not a label (§21.6). */
+/** One field. The label sits above - a placeholder is not a label (§21.6). */
 function Field({
   label, value, onChange, error, autoComplete, inputMode,
 }: {

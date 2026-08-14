@@ -1,6 +1,6 @@
 import 'server-only';
 /**
- * THE MEMBERSHIP SERVICE — the only thing that may put a customer in the Club.
+ * THE MEMBERSHIP SERVICE - the only thing that may put a customer in the Club.
  *
  * ── THE CONTRACT, and it is the Booking Service's contract ───────────────
  *   The client expresses INTENT: which plan, and how they mean to pay.
@@ -10,7 +10,7 @@ import 'server-only';
  *
  * There is no field a caller can set that changes what they get. `amountDue`,
  * `startDate`, `endDate`, `washesTotal` and `status` are never read off a
- * request — they are derived in `lib/os/membership.ts` from the plan name and
+ * request - they are derived in `lib/os/membership.ts` from the plan name and
  * the clock, and the plan name is checked against the catalogue before it is
  * used for anything.
  *
@@ -34,7 +34,7 @@ import {
 } from '@/lib/os/membership';
 import { membershipTransition, type MembershipState } from '@/lib/os/lifecycle';
 /* One cycle, one implementation. Nothing here owns a second copy of "thirty
-   days" — the engine that owns the lifecycle owns the arithmetic. */
+   days" - the engine that owns the lifecycle owns the arithmetic. */
 import { cycleEnd as cycleEndOf } from '@/lib/os/club';
 import type { Subscription, User } from '@/lib/types';
 
@@ -70,7 +70,7 @@ export async function isStudio(uid: string): Promise<boolean> {
 export interface JoinResult {
   subscriptionId: string;
   status: MembershipState;
-  /** `join` · `renew` · `upgrade` — what the server decided this actually is. */
+  /** `join` · `renew` · `upgrade` - what the server decided this actually is. */
   act: 'join' | 'renew' | 'upgrade';
   /** What the studio will ask for, in rupees. Derived, never sent. */
   amountDue: number;
@@ -96,7 +96,7 @@ export async function joinMembership(
    *
    * `ClubFlow` sent `userName`, `userEmail` and `userPhone` in the payload, so
    * the name the studio saw beside a membership was a string the browser chose.
-   * It is a display field, not an authorisation one — but a counter reading
+   * It is a display field, not an authorisation one - but a counter reading
    * "Aarav Shah" off a record somebody else wrote is a counter being lied to.
    */
   const profile = (await db().doc(`users/${uid}`).get()).data() as Partial<User> | undefined;
@@ -105,7 +105,7 @@ export async function joinMembership(
   const id = subscriptionIdFor(uid, plan.id, derived.startDate);
 
   return db().runTransaction(async tx => {
-    /* The exact document first — this is what makes a double tap a database
+    /* The exact document first - this is what makes a double tap a database
        conflict rather than a race. Then everything the customer holds, so the
        decision is made against the record and not against a stale read. */
     const mineRef = db().collection(SUBSCRIPTIONS).doc(id);
@@ -162,13 +162,13 @@ export async function joinMembership(
  * THE STUDIO STARTS ONE AT THE COUNTER.
  *
  * A customer signs up in person and pays there and then, so there is no
- * request to answer — the studio creates it and it is active immediately.
+ * request to answer - the studio creates it and it is active immediately.
  *
  * It runs through the SAME derivation as a customer's own request, which is
  * the point: the admin console used to assemble the document itself (plan,
  * dates, wash count) and write `status: 'active'` straight to Firestore. Two
  * writers meant two chances for the terms to drift from the catalogue, and the
- * console's copy had no `amountPaid` at all — so a membership sold at the
+ * console's copy had no `amountPaid` at all - so a membership sold at the
  * counter carried no revenue figure.
  */
 export async function startMembershipForCustomer(
@@ -250,7 +250,7 @@ export async function startMembershipForCustomer(
 /**
  * "I have paid, here is the reference."
  *
- * A CLAIM. It writes `transactionId` and a timestamp and moves no status —
+ * A CLAIM. It writes `transactionId` and a timestamp and moves no status -
  * exactly what `submitPaymentReference` does for a visit, and for the same
  * reason: a customer returning from their bank application has said something,
  * not proved it.
@@ -319,7 +319,7 @@ export interface DecideResult {
 }
 
 /**
- * ACTIVATE OR REFUSE — the only door to a standing entitlement.
+ * ACTIVATE OR REFUSE - the only door to a standing entitlement.
  *
  * `paidAt` and `amountPaid` are stamped exactly once and never moved: they are
  * what membership revenue is reported on, and a report that drifts when a
@@ -382,16 +382,16 @@ export async function decideMembership(
     for (const other of siblings) {
       if (other.id === id) continue;
       /**
-       * ACTIVE — because a customer with two running memberships has two wash
+       * ACTIVE - because a customer with two running memberships has two wash
        * allowances.
        *
-       * AND PENDING — because the studio has just answered this customer's
+       * AND PENDING - because the studio has just answered this customer's
        * question, and any other open request is now a question nobody will
        * ask again. `mayJoin` refuses a second open request going forward, but
        * PRODUCTION ALREADY HOLDS TWO for one customer (a Silver and a
        * Platinum, both asked for on 11 August, from before that rule existed).
        * Closing them here makes the invariant self-healing rather than needing
-       * a migration — and a request left `pending` for ever is one the nightly
+       * a migration - and a request left `pending` for ever is one the nightly
        * job nags the studio about every single day.
        */
       if (other.status !== 'active' && other.status !== 'pending') continue;
@@ -436,7 +436,7 @@ export async function decideMembership(
  * Persist expiry for memberships whose cycle has run out.
  *
  * Was `expireLapsedSubscriptions` in lib/services/subscriptions.ts, called from
- * the ADMIN PAGE ON LOAD — so whether a customer's membership had expired
+ * the ADMIN PAGE ON LOAD - so whether a customer's membership had expired
  * depended on somebody in the studio having opened a screen. Every customer
  * surface computed it on the fly instead, which is right for a read and wrong
  * as the only writer. Attributed to `system`, through the same table every

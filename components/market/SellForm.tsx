@@ -2,7 +2,7 @@
 /**
  * THE OFFER FORM.
  *
- * Photographs go through `uploadImage` — the same signed-upload path the
+ * Photographs go through `uploadImage` - the same signed-upload path the
  * Garage and the studio use, which asks the server for a signature bound to
  * one `public_id` under `sellRequests/{uid}/`. There is no second uploader
  * here and no unsigned preset.

@@ -1,5 +1,5 @@
 /**
- * §19.1 — loading is a state, not an absence. The showroom reads from
+ * §19.1 - loading is a state, not an absence. The showroom reads from
  * Firestore on every request, so the gap is real and has to be furnished.
  * §19.3 forbids a spinner for a whole surface; this is the breath, exactly as
  * the rooms use it.
@@ -17,11 +17,11 @@ export default function CarsLoading() {
     <main style={{
       /* Transparent, like every room. This painted `color.paper`, so each
          navigation flashed an opaque dark page and then revealed the ambient
-         field underneath — the one moment in the product where the room
+         field underneath - the one moment in the product where the room
          visibly changed material. */
       background: 'transparent',
       minHeight: '100svh',
-        /* The top inset, from the token — see ServerRoom. */
+        /* The top inset, from the token - see ServerRoom. */
         paddingTop: stack.top,
       display: 'flex',
       flexDirection: 'column',

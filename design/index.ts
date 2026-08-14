@@ -5,7 +5,7 @@
  *
  * Every token in this directory traces to a numbered section of the
  * constitution, and each file records the derivation for the values the
- * constitution names but does not fix. Three numbers are given outright —
+ * constitution names but does not fix. Three numbers are given outright -
  * the four motion durations (§7.3), the 44pt target (§21.3) and WCAG AA
  * (§21.1). Everything else is derived from a stated rule and, where it is a
  * colour, verified by measurement rather than chosen by eye.
@@ -18,7 +18,7 @@
  *
  * So: nothing outside this directory may contain a literal design value. If a
  * screen needs something that is not here, the correct move is to add it here
- * — with its derivation — not to inline it there.
+ * - with its derivation - not to inline it there.
  *
  * WHAT THIS DIRECTORY IS NOT
  * It is tokens only. No components, no styled elements, no React. The

@@ -37,7 +37,7 @@ describe('route mapping', () => {
   });
 
   /* The design draws the dock on all twelve screens and it is five equal
-     slots every time, the Studio among them — see the header of routes.ts for
+     slots every time, the Studio among them - see the header of routes.ts for
      why that honours §6.3 rather than dropping it. What the clause actually
      protects is that arranging a visit is never buried, so THAT is what is
      asserted here: the studio is permanently reachable in one tap, and the

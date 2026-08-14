@@ -2,7 +2,7 @@
  * THE BOOKING WORKFLOW, ENFORCED.
  *
  * The customer's only booking path is in-app. Every guarantee below is one that,
- * if it broke, would either lose a customer's request or charge them twice —
+ * if it broke, would either lose a customer's request or charge them twice -
  * so each is asserted rather than trusted.
  *
  * These are source assertions. The behaviour they guard is a sequence of
@@ -27,7 +27,7 @@ describe('no duplicate bookings', () => {
     expect(service).toMatch(/bad-idempotency-key/);
   });
 
-  it('the key is one per intent — this car, this service, this slot', () => {
+  it('the key is one per intent - this car, this service, this slot', () => {
     expect(flow).toMatch(/vehicleId[^\n]*service[^\n]*date[^\n]*time/);
   });
 
@@ -37,7 +37,7 @@ describe('no duplicate bookings', () => {
 
   it('the booking and its idempotency marker commit together', () => {
     /* Two writes in one transaction. Separately, a crash between them leaves a
-       booking with no marker — and the retry makes a second booking. */
+       booking with no marker - and the retry makes a second booking. */
     expect(service).toMatch(/runTransaction/);
     expect(service).toMatch(/t\.set\(intentRef/);
   });
@@ -76,7 +76,7 @@ describe('a booking cannot be missed', () => {
   });
 
   it('three channels are attempted, and each is wrapped alone', () => {
-    /* One failing channel must not cost the others — a WhatsApp outage cannot
+    /* One failing channel must not cost the others - a WhatsApp outage cannot
        be allowed to swallow the in-app notice. */
     expect(notify).toMatch(/notifyAdmins/);
     expect(notify).toMatch(/whatsAppToStudio/);
@@ -115,7 +115,7 @@ describe('no customer action disappears', () => {
  * `scheduledDate` and `scheduledTime` directly, and that the sheet mirrored
  * the rule's status list. Both were the wrong shape of guarantee: rules can
  * check WHICH keys changed and nothing about their values, and every value in
- * a reschedule is a business rule — a slot that exists, a bay that is free,
+ * a reschedule is a business rule - a slot that exists, a bay that is free,
  * and more than 24 hours' notice measured on a clock the customer does not
  * control. The door is closed and the decision is the Booking Service's.
  */
@@ -131,7 +131,7 @@ describe('the customer is never offered what the server will refuse', () => {
     expect(bookingsBlock).toMatch(/allow update: if request\.auth != null && isAdmin\(\);/);
   });
 
-  it('the owner-writable field whitelist is GONE — it could not check a value', () => {
+  it('the owner-writable field whitelist is GONE - it could not check a value', () => {
     expect(bookingsBlock).not.toMatch(/scheduledDate/);
   });
 

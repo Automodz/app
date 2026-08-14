@@ -23,7 +23,7 @@ import {
 export interface Reader {
   get(ref: DocumentReference): Promise<{ exists: boolean; data(): unknown }>;
   /* `id` is carried because a booking being MOVED must not be counted as an
-     obstacle to its own move — see `excludeBookingIds` below. Every real
+     obstacle to its own move - see `excludeBookingIds` below. Every real
      Firestore snapshot has it; the type simply admitted it did not. */
   get(q: Query): Promise<{ docs: { id?: string; data(): unknown }[] }>;
 }
@@ -42,7 +42,7 @@ export const occupancyRange = (dates: string[], durationMinutes: number) => {
 };
 
 /**
- * `excludeBookingIds` — reservations that must NOT count against the query.
+ * `excludeBookingIds` - reservations that must NOT count against the query.
  *
  * A booking being rescheduled occupies the bay it is about to leave. Counting
  * it would make a two-day job unable to move by one day, and would refuse a

@@ -1,9 +1,9 @@
 /**
  * HOME IS ONE COMPOSITION, NOT A DASHBOARD.
  *
- * Home had become ten independent rectangles of equal weight — protection
+ * Home had become ten independent rectangles of equal weight - protection
  * card, book-in-a-tap list, membership card, garage card, record strip,
- * timeline card, market strip — and ten equal things have no hierarchy. With
+ * timeline card, market strip - and ten equal things have no hierarchy. With
  * no hierarchy the customer's car stopped being the subject of their own home
  * screen, which is the only thing it was ever for.
  *
@@ -35,14 +35,14 @@ const html = (m: Partial<HomeModel> = {}) =>
 
 /**
  * §10.4 gives the filled tier to exactly one control per screen, and in the
- * ratified design that control is the WARM pane — the only surface in the
+ * ratified design that control is the WARM pane - the only surface in the
  * product tinted by the studio's own light. Counting the class is what makes
  * this assertion survive a restyle: the rule is "one thing asks", not "one
  * element is this hex".
  */
 const primaries = (h: string) => (h.match(/am-glass-warm/g) ?? []).length;
 
-describe('Home V1 — one composition', () => {
+describe('Home V1 - one composition', () => {
   it('offers exactly one primary action, whatever the state', () => {
     expect(primaries(html())).toBe(1);
     expect(primaries(html({ nextAction: { label: 'Follow the visit', href: '/x' } }))).toBe(1);
@@ -108,7 +108,7 @@ describe('Home V1 — one composition', () => {
     });
 
     it('and is absent when it would repeat the hero or say nothing', () => {
-      /* Suppression lives in the projection — these assert the render simply
+      /* Suppression lives in the projection - these assert the render simply
          obeys it, and that Home never invents a sentence of its own. */
       expect(html()).not.toContain('All quiet');
       const live = html({
@@ -118,7 +118,7 @@ describe('Home V1 — one composition', () => {
       expect(live).not.toContain('In the studio -');
     });
 
-    it('protection is a state, summarised — not a wall of countdowns', () => {
+    it('protection is a state, summarised - not a wall of countdowns', () => {
       /* It used to sit behind a `<details>`, so that a glance was not a
          reading exercise. The design answers the same worry with the DIAL:
          the number is the glance, so the layers under it are already
@@ -137,7 +137,7 @@ describe('Home V1 — one composition', () => {
         ],
       });
       expect(h).toContain('Protected');
-      /* The separator is `DOT` — the same glyph, but binding forward so it can
+      /* The separator is `DOT` - the same glyph, but binding forward so it can
          never end a line. Compared through the token rather than by retyping
          it, since the two are indistinguishable on screen. */
       expect(h).toContain(['PPF', 'Ceramic', 'Glass'].join(DOT));
@@ -147,7 +147,7 @@ describe('Home V1 — one composition', () => {
 
     it('while the car is here, Home becomes the visit', () => {
       /* The stage it is at, the studio's own timing, and the photographs as
-         they are taken — none of which the customer could see without leaving
+         they are taken - none of which the customer could see without leaving
          Home. This is the differentiator, not a card announcing one. */
       const h = html({
         state: { word: 'In care', line: 'Caring for it.' },
@@ -194,7 +194,7 @@ describe('Home V1 — one composition', () => {
       });
       expect(h).toContain('Fortuner');
       expect(h).toContain('In care');
-      /* Tapping one makes Home that car's home — an address, not local state. */
+      /* Tapping one makes Home that car's home - an address, not local state. */
       expect(h).toContain('/?car=v2');
       /* The one being shown says so. */
       expect(h).toContain('aria-current="true"');
@@ -204,13 +204,13 @@ describe('Home V1 — one composition', () => {
       const h = html({ life: { count: '11 visits since 2023', href: '/history?car=v1' } });
       expect(h).toContain('Its life at AutoModz');
       expect(h).toContain('11 visits since 2023');
-      /* No "see all" — the photograph is the way in. */
+      /* No "see all" - the photograph is the way in. */
       expect(h).not.toContain('See all');
     });
 
     it('the log carries what the studio already said', () => {
       /* `os/log` reached the customer only through the command palette, which
-         a phone customer never opens. Carried verbatim — this is not a second
+         a phone customer never opens. Carried verbatim - this is not a second
          timeline, and nothing here re-derives it. */
       const h = html({ record: [
         { id: 'l1', line: 'Ceramic coating applied - protected until August 2026.', when: '10 November 2025' },
@@ -241,11 +241,11 @@ describe('Home V1 — one composition', () => {
  * the screen, above a primary action the same proposal resolved. It wins.
  *
  * The suppression is derived from the ownership STATE, never by comparing
- * sentences — two engines phrasing one fact differently must not be detected
+ * sentences - two engines phrasing one fact differently must not be detected
  * by string equality, or the day either is reworded the duplication returns
  * silently.
  */
-describe('the i20 attention state — one fact, one presentation', () => {
+describe('the i20 attention state - one fact, one presentation', () => {
   /** The hero as `homeStateCopy` builds it when a proposal is speaking. */
   const attention = {
     state: {
@@ -258,7 +258,7 @@ describe('the i20 attention state — one fact, one presentation', () => {
 
   it('the hero states it, and nothing states it again', () => {
     const h = html(attention);
-    /* The reason appears exactly once — on the hero. */
+    /* The reason appears exactly once - on the hero. */
     expect((h.match(/23 days of protection left/g) ?? []).length).toBe(1);
     expect(h).toContain('Ceramic coating renewal due.');
     expect(h).toContain('Renew it');
@@ -300,7 +300,7 @@ describe('the i20 attention state — one fact, one presentation', () => {
 /**
  * THE LOG AND THE LIFE ARE INDEPENDENT.
  *
- * `record` was nested inside `life`, and `life` requires a SEALED VISIT — so a
+ * `record` was nested inside `life`, and `life` requires a SEALED VISIT - so a
  * car with a membership confirmed and a coating applied but no completed visit
  * computed its entries and could never show them. Two of the demo customer's
  * four cars were in exactly that position. A life is a record of visits; a log
@@ -312,32 +312,32 @@ describe('the log and the life are gated separately', () => {
   ];
   const life = { count: '3 visits since 2023', href: '/history?car=v1' };
 
-  it('sealed visit AND log — both appear', () => {
+  it('sealed visit AND log - both appear', () => {
     const h = html({ life, record: entries });
     expect(h).toContain('Its life at');
     expect(h).toContain('Ceramic coating applied');
   });
 
-  it('NO sealed visit but a log — the log still appears', () => {
+  it('NO sealed visit but a log - the log still appears', () => {
     /* The defect, stated: this rendered nothing at all before. */
     const h = html({ record: entries });
     expect(h).not.toContain('Its life at');
     expect(h).toContain('Ceramic coating applied');
   });
 
-  it('a sealed visit but NO log — the life still appears', () => {
+  it('a sealed visit but NO log - the life still appears', () => {
     const h = html({ life, record: [] });
     expect(h).toContain('Its life at');
     expect(h).not.toContain('Ceramic coating applied');
   });
 
-  it('neither — neither is drawn (§18.1)', () => {
+  it('neither - neither is drawn (§18.1)', () => {
     const h = html({ record: [] });
     expect(h).not.toContain('Its life at');
     expect(h).not.toContain('Ceramic coating applied');
   });
 
-  it('two cars, two independent logs — no leakage between them', () => {
+  it('two cars, two independent logs - no leakage between them', () => {
     const a = html({ record: [{ id: 'a', line: 'Work began on the Kia Seltos.', when: '23 July 2026' }] });
     const b = html({ record: [{ id: 'b', line: 'The studio confirmed your Club membership on Gold.', when: '14 July 2026' }] });
     expect(a).toContain('Kia Seltos');

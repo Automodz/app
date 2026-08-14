@@ -118,7 +118,7 @@ export default function CustomerDetailPage() {
   /**
    * THE STUDIO STARTS A MEMBERSHIP AT THE COUNTER.
    *
-   * This used to assemble the document here — plan, dates, wash count — and
+   * This used to assemble the document here - plan, dates, wash count - and
    * write `status: 'active'` straight to Firestore. Two writers meant two
    * chances for the terms to drift from the catalogue, and this copy carried
    * no `amountPaid` at all, so a membership sold at the counter recorded no

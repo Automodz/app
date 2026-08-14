@@ -63,7 +63,7 @@ export const notifyAdmins = async (
 /**
  * WhatsApp to the studio's own number.
  *
- * Off unless `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID` are set — the
+ * Off unless `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID` are set - the
  * route it mirrors says the same. Lives here rather than beside the booking
  * notifier because the marketplace tells the studio through the same channel,
  * and a second copy would be a second number to keep in step. It calls Meta directly rather than looping

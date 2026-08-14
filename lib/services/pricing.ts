@@ -125,7 +125,7 @@ export const decidePrice = (i: PricingInput): PricingDecision => {
     i.membership && i.membership.status === 'active' && i.membership.endDate >= i.date
       ? i.membership : null;
 
-  /* One subtraction, one place (§22.2) — the same helper the club engine,
+  /* One subtraction, one place (§22.2) - the same helper the club engine,
      the projection, the retention job and the kiosk all use. */
   const washesLeft = activeMember ? washesLeftOf(activeMember) : 0;
   const washCovered = !!activeMember && i.wantsWash
@@ -166,7 +166,7 @@ export const decidePrice = (i: PricingInput): PricingDecision => {
 /* ── THE CANONICAL ENGINE ───────────────────────────────────────────────── */
 
 /**
- * WHAT A VISIT COSTS — services, discount, fees, tax, total. One calculation.
+ * WHAT A VISIT COSTS - services, discount, fees, tax, total. One calculation.
  *
  * `decidePrice` decided the SERVICE line and stopped there, so every caller
  * assembled the rest itself: the booking service added pickup fees, the invoice
@@ -201,7 +201,7 @@ export interface FeeLine {
 }
 
 export interface TaxPolicy {
-  /** Off while the studio has no GSTIN — see lib/config/storeConfig.ts. */
+  /** Off while the studio has no GSTIN - see lib/config/storeConfig.ts. */
   enabled: boolean;
   rate: number;
   gstin?: string;
@@ -213,7 +213,7 @@ export interface PriceBreakdown {
   /** What was actually given. Explicit, never inferred from two totals. */
   discount?: BookingDiscount;
   discountAmount: number;
-  /** Each leg, each extra — never folded into the subtotal. */
+  /** Each leg, each extra - never folded into the subtotal. */
   fees: FeeLine[];
   feesTotal: number;
   /** Everything chargeable, after the benefit. The base tax is taken on. */
@@ -247,7 +247,7 @@ export function priceVisit(args: {
   const fees = args.fees ?? [];
   const feesTotal = fees.reduce((n, f) => n + f.amount, 0);
 
-  /* The benefit is decided by the existing engine, unchanged — best-of
+  /* The benefit is decided by the existing engine, unchanged - best-of
      membership vs promo, a covered wash standing alone. Priced against the
      WORK, which is why `base` is the services subtotal and not the total. */
   const decided = decidePrice({ ...args.benefit, base: subtotal });
@@ -288,14 +288,14 @@ export const pickupFees = (legs: { pickup?: boolean; drop?: boolean }): FeeLine[
 /**
  * THE TAX POLICY, READ FROM CONFIGURATION AND NEVER ASSUMED.
  *
- * The audit found GST on the invoice and absent from the estimate — one fact,
+ * The audit found GST on the invoice and absent from the estimate - one fact,
  * two calculations, guaranteed to contradict each other the day a GSTIN
  * exists. This is the one place it is decided, and `priceVisit` is the one
  * place it is applied, so the estimate, the booking, the invoice and the
  * payment all move together or not at all.
  *
  * It is off today because the studio has no GSTIN, and `priceVisit` then omits
- * the tax block ENTIRELY rather than writing a zero — a zero would claim the
+ * the tax block ENTIRELY rather than writing a zero - a zero would claim the
  * studio charged nothing on a taxable sale, which is a different statement
  * from not being registered.
  */

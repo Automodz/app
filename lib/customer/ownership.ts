@@ -1,5 +1,5 @@
 /**
- * THE BRIDGE — the server's picture, adapted to the engines that already exist.
+ * THE BRIDGE - the server's picture, adapted to the engines that already exist.
  *
  * Source: docs/HOME-STATE-MAP.md
  * Reference: reference/customer-old/app/app/page.tsx:167-200
@@ -7,12 +7,12 @@
  * WHAT THIS FILE IS NOT: it is not a state machine. `lib/os/ownership.ts` is the
  * state machine, `lib/os/club.ts` is the membership lifecycle and
  * `lib/os/proposal.ts` is the recommendation engine. All three were written,
- * tested, and then disconnected when the customer UI was replaced — their unit
+ * tested, and then disconnected when the customer UI was replaced - their unit
  * tests still pass with zero callers in the shipping app. Nothing here
  * re-derives what any of them decide.
  *
  * All this does is shape `CustomerPicture` into the inputs they ask for. Every
- * judgement — precedence, thresholds, wording — stays in the engine that owns
+ * judgement - precedence, thresholds, wording - stays in the engine that owns
  * it. The derivations below are ported line-for-line from the old Home so the
  * engines receive exactly the inputs they were tested against.
  */
@@ -30,7 +30,7 @@ import { conciergeLog, type LogEntry } from '@/lib/os/log';
 import { visitPhase } from '@/lib/os/visit';
 
 /**
- * A refusal or a no-show stops speaking after a fortnight. Ported verbatim —
+ * A refusal or a no-show stops speaking after a fortnight. Ported verbatim -
  * without it, a visit the studio could not take three months ago is still the
  * headline on the car today.
  */
@@ -44,7 +44,7 @@ const newestFirst = (a: Booking, b: Booking) =>
   String(b.scheduledDate ?? '').localeCompare(String(a.scheduledDate ?? ''));
 
 /**
- * THE NEXT VISIT — one definition, for every surface that names one.
+ * THE NEXT VISIT - one definition, for every surface that names one.
  *
  * There used to be two. This file's `agreedOf` took the SOONEST open booking
  * and fed the Home hero, the ownership state machine and the timeline;
@@ -59,7 +59,7 @@ const newestFirst = (a: Booking, b: Booking) =>
  * the car's next visit for ever: three of them were still being offered with a
  * "Move it" control eleven days after the day they named.
  *
- * A visit is upcoming while the DAY it is booked for has not ended — not the
+ * A visit is upcoming while the DAY it is booked for has not ended - not the
  * hour. A customer whose 09:00 wash is still on the forecourt at 09:05 has not
  * stopped having a visit today, and retiring it mid-morning would be the
  * product being pedantic at their expense.
@@ -68,7 +68,7 @@ const newestFirst = (a: Booking, b: Booking) =>
 /**
  * Today, as the studio's booking records spell a day. Compared as a string
  * against `scheduledDate`, which is the same shape and the same comparison
- * `os/club` already uses to decide a membership has lapsed — §22.2, one
+ * `os/club` already uses to decide a membership has lapsed - §22.2, one
  * implementation of one idea. (It reads UTC, as every other date comparison in
  * the product does; a booking therefore turns over at 05:30 local rather than
  * at midnight. Correcting that is a change to the whole date layer, not to this
@@ -77,7 +77,7 @@ const newestFirst = (a: Booking, b: Booking) =>
  */
 const todayISO = (now: Date) => now.toISOString().slice(0, 10);
 
-/** Open — requested or confirmed — and still ahead of us. */
+/** Open - requested or confirmed - and still ahead of us. */
 export const isUpcoming = (b: Booking, now: Date): boolean =>
   ['proposed', 'agreed'].includes(visitPhase(b.status))
   && String(b.scheduledDate ?? '') >= todayISO(now);
@@ -99,7 +99,7 @@ export function upcomingOf(car: CarPicture, now = new Date()): Booking[] {
 
 /**
  * The visits that count as this car's story: everything but the cancelled.
- * A cancellation is not a visit that happened, so it is excluded here — and
+ * A cancellation is not a visit that happened, so it is excluded here - and
  * read separately by `declinedOf`, which is the only thing that cares.
  */
 export function visitsOfCar(car: CarPicture): Booking[] {
@@ -140,7 +140,7 @@ export function declinedOf(car: CarPicture, now = Date.now()): Booking | null {
     /* RECENT, MEASURED FROM WHEN IT WAS ACTUALLY CANCELLED. `updatedAt` stood
        in when `cancelledAt` was absent, which meant editing an old refusal
        made it recent again and put it back at the top of the customer's Home.
-       No true timestamp, no claim about recency — every cancelled booking in
+       No true timestamp, no claim about recency - every cancelled booking in
        production carries `cancelledAt`. */
     .filter(b => !!b.cancelledAt && now - millisOf(b.cancelledAt) <= DECLINE_WINDOW_MS)
     .sort((a, b) => millisOf(b.cancelledAt) - millisOf(a.cancelledAt))[0] ?? null;
@@ -148,7 +148,7 @@ export function declinedOf(car: CarPicture, now = Date.now()): Booking | null {
 
 /**
  * The membership lifecycle. Its `completed` is every finished visit the OWNER
- * has, across all their cars — the Club belongs to the person, not the car.
+ * has, across all their cars - the Club belongs to the person, not the car.
  */
 export function clubOf(picture: CustomerPicture, now = new Date()): ClubModel {
   return clubModel({
@@ -166,18 +166,18 @@ export interface OwnershipRead {
   /** A recommendation, or null. Already suppressed per the rules below. */
   proposal: Proposal | null;
   live: Booking | null;
-  /** THE next visit — `nextVisitOf`, never anything a room worked out itself. */
+  /** THE next visit - `nextVisitOf`, never anything a room worked out itself. */
   agreed: Booking | null;
   declined: Booking | null;
   completed: Booking[];
   protections: LiveProtection[];
   /** The one next thing to do, as an INTENT. Resolved to an address by
-   *  `navigation/resolve.ts` — never here (ARCHITECTURE §4). */
+   *  `navigation/resolve.ts` - never here (ARCHITECTURE §4). */
   nextAction: NextAction;
   /**
    * The live visit, act by act, with an honest line about time. Null unless a
    * visit is actually in flight. `os/stay` has been written and tested since
-   * the rebuild with no caller — this is that caller.
+   * the rebuild with no caller - this is that caller.
    */
   stay: StayModel | null;
   /**
@@ -218,7 +218,7 @@ export function readOwnership(
   });
 
   /* One open proposal per vehicle, suppressed while a visit is already in
-     flight — a car that is booked in does not need to be told to book in. */
+     flight - a car that is booked in does not need to be told to book in. */
   const proposal = (live || agreed)
     ? null
     : proposalFor({
@@ -239,7 +239,7 @@ export function readOwnership(
   );
 
   /* The one true sentence, and the record behind it. Both engines take the
-     protections as FACTS — a label and a date — rather than the stored shape,
+     protections as FACTS - a label and a date - rather than the stored shape,
      so neither has to know how a term is modelled. */
   const facts: ProtectionFact[] = protections
     .filter(p => p.term.kind === 'dated')
@@ -250,7 +250,7 @@ export function readOwnership(
 
   /* THE SAME TWO BOOKINGS the state, the hero, the Vehicle room and the Studio
      are reading. `truthOf` used to be handed the whole list and pick its own,
-     which made it a third answer to "the next visit" — see its own note. */
+     which made it a third answer to "the next visit" - see its own note. */
   const truth = truthOf({
     live,
     next: agreed,
@@ -284,7 +284,7 @@ export function readOwnership(
 }
 
 /**
- * docs/HOME-STATE-MAP.md — the proposal is a LAYER over the steady states, not
+ * docs/HOME-STATE-MAP.md - the proposal is a LAYER over the steady states, not
  * a state of its own. A car cannot be both in the studio and overdue for a
  * wash; live facts outrank recommendations.
  */

@@ -16,14 +16,14 @@ export interface ProtectionFact {
 /**
  * IT IS HANDED THE TWO VISITS, IT DOES NOT FIND THEM.
  *
- * This took the whole booking list and worked out both for itself — the live
+ * This took the whole booking list and worked out both for itself - the live
  * one by phase, the next one by filtering open bookings and sorting on
  * `scheduledDate`. That was the THIRD implementation of "the next visit" in the
  * product, and the last one standing after `agreedOf` and `liveBooking` were
  * collapsed into `nextVisitOf`. It was invisible until then only because Home
  * suppressed this sentence whenever a visit was booked; the moment lapsed
  * requests stopped counting as booked, the suppression lifted and this line
- * started announcing the very bookings that had just been retired — "Cared for"
+ * started announcing the very bookings that had just been retired - "Cared for"
  * in the largest type on the screen, and directly under it "Friday 11:00 -
  * we're ready for it." about a Friday that had gone.
  *
@@ -32,9 +32,9 @@ export interface ProtectionFact {
  * way is how two sentences about one car end up disagreeing.
  */
 export interface TruthInput {
-  /** The visit in flight — `liveOf`, decided once. */
+  /** The visit in flight - `liveOf`, decided once. */
   live: Booking | null;
-  /** THE next visit — `nextVisitOf`, decided once. Never re-derived here. */
+  /** THE next visit - `nextVisitOf`, decided once. Never re-derived here. */
   next: Booking | null;
   protections: ProtectionFact[];  // this vehicle's live promises
   lastCaredOn?: string;           // ISO date of last completed visit
@@ -53,7 +53,7 @@ export function truthOf({ live, next, protections, lastCaredOn, now = new Date()
 
   if (next) {
     const day = fmtDay(next.scheduledDate);
-    /* A booking without an hour is a real record — the walk-in flow writes
+    /* A booking without an hour is a real record - the walk-in flow writes
        one. Naming an hour that does not exist would be inventing a fact. */
     return next.scheduledTime
       ? `${day} ${next.scheduledTime} - we're ready for it.`

@@ -1,5 +1,5 @@
 /**
- * MOTION — AutoModz Design Language
+ * MOTION - AutoModz Design Language
  *
  * Source: docs/AUTOMODZ-OS.md §7.1–§7.6, §11.2
  *
@@ -18,11 +18,11 @@
  */
 
 /**
- * §7.3 — given by the constitution. "Nothing may invent a duration. If a
+ * §7.3 - given by the constitution. "Nothing may invent a duration. If a
  * motion does not fit one of these, question the motion."
  */
 export const duration = {
-  /** Acknowledgement — a press, a toggle. */
+  /** Acknowledgement - a press, a toggle. */
   tick: 120,
   /** An element changing place or state. */
   move: 280,
@@ -33,7 +33,7 @@ export const duration = {
 } as const;
 
 /**
- * §7.2 — two curves, and only two.
+ * §7.2 - two curves, and only two.
  *
  * EASE is for anything the system initiates. Derived to read as "considered,
  * deliberate, unhurried": a strong early decay that settles without bounce, so
@@ -41,21 +41,21 @@ export const duration = {
  *
  * SPRING is for anything a finger drives. Expressed in physical terms because
  * a spring following a finger has to be described by its physics, not by a
- * fixed duration — the gesture decides how long it takes. Tuned to be
+ * fixed duration - the gesture decides how long it takes. Tuned to be
  * responsive with no perceptible oscillation: the object has weight, but it
  * does not wobble when released.
  */
 export const easing = {
   /** System-initiated: entrances, transitions, reveals. */
   ease: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  /** Leaving the screen — slightly faster in, so exits do not linger. */
+  /** Leaving the screen - slightly faster in, so exits do not linger. */
   exit: 'cubic-bezier(0.4, 0, 1, 1)',
 } as const;
 
 /**
  * THE SAME TWO CURVES, AS CONTROL POINTS.
  *
- * §7.2 gives two curves and §22.2 wants one implementation of anything — but
+ * §7.2 gives two curves and §22.2 wants one implementation of anything - but
  * CSS wants a `cubic-bezier(…)` string and animation libraries want the four
  * numbers, so a single representation cannot serve both. These are the same
  * curves, written the other way, so that a component reaching for the ease in
@@ -74,7 +74,7 @@ export const spring = {
 } as const;
 
 /**
- * §7.4 — the photograph is the ONE element permitted ambient motion, and only
+ * §7.4 - the photograph is the ONE element permitted ambient motion, and only
  * these four. The constitution describes each qualitatively; the magnitudes
  * below are derived from those adjectives.
  *
@@ -107,7 +107,7 @@ export const hero = {
 } as const;
 
 /**
- * §7.4 — the only two things in the product permitted to loop, because both
+ * §7.4 - the only two things in the product permitted to loop, because both
  * are genuine state rather than decoration: an indicator that a visit is
  * currently live, and a loading state.
  *
@@ -121,13 +121,13 @@ export const loop = {
 } as const;
 
 /**
- * §7.6 — "transforms and parallax stop. Opacity transitions may remain. The
+ * §7.6 - "transforms and parallax stop. Opacity transitions may remain. The
  * interface must lose nothing but movement."
  *
  * Held as data so the rule is checkable rather than remembered.
  */
 export const reducedMotion = {
-  /** Transforms, parallax, tilt, sweep, settle — all off. */
+  /** Transforms, parallax, tilt, sweep, settle - all off. */
   disableTransforms: true,
   /** Opacity may remain. */
   allowOpacity: true,

@@ -1,7 +1,7 @@
 /**
  * VERIFY THE IMMUTABLE VISIT PIPELINE, end to end, against the emulator.
  *
- * Drives `POST /api/visit/seal` — the exact route the kiosk calls — so the auth
+ * Drives `POST /api/visit/seal` - the exact route the kiosk calls - so the auth
  * check, the transaction and the snapshots are all proven together. Then reads
  * the documents back with the Admin SDK to assert what was written.
  *
@@ -24,7 +24,7 @@ const db = getFirestore();
 
 let failures = 0;
 const check = (label, ok, detail = '') => {
-  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  — ' + detail : ''}`);
+  console.log(`  ${ok ? '✓' : '✕'} ${label}${detail ? '  - ' + detail : ''}`);
   if (!ok) failures++;
 };
 

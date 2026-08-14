@@ -1,5 +1,5 @@
 /**
- * FINAL INTEGRATION AUDIT — the product traced end to end.
+ * FINAL INTEGRATION AUDIT - the product traced end to end.
  *
  * Every assertion here corresponds to something the audit actually found, and
  * exists so the finding cannot come back quietly:
@@ -15,14 +15,14 @@
  *
  *   THREE PUBLIC PAGES CLAIMED THE HOMEPAGE AS THEIR CANONICAL. Metadata is
  *   shallowly merged, so anything not declaring `alternates` inherited the
- *   root layout's `canonical: '/'` — including the privacy policy and terms,
+ *   root layout's `canonical: '/'` - including the privacy policy and terms,
  *   which Apple requires to be findable.
  *
  *   THE LANDING PAGE IGNORED prefers-reduced-motion. The CSS rules silence
  *   three named CSS animations; every animation on that page is
  *   framer-motion, and it is the address every visitor arrives at.
  *
- *   FOUR SCREENS HYDRATED FOR NOTHING — `'use client'` on components with no
+ *   FOUR SCREENS HYDRATED FOR NOTHING - `'use client'` on components with no
  *   state, no handlers and no motion.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
@@ -45,7 +45,7 @@ const CUSTOMER = [...walk('lib/customer'), ...walk('lib/os'), ...walk('navigatio
 const ALL = [...walk('lib'), ...walk('app'), ...walk('components'), ...walk('navigation')]
   .filter(f => !f.includes('node_modules'));
 
-describe('ONE SOURCE OF TRUTH — addresses', () => {
+describe('ONE SOURCE OF TRUTH - addresses', () => {
   it('no projection writes a route of its own', () => {
     /* The whole defect in one assertion. `project.ts` is the biggest
        projection in the product and it held a second route table. */
@@ -71,7 +71,7 @@ describe('ONE SOURCE OF TRUTH — addresses', () => {
   it('every destination the product can name resolves to a real route', () => {
     /* An address no `page.tsx` answers is a 404 with a nice label on it. The
        resolver is CALLED rather than read, because it returns route constants
-       and template literals — reading the source proves nothing. */
+       and template literals - reading the source proves nothing. */
     const routes = walk('app')
       .filter(f => f.endsWith('page.tsx'))
       .map(f => f.replace(/^app/, '').replace(/\/page\.tsx$/, '') || '/')
@@ -108,7 +108,7 @@ describe('ONE SOURCE OF TRUTH — addresses', () => {
   });
 
   it('every intent an engine can emit resolves too', () => {
-    /* §10.5 — nothing is inert. An intent with no address is a dead button. */
+    /* §10.5 - nothing is inert. An intent with no address is a dead button. */
     const intents: NextAction['intent'][] = [
       'add_car', 'arrange_visit', 'arrange_again', 'manage_visit',
       'follow_visit', 'see_visit', 'renew_protection', 'renew_membership',
@@ -121,7 +121,7 @@ describe('ONE SOURCE OF TRUTH — addresses', () => {
   });
 });
 
-describe('SEO and metadata — what is offered to the world', () => {
+describe('SEO and metadata - what is offered to the world', () => {
   it('the staff kiosk is NOT in the sitemap', () => {
     /* `/store` is the PIN lock the studio tablet sits on. */
     expect(codeOf('app/sitemap.ts')).not.toMatch(/SITE_URL\}\/store/);
@@ -170,7 +170,7 @@ describe('SEO and metadata — what is offered to the world', () => {
   });
 });
 
-describe('ACCESSIBILITY — motion respects the customer', () => {
+describe('ACCESSIBILITY - motion respects the customer', () => {
   it('every customer surface that animates honours the OS setting', () => {
     /* The CSS `prefers-reduced-motion` rules in globals.css silence three
        NAMED CSS animations. They do nothing to framer-motion, which is what
@@ -208,7 +208,7 @@ describe('ACCESSIBILITY — motion respects the customer', () => {
   });
 });
 
-describe('PERFORMANCE — nothing hydrates that need not', () => {
+describe('PERFORMANCE - nothing hydrates that need not', () => {
   it('no screen is a client component without a reason to be', () => {
     const needless = [...walk('components/screens'), ...walk('components/market')]
       .filter(f => readFileSync(f, 'utf8').startsWith("'use client'"))
@@ -281,7 +281,7 @@ describe('NOTHING DEAD, NOTHING TEMPORARY', () => {
   });
 });
 
-describe('SECURITY — the shape of what a client may do', () => {
+describe('SECURITY - the shape of what a client may do', () => {
   const rules = readFileSync('firestore.rules', 'utf8');
 
   it('nothing is writable by anyone', () => {
@@ -386,13 +386,13 @@ describe('EVERY COMPOSITE QUERY HAS AN INDEX', () => {
     ['visits', ['vehicleId', 'createdAt']],
   ])('%s(%s) is indexed', (c, fields) => {
     /* A where+orderBy without a composite index throws in production and
-       nowhere else — the emulator and a small collection both forgive it. */
+       nowhere else - the emulator and a small collection both forgive it. */
     expect({ c, fields, covered: covered(c, fields as string[]) })
       .toEqual({ c, fields, covered: true });
   });
 
   it('the marketplace read needs no index it does not have', () => {
-    /* One equality filter, sorted in memory by the engine — deliberately, so
+    /* One equality filter, sorted in memory by the engine - deliberately, so
        every sort the product might want does not become an index. */
     const src = codeOf('lib/server/marketplace.ts');
     expect(src).toMatch(/where\('active', '==', true\)/);

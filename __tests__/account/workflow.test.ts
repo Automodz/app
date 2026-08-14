@@ -1,5 +1,5 @@
 /**
- * THE ACCOUNT — ONE OF EACH, AND A WAY OUT.
+ * THE ACCOUNT - ONE OF EACH, AND A WAY OUT.
  *
  * Deleting an account is the only irreversible act a customer can perform, and
  * it was the one thing this product could not do at all. These assertions cover
@@ -13,7 +13,7 @@ import type { CustomerPicture } from '@/lib/customer/source';
 import { toYou } from '@/lib/customer/project';
 
 /* The account room, as it actually renders. These used to grep `project.ts`
-   for literals like `href: '/privacy'` — which asserted how the address was
+   for literals like `href: '/privacy'` - which asserted how the address was
    SPELLED rather than where the control goes, and broke the moment the
    projection started resolving through `navigation/resolve` like every other
    one. Behaviour is the thing worth pinning. */
@@ -66,7 +66,7 @@ describe('one profile, one preference source, one referral', () => {
   it('the settings sheet writes preferences through that one service', () => {
     /* Against the ACCOUNT it loaded, not the client store's user. `/you`
        renders on the server and mounts no `AuthProvider`, so that user is
-       always null there — every switch moved on screen and wrote nothing. */
+       always null there - every switch moved on screen and wrote nothing. */
     expect(settings).toMatch(/updateUserProfile\(account\.uid, \{ notificationPrefs: next \}\)/);
   });
 
@@ -96,7 +96,7 @@ describe('deleting an account', () => {
 
   it('is server-authoritative', () => {
     /* A client can delete neither its own Auth user nor the business records
-       that must be anonymised — the rules refuse both, correctly. */
+       that must be anonymised - the rules refuse both, correctly. */
     expect(del).toMatch(/adminAuth/);
     expect(del).toMatch(/adminDb/);
   });
@@ -122,7 +122,7 @@ describe('deleting an account', () => {
     expect(del).toMatch(/for \(const sub of \['vehicles', 'fcmTokens', 'savedCars'\]/);
   });
 
-  it('does NOT erase the studio’s books — it anonymises them', () => {
+  it('does NOT erase the studio’s books - it anonymises them', () => {
     /* Deleting these would destroy the studio's financial record and detach a
        warranty from the work that created it. */
     for (const kept of ['bookings', 'subscriptions', 'invoices', 'jobs']) {
@@ -132,7 +132,7 @@ describe('deleting an account', () => {
   });
 
   it('never deletes a sealed visit', () => {
-    /* §16 — history is permanent. Visits carry no personal fields anyway. */
+    /* §16 - history is permanent. Visits carry no personal fields anyway. */
     expect(del).not.toMatch(/collection\('visits'\)/);
   });
 
@@ -220,7 +220,7 @@ describe('no control is inert', () => {
       m.details, m.terms, m.deletion]) {
       expect(e?.action.href.startsWith('/')).toBe(true);
     }
-    /* §20.1 — support is the one control that deliberately leaves: it reaches
+    /* §20.1 - support is the one control that deliberately leaves: it reaches
        a human at the studio, and the studio answers on WhatsApp. The old
        assertion never covered it, because it only read `href: '…'` literals
        and this one is built by `waLink`. */

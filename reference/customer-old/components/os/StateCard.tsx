@@ -59,7 +59,7 @@ function standing(p: LiveProtection): { label: string; value: string; note?: str
       return {
         label: 'Balance',
         value: v,
-        note: p.health === 'healthy' ? undefined : 'Running low — top up soon.',
+        note: p.health === 'healthy' ? undefined : 'Running low - top up soon.',
       };
     }
 
@@ -118,7 +118,7 @@ export default function StateCard({
 
   return (
     <article
-      aria-label={`${title} — ${word}`}
+      aria-label={`${title} - ${word}`}
       style={{
         // the raised band: cards take their shadow from the band, never choose it
         position: 'relative', zIndex: 'var(--st-z-raised)' as unknown as number,

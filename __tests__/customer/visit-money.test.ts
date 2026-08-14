@@ -1,5 +1,5 @@
 /**
- * WHAT A VISIT COST — the album and the record must add up to each other.
+ * WHAT A VISIT COST - the album and the record must add up to each other.
  *
  * Two numbers exist for one visit and they are different kinds of fact.
  * `visit.amounts.total` is what the visit was SEALED at, from the services it
@@ -12,7 +12,7 @@
  * the receipt. The album's total was ₹11,990 higher than the sum of everything
  * the customer could actually open.
  *
- * The rule: the invoice wins where one exists — it is the money that changed
+ * The rule: the invoice wins where one exists - it is the money that changed
  * hands and the only figure with a document behind it. The sealed amount is the
  * fallback, which is most visits. Never both, and never the same invoice twice.
  */
@@ -82,7 +82,7 @@ describe('what a visit cost', () => {
     expect(r.sumOfRecords).toBe(1250);
   });
 
-  it('THE SEALED AMOUNT stands when there is no invoice — most visits', () => {
+  it('THE SEALED AMOUNT stands when there is no invoice - most visits', () => {
     const r = reconcile([sealed()], []);
 
     expect(r.each[0].settled).toBe('₹13,240');
@@ -91,7 +91,7 @@ describe('what a visit cost', () => {
     expect(r.sumOfRecords).toBe(13240);
   });
 
-  it('MIXED — invoiced and uninvoiced visits total to exactly what they show', () => {
+  it('MIXED - invoiced and uninvoiced visits total to exactly what they show', () => {
     /* This is the production shape: one visit with the studio's paper, two
        sealed from services alone. The album summed all three sealed amounts
        and was ₹11,990 out. */
@@ -120,7 +120,7 @@ describe('what a visit cost', () => {
   it('ONE INVOICE IS COUNTED ONCE, however many visits share its booking', () => {
     /* Two sealed visits against one booking is a data condition the model
        allows. Both matching the same invoice would add its money to the album
-       twice — the album would read ₹2,500 for ₹1,250 that changed hands. */
+       twice - the album would read ₹2,500 for ₹1,250 that changed hands. */
     const a = sealed({ id: 'a', bookingId: 'b1' });
     const b = sealed({ id: 'b', bookingId: 'b1' });
     const money = moneyOfVisits([a, b], [invoice()]);
@@ -143,7 +143,7 @@ describe('what a visit cost', () => {
   });
 
   it('MISMATCHED DATA is presented from the authoritative side, not averaged or added', () => {
-    /* The sealed figure and the invoice describe different work here — 13,240
+    /* The sealed figure and the invoice describe different work here - 13,240
        against 1,250. Nothing reconciles them silently: the invoice is what the
        customer was billed, so that is what both surfaces say, and the sealed
        figure is simply not shown. Correcting the underlying records is the

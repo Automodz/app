@@ -1,11 +1,11 @@
 import 'server-only';
 /**
- * THE GARAGE — the only thing that may put a car in one.
+ * THE GARAGE - the only thing that may put a car in one.
  *
  * ── THE HOLE THIS CLOSES, AND IT IS THE WORST ONE IN THE PRODUCT ─────────
  * A vehicle document lives at `users/{uid}/vehicles/{vehicleId}`, and
  * `firestore.rules` let a customer write anything under their own uid. That
- * reads as obviously safe — it is their own subtree — and it was not, because
+ * reads as obviously safe - it is their own subtree - and it was not, because
  * `ownsVehicle()` is the OWNERSHIP PRIMITIVE for four collections:
  *
  *     protections   read if ownsVehicle(resource.data.vehicleId)
@@ -14,13 +14,13 @@ import 'server-only';
  *
  * The check is `exists(users/{me}/vehicles/{thatId})`. So a customer who knew
  * ANOTHER customer's vehicle id could create an empty document at that id
- * under their own uid — a write the rules allowed — and immediately read that
+ * under their own uid - a write the rules allowed - and immediately read that
  * car's protections, its whole service history with the studio's stage notes
  * and photographs, and its declared certificates. Squatting an id was an
  * ownership claim.
  *
  * And vehicle ids are not secret. They travel in the customer's own addresses
- * — `/vehicle?car=<id>`, `/history?car=<id>` — so they are in browser history,
+ * - `/vehicle?car=<id>`, `/history?car=<id>` - so they are in browser history,
  * in screenshots, and in any link anybody shares.
  *
  * ── THE FIX IS THAT THE ID IS NOT THE CLIENT'S TO CHOOSE ─────────────────
@@ -49,7 +49,7 @@ const db = () => {
 };
 
 /**
- * THE PLATE AS IT IS STORED — uppercase, whitespace collapsed, trimmed.
+ * THE PLATE AS IT IS STORED - uppercase, whitespace collapsed, trimmed.
  *
  * The customer's own spacing survives, because "GJ01 AB 8539" is how a plate
  * is read aloud and printed, and the product shows it back to them.
@@ -58,11 +58,11 @@ export const normalisePlate = (s: string) =>
   (s ?? '').toUpperCase().replace(/\s+/g, ' ').trim();
 
 /**
- * THE PLATE AS IT IS COMPARED — every space removed.
+ * THE PLATE AS IT IS COMPARED - every space removed.
  *
  * "GJ01AB8539" and "GJ01 AB 8539" are one car, and the duplicate check missed
  * that: it compared the STORED form, so a customer who typed their plate a
- * second time with different spacing got a second record — two histories for
+ * second time with different spacing got a second record - two histories for
  * one car, which is the exact thing the check exists to prevent. Found by the
  * end-to-end matrix, which normalised one and not the other by accident.
  *
@@ -75,7 +75,7 @@ export const plateKey = (s: string) => (s ?? '').toUpperCase().replace(/\s+/g, '
 /**
  * WHAT A CUSTOMER MAY SAY ABOUT THEIR OWN CAR.
  *
- * Five fields, and no others are read off the request — not `createdAt`, not
+ * Five fields, and no others are read off the request - not `createdAt`, not
  * `photo`, not anything a later feature adds. A field the customer cannot
  * legitimately author is a field the server must not accept.
  */
@@ -128,17 +128,17 @@ function validate(input: CarIntent | null): CleanCar {
 /**
  * `undefined` IS A VALUE THE FORM PRODUCES AND FIRESTORE REFUSES.
  *
- * The car form has optional fields — the odometer, the year, the colour — and
+ * The car form has optional fields - the odometer, the year, the colour - and
  * leaving one blank means "there isn't one". Firestore rejects `undefined`
  * outright on a write, so the key must simply not be there. On an UPDATE the
- * same absence means something stronger — "remove what was there" — which is
+ * same absence means something stronger - "remove what was there" - which is
  * `FieldValue.delete()`, and that is the difference between a car that never
  * had an odometer and one whose owner took it back.
  *
  * Both halves used to live in `lib/services/vehicles.ts` beside the client
  * write. Only the delete half came across with the move, so the first real
  * request through the new door was refused by Firestore for a car with no
- * year — found by the end-to-end matrix, which is the only thing that talks to
+ * year - found by the end-to-end matrix, which is the only thing that talks to
  * a real database.
  */
 const forCreate = (c: CleanCar) =>
@@ -176,7 +176,7 @@ export async function addCar(uid: string, input: CarIntent | null): Promise<CarR
     throw new VehicleError('registration-taken', 409);
   }
 
-  /* `.doc()` with no argument — the id is Firestore's, never the caller's.
+  /* `.doc()` with no argument - the id is Firestore's, never the caller's.
      That single line is what closes the squatting hole. */
   const ref = garage.doc();
   await ref.set({

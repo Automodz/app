@@ -4,7 +4,7 @@
  * One fact is being defended: a customer may ASK to be in the Club and may not
  * PUT themselves in it. Everything below is a way of trying to, and failing.
  *
- * The fake database models the shape the Admin SDK presents — documents, a
+ * The fake database models the shape the Admin SDK presents - documents, a
  * where-query, and a transaction whose reads all precede its writes.
  * `firebase-admin` cannot be imported under Jest (ESM `jose`), and the
  * emulator matrix is what proves the rules; this proves the decisions.
@@ -44,7 +44,7 @@ const queryOf = (collection: string, field: string, value: unknown) => ({
   collection,
   field,
   value,
-  /* A query is awaitable outside a transaction too — the nightly sweep reads
+  /* A query is awaitable outside a transaction too - the nightly sweep reads
      it directly, and modelling that is what caught it being missing here. */
   get: async () => runQuery({ collection, field, value }),
 });
@@ -134,7 +134,7 @@ const sub = (id: string) => store.get(`subscriptions/${id}`) as Row;
 /* ── JOINING ─────────────────────────────────────────────────────────────── */
 
 describe('asking to join', () => {
-  it('EVERY TERM IS DERIVED — the request carries a plan name and nothing else', async () => {
+  it('EVERY TERM IS DERIVED - the request carries a plan name and nothing else', async () => {
     const r = await joinMembership('u1', { plan: 'Silver', paymentMethod: 'upi' }, NOW);
     expect(r).toMatchObject({ status: 'pending', act: 'join', amountDue: SILVER.price, replay: false });
     expect(sub(r.subscriptionId)).toMatchObject({
@@ -206,7 +206,7 @@ describe('asking to join', () => {
     expect(subs()).toHaveLength(1);
   });
 
-  it('a SECOND open request is refused — the studio answers one at a time', async () => {
+  it('a SECOND open request is refused - the studio answers one at a time', async () => {
     await joinMembership('u1', { plan: 'Silver', paymentMethod: 'upi' }, NOW);
     expect(await failure(() => joinMembership('u1', { plan: 'Gold', paymentMethod: 'upi' }, NOW)))
       .toEqual({ code: 'already-pending', status: 409 });
@@ -227,7 +227,7 @@ describe('upgrading, renewing, and the ways round a cycle', () => {
     expect(up.amountDue).toBe(GOLD.price);
   });
 
-  it('A DOWNGRADE MID-CYCLE IS REFUSED — it is a way to restart a cycle early', async () => {
+  it('A DOWNGRADE MID-CYCLE IS REFUSED - it is a way to restart a cycle early', async () => {
     const g = await joinMembership('u1', { plan: 'Gold', paymentMethod: 'cash' }, NOW);
     await activate(g.subscriptionId);
     expect(await failure(() => joinMembership('u1', { plan: 'Silver', paymentMethod: 'cash' }, NOW)))
@@ -312,7 +312,7 @@ describe('who may put a customer in the Club', () => {
       .toEqual({ code: 'already-rejected', status: 409 });
   });
 
-  it('ONE STANDING MEMBERSHIP — activating an upgrade closes what it replaced', async () => {
+  it('ONE STANDING MEMBERSHIP - activating an upgrade closes what it replaced', async () => {
     const first = (await joinMembership('u1', { plan: 'Silver', paymentMethod: 'cash' }, NOW)).subscriptionId;
     await decideMembership('staff', { subscriptionId: first, decision: 'activate' }, NOW);
     const up = (await joinMembership('u1', { plan: 'Gold', paymentMethod: 'cash' }, NOW)).subscriptionId;
@@ -326,12 +326,12 @@ describe('who may put a customer in the Club', () => {
   });
 
   it('ACTIVATING ONE CLOSES EVERY OTHER OPEN REQUEST for that customer', async () => {
-    /* `mayJoin` refuses a second open request going forward — but production
+    /* `mayJoin` refuses a second open request going forward - but production
        already holds two for one customer, from before that rule existed. The
        studio has just answered the question; a second open request is one
        nobody will ask again, and the nightly job would nag about it daily. */
     const first = (await joinMembership('u1', { plan: 'Silver', paymentMethod: 'upi' }, NOW)).subscriptionId;
-    /* A second, as the old code allowed — written straight into the store. */
+    /* A second, as the old code allowed - written straight into the store. */
     store.set('subscriptions/legacy-pending', {
       userId: 'u1', plan: 'Platinum', status: 'pending',
       startDate: TODAY, endDate: '2026-09-11', washesTotal: 16, washesUsed: 0,
@@ -345,7 +345,7 @@ describe('who may put a customer in the Club', () => {
     expect(sub(first).status).toBe('active');
   });
 
-  it('but REFUSING one leaves the others alone — nothing was answered', async () => {
+  it('but REFUSING one leaves the others alone - nothing was answered', async () => {
     const first = (await joinMembership('u1', { plan: 'Silver', paymentMethod: 'upi' }, NOW)).subscriptionId;
     store.set('subscriptions/legacy-pending', {
       userId: 'u1', plan: 'Platinum', status: 'pending', endDate: '2026-09-11',
