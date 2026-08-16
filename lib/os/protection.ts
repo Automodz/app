@@ -208,9 +208,21 @@ export const isStudioApplied = (kind: ProtectionKind): boolean =>
  * This is not the old bug wearing a new coat. The predecessor recomputed
  * silently and permanently, so a catalogue edit rewrote history with nothing
  * recording that it had. This is explicitly a transitional projection: it is
- * marked, it is identical to what will be stored, and it disappears the
- * moment stored rows exist. Callers must prefer stored protections and fall
- * back to this - never merge the two.
+ * marked, it is identical to what will be stored, and it disappears the moment
+ * a stored row exists FOR THAT KIND.
+ *
+ * ── AND THE FALLBACK IS PER KIND, NOT PER CAR ────────────────────────────
+ * This paragraph used to end "Callers must prefer stored protections and fall
+ * back to this - never merge the two", and `computeProtections` read it as
+ * all-or-nothing: one stored row of any kind switched the whole projection
+ * off. Verifying a pollution certificate writes exactly one Protection, so a
+ * customer who sent in their certificate watched their ceramic coating
+ * disappear from their car. See `lib/customer/project#computeProtections`.
+ *
+ * The rule it was protecting is intact and worth restating precisely: never
+ * take one FIELD from a stored protection and another from a reconstructed
+ * one. A promise must come from a single source, whole. Which source that is
+ * is decided per kind, because a kind is the granularity a promise has.
  */
 export function projectProtections(args: {
   vehicleId: string;

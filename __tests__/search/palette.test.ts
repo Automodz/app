@@ -18,7 +18,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, Service, Subscription, User, Vehicle, Protection } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { toPalette, type PaletteItem } from '@/lib/customer/palette';
 import { hrefForDestination } from '@/navigation/resolve';
 
@@ -137,7 +137,7 @@ describe('every customer destination is reachable', () => {
   it('account settings, privacy, terms and deletion are all one search away', () => {
     /* Apple 5.1.1(v) - deletion must be reachable in-app, and "reachable"
        includes findable. */
-    for (const id of ['you-profile', 'you-notify', 'you-referral', 'privacy', 'terms', 'you-delete']) {
+    for (const id of ['you-profile', 'you-notify', 'privacy', 'terms', 'you-delete']) {
       expect(byId(items, id)).toBeDefined();
     }
     expect(byId(items, 'you-delete')?.href).toBe('/you?panel=delete');
@@ -413,7 +413,6 @@ describe('§21.8 - it answers the word the customer arrives with', () => {
     ['push', 'you-notify'],
     ['warranty', 'history'],
     ['invoice', 'history'],
-    ['refer', 'you-referral'],
     ['delete', 'you-delete'],
     ['buy', 'cars'],
     ['marketplace', 'cars'],
@@ -423,7 +422,7 @@ describe('§21.8 - it answers the word the customer arrives with', () => {
     expect(hits.length).toBeGreaterThan(0);
     /* The room the product calls something else is reachable by the word the
        customer used - "membership" must reach The Club. */
-    if (expected === 'club' || expected === 'you-notify' || expected === 'you-referral'
+    if (expected === 'club' || expected === 'you-notify'
       || expected === 'you-delete' || expected === 'cars' || expected === 'sell') {
       expect(ids(hits)).toContain(expected);
     }

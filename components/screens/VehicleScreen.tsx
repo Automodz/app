@@ -33,14 +33,15 @@
  */
 import { useState } from 'react';
 import Link from 'next/link';
-import { color, space, INSET, MEASURE, radius, stack, TARGET_MIN } from '@/design';
+import { color, space, INSET, MEASURE, radius, stack, TARGET_MIN, type as typeScale } from '@/design';
 import type { StateTone } from '@/design';
 import type { RegionId, VehicleRendering } from '@/components/vehicle';
 import { REGION_NAME } from '@/components/vehicle';
 import { OfflineNote } from '@/components/system';
 import { Back } from '@/components/os/RoomHeader';
 import {
-  Pane, Label, Rail, Pulse, Chevron, Meter, Action, Stat, Photograph } from '@/components/os';
+  Pane, Label, Rail, Pulse, Chevron, Meter, Action, Stat, Photograph,
+  Notice } from '@/components/os';
 
 /* ── What the car needs to be true ───────────────────────────────────── */
 
@@ -73,6 +74,28 @@ export interface VehicleProtection {
   /** §14.6 - the file, where one exists. */
   documentHref?: string;
   /**
+   * WHERE THIS PROMISE CAME FROM.
+   *
+   * "Kovalent Prolong · Applied here on 18 July 2026", "From the certificate
+   * you sent". A car's form asks for four things - a name, a plate, an
+   * odometer and a year - and then this ledger states coatings, films and
+   * warranties the owner never typed anywhere, which reads as the product
+   * knowing something it has not explained. Every one of them has a real
+   * origin in the record: work sealed at the studio, or a paper the studio
+   * verified. The origin was in the data and never on the screen.
+   *
+   * Worded by the projection from the protection's OWN fields - `provider`,
+   * `since`, `termsSource`, `declarationId` - so it can never claim a source
+   * the record does not have.
+   */
+  source?: string;
+  /**
+   * The visit that created it, where the record can point at a sealed one.
+   * Absent for a promise reconstructed from a booking: that has no chapter to
+   * open, and a link to a page that does not exist is worse than no link.
+   */
+  sourceHref?: string;
+  /**
    * THE ONE WAY IN, for a promise the customer can do something about.
    *
    * §10.5 - nothing is inert. A pollution certificate is the first protection
@@ -80,7 +103,13 @@ export interface VehicleProtection {
    * the customer can act on, so its row carries the act. The label is worded
    * by the projection for the state it is in; this draws it and knows neither.
    */
-  action?: { label: string; href: string };
+  /**
+   * `tone` says WHICH KIND of thing the control is, and §3.3 makes that a
+   * colour: amber is the studio asking (declare the certificate), champagne is
+   * a thing already in force (the warranty card you already hold). Absent
+   * means asking, which is what the only action here used to be.
+   */
+  action?: { label: string; href: string; tone?: 'asking' | 'held' };
 }
 
 export interface VehicleFrame {
@@ -234,7 +263,9 @@ export function VehicleScreen(
           }}
         >
           <Label style={{ color: 'rgba(232,217,190,0.7)' }}>{plate}</Label>
-          <h1 className="am-display" style={{ margin: 0, fontSize: 34, letterSpacing: '-0.02em' }}>
+          {/* The Display step, from the token - it was a hard-coded 34, which
+              is a number between the scale's two top steps and on it. */}
+          <h1 className="am-display" style={{ margin: 0, fontSize: typeScale.display.size }}>
             {name}
           </h1>
           {descriptor ? (
@@ -284,12 +315,18 @@ export function VehicleScreen(
         </Pane>
 
         {/* §17.1 - the car IS the inbox. One unread thing, as a doorway to
-            the object it is about (§17.3). Never a feed, never a count. */}
+            the object it is about (§17.3). Never a feed, never a count.
+
+            AND OPENING IT IS WHAT MARKS IT SEEN. This was a plain `Link`, so
+            the notification stayed unread for ever and the car wore its dot
+            after the customer had read the thing, opened the visit and had the
+            work finished. `Notice` carries the id the model has always
+            provided for exactly this. */}
         {notice ? (
           <Pane
             tone="warm"
-            as={Link}
-            {...{ href: notice.href }}
+            as={Notice}
+            {...{ id: notice.id, href: notice.href }}
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               gap: space.line, padding: `${space.gap}px ${space.gap + 2}px`,
@@ -370,6 +407,23 @@ export function VehicleScreen(
                   </div>
                 );
 
+                /* WHERE IT CAME FROM, under the layer it belongs to. The
+                   quietest line in the pane by design: a customer reads the
+                   promise first and asks where it came from second, and this
+                   is the answer waiting for the moment they do. */
+                const provenance = p.source ? (
+                  <Label style={{ fontSize: 9, letterSpacing: '0.1em' }}>
+                    {p.sourceHref ? (
+                      <Link
+                        href={p.sourceHref}
+                        style={{ color: 'inherit', textDecoration: 'underline' }}
+                      >
+                        {p.source}
+                      </Link>
+                    ) : p.source}
+                  </Label>
+                ) : null;
+
                 /* A layer with somewhere to go carries the way there under
                    itself, so the row stays a row and the control stays a
                    control - §21.3's 44px floor is the link's own, whatever
@@ -380,21 +434,32 @@ export function VehicleScreen(
                     style={{ display: 'flex', flexDirection: 'column', gap: space.breath }}
                   >
                     {layer}
+                    {provenance}
                     <Link
                       href={p.action.href}
                       className="am-tap"
                       style={{
                         display: 'flex', alignItems: 'center', gap: space.breath,
                         width: 'fit-content', minHeight: TARGET_MIN,
-                        fontSize: 13.5, color: color.amber, textDecoration: 'none',
+                        fontSize: 13.5, textDecoration: 'none',
+                        color: p.action.tone === 'held' ? color.champagne : color.amber,
                       }}
                     >
                       {p.action.label}
-                      <Chevron size={15} tone={color.amber} />
+                      <Chevron
+                        size={15}
+                        tone={p.action.tone === 'held' ? color.champagne : color.amber}
+                      />
                     </Link>
                   </div>
                 ) : (
-                  <div key={p.id}>{layer}</div>
+                  <div
+                    key={p.id}
+                    style={{ display: 'flex', flexDirection: 'column', gap: space.breath - 2 }}
+                  >
+                    {layer}
+                    {provenance}
+                  </div>
                 );
               })}
             </div>

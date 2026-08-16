@@ -243,10 +243,11 @@ export interface BookedScope {
 /**
  * A PRICE BREAKDOWN AS STORED.
  *
- * `PriceBreakdown` (lib/services/pricing.ts) carries the whole `Promo`
+ * `PriceBreakdown` (lib/services/pricing.ts) used to carry the whole `Promo`
  * document, which is a live record with its own timestamps and usage counts.
  * Freezing that into an estimate would be freezing a copy of a record that
- * keeps changing; only the promo's IDENTITY belongs in a snapshot.
+ * kept changing. Promo codes are removed, so a stored breakdown holds only
+ * figures and the id of the membership that earned them.
  */
 export interface StoredBreakdown {
   subtotal: number;
@@ -260,7 +261,6 @@ export interface StoredBreakdown {
   total: number;
   washCovered: boolean;
   membershipId?: string;
-  promoId?: string;
 }
 
 /**
@@ -427,7 +427,7 @@ export interface Booking {
   paymentStatus: 'pending' | 'verified' | 'failed';
   transactionId?: string;
   adminNotes?: string;
-  /** Discount applied at checkout - membership % or promo, best-of, never stacked */
+  /** Discount applied at checkout - the membership rate, the only one there is */
   discount?: BookingDiscount;
   invoiceId?: string;
   /** Operational record link - set at vehicle check-in. Booking (commercial
@@ -586,52 +586,15 @@ export interface Subscription {
   amountPaid?: number;
 }
 
-// ─── DISCOUNTS / PROMOS ──────────────────────────────────────────────────────
+// ─── DISCOUNTS ──────────────────────────────────────────────────────────────
+/* `Promo`, `PromoScope`, `PromoTarget` and `PromoRedemption` STOOD HERE.
+   Promo codes and the referral programme that issued them are removed; the
+   membership rate is the only discount the studio gives. */
 
 export interface BookingDiscount {
-  source: 'membership' | 'promo';
-  promoId?: string;
+  source: 'membership';
   label: string;
   amount: number;
-}
-
-export type PromoScope =
-  | { kind: 'all' }
-  | { kind: 'category'; categories: string[] }
-  | { kind: 'services'; serviceIds: string[] };
-
-export type PromoTarget =
-  | { kind: 'all' }
-  | { kind: 'customers'; userIds: string[] };
-
-export interface Promo {
-  id: string;
-  code: string;               // uppercase
-  label: string;
-  type: 'percent' | 'flat';
-  value: number;
-  scope: PromoScope;
-  target: PromoTarget;
-  validFrom: string;          // YYYY-MM-DD
-  validTo: string;            // YYYY-MM-DD
-  usageLimitTotal?: number;
-  usageLimitPerCustomer?: number;
-  usedCount: number;
-  autoApply: boolean;
-  active: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export interface PromoRedemption {
-  id: string;
-  promoId: string;
-  userId?: string;
-  customerPhone?: string;
-  bookingId?: string;
-  jobId?: string;
-  discountAmount: number;
-  createdAt: Timestamp;
 }
 
 // ─── EMPLOYEES / ATTENDANCE / PAYROLL ────────────────────────────────────────
@@ -992,12 +955,9 @@ export interface InventoryTxn {
   createdAt: Timestamp;
 }
 
-export interface ServiceRecipe {
-  serviceId: string;          // doc ID == serviceId
-  serviceName: string;
-  items: { itemId: string; itemName: string; qty: number; unit: InventoryUnit }[];
-  updatedAt: Timestamp;
-}
+/* `ServiceRecipe` STOOD HERE - the service→consumables mapping. Inventory
+   is the product inventory only; see `lib/services/inventory`. */
+
 
 // ─── BUY / SELL CARS ─────────────────────────────────────────────────────────
 

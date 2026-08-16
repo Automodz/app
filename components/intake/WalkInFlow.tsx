@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Search, UserCheck, ArrowRight, ArrowLeft, Check, Minus, Plus } from 'lucide-react';
 import {
   findCustomerByPhone, createWalkInJob, getServices, listEmployees,
-  getEligiblePromos, getUserSubscription, computeBestDiscount,
+  getUserSubscription, computeBestDiscount,
 } from '@/lib/firebaseService';
 import { formatCurrency } from '@/lib/utils';
 import { applyDiscount } from '@/lib/services/pricing';
@@ -76,7 +76,7 @@ export default function WalkInFlow({ onDone }: {
 
   useEffect(() => { getServices().then(setServices); }, []);
 
-  // Auto-apply best discount for phone-matched customers (membership % vs promos, best-of)
+  // Auto-apply the membership rate for phone-matched customers
   useEffect(() => {
     if (step !== 3 || !matched || selected.size === 0) { setDiscount(undefined); return; }
     const items = Array.from(selected.values());
@@ -87,13 +87,11 @@ export default function WalkInFlow({ onDone }: {
         const activeSub = sub?.status === 'active' && sub.endDate >= today ? sub : null;
         setMemberSub(activeSub);
         const plan = activeSub?.plan ?? null;
-        // Evaluate on the highest-priced item (single non-stacking discount, matches booking flow)
+        /* Evaluated on the highest-priced item, matching the booking flow.
+           Promo codes are removed, so the membership rate is the only benefit
+           there is and there is nothing to be best-of against. */
         const top = items.reduce((a, b) => (b.price > a.price ? b : a));
-        const best = computeBestDiscount({ price: top.price, membershipPlan: plan, eligiblePromos: await getEligiblePromos(
-          { serviceId: top.serviceId, category: top.category, userId: matched.uid, date: today },
-          { autoApplyOnly: true },
-        ) });
-        setDiscount(best);
+        setDiscount(computeBestDiscount({ price: top.price, membershipPlan: plan }));
       } catch { setDiscount(undefined); }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,7 +152,6 @@ export default function WalkInFlow({ onDone }: {
     setCreating(true);
     try {
       /* Line prices are ours to set; the BENEFIT is not. The wash deduction and
-         the promo count now happen inside the same commit as the job, so the
          two follow-up calls that used to live here - and could each fail on
          their own - are gone. */
       const { id } = await createWalkInJob({

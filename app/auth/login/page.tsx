@@ -9,7 +9,7 @@
  *
  * THE AUTH LOGIC IS UNCHANGED from `reference/customer-old/app/auth/login`:
  * Google sign-in, profile bootstrap, blocked-account sign-out, employee-role
- * linking, referral capture and redemption, the safe-redirect rule, the
+ * linking, the safe-redirect rule, the
  * already-signed-in short circuit, and every one of the five error branches.
  * The one addition is the httpOnly session cookie, which the server-rendered
  * rooms need and the old client-only rooms did not.
@@ -38,8 +38,7 @@ import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { linkEmployeeRole } from '@/lib/services/auth';
-import { getUserProfile, stashReferralCode, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
-import { claimReferral } from '@/lib/services/referrals';
+import { getUserProfile, ensureUserProfile, signInWithGoogle } from '@/lib/firebaseService';
 import { useAppStore } from '@/lib/store';
 import Wordmark from '@/components/ui/Wordmark';
 import { GoogleMark } from '@/components/auth/GoogleMark';
@@ -361,12 +360,9 @@ function Login() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
-  // capture an incoming referral code (?ref=CODE) before sign-in
-  useEffect(() => {
-    const ref = params.get('ref');
-    if (ref) stashReferralCode(ref);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /* `?ref=CODE` CAPTURE STOOD HERE. The referral programme is removed - see
+     `lib/services` - so an incoming code has nothing to redeem against and
+     stashing one would be storage nobody ever reads. */
 
   const handleGoogle = async () => {
     /* The note below already says it; refusing here stops a sign-in that
@@ -434,10 +430,8 @@ function Login() {
 
       setUser(profile);
 
-      // redeem a referral the customer arrived with - best-effort, never blocks entry
-      if (profile.role !== 'admin' && profile.role !== 'employee') {
-        void claimReferral().catch(() => {});
-      }
+      /* REFERRAL REDEMPTION STOOD HERE, best-effort on first entry. Gone with
+         the programme it belonged to. */
 
       /* The session is open - so the welcome is a statement, not a hope. */
       setGreeting((profile.name ?? '').trim().split(/\s+/)[0] ?? '');

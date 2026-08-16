@@ -9,7 +9,7 @@
  * This posts Sentry's Store envelope directly. That is a deliberate choice over
  * `@sentry/nextjs`: the SDK would add ~40 kB to every client bundle and a
  * build-time plugin, to solve a problem that is one HTTPS POST. Reports carry
- * the ids that make an incident findable - user, booking, vehicle, promo - and
+ * the ids that make an incident findable - user, booking, vehicle - and
  * nothing else. No tokens, no bodies, no prices.
  *
  * Entirely optional: with `SENTRY_DSN` unset this is a no-op, so a missing
@@ -43,7 +43,6 @@ export interface ReportContext {
   jobId?: string;
   vehicleId?: string;
   serviceId?: string;
-  promoId?: string;
   /** how many times the Firestore transaction was attempted, when known */
   attempts?: number;
   /** anything else safe to say out loud - never a secret, never a price */
@@ -94,7 +93,6 @@ export const reportError = async (err: unknown, ctx: ReportContext): Promise<voi
           jobId: ctx.jobId,
           vehicleId: ctx.vehicleId,
           serviceId: ctx.serviceId,
-          promoId: ctx.promoId,
         }),
         extra: scrub({ attempts: ctx.attempts, ...(ctx.extra ?? {}) }),
         exception: {

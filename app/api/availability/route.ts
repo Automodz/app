@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, assertAdminConfigured } from '@/lib/server/firebaseAdmin';
 import { loadOccupancy, occupancyRange, type Reader } from '@/lib/server/occupancy';
+import { loadCatalogue } from '@/lib/server/catalogue';
 import { computeAvailability } from '@/lib/availability';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,13 @@ export async function POST(req: NextRequest) {
   const { sorted, rangeStart, rangeEnd } = occupancyRange(dates, durationMinutes);
   // outside a transaction the collection handles read for themselves
   const reader = { get: (x: { get(): unknown }) => x.get() } as unknown as Reader;
-  const { occupants, cfg } = await loadOccupancy(reader, rangeStart, rangeEnd);
+  /* The booking sheet calls this on every change of service, day or duration,
+     and it read the whole `services` collection each time for durations alone.
+     Read-only path, so the cached price list serves it; the WRITER still reads
+     inside its transaction (`lib/server/bookingService`). */
+  const { occupants, cfg } = await loadOccupancy(reader, rangeStart, rangeEnd, {
+    catalogue: await loadCatalogue(),
+  });
 
   return NextResponse.json(
     computeAvailability(sorted, category, durationMinutes, occupants, cfg),

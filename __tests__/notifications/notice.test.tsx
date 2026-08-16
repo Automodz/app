@@ -26,7 +26,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, Notification, Service, User, Vehicle, Visit } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { noticeOf, unmappableOf, toVehicle, toGarage } from '@/lib/customer/project';
 import { VehicleScreen } from '@/components/screens/VehicleScreen';
 import { GarageScreen } from '@/components/screens/GarageScreen';

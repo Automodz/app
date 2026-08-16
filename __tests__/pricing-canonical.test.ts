@@ -9,11 +9,11 @@
  */
 import { priceVisit, pickupFees, PICKUP_LEG_FEE } from '@/lib/services/pricing';
 import type { PricingInput } from '@/lib/services/pricing';
-import type { Promo, Subscription } from '@/lib/types';
+import type { Subscription } from '@/lib/types';
 
 const benefit = (over: Partial<PricingInput> = {}): PricingInput => ({
   base: 0, category: 'Coating', serviceId: 'svc-glass', ownerId: 'u1',
-  membership: null, wantsWash: false, promos: [], myRedemptions: new Map(),
+  membership: null, wantsWash: false,
   date: '2026-07-20',
   ...over,
 });
@@ -26,28 +26,26 @@ const sub = (over: Partial<Subscription> = {}): Subscription & { id: string } =>
   ...over,
 } as Subscription & { id: string });
 
-const promo = (over: Partial<Promo> = {}): Promo => ({
-  id: 'p1', label: 'Monsoon ₹200 off', type: 'flat', value: 200,
-  active: true, validFrom: '2026-01-01', validTo: '2026-12-31',
-  usedCount: 0, scope: { kind: 'all' }, target: { kind: 'all' },
-  ...over,
-} as Promo);
-
 const GLASS = [{ name: 'Glass Coating', price: 1200 }];
 
 describe('THE PINNED REGRESSION - discount is carried, never derived', () => {
-  it('services 1200, discount 200, two legs → subtotal 1200, discount 200, fees 100, total 1100', () => {
+  /* The discount used to come from a flat ₹200 promo. Promo codes are removed,
+     so it comes from the only source left - a Gold membership, 15% of the
+     WORK: 180 of 1200. The regression this pins is unchanged: the fees are
+     outside the discount and the seal must carry the figure rather than
+     subtract its way back to one. */
+  it('services 1200, membership 15%, two legs → subtotal 1200, discount 180, fees 100, total 1120', () => {
     const b = priceVisit({
       services: GLASS,
       fees: pickupFees({ pickup: true, drop: true }),
-      benefit: benefit({ promos: [promo()] }),
+      benefit: benefit({ membership: sub() }),
     });
     expect(b.subtotal).toBe(1200);
-    expect(b.discountAmount).toBe(200);
+    expect(b.discountAmount).toBe(180);
     expect(b.feesTotal).toBe(100);
-    expect(b.total).toBe(1100);
-    /* The subtraction the seal used to perform would say 100 here. */
-    expect(b.subtotal - b.total).toBe(100);
+    expect(b.total).toBe(1120);
+    /* The subtraction the seal used to perform would say 80 here. */
+    expect(b.subtotal - b.total).toBe(80);
     expect(b.discountAmount).not.toBe(b.subtotal - b.total);
   });
 });
@@ -83,21 +81,6 @@ describe('benefits', () => {
     expect(b.discount?.source).toBe('membership');
     expect(b.total).toBe(1020);
   });
-  it('promo discount', () => {
-    const b = priceVisit({ services: GLASS, benefit: benefit({ promos: [promo()] }) });
-    expect(b.discount?.source).toBe('promo');
-    expect(b.total).toBe(1000);
-  });
-  it('membership + promo takes the best, never both', () => {
-    const b = priceVisit({
-      services: GLASS,
-      benefit: benefit({ membership: sub(), promos: [promo()] }),
-    });
-    /* Gold 15% = 180 against a flat 200. The promo wins, alone. */
-    expect(b.discountAmount).toBe(200);
-    expect(b.discount?.source).toBe('promo');
-    expect(b.total).toBe(1000);
-  });
   it('a covered wash is ₹0 for the work, and fees still stand', () => {
     const b = priceVisit({
       services: [{ name: 'Maintenance wash', price: 1200 }],
@@ -121,13 +104,13 @@ describe('tax', () => {
   it('ON - exclusive, on work and fees, rounded once to the rupee', () => {
     const b = priceVisit({
       services: GLASS, fees: pickupFees({ pickup: true }),
-      benefit: benefit({ promos: [promo()] }),
+      benefit: benefit({ membership: sub() }),
       tax: { enabled: true, rate: 18, gstin: '24ABCDE1234F1Z5' },
     });
-    /* (1200-200) + 50 = 1050 taxable · 18% = 189 · total 1239 */
-    expect(b.taxable).toBe(1050);
-    expect(b.tax).toEqual({ rate: 18, amount: 189, gstin: '24ABCDE1234F1Z5' });
-    expect(b.total).toBe(1239);
+    /* (1200-180) + 50 = 1070 taxable · 18% = 192.6 → 193 · total 1263 */
+    expect(b.taxable).toBe(1070);
+    expect(b.tax).toEqual({ rate: 18, amount: 193, gstin: '24ABCDE1234F1Z5' });
+    expect(b.total).toBe(1263);
   });
   it('rounds once - a fractional rate never leaves a fraction', () => {
     const b = priceVisit({
@@ -189,7 +172,7 @@ describe('legacy and edge', () => {
   it('a discount can never exceed the work', () => {
     const b = priceVisit({
       services: [{ name: 'x', price: 100 }],
-      benefit: benefit({ promos: [promo({ value: 500 })] }),
+      benefit: benefit({ }),
     });
     expect(b.total).toBeGreaterThanOrEqual(0);
     expect(b.discountAmount).toBeLessThanOrEqual(100);

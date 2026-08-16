@@ -18,12 +18,11 @@
  * 1. FIVE SLOTS, NOT FOUR PLUS A MARK. See navigation/routes.ts for why that
  *    honours §6.3 rather than dropping it.
  *
- * 2. EVERY SLOT SAYS ITS NAME. This file used to withhold the word from the
- *    four rooms you were not in, on §3.5 grounds. But the words are set in
- *    9px mono at 42% ink - quieter than the glyphs they sit under - and a
- *    name you can read without tapping is not a demand for attention, it is
- *    the removal of a guess. The old rule also forced a 390px media query to
- *    stop the bar clipping; a column of glyph-over-word does not.
+ * 2. NO SLOT SAYS ITS NAME. The design brought the words back and they came
+ *    off again: five words under five marks is a toolbar, and the dock is
+ *    meant to disappear into the room. §21.6 is unharmed - `aria-label` on
+ *    each link is the accessible name and a screen reader reads exactly what
+ *    it read when the words were drawn.
  *
  * 3. THE LIGHT DOES NOT TRAVEL. A shared `layoutId` slid one indicator
  *    between slots. With the word always present there is nothing left for
@@ -31,6 +30,14 @@
  *    says everything: the amber light falls on it. §3.3 stands - warmth means
  *    the studio, and where you are standing is the one place the studio's
  *    light is pointed.
+ *
+ * ── ITS METRICS ARE INSTAGRAM'S, BY THE OWNER'S DECISION ────────────────
+ * 49px of bar and 24px marks - the iOS tab bar every customer already has
+ * muscle memory for. See `design/grid.NAV_HEIGHT` for why §21.3 is untouched
+ * by that and for the eight-pixel bug the change also closes. What is NOT
+ * Instagram's is the SHAPE: the dock still rests in the room as a rounded
+ * object inset from three edges rather than being chrome bolted to the
+ * bottom, because that is §6.1 and it is the product's own.
  * ─────────────────────────────────────────────────────────────────────────
  */
 import { useState } from 'react';
@@ -38,7 +45,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { Transition } from 'framer-motion';
 import {
-  color, elevation, radius, space, duration, easing, curve, TARGET_MIN, NAV_GAP,
+  color, elevation, radius, space, duration, easing, curve, stack, TARGET_MIN, NAV_GAP,
 } from '@/design';
 import { useAppStore } from '@/lib/store';
 import { useNavigation } from './NavigationProvider';
@@ -107,11 +114,21 @@ const GLYPH: Record<string, React.ReactNode> = {
   [PROFILE]: <><circle cx="12" cy="9" r="3.4" /><path d="M5.5 19a6.5 6.5 0 0113 0" /></>,
 };
 
+/**
+ * THE MARK'S SIZE, AND IT IS INSTAGRAM'S.
+ *
+ * 22 before, by nobody's decision - it went "up from 18 to 22" when the slot
+ * names came off and stopped there. The owner asked for the bar every customer
+ * already knows, and its marks are drawn 24 to a 24 grid, which is also this
+ * product's own grid: one unit on the glyph is one unit on the screen.
+ */
+const ICON = 24;
+
 /** The drawn mark. One 1.4px stroke on a 24 grid, `currentColor` throughout. */
 function Glyph({ path }: { path: string }) {
   return (
     <svg
-      width={22} height={22} viewBox="0 0 24 24" aria-hidden
+      width={ICON} height={ICON} viewBox="0 0 24 24" aria-hidden
       fill="none" stroke="currentColor" strokeWidth={1.4}
       strokeLinecap="round" strokeLinejoin="round"
     >
@@ -138,7 +155,7 @@ function Portrait({ src, active }: { src?: string; active: boolean }) {
   const [failed, setFailed] = useState(false);
   /* THE SAME THREE STATES `Photograph` OWNS, MARKED THE SAME WAY.
      It is not that primitive - that one fills a frame and composes absence as
-     a lit plate, which is right for a car and wrong for a 22px slot where the
+     a lit plate, which is right for a car and wrong for a 24px slot where the
      honest absence is the drawn person. But the CONTRACT is the primitive's:
      absent, ready and failed are three states and none of them is a broken
      image. `data-photograph` is how the product marks that, so this says it
@@ -155,12 +172,12 @@ function Portrait({ src, active }: { src?: string; active: boolean }) {
       data-photograph="ready"
       src={src}
       alt=""
-      width={22}
-      height={22}
+      width={ICON}
+      height={ICON}
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
       style={{
-        width: 22, height: 22, borderRadius: '50%', objectFit: 'cover',
+        width: ICON, height: ICON, borderRadius: '50%', objectFit: 'cover',
         /* Lit the way every other slot is lit - the ring is the state, and the
            picture inside it never changes. */
         boxShadow: active ? `0 0 0 1.6px ${color.amber}` : `0 0 0 1.2px ${color.ink3}`,
@@ -218,7 +235,14 @@ export function BottomNavigation() {
              tablet it stops the dock stretching into a rail. */
           width: '100%',
           maxWidth: 460,
-          padding: `${space.line}px ${space.gap}px`,
+          /* THE BAR IS ITS OWN TOKEN'S HEIGHT, not whatever its padding adds
+             up to. It was `padding: 12px 16px` around a 44px slot, which is 68
+             - while `stack.navHeight` published 60 and every room reserved
+             that, so eight pixels of every scroll ended up under the dock.
+             Declaring the height means the token and the object cannot
+             disagree, which is the whole of §8.5. */
+          height: stack.navHeight,
+          paddingInline: space.gap,
           borderRadius: radius.pill,
           boxShadow: elevation.nav.shadow,
           /* THE DOCK CARRIES ITS OWN GROUND.
@@ -252,8 +276,11 @@ export function BottomNavigation() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
-                /* §21.3 - the floor, whatever the glyph does. */
+                /* Tight, because the bar is 49 and the mark is 24: the lit
+                   rule belongs to the mark above it, not to the row. */
+                gap: space.hair,
+                /* §21.3 - the floor, whatever the glyph does. The bar is 49,
+                   so the 44 sits inside it with room and the rule holds. */
                 minWidth: TARGET_MIN,
                 minHeight: TARGET_MIN,
                 flex: 1,

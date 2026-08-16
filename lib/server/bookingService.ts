@@ -14,7 +14,7 @@ import { pickupTimeFor, fullAddress } from '@/lib/os/address';
 import { DAY_OPEN_MIN } from '@/lib/availability';
 import type {
   Booking, BookingDiscount, Estimate, Job, JobServiceItem, JobStatus,
-  Promo, Service, StoredBreakdown, Subscription,
+  Service, StoredBreakdown, Subscription,
 } from '@/lib/types';
 
 /**
@@ -22,22 +22,22 @@ import type {
  * booking, and the only thing that may decide what one costs.
  *
  * WHY IT EXISTS. Until now the browser decided `totalAmount`, `discount`,
- * whether a promo applied and whether a membership wash covered the visit,
+ * whether a membership wash covered the visit,
  * then wrote the booking itself. Firestore rules could check the shape of that
  * document but not its arithmetic, so any client could have booked a ₹2,20,000
- * PPF for ₹1. Separately, the booking, the promo count and the wash deduction
+ * PPF for ₹1. Separately, the booking and the wash deduction
  * were three sequential writes from three different places, so a dropped
  * connection between any two of them left the studio's records disagreeing
  * with what the customer was charged.
  *
  * THE CONTRACT.
  *   The client expresses INTENT: which car, which service, when.
- *   The server decides PRICE: base, membership benefit, promo benefit, total.
+ *   The server decides PRICE: base, membership benefit, total.
  *   Incoming money values are not validated - they are ignored. There is no
  *   field a caller can set that changes what they pay.
  *
  * ATOMICITY. Firestore transactions span collections inside one database, so
- * the booking, the promo increment, the redemption record, the wash deduction
+ * the booking, the wash deduction
  * and the idempotency marker are ONE commit. There is no ordering to discuss
  * and no partial state to reconcile: either the visit exists fully paid-for
  * and fully counted, or it does not exist.
@@ -126,24 +126,10 @@ export interface BookingResult {
 
 /* ── Shared reads ───────────────────────────────────────────────────────── */
 
-const loadPromoContext = async (reader: Reader, ownerId: string | null) => {
-  const db = adminDb!;
-  const [promoSnap, mineSnap] = await Promise.all([
-    reader.get(db.collection('promos').where('active', '==', true)),
-    ownerId
-      ? reader.get(db.collection('promoRedemptions').where('userId', '==', ownerId))
-      : Promise.resolve({ docs: [] as { data(): unknown }[] }),
-  ]);
-  const promos = promoSnap.docs.map(d => ({
-    id: (d as unknown as { id: string }).id, ...(d.data() as object),
-  })) as Promo[];
-  const myRedemptions = new Map<string, number>();
-  mineSnap.docs.forEach(d => {
-    const r = d.data() as { promoId?: string };
-    if (r.promoId) myRedemptions.set(r.promoId, (myRedemptions.get(r.promoId) ?? 0) + 1);
-  });
-  return { promos, myRedemptions };
-};
+/* `loadPromoContext` STOOD HERE - the active promos and this customer's
+   redemption counts, read inside the booking transaction. Promo codes are
+   removed, so a booking's only benefit is the membership rate and there is
+   nothing left to load, count or decrement. */
 
 const loadMembership = async (
   t: Transaction, ownerId: string | null,
@@ -356,10 +342,7 @@ const createAppointment = async (
       throw new BookingError('service-not-priced');
     }
 
-    const [membership, { promos, myRedemptions }] = await Promise.all([
-      loadMembership(t, ownerId),
-      loadPromoContext(t as unknown as Reader, ownerId),
-    ]);
+    const membership = await loadMembership(t, ownerId);
 
     /* ---- THE ESTIMATE, READ INSIDE THE TRANSACTION ----
        Inside, because it is also SPENT inside: an estimate that has already
@@ -454,8 +437,6 @@ const createAppointment = async (
             ownerId,
             membership,
             wantsWash: !!intent.useMembershipWash,
-            promos,
-            myRedemptions,
             date: today(),
           },
         }));
@@ -478,7 +459,6 @@ const createAppointment = async (
       washCovered: breakdown.washCovered,
       membershipId: breakdown.membershipId,
       discount: breakdown.discount,
-      promo: breakdown.promoId ? promos.find(p => p.id === breakdown.promoId) : undefined,
     };
 
     /* ---- writes ---- */
@@ -547,7 +527,6 @@ const createAppointment = async (
     });
 
     settleBenefits(t, {
-      promo: priced.promo,
       discount: priced.discount,
       ownerId,
       refKey: bookingRef.id,
@@ -620,10 +599,7 @@ const createWalkIn = async (
     // ride the same commit instead of being a best-effort afterthought
     const crmRef = db.collection('walkinCustomers').doc(phone);
     const crmSnap = ownerId ? null : await t.get(crmRef);
-    const [membership, { promos, myRedemptions }] = await Promise.all([
-      loadMembership(t, ownerId),
-      loadPromoContext(t as unknown as Reader, ownerId),
-    ]);
+    const membership = await loadMembership(t, ownerId);
 
     /* The counter's prices stand - staff may negotiate, and that is the point
        of a kiosk. What staff may NOT do is invent a benefit: the wash cover
@@ -639,8 +615,6 @@ const createWalkIn = async (
       ownerId,
       membership,
       wantsWash: !!intent.useMembershipWash && !!washItem,
-      promos,
-      myRedemptions,
       date: today(),
     });
 
@@ -653,7 +627,6 @@ const createWalkIn = async (
       : items;
     const subtotal = finalItems.reduce((s, i) => s + i.price, 0);
     const discount = priced.washCovered ? undefined : priced.discount;
-    const usedPromo = priced.washCovered ? undefined : priced.promo;
     // through the one engine - the last hand-rolled discount line in the repo
     const totalAmount = applyDiscount(subtotal, discount);
 
@@ -698,7 +671,6 @@ const createWalkIn = async (
     t.set(jobRef, job);
 
     settleBenefits(t, {
-      promo: usedPromo,
       discount,
       ownerId,
       customerPhone: phone,
@@ -738,13 +710,12 @@ const createWalkIn = async (
 
 /**
  * The two benefits that cost the studio something, moved in the SAME commit as
- * the record that spends them. A promo counted without a visit, or a visit with
- * an uncounted promo, is no longer representable.
+ * the record that spends them. It counted a promo redemption too; promo codes
+ * are removed, so what it settles is the membership wash and nothing else.
  */
 const settleBenefits = (
   t: Transaction,
   a: {
-    promo?: Promo;
     discount?: BookingDiscount;
     ownerId: string | null;
     customerPhone?: string;
@@ -756,22 +727,9 @@ const settleBenefits = (
 ) => {
   const db = adminDb!;
 
-  if (a.promo && a.discount?.source === 'promo') {
-    t.update(db.collection('promos').doc(a.promo.id), {
-      usedCount: (a.promo.usedCount ?? 0) + 1,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-    t.set(db.collection('promoRedemptions').doc(`${a.promo.id}_${a.refKey}`), {
-      promoId: a.promo.id,
-      ...(a.ownerId ? { userId: a.ownerId } : {}),
-      ...(a.customerPhone ? { customerPhone: a.customerPhone } : {}),
-      [a.refField]: a.refKey,
-      // the engine's own figure, computed from the server's base price - there
-      // is no client number anywhere in this value
-      discountAmount: a.discount.amount,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-  }
+  /* PROMO REDEMPTION STOOD HERE - the count incremented and a redemption
+     document written in the same commit as the booking. Promo codes are
+     removed; the membership wash below is the whole of what a visit spends. */
 
   if (a.washCovered && a.membership) {
     t.update(db.collection('subscriptions').doc(a.membership.id), {
@@ -784,8 +742,8 @@ const settleBenefits = (
 /* ────────────────────────────────────────────────────────────────────────────
    GIVING BACK WHAT A CANCELLED VISIT CONSUMED.
 
-   `settleBenefits` above SPENDS a membership wash and a promo redemption when a
-   booking is created. Nothing gave them back. A customer who cancelled - or
+   `settleBenefits` above SPENDS a membership wash when a booking is created.
+   Nothing gave it back. A customer who cancelled - or
    whose booking the STUDIO refused - permanently lost a wash they had paid for
    and a promo they had not used. `cancelBooking` in lib/services/bookings.ts
    only ever wrote `status: 'cancelled'`.
@@ -801,7 +759,6 @@ export interface CancelResult {
   /** true when the booking was ALREADY cancelled - nothing was given back. */
   alreadyCancelled: boolean;
   washRestored: boolean;
-  promoRestored: boolean;
 }
 
 /**
@@ -848,7 +805,7 @@ export const cancelBookingAuthoritative = async (
        the booking is already in, which is not an error - but crediting a second
        wash for it would be. */
     if (booking.status === 'cancelled') {
-      return { id: bookingId, alreadyCancelled: true, washRestored: false, promoRestored: false };
+      return { id: bookingId, alreadyCancelled: true, washRestored: false };
     }
 
     /* A customer may not cancel work already under way; the studio may. The
@@ -859,7 +816,6 @@ export const cancelBookingAuthoritative = async (
     if (!move.ok) throw new BookingError(move.reason ?? 'too-late', 409);
 
     let washRestored = false;
-    let promoRestored = false;
 
     /* ── the wash ──
        A NO-SHOW FORFEITS IT. The studio held the bay and the slot went unused,
@@ -884,29 +840,9 @@ export const cancelBookingAuthoritative = async (
     /* ── the promo ──
        Returned even on a no-show: a promo is a right to a price, not a
        consumable the studio spent holding a bay. */
-    if (booking.discount?.source === 'promo' && booking.discount.promoId) {
-      const promoRef = db.collection('promos').doc(booking.discount.promoId);
-      const promoSnap = await t.get(promoRef);
-      const redemptionRef = db
-        .collection('promoRedemptions')
-        .doc(`${booking.discount.promoId}_${bookingId}`);
-      const redemptionSnap = await t.get(redemptionRef);
-
-      /* The redemption document is the evidence that it was actually spent.
-         Decrementing without it would let a booking that never redeemed the
-         promo hand a use back to the pool. */
-      if (redemptionSnap.exists) {
-        if (promoSnap.exists) {
-          const promo = promoSnap.data() as Promo;
-          t.update(promoRef, {
-            usedCount: Math.max(0, (promo.usedCount ?? 0) - 1),
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-        }
-        t.delete(redemptionRef);
-        promoRestored = true;
-      }
-    }
+    /* PROMO RESTORATION STOOD HERE - a cancelled booking handed its promo use
+       back to the pool, evidenced by the redemption document. Promo codes are
+       removed, so a cancellation has only the wash to restore. */
 
     t.update(bookingRef, {
       status: 'cancelled',
@@ -922,7 +858,7 @@ export const cancelBookingAuthoritative = async (
       ...(opts.noShow ? { noShow: true } : {}),
     });
 
-    return { id: bookingId, alreadyCancelled: false, washRestored, promoRestored };
+    return { id: bookingId, alreadyCancelled: false, washRestored };
   }, { maxAttempts: 8 });
 };
 

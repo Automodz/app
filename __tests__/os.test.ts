@@ -358,18 +358,46 @@ describe('the concierge log', () => {
   const log = (over: Partial<Parameters<typeof conciergeLog>[0]> = {}) => conciergeLog({
     visits: [visit()],
     jobByBooking: new Map([['v1', job()]]),
-    membership: null, protections: [], vehicleName: 'BMW M340i', now: LOG_NOW,
+    membership: null, protections: [], now: LOG_NOW,
     ...over,
   });
 
-  it('writes only what happened, newest first', () => {
-    const entries = log();
-    expect(entries.map(e => e.line)).toEqual([
-      'Kovalent Graphene was finished and filed to the BMW M340i’s story.',
-      'Work began on the BMW M340i.',
-      'The BMW M340i arrived at the studio.',
-      'You asked for Kovalent Graphene on 18 July 2026.',
-    ]);
+  it('writes what CHANGED, newest first - not every step of the floor', () => {
+    /**
+     * THE OWNER'S REPORT, AND THE REWRITE THAT CAME OUT OF IT.
+     *
+     * One ceramic coating used to produce four lines here and seven in
+     * production - the request, each act the floor moved through, and the
+     * filing - each of them wrapping to two lines on a phone:
+     *
+     *     Kovalent Graphene was finished and filed to the BMW M340i's story.
+     *     Work began on the BMW M340i.
+     *     The BMW M340i arrived at the studio.
+     *     You asked for Kovalent Graphene on 18 July 2026.
+     *
+     * A visit is ONE thing that happened. Its steps still exist, on the
+     * visit's own surface, which every line here opens.
+     */
+    expect(log().map(e => e.line)).toEqual(['Kovalent Graphene']);
+  });
+
+  it('and a visit that left a protection is said by the protection, once', () => {
+    /* The coat says what was done AND what it left; the visit line would be
+       the same event a second time, on the same day. */
+    const coat = {
+      id: 'p1', vehicleId: 'v1', kind: 'ceramic', provider: 'Kovalent',
+      since: '2026-07-18', term: { kind: 'dated', expiresOn: '2029-07-18' },
+      termsSource: 'captured', health: 'healthy', daysLeft: 900,
+    } as unknown as Parameters<typeof conciergeLog>[0]['protections'][number];
+
+    const lines = log({ protections: [coat] }).map(e => e.line);
+    expect(lines).toEqual(['Kovalent ceramic coating']);
+  });
+
+  it('a line is short enough to be a line', () => {
+    /* The owner's words: "gets in two line". Every entry is a record, not a
+       paragraph - the date is drawn beside it rather than spelled inside it. */
+    for (const e of log()) expect(e.line.length).toBeLessThanOrEqual(48);
   });
 
   /**
@@ -394,29 +422,49 @@ describe('the concierge log', () => {
   });
 
   it('does not claim a confirmation the studio has not given', () => {
+    /**
+     * The rule is now structural rather than checked: there is no
+     * confirmation line in the log at all, and a visit that has not happened
+     * yet writes nothing. `Booking.confirmedAt` does not exist, so there was
+     * never an honest date for one - and a booking still ahead of the car is
+     * not "what has happened to it". Home says what is COMING in its own pane.
+     */
     const entries = log({ visits: [visit({ status: 'pending' })], jobByBooking: new Map() });
-    expect(entries.map(e => e.line)).toEqual(['You asked for Kovalent Graphene on 18 July 2026.']);
+    expect(entries).toEqual([]);
   });
 
   it('records a cancellation plainly and files nothing after it', () => {
+    /* The one kind of entry a customer may need to ACT on, so it survived the
+       cut - and it keeps its reason, because a refusal without one is the
+       studio declining and not saying why. */
     const cancelled = visit({ status: 'cancelled', cancelledAt: ts(new Date('2026-07-17T11:00:00')) });
     const entries = log({ visits: [cancelled], jobByBooking: new Map() });
-    expect(entries.some(e => /was cancelled/.test(e.line))).toBe(true);
+    expect(entries.some(e => /cancelled/i.test(e.line))).toBe(true);
     expect(entries.some(e => /finished and filed/.test(e.line))).toBe(false);
-    expect(entries.find(e => /was cancelled/.test(e.line))?.at)
+    expect(entries.find(e => /cancelled/i.test(e.line))?.at)
       .toEqual(new Date('2026-07-17T11:00:00'));
+
+    const refused = visit({
+      status: 'cancelled', rejectionReason: 'the bay was needed for a longer job',
+      cancelledAt: ts(new Date('2026-07-17T11:00:00')),
+    });
+    expect(log({ visits: [refused], jobByBooking: new Map() })[0].line)
+      .toBe('Visit not taken - the bay was needed for a longer job');
   });
 
   it('a cancellation nobody timestamped is not given a plausible day', () => {
     const undated = visit({ status: 'cancelled' });
     const entries = log({ visits: [undated], jobByBooking: new Map() });
-    expect(entries.some(e => /was cancelled/.test(e.line))).toBe(false);
+    expect(entries.some(e => /cancelled/i.test(e.line))).toBe(false);
   });
 
-  it('sends live visits to the Stay and finished ones to their Chapter', () => {
+  it('every entry opens the thing it is about', () => {
+    /* What makes the record useful rather than merely informative: a line is
+       a door to the visit behind it, not a sentence about one. A LIVE visit
+       writes no line at all now - the ring, the pane and the acts at the top
+       of Home are already that visit, three times over. */
     expect(log()[0].target).toEqual({ kind: 'chapter', bookingId: 'v1' });
-    const live = log({ visits: [visit({ status: 'in_progress' })], jobByBooking: new Map() });
-    expect(live[0].target).toEqual({ kind: 'visit', bookingId: 'v1' });
+    expect(log({ visits: [visit({ status: 'in_progress' })], jobByBooking: new Map() })).toEqual([]);
   });
 
   it('carries protection and membership only when they exist', () => {
@@ -429,8 +477,11 @@ describe('the concierge log', () => {
       } as never, NOW) as unknown as Protection],
       membership: { id: 'm1', plan: 'Silver', status: 'active', startDate: '2026-07-05' } as unknown as Subscription,
     });
-    expect(rich.some(e => e.line === 'Ceramic coating applied - protected until July 2029.')).toBe(true);
-    expect(rich.some(e => e.line === 'The studio confirmed your Club membership on Silver.')).toBe(true);
+    /* Short, and the term is NOT repeated: it is stated under the ring, on the
+       car's ledger and on the warranty card already (§4.4). What this line
+       adds at a glance is the brand, so that is what it keeps. */
+    expect(rich.some(e => e.line === 'Ceramic coating')).toBe(true);
+    expect(rich.some(e => e.line === 'Joined the Club on Silver')).toBe(true);
   });
 
   it('never writes the future', () => {

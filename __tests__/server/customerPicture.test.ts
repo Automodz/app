@@ -73,9 +73,9 @@ it('SCOPES EVERY collection query by the session uid or by a vehicle under it', 
   for (const c of byPath('jobs')) {
     expect(c.wheres).toEqual(expect.arrayContaining([['customerId', '==', 'u1']]));
   }
-  // and the two keyed by a vehicle read from under that uid
-  for (const c of [...byPath('protections'), ...byPath('visits')]) {
-    expect(c.wheres.some(([f, op]) => f === 'vehicleId' && op === '==')).toBe(true);
+  // and the three keyed by vehicles read from under that uid
+  for (const c of [...byPath('protections'), ...byPath('visits'), ...byPath('declarations')]) {
+    expect(c.wheres.some(([f, op]) => f === 'vehicleId' && op === 'in')).toBe(true);
   }
   expect(byPath('subscriptions')[0].wheres).toEqual([['userId', '==', 'u1']]);
   /* And the notifications, which are as much this customer's as their cars. */
@@ -98,15 +98,70 @@ it('NEVER joins a record to a car by its registration', async () => {
   const fields = calls.flatMap(c => c.wheres).map(([f]) => f);
   expect(fields).not.toContain('vehicleRegNo');
 
-  for (const c of calls.filter(x => x.path === 'bookings' || x.path === 'jobs')) {
-    expect(c.wheres.some(([f, op]) => f === 'vehicleId' && op === '==')).toBe(true);
+  /* Both are scoped by the OWNER and grouped by `vehicleId` in memory. The
+     edge is still the id and never the plate; the query simply no longer asks
+     the database to repeat itself once per car. */
+  for (const c of calls.filter(x => x.path === 'bookings')) {
+    expect(c.wheres).toEqual([['userId', '==', 'u1']]);
+  }
+  for (const c of calls.filter(x => x.path === 'jobs')) {
+    expect(c.wheres).toEqual([['customerId', '==', 'u1']]);
   }
 });
 
-it('does one query per car per collection - no N+1 walk', async () => {
-  await loadCustomerPicture({ uid: 'u1' });
-  expect(calls.filter(c => c.path === 'protections')).toHaveLength(2);
-  expect(calls.filter(c => c.path === 'services')).toHaveLength(1);
+/**
+ * WHAT THIS READ COSTS, AND WHY THE NUMBER IS THE POINT.
+ *
+ * It used to fan out five queries PER VEHICLE - protections, declarations,
+ * visits, bookings and jobs - on top of the eight above, on every page view of
+ * every room. Four cars meant twenty-eight queries and well over a hundred
+ * billed document reads per screen, re-paid on every navigation, because
+ * `cache` dedupes inside one request and nothing spans two.
+ *
+ * The project exhausted its daily Firestore read quota and every customer room
+ * started answering "We could not reach your garage." That is what a read cost
+ * that scales with the garage buys you, so the cost is now a tested property
+ * rather than a thing somebody has to notice.
+ */
+describe('the read does not grow with the garage', () => {
+  const CARS = 'users/u1/vehicles';
+
+  it('costs the same for one car as for two', async () => {
+    await loadCustomerPicture({ uid: 'u1' });
+    const two = calls.length;
+
+    calls.length = 0;
+    const all = DATA[CARS];
+    DATA[CARS] = [all[0]];
+    try {
+      await loadCustomerPicture({ uid: 'u1' });
+      expect(calls.length).toBe(two);
+    } finally {
+      DATA[CARS] = all;
+    }
+  });
+
+  it('asks each collection once, however many cars there are', async () => {
+    await loadCustomerPicture({ uid: 'u1' });
+    for (const path of ['protections', 'declarations', 'visits', 'bookings', 'jobs', 'services']) {
+      expect({ path, n: calls.filter(c => c.path === path).length }).toEqual({ path, n: 1 });
+    }
+  });
+
+  it('and a garage larger than Firestore’s `in` limit is chunked, not looped', async () => {
+    /* Thirty is the cap on an `in` filter. Thirty-one cars is two queries per
+       keyed collection - not thirty-one. */
+    const all = DATA[CARS];
+    DATA[CARS] = Array.from({ length: 31 }, (_, i) => ({ name: `Car ${i}`, registrationNumber: `R${i}` }));
+    calls.length = 0;
+    try {
+      await loadCustomerPicture({ uid: 'u1' });
+      expect(calls.filter(c => c.path === 'protections')).toHaveLength(2);
+      expect(calls.filter(c => c.path === 'bookings')).toHaveLength(1);
+    } finally {
+      DATA[CARS] = all;
+    }
+  });
 });
 
 it('throws rather than rendering half a garage when Admin is unconfigured', async () => {

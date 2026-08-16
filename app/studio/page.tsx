@@ -3,6 +3,7 @@ import { ServerRoom } from '@/components/screens/ServerRoom';
 import { toStudio } from '@/lib/customer/project';
 import { currentSession } from '@/lib/server/session';
 import { readEstimate } from '@/lib/server/estimateService';
+import { nextOpenings } from '@/lib/server/openings';
 import type { Estimate } from '@/lib/types';
 
 /**
@@ -27,8 +28,23 @@ export default async function StudioPage(
   const { estimate: estimateId } = await searchParams;
   const estimate = estimateId ? await loadEstimate(estimateId) : null;
 
+  /* THE STUDIO'S SOONEST OPENING, under the one control this room exists for.
+     The same query Home asks, against the same occupancy the Booking Service
+     accepts against - so a day named here cannot be a day the writer then
+     refuses, and the two rooms cannot state different diaries. Loaded before
+     the room because a `ServerRoom` child is a synchronous render function. */
+  const opening = (await nextOpenings({
+    /* The bay most of the studio's work occupies. A wash bay is a separate
+       resource and is almost never the constraint. */
+    category: 'PPF',
+    durationMinutes: 60,
+    limit: 1,
+  }))[0] ?? null;
+
   return (
-    <ServerRoom>{p => <StudioScreen model={toStudio(p, new Date(), estimate)} />}</ServerRoom>
+    <ServerRoom>
+      {p => <StudioScreen model={toStudio(p, new Date(), estimate, opening)} />}
+    </ServerRoom>
   );
 }
 

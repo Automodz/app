@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Save, Loader2, RefreshCw, Package, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getServices, seedServices, getResourceConfig, setWashCapacity } from '@/lib/firebaseService';
+import {
+  getServices, seedServices, getResourceConfig, setWashCapacity, setProtectionCapacity,
+} from '@/lib/firebaseService';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatCurrency } from '@/lib/utils';
@@ -21,6 +23,13 @@ export default function AdminSettingsPage() {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [durations, setDurations] = useState<Record<string, string>>({});
   const [washCap, setWashCap] = useState('3');
+  /* THE OTHER HALF OF THE FLOOR. The card below stated "1 vehicle" as frozen
+     text while `RESOURCE_DEFAULTS.protectionCapacity` is 3 and the availability
+     engine reads whatever `studioConfig/resources` says - so Settings was
+     describing a floor the studio does not have, and the one number nobody
+     could correct was the one deciding how much protection work it can take. */
+  const [protCap, setProtCap] = useState('3');
+  const [protSaving, setProtSaving] = useState(false);
   const [washSaving, setWashSaving] = useState(false);
 
   const load = () => {
@@ -38,7 +47,10 @@ export default function AdminSettingsPage() {
       })
       .catch(e => { console.error('services load failed', e); setLoadError(true); })
       .finally(() => setLoading(false));
-    getResourceConfig().then(c => setWashCap(String(c.washCapacity))).catch(() => {});
+    getResourceConfig().then(c => {
+      setWashCap(String(c.washCapacity));
+      setProtCap(String(c.protectionCapacity));
+    }).catch(() => {});
   };
   useEffect(load, []);
 
@@ -51,6 +63,17 @@ export default function AdminSettingsPage() {
       toast.success('Wash capacity updated - availability recalculates immediately');
     } catch { toast.error('Failed to update'); }
     finally { setWashSaving(false); }
+  };
+
+  const saveProtCap = async () => {
+    const n = parseInt(protCap);
+    if (isNaN(n) || n < 1 || n > 10) return toast.error('Protection capacity must be 1–10');
+    setProtSaving(true);
+    try {
+      await setProtectionCapacity(n);
+      toast.success('Protection capacity updated - availability recalculates immediately');
+    } catch { toast.error('Failed to update'); }
+    finally { setProtSaving(false); }
   };
 
   const handleSeed = async () => {
@@ -95,10 +118,27 @@ export default function AdminSettingsPage() {
             <div className="text-muted text-xs font-body">Two physical resources - the calendar blocks around real occupancy</div>
           </div>
         </div>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl sm:col-span-2" style={{ background: 'var(--background-2)' }}>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Protection Bay</p>
-            <p className="font-body text-sm text-foreground mt-1">1 vehicle <span className="text-muted text-xs">· PPF, ceramic, graphene, coating, correction - one active job; the rest wait</span></p>
+        {/* BOTH HALVES OF THE FLOOR ARE SETTINGS. Protection stood here as the
+            fixed sentence "1 vehicle", which was neither the default (3) nor
+            necessarily the floor: the availability engine reads
+            `studioConfig/resources` for both numbers, and only one of them had
+            a control. A studio that opens a second protection bay could change
+            its wash count and not its film count. */}
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="p-3 rounded-xl flex items-center justify-between gap-2" style={{ background: 'var(--background-2)' }}>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Protection Capacity</p>
+              <p className="font-body text-xs text-muted mt-1">PPF, ceramic, coating, correction</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="number" min={1} max={10} value={protCap}
+                onChange={e => setProtCap(e.target.value)}
+                className="w-16 input-dark text-sm py-1.5 px-2 text-right" />
+              <button onClick={saveProtCap} disabled={protSaving}
+                className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+                {protSaving ? <Loader2 size={12} className="animate-spin text-foreground" /> : <Save size={12} className="text-foreground" />}
+              </button>
+            </div>
           </div>
           <div className="p-3 rounded-xl flex items-center justify-between gap-2" style={{ background: 'var(--background-2)' }}>
             <div>

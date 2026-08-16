@@ -20,7 +20,7 @@ import 'server-only';
  * `before` and `after` are both computed when the studio requests, by
  * `priceVisit`, and stored. The customer taps a total; that exact total is
  * what the job carries afterwards. Recomputing on approval would mean a
- * catalogue edit, an expiring promo or a lapsing membership between asking and
+ * catalogue edit or a lapsing membership between asking and
  * answering silently changed what was agreed - which is precisely the class of
  * defect the estimate exists to prevent one screen earlier.
  */
@@ -31,7 +31,7 @@ import {
   approvalTransition, approvalHasExpired, APPROVAL_VALID_HOURS,
 } from '@/lib/os/lifecycle';
 import type {
-  Approval, ApprovalEvidence, Booking, Job, Promo, StoredBreakdown, Subscription,
+  Approval, ApprovalEvidence, Booking, Job, StoredBreakdown, Subscription,
 } from '@/lib/types';
 
 export class ApprovalError extends Error {
@@ -100,21 +100,13 @@ export async function requestApproval(
   const currentLines = (job.serviceItems ?? []).map(i => ({ name: i.serviceName, price: i.price }));
   const fees = pickupFees({ pickup: booking?.pickupRequired, drop: booking?.dropRequired });
 
-  const [subSnap, promoSnap, mineSnap] = await Promise.all([
+  const [subSnap] = await Promise.all([
     db.collection('subscriptions').where('userId', '==', job.customerId)
       .orderBy('createdAt', 'desc').limit(1).get(),
-    db.collection('promos').where('active', '==', true).get(),
-    db.collection('promoRedemptions').where('userId', '==', job.customerId).get(),
   ]);
   const membership = subSnap.docs[0]
     ? ({ id: subSnap.docs[0].id, ...(subSnap.docs[0].data() as object) } as Subscription & { id: string })
     : null;
-  const promos = promoSnap.docs.map(d => ({ id: d.id, ...(d.data() as object) })) as Promo[];
-  const myRedemptions = new Map<string, number>();
-  mineSnap.docs.forEach(d => {
-    const r = d.data() as { promoId?: string };
-    if (r.promoId) myRedemptions.set(r.promoId, (myRedemptions.get(r.promoId) ?? 0) + 1);
-  });
 
   const benefit = {
     base: 0,
@@ -125,8 +117,6 @@ export async function requestApproval(
     /* A membership wash already spent stays spent; this is extra work, and
        extra work is not another free wash. */
     wantsWash: false,
-    promos,
-    myRedemptions,
     date: today(),
   };
 
@@ -296,14 +286,10 @@ export async function respondToApproval(
   }, { maxAttempts: 8 });
 }
 
-/** Every approval on this customer's visits. Owner-scoped by the query itself. */
-export async function approvalsForCustomer(uid: string): Promise<Approval[]> {
-  if (!adminDb) return [];
-  const snap = await adminDb.collection('approvals').where('customerId', '==', uid).get();
-  return snap.docs
-    .map(d => ({ id: d.id, ...(d.data() as object) }) as Approval)
-    .sort((a, b) => (b.requestedAt?.toMillis?.() ?? 0) - (a.requestedAt?.toMillis?.() ?? 0));
-}
+/* `approvalsForCustomer` STOOD HERE. `loadCustomerPicture` reads the same
+   approvals with the same owner scope and hands them to every room, so this
+   was a second query for a list the request already had. */
+
 
 /** One approval, for its owner. Absent and not-yours are the same answer. */
 export async function readApproval(uid: string, id: string): Promise<Approval | null> {

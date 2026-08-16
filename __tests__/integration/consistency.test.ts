@@ -14,7 +14,7 @@ import { Timestamp } from 'firebase/firestore';
 import type {
   Approval, Booking, Job, Protection, Service, StoredBreakdown, User, Vehicle, Visit,
 } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import {
   toHome, toGarage, toVehicle, toStudio, toYou, toBooked, toManageBooking,
   toSettle, toApproval, toLiveVisit, findBooking, spokenHour, shortDay,

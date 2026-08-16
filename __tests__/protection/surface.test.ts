@@ -11,7 +11,7 @@ import { join } from 'path';
 import { toVehicle, toPuc } from '@/lib/customer/project';
 import { parentOf, hrefForDestination } from '@/navigation/resolve';
 import { roomFor, activeSlotFor, surfaceKind, GARAGE, VEHICLE_PUC } from '@/navigation/routes';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { Timestamp } from 'firebase/firestore';
 import type { Declaration, Protection, User, Vehicle } from '@/lib/types';
 
@@ -134,19 +134,50 @@ describe('the certificate’s row in the car’s own ledger', () => {
     expect('declareHref' in toVehicle(car(), picture(), NOW)).toBe(false);
   });
 
+  /** A film with a brand behind it - the only kind of thing a warranty is. */
+  const warranted = (over: Partial<Protection> = {}): Protection => prot({
+    id: 'p-ppf', kind: 'ppf', provider: 'LLumar', coverage: 'Full body',
+    declarationId: undefined, termsSource: 'captured',
+    term: { kind: 'dated', expiresOn: '2026-12-01' },
+    ...over,
+  });
+
   it('A PROMISE THAT HAS ENDED IS NOT "ACTIVE TO" ANYTHING', () => {
     /* The warranty tile read every dated term including lapsed ones, so a car
        whose only protection was a certificate that ran out on 30 July was
        given "Active to July 2026" - directly under a ledger row saying
        "Lapsed 30 July 2026", on the same screen. */
     const dead = toVehicle(car({
-      protections: [prot({ term: { kind: 'dated', expiresOn: '2026-07-30' } })],
+      protections: [warranted({ term: { kind: 'dated', expiresOn: '2026-07-30' } })],
     }), picture(), NOW);
     expect(dead.warranty).toBeUndefined();
 
     /* And a live one still says so. */
-    const live = toVehicle(car({ protections: [prot()] }), picture(), NOW);
+    const live = toVehicle(car({ protections: [warranted()] }), picture(), NOW);
     expect(live.warranty).toBe('Active to December 2026');
+  });
+
+  it('AND IT IS A WARRANTY - not a certificate, and not an insurance policy', () => {
+    /**
+     * THE ONE THE OWNER REPORTED. The filter was "not the membership", so the
+     * tile took the furthest dated term across every protection - and this
+     * fixture is a POLLUTION CERTIFICATE, which produced "Active to December
+     * 2026" under the word WARRANTY on a car that had never had a film or a
+     * coat on it. AutoModz does not warrant a PUC, an insurance policy, a
+     * FASTag or a manufacturer's cover, and cannot be claimed against for any
+     * of them. `os/warranty` owns the list; the projection asks it.
+     */
+    const paperwork = toVehicle(car({
+      protections: [
+        prot(),
+        prot({
+          id: 'p-ins', kind: 'insurance', provider: 'ICICI Lombard',
+          declarationId: undefined,
+          term: { kind: 'dated', expiresOn: '2027-06-01' },
+        }),
+      ],
+    }), picture(), NOW);
+    expect(paperwork.warranty).toBeUndefined();
   });
 });
 

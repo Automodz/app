@@ -27,10 +27,12 @@ import type { Vehicle } from '../types';
  * governs.
  */
 
-export const getVehicles = async (uid: string): Promise<Vehicle[]> => {
-  const snap = await getDocs(collection(db, 'users', uid, 'vehicles'));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Vehicle));
-};
+/* `getVehicles` STOOD HERE - part of the CLIENT read path the customer rooms used
+   before they moved to the server. `lib/customer/source.ts` was its only
+   caller and is gone; every room renders from `lib/server/customerPicture`.
+   A Firestore client read reachable from a customer surface is the one
+   thing that migration existed to remove. */
+
 
 /* ── Vehicle 360 - everything ever done to one car, keyed by VEHICLE ID ──
    These read by `vehicleId`, never by registration. A plate is a display
@@ -79,26 +81,20 @@ export const getJobsForVehicle = async (vehicleId: string, uid?: string): Promis
  *  grants read on `userId == uid`, so the query must not be able to match a
  *  document belonging to anyone else - a plate that passes between two
  *  customers is exactly the case that would otherwise deny the whole read. */
-export const getBookingsForVehicle = async (vehicleId: string, uid?: string): Promise<Booking[]> => {
-  const snap = await getDocs(query(
-    collection(db, 'bookings'),
-    ...(uid ? [where('userId', '==', uid)] : []),
-    where('vehicleId', '==', vehicleId),
-  ));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Booking))
-    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
-};
+/* `getBookingsForVehicle` STOOD HERE - part of the CLIENT read path the customer rooms used
+   before they moved to the server. `lib/customer/source.ts` was its only
+   caller and is gone; every room renders from `lib/server/customerPicture`.
+   A Firestore client read reachable from a customer surface is the one
+   thing that migration existed to remove. */
+
 
 /** Same scoping; the invoices rule grants read on `customerId == uid`. */
-export const getInvoicesForVehicle = async (vehicleId: string, uid?: string): Promise<Invoice[]> => {
-  const snap = await getDocs(query(
-    collection(db, 'invoices'),
-    ...(uid ? [where('customerId', '==', uid)] : []),
-    where('vehicleId', '==', vehicleId),
-  ));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice))
-    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
-};
+/* `getInvoicesForVehicle` STOOD HERE - part of the CLIENT read path the customer rooms used
+   before they moved to the server. `lib/customer/source.ts` was its only
+   caller and is gone; every room renders from `lib/server/customerPicture`.
+   A Firestore client read reachable from a customer surface is the one
+   thing that migration existed to remove. */
+
 
 /* ── PUBLIC HISTORY CONSENT ─────────────────────────────────────────────── */
 

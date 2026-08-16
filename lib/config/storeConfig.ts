@@ -18,10 +18,5 @@ export const GSTIN = '';
 /** Service bays (mirrors SLOT_CAPACITY in bookingConfig) */
 export const BAYS = [1, 2, 3] as const;
 
-/** Referral programme - both sides get a flat discount promo */
-export const REFERRAL = {
-  amount: 200,                 // ₹ off for referrer AND referred
-  label: '₹200 off',
-  validityDays: 90,
-  minOrder: 0,
-} as const;
+/* `REFERRAL` STOOD HERE - a flat discount for both sides, issued as a promo.
+   Both the referral programme and promo codes are removed. */

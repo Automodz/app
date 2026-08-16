@@ -40,7 +40,7 @@
  * §10.4 - there is NO primary control. Identity is not a task. Sign-out is
  * quiet, alone, at the end (§15.6 - leaving is easy and not defended).
  */
-import { color, space, TARGET_MIN } from '@/design';
+import { color, space, TARGET_MIN, type as typeScale } from '@/design';
 import { OfflineNote } from '@/components/system';
 import {
   Screen, Pane, Label, Rail, Pulse, Row, Chevron,
@@ -80,7 +80,7 @@ export interface YouModel {
   membership?: { lines: readonly string[]; action: { label: string; href: string } };
   /**
    * §10.5 - "If there is no destination yet, there is no control yet."
-   * Each of these opens a real surface: the preference sheet, the referral
+   * Each of these opens a real surface: the preference sheet, the address
    * sheet, and the published privacy policy.
    */
   notifications?: YouEntry;
@@ -170,9 +170,12 @@ export function YouScreen({
           {monogram(name)}
         </span>
         <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+          {/* THE DISPLAY STEP, from the token. It was a hard-coded 22 - the
+              Title step - so the room a customer reaches from the dock opened
+              at half the size of the Garage next to it. */}
           <h1
             className="am-display"
-            style={{ margin: 0, fontSize: 22, fontWeight: 300, letterSpacing: '-0.01em' }}
+            style={{ margin: 0, fontSize: typeScale.display.size }}
           >
             {name}
           </h1>

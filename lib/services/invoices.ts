@@ -30,7 +30,7 @@ const createInvoice = async (data: {
      on the job/booking); GST is the only arithmetic that is genuinely the
      invoice's own. */
   const afterDiscount = applyDiscount(subtotal, data.discount
-    ? { source: 'promo', label: data.discount.label, amount: data.discount.amount }
+    ? { source: 'membership', label: data.discount.label, amount: data.discount.amount }
     : undefined);
   const gst = GST_ENABLED
     ? { rate: GST_RATE, amount: Math.round(afterDiscount * GST_RATE / 100), ...(GSTIN ? { gstin: GSTIN } : {}) }
@@ -122,8 +122,12 @@ export const getInvoicesForCustomer = async (customerId: string): Promise<Invoic
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 };
 
-export const markInvoicePaid = (id: string, method: 'upi' | 'cash') =>
-  updateDoc(doc(db, 'invoices', id), { paymentStatus: 'paid', paymentMethod: method });
+/* `markInvoicePaid` STOOD HERE, and it was a SECOND way to mark money as
+   received. `lib/server/paymentService` already sets `paymentStatus: 'paid'`
+   on the invoice INSIDE the payment transaction, beside the payment record,
+   and the job's balance - so this wrote one of those three facts on its own, from a browser, with nothing to reconcile it against.
+   Nothing called it. Two write paths for one figure is how books stop
+   balancing, and the surviving one is the audited one. */
 
 /** Public shareable link for an invoice (token-gated page) */
 export const invoicePublicUrl = (invoice: Invoice) => {

@@ -11,17 +11,21 @@ import 'server-only';
  * read fails or Admin is not configured, the caller falls back to the static
  * `from` values in `lib/catalog.ts`, exactly as the client version did.
  */
-import { adminDb } from './firebaseAdmin';
-import type { Service } from '@/lib/types';
+import { loadCatalogue } from './catalogue';
 
-/** Category → the lowest active price in it. Empty when nothing can be read. */
+/**
+ * Category → the lowest active price in it. Empty when nothing can be read.
+ *
+ * THROUGH THE SHARED CATALOGUE, because this is the read on the public
+ * landing page - the one address every visitor arrives at, signed in or not -
+ * and it was fetching the whole `services` collection per hit. The price list
+ * belongs to nobody, so one cached read serves every visitor rather than one
+ * read serving each; see `lib/server/catalogue`.
+ */
 export async function loadPriceFloor(): Promise<Record<string, number>> {
-  if (!adminDb) return {};
   try {
-    const snap = await adminDb.collection('services').get();
     const min: Record<string, number> = {};
-    for (const doc of snap.docs) {
-      const s = doc.data() as Partial<Service>;
+    for (const s of await loadCatalogue()) {
       if (s.active === false) continue;
       if (typeof s.price !== 'number' || !s.category) continue;
       if (min[s.category] === undefined || s.price < min[s.category]) {

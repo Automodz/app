@@ -161,16 +161,32 @@ describe('the promise and the reservation are the same number', () => {
    * constants drift apart the moment either is touched, so the sentence is
    * derived from `spanDays` - the function the reservation itself uses.
    */
+  /**
+   * THE SENTENCE MOVED; THE RULE DID NOT.
+   *
+   * "2 days in the studio" used to be worded inside `StudioScreen`, because
+   * the room drew the catalogue itself. The catalogue is a chooser now
+   * (`components/studio/ServiceChooser`) and the projection words every one of
+   * its products - so the file that must reach for the engine is
+   * `lib/customer/project`, and the screen must not have grown a second
+   * opinion on the way past. Both are checked, because the defect this
+   * protects against is TWO answers to one question, not one file's contents.
+   */
+  const WORDS_IT = 'lib/customer/project.ts';
+  const DRAWS_IT = 'components/screens/StudioScreen.tsx';
+
   const advertised = (minutes: number) => {
-    const src = readFileSync('components/screens/StudioScreen.tsx', 'utf8');
-    /* The rule, not a copy of it: the screen must reach for the engine's own
-       wording rather than dividing minutes by a day-length of its choosing.
-       It had 480; the floor's day is 600; the reservation is elapsed. Three
-       answers to one question is how "3 days in the studio" got shipped for a
-       two-day job. */
-    expect(src).toMatch(/readyWords/);
-    expect(src).not.toMatch(/minutes \/ 480/);
-    expect(src).not.toMatch(/\/ 1440/);
+    /* The rule, not a copy of it: whoever words the sentence reaches for the
+       engine's own wording rather than dividing minutes by a day-length of its
+       choosing. It had 480; the floor's day is 600; the reservation is
+       elapsed. Three answers to one question is how "3 days in the studio" got
+       shipped for a two-day job. */
+    expect(readFileSync(WORDS_IT, 'utf8')).toMatch(/readyWords/);
+    for (const f of [WORDS_IT, DRAWS_IT]) {
+      const src = readFileSync(f, 'utf8');
+      expect({ f, bad: /minutes \/ 480/.test(src) }).toEqual({ f, bad: false });
+      expect({ f, bad: /\/ 1440/.test(src) }).toEqual({ f, bad: false });
+    }
     return spanDays(DAY_OPEN_MIN, minutes);
   };
 

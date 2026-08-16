@@ -68,7 +68,7 @@ const no = (reason: string): TransitionVerdict => ({ ok: false, reason });
  * The terminal state a stale request ages into.
  *
  * NOT `cancelled`. A cancellation is somebody's decision and returns the
- * membership wash and the promo that the booking spent; an expiry is the
+ * membership wash that the booking spent; an expiry is the
  * absence of a decision. Collapsing them would credit a wash back for a slot
  * the studio held and nobody attended, and would tell the customer their
  * booking "was cancelled" when in truth it was never answered.

@@ -5,7 +5,7 @@
  */
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, Service, User, Vehicle } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { toHome, toGarage, toVehicle, stateOf } from '@/lib/customer/project';
 
 const ts = (iso: string) => Timestamp.fromDate(new Date(iso));

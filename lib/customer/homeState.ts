@@ -23,9 +23,24 @@ import { proposalApplies } from './ownership';
 
 export interface HomeStateCopy {
   word: string;
+  /**
+   * THE ONE SENTENCE, AND THERE IS ONLY ONE.
+   *
+   * `note` stood beside it - "a second, quieter fact" - and Home drew both,
+   * stacked. On a car with a waning coat that read:
+   *
+   *     Ceramic coating renewal due.
+   *     The ceramic coating has 14 days of protection left - time to renew it.
+   *
+   * which is one fact said twice, because `os/proposal` emits a HEADLINE and a
+   * REASON for a card and the hero was borrowing both. The owner asked for one
+   * line under the car, and one line is also §4.4: a fact is said once.
+   *
+   * So each branch below returns a single sentence, and where a branch used to
+   * carry a second fact worth keeping - why a visit was refused, what the Club
+   * needs - it is joined into that sentence rather than stacked under it.
+   */
   line?: string;
-  /** A second, quieter fact - the service name, the reason it was refused. */
-  note?: string;
   /**
    * One honest line about time, from `os/stay`. Absent unless the engine has
    * something true to say - §19.2 forbids inventing a duration.
@@ -37,6 +52,15 @@ export interface HomeStateCopy {
 /** §3.3 - colour only where it carries meaning grey cannot. */
 const NEUTRAL: StateTone = 'lapsed';
 
+/**
+ * A clause joined onto a sentence, so it reads as one rather than as two
+ * stapled together. The studio writes its reasons as sentences of their own -
+ * "The bay was needed for a longer job." - and " - The bay was needed…" in the
+ * middle of a line is a capital letter with nothing in front of it.
+ */
+const lower = (s: string): string =>
+  (s.length > 1 && s[1] === s[1].toLowerCase() ? s[0].toLowerCase() + s.slice(1) : s);
+
 export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCopy {
   const { state, live, agreed, declined, club, proposal, stay } = read;
   const car = carName || 'your car';
@@ -46,9 +70,12 @@ export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCo
     case 'ready':
       return {
         word: 'Ready',
-        line: `The ${car} is ready to collect.`,
-        /* The studio's own words when it left a note, else the service. §13.3 */
-        note: stay?.narrationIsStudio ? stay.narration : live?.serviceName,
+        /* §13.3 - the studio's own words outrank ours when it left any. The
+           SERVICE NAME used to sit under this as a second line; it is on the
+           visit the customer is about to open, and a name is not a sentence. */
+        line: stay?.narrationIsStudio && stay.narration
+          ? stay.narration
+          : `The ${car} is ready to collect.`,
         timing: stay?.timing ?? undefined,
         tone: 'assent',
       };
@@ -61,7 +88,6 @@ export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCo
         line: stay?.narrationIsStudio
           ? stay.narration
           : (act ? ACT_LINE[act] : `The ${car} is with us.`),
-        note: live?.serviceName,
         /* One honest line about time, or nothing at all - never a guess. */
         timing: stay?.timing ?? undefined,
         tone: NEUTRAL,
@@ -85,20 +111,23 @@ export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCo
     case 'declined':
       return {
         word: declined?.noShow ? 'Missed' : 'Not taken',
+        /* THE REASON IS THE SENTENCE, not a line under it. A refusal without
+           its reason is the studio declining and not saying why. */
         line: declined?.noShow
           ? `The ${car} missed its slot.`
-          : 'We couldn’t take that visit.',
-        note: declined?.rejectionReason ?? undefined,
+          : declined?.rejectionReason
+            ? `We couldn’t take that visit - ${lower(declined.rejectionReason)}`
+            : 'We couldn’t take that visit.',
         tone: 'urgent',
       };
 
     /* ── the Club needs answering ───────────────────────────────────────── */
     case 'membership_attention': {
       const gone = club.state === 'lapsed';
+      const said = gone ? 'Your membership has lapsed' : 'Your membership needs renewing';
       return {
         word: 'The Club',
-        line: gone ? 'Your membership has lapsed.' : 'Your membership needs renewing.',
-        note: club.context ?? undefined,
+        line: club.context ? `${said} - ${lower(club.context)}` : `${said}.`,
         tone: gone ? 'urgent' : 'caution',
       };
     }
@@ -107,8 +136,13 @@ export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCo
     case 'warranty_expiring':
       return {
         word: 'Care due',
-        line: proposal?.headline ? `${proposal.headline}.` : undefined,
-        note: proposal?.reason,
+        /* THE REASON, NOT THE HEADLINE. The two are a card's title and its
+           body - "Ceramic coating renewal due." over "The ceramic coating has
+           14 days of protection left - time to renew it." - and the hero drew
+           both, one above the other, saying the same thing with and without
+           the number. The reason contains the headline; the headline does not
+           contain the reason. */
+        line: proposal?.reason ?? (proposal?.headline ? `${proposal.headline}.` : undefined),
         tone: 'caution',
       };
 
@@ -133,10 +167,10 @@ export function homeStateCopy(read: OwnershipRead, carName: string): HomeStateCo
     case 'settled':
     default: {
       if (proposal && proposalApplies(state)) {
+        /* The reason, for the same reason as `warranty_expiring` above. */
         return {
           word: 'Care due',
-          line: `${proposal.headline}.`,
-          note: proposal.reason,
+          line: proposal.reason ?? `${proposal.headline}.`,
           tone: 'caution',
         };
       }

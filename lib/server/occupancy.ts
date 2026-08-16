@@ -55,7 +55,25 @@ export const loadOccupancy = async (
   reader: Reader,
   rangeStart: string,
   rangeEnd: string,
-  opts: { excludeBookingIds?: readonly string[] } = {},
+  opts: {
+    excludeBookingIds?: readonly string[];
+    /**
+     * THE PRICE LIST, WHERE THE CALLER ALREADY HAS IT.
+     *
+     * This read the whole `services` collection itself, on every call - and
+     * `nextOpenings` calls it on Home, on the Studio and on Manage, per page
+     * view, for durations alone. That is eighteen documents re-read to answer
+     * "how long does a ceramic take", next to a picture read that had just
+     * fetched the same collection.
+     *
+     * OPTIONAL, AND DELIBERATELY SO. The other caller is the booking WRITER,
+     * inside a Firestore transaction, where every read must go through the
+     * transaction's own reader to be part of its read set. It passes nothing
+     * and reads exactly as before, so the writer's serialisation is untouched;
+     * only the read-only path takes the shortcut.
+     */
+    catalogue?: readonly { name?: string; category?: string; duration?: number }[];
+  } = {},
 ): Promise<{ occupants: Occupant[]; cfg: ResourceConfig }> => {
   const db = adminDb!;
   const [bookingsSnap, jobsSnap, servicesSnap, cfgSnap] = await Promise.all([
@@ -65,7 +83,9 @@ export const loadOccupancy = async (
     reader.get(db.collection('jobs')
       .where('date', '>=', rangeStart)
       .where('date', '<=', rangeEnd)),
-    reader.get(db.collection('services') as unknown as Query),
+    opts.catalogue
+      ? null
+      : reader.get(db.collection('services') as unknown as Query),
     reader.get(db.collection('studioConfig').doc('resources')),
   ]);
 
@@ -77,8 +97,9 @@ export const loadOccupancy = async (
   // duration lookup: exact service name first, then the category's longest
   const byName = new Map<string, number>();
   const byCategory = new Map<string, number>();
-  servicesSnap.docs.forEach(d => {
-    const s = d.data() as { name?: string; category?: string; duration?: number };
+  const services = opts.catalogue
+    ?? servicesSnap!.docs.map(d => d.data() as { name?: string; category?: string; duration?: number });
+  services.forEach(s => {
     if (s.name && s.duration) byName.set(s.name, s.duration);
     if (s.category && s.duration) {
       byCategory.set(s.category, Math.max(byCategory.get(s.category) ?? 0, s.duration));

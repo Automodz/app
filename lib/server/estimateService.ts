@@ -30,7 +30,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { adminDb } from './firebaseAdmin';
 import { priceVisit, pickupFees, taxPolicy, storedBreakdown } from '@/lib/services/pricing';
 import { resolveScope, estimateExpiryOn, type ScopeChoice } from '@/lib/os/scope';
-import type { Estimate, Promo, Service, Subscription } from '@/lib/types';
+import type { Estimate, Service, Subscription } from '@/lib/types';
 
 export class EstimateError extends Error {
   constructor(readonly code: string, readonly status = 409) {
@@ -84,13 +84,11 @@ export async function createEstimateAuthoritative(
   }
 
   const ownerRef = db.collection('users').doc(callerUid);
-  const [vehicleSnap, serviceSnap, subSnap, promoSnap, mineSnap] = await Promise.all([
+  const [vehicleSnap, serviceSnap, subSnap] = await Promise.all([
     ownerRef.collection('vehicles').doc(intent.vehicleId).get(),
     db.collection('services').doc(intent.serviceId).get(),
     db.collection('subscriptions').where('userId', '==', callerUid)
       .orderBy('createdAt', 'desc').limit(1).get(),
-    db.collection('promos').where('active', '==', true).get(),
-    db.collection('promoRedemptions').where('userId', '==', callerUid).get(),
   ]);
 
   if (!vehicleSnap.exists) throw new EstimateError('vehicle-not-yours', 403);
@@ -111,12 +109,6 @@ export async function createEstimateAuthoritative(
   const membership = subSnap.docs[0]
     ? ({ id: subSnap.docs[0].id, ...(subSnap.docs[0].data() as object) } as Subscription & { id: string })
     : null;
-  const promos = promoSnap.docs.map(d => ({ id: d.id, ...(d.data() as object) })) as Promo[];
-  const myRedemptions = new Map<string, number>();
-  mineSnap.docs.forEach(d => {
-    const r = d.data() as { promoId?: string };
-    if (r.promoId) myRedemptions.set(r.promoId, (myRedemptions.get(r.promoId) ?? 0) + 1);
-  });
 
   const pickup = intent.pickup === true;
   const drop = intent.drop === true;
@@ -138,8 +130,6 @@ export async function createEstimateAuthoritative(
       ownerId: callerUid,
       membership,
       wantsWash: intent.useMembershipWash === true,
-      promos,
-      myRedemptions,
       date: today(),
     },
   });

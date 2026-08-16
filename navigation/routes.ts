@@ -82,6 +82,8 @@ export const VEHICLE = '/vehicle';
  * which one this was about.
  */
 export const VEHICLE_PUC = '/vehicle/puc';
+/** The brand's warranty on one film or coat - design: the claim card. */
+export const VEHICLE_WARRANTY = '/vehicle/warranty';
 /**
  * A BOOKING'S OWN ADDRESS - design screens 09 and 10.
  *

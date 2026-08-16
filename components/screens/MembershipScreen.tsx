@@ -267,19 +267,55 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
       ) : null}
 
       {/* ── WHAT IT INCLUDES ────────────────────────────────────────────
-          Rows. §15.6 - a benefit stated plainly is a benefit; a benefit in a
-          decorated tile is an advertisement for itself. */}
+          This was five undecorated `Row`s, on the reading of §15.6 that "a
+          benefit in a decorated tile is an advertisement for itself". The
+          owner's judgement overrides it: as five lines of body text under a
+          rule, the section read as terms and conditions rather than as what
+          the customer is actually getting, and the most valuable line in it -
+          the washes - looked exactly like the least.
+
+          The compromise keeps what §15.6 was protecting. There is still no
+          tile, no colour block and no badge: ONE pane, one hairline between
+          entries, and each entry carrying the drawn mark for the thing it is.
+          The mark is what makes it scannable; the restraint is what keeps it
+          from being a pricing page. */}
       {benefits.length > 0 ? (
         <section
           aria-labelledby="club-benefits"
           style={{ marginTop: space.rest / 2, display: 'flex', flexDirection: 'column', gap: space.line }}
         >
           <h2 id="club-benefits" style={{ margin: 0 }}><Rail>What it includes</Rail></h2>
-          <div>
+          <Pane style={{ padding: `${space.hair}px ${space.gap + 2}px` }}>
             {benefits.map((b, i) => (
-              <Row key={b} last={i === benefits.length - 1}>{b}</Row>
+              <div
+                key={b}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: space.gap,
+                  minHeight: TARGET_MIN + 8,
+                  paddingBlock: space.line - 2,
+                  borderBottom: i === benefits.length - 1
+                    ? undefined
+                    : '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    flexShrink: 0, width: 34, height: 34,
+                    borderRadius: radius.pill,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1px solid rgba(232,217,190,0.16)',
+                    background:
+                      'radial-gradient(circle at 50% 30%, rgba(232,217,190,0.16), rgba(232,217,190,0.03))',
+                    color: color.champagne,
+                  }}
+                >
+                  <PerkMark perk={b} />
+                </span>
+                <span style={{ fontSize: 14.5, lineHeight: 1.45, color: color.ink }}>{b}</span>
+              </div>
             ))}
-          </div>
+          </Pane>
         </section>
       ) : null}
 
@@ -377,5 +413,70 @@ export function MembershipScreen({ model }: { model: MembershipModel }) {
         subscriptionId={subscriptionId ?? null}
       />
     </Screen>
+  );
+}
+
+/**
+ * THE MARK FOR ONE BENEFIT.
+ *
+ * Drawn, in the one language every mark in the customer product is drawn in:
+ * a single 1.4px stroke on a 24 grid, `currentColor` throughout. No icon set -
+ * §22.2, and the whole product imports none on a customer surface.
+ *
+ * Keyed off the perk's own words rather than off an id, because a perk IS a
+ * string in `MEMBERSHIP_PLANS` and giving each one a code would mean two
+ * places to edit every time the studio changes what a tier includes. The
+ * fallback is a plain check, so a perk nobody anticipated still draws a mark
+ * rather than a hole - which is the only failure mode that would matter.
+ *
+ * Order is load-bearing: "Free interior steam clean" must not be caught by the
+ * wash test, so the most specific words are asked about first.
+ */
+function PerkMark({ perk }: { perk: string }) {
+  const t = perk.toLowerCase();
+  const mark =
+    /steam|interior/.test(t) ? (
+      <>
+        <path d="M5 19h14" />
+        <path d="M9.5 15.6c-1.8-1.8 1.8-3.4 0-5.2" />
+        <path d="M14.5 15.6c-1.8-1.8 1.8-3.4 0-5.2" />
+      </>
+    ) : /wash|spa|foam/.test(t) ? (
+      <>
+        <path d="M12 4.2c2.6 3 4.4 5.2 4.4 7.4a4.4 4.4 0 11-8.8 0c0-2.2 1.8-4.4 4.4-7.4z" />
+        <path d="M9.9 12.6a2.2 2.2 0 001.9 2.2" />
+      </>
+    ) : /%|off|discount/.test(t) ? (
+      <>
+        <path d="M4.6 11.4V5.8a1.2 1.2 0 011.2-1.2h5.6a1.2 1.2 0 01.85.35l6.9 6.9a1.2 1.2 0 010 1.7l-5.6 5.6a1.2 1.2 0 01-1.7 0l-6.9-6.9a1.2 1.2 0 01-.35-.85z" />
+        <circle cx="8.7" cy="8.7" r="1.15" />
+      </>
+    ) : /priorit|slot|booking/.test(t) ? (
+      <>
+        <circle cx="12" cy="12" r="7.6" />
+        <path d="M12 7.6V12l3 1.8" />
+      </>
+    ) : /tyre|tire|dressing|wheel/.test(t) ? (
+      <>
+        <circle cx="12" cy="12" r="7.6" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ) : /advisor|concierge|dedicated|manager/.test(t) ? (
+      <>
+        <circle cx="12" cy="8.6" r="3.3" />
+        <path d="M5.6 19.4a6.4 6.4 0 0112.8 0" />
+      </>
+    ) : (
+      <path d="M5.2 12.6l4.4 4.4 9.2-9.6" />
+    );
+
+  return (
+    <svg
+      width={18} height={18} viewBox="0 0 24 24" aria-hidden
+      fill="none" stroke="currentColor" strokeWidth={1.4}
+      strokeLinecap="round" strokeLinejoin="round"
+    >
+      {mark}
+    </svg>
   );
 }

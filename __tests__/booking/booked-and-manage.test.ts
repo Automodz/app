@@ -9,7 +9,7 @@
  */
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, Service, User, Vehicle } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { toBooked, toManageBooking, findBooking, bayWords, spokenHour } from '@/lib/customer/project';
 import { toICS, eventForBooking, icsStamp } from '@/lib/os/calendar';
 import { scheduledEpochMs } from '@/lib/os/lifecycle';

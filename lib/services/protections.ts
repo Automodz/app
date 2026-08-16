@@ -21,16 +21,13 @@ const protectionId = (vehicleId: string, kind: ProtectionKind) => `${vehicleId}_
 /* ── reading ────────────────────────────────────────────────────────────── */
 
 /** Every promise shielding this car, most in need of attention first. */
-export const getProtections = async (
-  vehicleId: string,
-  now?: Date,
-): Promise<LiveProtection[]> => {
-  const snap = await getDocs(
-    query(collection(db, 'protections'), where('vehicleId', '==', vehicleId)),
-  );
-  const stored = snap.docs.map(d => ({ id: d.id, ...d.data() } as Protection));
-  return sortByUrgency(stored.map(p => liveProtection(p, now)));
-};
+/* `getProtections` STOOD HERE - part of the CLIENT read path the customer rooms used
+   before they moved to the server. `lib/customer/source.ts` was its only
+   caller, and that file is gone with the client `Room` it fed; every room
+   renders from `lib/server/customerPicture` now. Removed rather than left
+   for a future import, because a Firestore CLIENT read reachable from a
+   customer surface is the one thing that migration existed to remove. */
+
 
 /* ── writing ────────────────────────────────────────────────────────────── */
 
@@ -67,8 +64,13 @@ export const declareProtection = async (
   return id;
 };
 
-export const removeProtection = (vehicleId: string, kind: ProtectionKind) =>
-  deleteDoc(doc(db, 'protections', protectionId(vehicleId, kind)));
+/* `removeProtection` STOOD HERE - deleting a car's protection of a given kind
+   from a browser. A protection is what the studio told a customer their car is
+   covered for; it is superseded by a newer one of the same kind
+   (`oneProtectionPerKind`) and it expires on its own term. Nothing called this,
+   and a promise that can be deleted without a record is a promise the studio
+   cannot be held to. */
+
 
 /* ── the one-time migration ─────────────────────────────────────────────── */
 
@@ -81,6 +83,21 @@ export const removeProtection = (vehicleId: string, kind: ProtectionKind) =>
  * (VISIT-OBJECT.md §6).
  *
  * Returns what it wrote, so a caller can verify before trusting it.
+ */
+/**
+ * NO CALLER, AND DELIBERATELY KEPT.
+ *
+ * Every other unreferenced function in this layer was removed in the cleanup
+ * pass; this one is not dead, it is PENDING. The customer read path still
+ * compensates for the migration not having run - `computeProtections` falls
+ * back to `projectProtections` for any kind a car has no stored protection
+ * for, which is the documented migration-window behaviour (VISIT-OBJECT.md
+ * §6). Deleting the tool that ends that window while the window is still open
+ * would leave the compensation permanent.
+ *
+ * What it has never had is a way to RUN it: no admin control, no script, no
+ * route. That is the gap, and it is a decision rather than an omission to fix
+ * blind - a migration writes a protection for every car in the business.
  */
 export const migrateVehicleProtections = async (args: {
   vehicleId: string;

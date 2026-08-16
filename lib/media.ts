@@ -106,7 +106,13 @@ export const MEDIA = {
   },
 } as const;
 
-/** The one category → photograph mapping. Customer surfaces must use this
- *  instead of indexing MEDIA.services locally (PRE-1 consolidation). */
-export const serviceMedia = (category?: string, fallback: keyof typeof MEDIA.services = 'washing'): string =>
-  (MEDIA.services as Record<string, string>)[(category ?? '').toLowerCase()] ?? MEDIA.services[fallback];
+/* `serviceMedia` STOOD HERE - the one category → photograph mapping, so that
+   customer surfaces did not index `MEDIA.services` locally.
+
+   Nothing indexes it now, locally or otherwise. The four service photographs
+   each have a person in them with their face to the camera, and §2.2 forbids a
+   customer surface naming an individual - a face names one louder than text
+   does - so the Studio's disciplines are DRAWN rather than photographed (see
+   `components/studio/ServiceChooser`). `MEDIA.services` is still read by the
+   landing page, which is marketing and governed differently; the helper that
+   existed only to serve the rooms is not. */

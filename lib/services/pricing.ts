@@ -4,7 +4,7 @@
 // Booking Service (lib/server/bookingService.ts) is allowed to act on it. The
 // UI may call the same functions to QUOTE a price - it just never writes one.
 import type {
-  Promo, MembershipPlan, BookingDiscount, Subscription, StoredBreakdown,
+  MembershipPlan, BookingDiscount, Subscription, StoredBreakdown,
 } from '../types';
 import { washesLeftOf } from '../os/club';
 import { GST_ENABLED, GST_RATE, GSTIN } from '../config/storeConfig';
@@ -13,65 +13,31 @@ import { GST_ENABLED, GST_RATE, GSTIN } from '../config/storeConfig';
 export const membershipDiscountPct = (plan: MembershipPlan): number =>
   ({ Silver: 10, Gold: 15, Platinum: 20 }[plan] ?? 0);
 
-export const promoDiscountAmount = (promo: Promo, price: number): number => {
-  const raw = promo.type === 'percent' ? Math.round(price * promo.value / 100) : promo.value;
-  return Math.min(Math.max(0, raw), price);
-};
-
-export interface PromoEligibilityContext {
-  serviceId: string;
-  category: string;
-  userId?: string;
-  date: string;               // YYYY-MM-DD
-  userRedemptionCount?: number; // times this user already used this promo
-}
-
-export const isPromoEligible = (promo: Promo, ctx: PromoEligibilityContext): boolean => {
-  if (!promo.active) return false;
-  if (ctx.date < promo.validFrom || ctx.date > promo.validTo) return false;
-  if (promo.usageLimitTotal != null && promo.usedCount >= promo.usageLimitTotal) return false;
-  if (promo.usageLimitPerCustomer != null && (ctx.userRedemptionCount ?? 0) >= promo.usageLimitPerCustomer) return false;
-  if (promo.scope.kind === 'category' && !promo.scope.categories.includes(ctx.category)) return false;
-  if (promo.scope.kind === 'services' && !promo.scope.serviceIds.includes(ctx.serviceId)) return false;
-  if (promo.target.kind === 'customers') {
-    if (!ctx.userId || !promo.target.userIds.includes(ctx.userId)) return false;
-  }
-  return true;
-};
-
 /**
- * Best-of discount: membership % vs best eligible promo - never stacked.
+ * THE DISCOUNT, AND THERE IS EXACTLY ONE KIND OF IT.
+ *
+ * This was "best-of: membership % vs the best eligible promo, never stacked",
+ * and half of it is gone: the owner removed promo codes and the referral
+ * programme that issued them. What is left is the membership rate, which is a
+ * property of a relationship the studio already keeps - so a discount now has
+ * one source, one reason, and nothing to be best-of against.
+ *
  * Returns undefined when nothing applies.
  */
 export const computeBestDiscount = (args: {
   price: number;
   membershipPlan?: MembershipPlan | null;
-  eligiblePromos: Promo[];      // pre-filtered via isPromoEligible
 }): BookingDiscount | undefined => {
-  const { price, membershipPlan, eligiblePromos } = args;
-  if (price <= 0) return undefined;
+  const { price, membershipPlan } = args;
+  if (price <= 0 || !membershipPlan) return undefined;
 
-  let best: BookingDiscount | undefined;
+  const pct = membershipDiscountPct(membershipPlan);
+  if (pct <= 0) return undefined;
 
-  if (membershipPlan) {
-    const pct = membershipDiscountPct(membershipPlan);
-    if (pct > 0) {
-      best = {
-        source: 'membership',
-        label: `${membershipPlan} member ${pct}% off`,
-        amount: Math.round(price * pct / 100),
-      };
-    }
-  }
-
-  for (const promo of eligiblePromos) {
-    const amount = promoDiscountAmount(promo, price);
-    if (amount > (best?.amount ?? 0)) {
-      best = { source: 'promo', promoId: promo.id, label: promo.label, amount };
-    }
-  }
-
-  return best && best.amount > 0 ? best : undefined;
+  const amount = Math.round(price * pct / 100);
+  return amount > 0
+    ? { source: 'membership', label: `${membershipPlan} member ${pct}% off`, amount }
+    : undefined;
 };
 
 export const applyDiscount = (price: number, discount?: BookingDiscount): number =>
@@ -84,14 +50,11 @@ export interface PricingInput {
   base: number;
   category: string;
   serviceId: string;
-  /** null for an unidentified walk-in - a targeted promo then cannot match */
+  /** the account the visit belongs to, or null for an unidentified walk-in */
   ownerId: string | null;
   membership: (Subscription & { id: string }) | null;
   /** the customer ASKED to spend a wash; this function decides if they can */
   wantsWash: boolean;
-  promos: Promo[];
-  /** this customer's redemption counts, keyed by promoId */
-  myRedemptions: Map<string, number>;
   /** YYYY-MM-DD, injected so the decision is testable and never clock-dependent */
   date: string;
 }
@@ -102,8 +65,6 @@ export interface PricingDecision {
   discountAmount: number;
   washCovered: boolean;
   membershipId?: string;
-  /** the promo whose count must move, if any */
-  promo?: Promo;
   /** what the service line costs after the benefit */
   netService: number;
 }
@@ -113,12 +74,12 @@ export interface PricingDecision {
  *
  * A membership wash comes first and stands alone: it zero-prices the line, so
  * stacking a percentage on top of a free wash would be discounting nothing.
- * Otherwise it is best-of membership % vs the best eligible promo - never both,
- * which is the rule the counter has always used.
+ * Otherwise it is the membership rate, which is the only discount this studio
+ * gives: promo codes and the referral programme that issued them are removed,
+ * so there is no second source to be best-of against.
  *
- * An expired membership is not a membership. A promo the customer has already
- * spent to its per-customer limit is not eligible. Both are checked here rather
- * than trusted from a caller.
+ * An expired membership is not a membership - checked here rather than trusted
+ * from a caller.
  */
 export const decidePrice = (i: PricingInput): PricingDecision => {
   const activeMember =
@@ -138,18 +99,9 @@ export const decidePrice = (i: PricingInput): PricingDecision => {
     };
   }
 
-  const eligible = i.promos.filter(p => isPromoEligible(p, {
-    serviceId: i.serviceId,
-    category: i.category,
-    userId: i.ownerId ?? undefined,
-    date: i.date,
-    userRedemptionCount: i.myRedemptions.get(p.id) ?? 0,
-  }));
-
   const discount = computeBestDiscount({
     price: i.base,
     membershipPlan: (activeMember?.plan as MembershipPlan | undefined) ?? null,
-    eligiblePromos: eligible,
   });
 
   return {
@@ -158,8 +110,6 @@ export const decidePrice = (i: PricingInput): PricingDecision => {
     discountAmount: discount?.amount ?? 0,
     washCovered: false,
     netService: applyDiscount(i.base, discount),
-    promo: discount?.source === 'promo'
-      ? eligible.find(p => p.id === discount.promoId) : undefined,
   };
 };
 
@@ -228,7 +178,6 @@ export interface PriceBreakdown {
   /** A covered wash zero-prices the work and stands alone (no stacking). */
   washCovered: boolean;
   membershipId?: string;
-  promo?: Promo;
 }
 
 /** Per leg. Two legs is two lines, so a customer can see what they paid for. */
@@ -247,9 +196,9 @@ export function priceVisit(args: {
   const fees = args.fees ?? [];
   const feesTotal = fees.reduce((n, f) => n + f.amount, 0);
 
-  /* The benefit is decided by the existing engine, unchanged - best-of
-     membership vs promo, a covered wash standing alone. Priced against the
-     WORK, which is why `base` is the services subtotal and not the total. */
+  /* The benefit is decided by the existing engine - the membership rate, or a
+     covered wash standing alone. Priced against the WORK, which is why `base`
+     is the services subtotal and not the total. */
   const decided = decidePrice({ ...args.benefit, base: subtotal });
 
   const afterDiscount = decided.washCovered ? 0 : applyDiscount(subtotal, decided.discount);
@@ -275,7 +224,6 @@ export function priceVisit(args: {
     total: taxable + (tax?.amount ?? 0),
     washCovered: decided.washCovered,
     ...(decided.membershipId ? { membershipId: decided.membershipId } : {}),
-    ...(decided.promo ? { promo: decided.promo } : {}),
   };
 }
 
@@ -308,11 +256,11 @@ export const taxPolicy = (): TaxPolicy => ({
 /**
  * A breakdown as it is STORED.
  *
- * `PriceBreakdown` carries the whole `Promo` document, which is a live record
- * with its own usage counts. Freezing a copy of it into an estimate or a
- * booking would freeze a thing that keeps changing, and the copy would start
- * lying the first time anybody else redeemed it. Only the promo's IDENTITY
- * belongs in a snapshot.
+ * It used to carry the whole `Promo` document - a live record with its own
+ * usage counts - and only the promo's IDENTITY was allowed into a snapshot,
+ * because a frozen copy starts lying the first time anybody else redeems it.
+ * Promo codes are removed, so a breakdown holds only figures and the id of the
+ * membership that earned them, and there is nothing live left in it.
  */
 export const storedBreakdown = (b: PriceBreakdown): StoredBreakdown => ({
   subtotal: b.subtotal,
@@ -325,5 +273,4 @@ export const storedBreakdown = (b: PriceBreakdown): StoredBreakdown => ({
   total: b.total,
   washCovered: b.washCovered,
   ...(b.membershipId ? { membershipId: b.membershipId } : {}),
-  ...(b.promo ? { promoId: b.promo.id } : {}),
 });

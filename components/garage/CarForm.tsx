@@ -184,6 +184,23 @@ export function CarForm({ open, onClose, editing = null }: CarFormProps) {
       >
         <Heading level="title">{editing ? 'Correct the car' : 'Add your car'}</Heading>
 
+        {/* WHY THE FORM IS SO SHORT.
+            Four fields, and then the car's own room states coatings, films,
+            warranties and a certificate the owner never typed anywhere - which
+            reads as the product knowing something it will not explain. It is
+            not asked for here because it is not the owner's to assert: a
+            protection exists when a visit seals at the studio, or when the
+            studio has checked a paper against the paper itself. Said once, at
+            the moment the question occurs, so the ledger on the car reads as a
+            record rather than as a guess. The ledger itself now names the
+            origin of every line (see `VehicleScreen`). */}
+        {!editing ? (
+          <Text role="whisper" tone="ink3" style={{ marginTop: space.line }}>
+            This is all we need. What protects the car is added by us as work is
+            done, or once we have checked a certificate you send.
+          </Text>
+        ) : null}
+
         <div style={{ marginTop: INSET, display: 'grid', gap: space.gap }}>
           <Field
             label="What is it?"

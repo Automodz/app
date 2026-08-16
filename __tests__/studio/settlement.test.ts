@@ -13,7 +13,7 @@
 import { readFileSync } from 'fs';
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, PaymentStatus, Service, User, Vehicle } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { toSettle } from '@/lib/customer/project';
 import { settlementOf, canRate, PAYMENT_WORD } from '@/lib/os/settlement';
 import { paymentTransition, PAYMENT_TRANSITIONS } from '@/lib/os/lifecycle';

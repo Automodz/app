@@ -48,7 +48,7 @@ describe('Home V1 - one composition', () => {
     expect(primaries(html({ nextAction: { label: 'Follow the visit', href: '/x' } }))).toBe(1);
     expect(primaries(html({
       membership: { plan: 'Gold', said: '2 washes remaining this cycle', href: '/membership' },
-      garage: { cars: [{ id: 'v1', name: 'M4', state: 'Protected', href: '/?car=v1', current: true }] },
+      garage: { cars: [{ id: 'v1', name: 'M4', plate: 'GJ01AB1234', state: 'Protected', href: '/vehicle?car=v1', selectHref: '/?car=v1', current: true }] },
       forSale: [{ id: 'c1', title: 'A car', price: '₹9L', detail: '2019', href: '/cars/c1' }],
     }))).toBe(1);
   });
@@ -60,12 +60,25 @@ describe('Home V1 - one composition', () => {
     expect(h.indexOf('Cared for')).toBeLessThan(h.indexOf('Arrange a visit'));
   });
 
-  it('says nothing twice', () => {
-    /* `state.note` already carries the service being done; a second line
-       repeating it under the hero was the first thing this rewrite added and
-       the first thing it had to take back out. */
-    const h = html({ state: { word: 'In care', line: 'Caring for it.', note: 'Interior deep clean' } });
+  it('says nothing twice, and says it on ONE line', () => {
+    /**
+     * `state.note` used to sit under `state.line` as "a second, quieter fact",
+     * and on a car with a waning coat the pair read:
+     *
+     *     Ceramic coating renewal due.
+     *     The ceramic coating has 14 days of protection left - time to renew it.
+     *
+     * one fact stated twice, because `os/proposal` emits a headline and a
+     * reason for a CARD and the hero borrowed both. There is one sentence
+     * under the car now; `homeStateCopy` composes it, joining a refusal's
+     * reason into the sentence rather than stacking it beneath.
+     */
+    const h = html({ state: { word: 'In care', line: 'Caring for the Interior deep clean.' } });
     expect((h.match(/Interior deep clean/g) ?? []).length).toBe(1);
+
+    /* Exactly one paragraph between the car's name and the ring. */
+    const between = h.slice(h.indexOf('BMW M4 ·'), h.indexOf('am-dial'));
+    expect((between.match(/<p /g) ?? []).length).toBe(1);
   });
 
   describe('nothing is drawn for nothing (§18.1)', () => {
@@ -101,10 +114,36 @@ describe('Home V1 - one composition', () => {
     });
 
     it('the one sentence is carried, not rewritten', () => {
-      /* `os/truth` phrases it; Home prints it. A second wording of the same
-         fact would be a second source of truth about it. */
-      const h = html({ truth: 'Ceramic coating - 23 days of protection left.' });
+      /**
+       * `os/truth` phrases it; Home prints it. A second wording of the same
+       * fact would be a second source of truth about it.
+       *
+       * AND IT IS PRINTED IN THE SAME PLACE AS THE STATE'S OWN LINE - under
+       * the car's name, above the ring. It used to fall to a slot below the
+       * ring (and, once the cars rail moved up, below the cars), so a car
+       * whose state HAS a line had its sentence under its name while a steady
+       * car's appeared under its own photograph. One slot, and the state's
+       * line wins where there is one: `toHome` suppresses `truth` wherever the
+       * hero is already saying it, so in the product the two never coexist -
+       * which is why this fixture gives the state a word and no line, exactly
+       * as `homeStateCopy`'s steady branch does.
+       */
+      const h = html({
+        state: { word: 'Cared for' },
+        truth: 'Ceramic coating - 23 days of protection left.',
+      });
       expect(h).toContain('Ceramic coating - 23 days of protection left.');
+    });
+
+    it('and one car’s sentence is never in a different place from another’s', () => {
+      /* The owner's report: the Defender's line sat under its name and the
+         Kia's under its photograph, in the same garage, on the same screen. */
+      const withLine = html({ state: { word: 'Care due', line: 'Your ceramic is due.' } });
+      const withTruth = html({ state: { word: 'Cared for' }, truth: 'All holding.' });
+      const before = (h: string, needle: string) =>
+        h.indexOf(needle) < h.indexOf('am-dial');
+      expect(before(withLine, 'Your ceramic is due.')).toBe(true);
+      expect(before(withTruth, 'All holding.')).toBe(true);
     });
 
     it('and is absent when it would repeat the hero or say nothing', () => {
@@ -118,17 +157,20 @@ describe('Home V1 - one composition', () => {
       expect(live).not.toContain('In the studio -');
     });
 
-    it('protection is a state, summarised - not a wall of countdowns', () => {
-      /* It used to sit behind a `<details>`, so that a glance was not a
-         reading exercise. The design answers the same worry with the DIAL:
-         the number is the glance, so the layers under it are already
-         supporting detail and are simply left open. A disclosure control on
-         two rows is more interface than the rows it hides. */
+    it('protection is a state, stated once - not a wall of countdowns', () => {
+      /**
+       * It used to sit behind a `<details>`, so that a glance was not a
+       * reading exercise. The design answers the same worry with the DIAL: the
+       * number is the glance, so the layers under it are already supporting
+       * detail and are simply left open.
+       *
+       * AND IT IS SAID ONCE. This asserted a summary line - every layer's name
+       * joined by `DOT`, then the worst term - drawn directly above the rows
+       * that state each of those layers with its own term. The owner cut it,
+       * and the assertion inverts with it: the section is the rows.
+       */
       const h = html({
         protection: {
-          headline: 'Protected',
-          layers: ['PPF', 'Ceramic', 'Glass'],
-          said: 'Everything’s holding',
           tone: 'assent',
           items: [{ id: 'p1', label: 'Ceramic', term: 'Through March 2027', tone: 'assent' }],
         },
@@ -137,11 +179,10 @@ describe('Home V1 - one composition', () => {
         ],
       });
       expect(h).toContain('Protected');
-      /* The separator is `DOT` - the same glyph, but binding forward so it can
-         never end a line. Compared through the token rather than by retyping
-         it, since the two are indistinguishable on screen. */
-      expect(h).toContain(['PPF', 'Ceramic', 'Glass'].join(DOT));
       expect(h).toContain('Through March 2027');
+      /* Once, not twice: the layer's name appears on its row and nowhere else
+         in the section. */
+      expect((h.match(/Through March 2027/g) ?? []).length).toBe(1);
       expect(h).not.toContain('<details');
     });
 
@@ -192,14 +233,21 @@ describe('Home V1 - one composition', () => {
     it('the other cars are the navigation, each with its own state', () => {
       const h = html({
         garage: { cars: [
-          { id: 'v1', name: 'M4', state: 'Protected', href: '/?car=v1', current: true },
-          { id: 'v2', name: 'Fortuner', state: 'In care', href: '/?car=v2', current: false },
+          { id: 'v1', name: 'M4', plate: 'GJ01AB1234', state: 'Protected', href: '/vehicle?car=v1', selectHref: '/?car=v1', current: true },
+          { id: 'v2', name: 'Fortuner', plate: 'GJ01CD5678', state: 'In care', href: '/vehicle?car=v2', selectHref: '/?car=v2', current: false },
         ] },
       });
       expect(h).toContain('Fortuner');
       expect(h).toContain('In care');
-      /* Tapping one makes Home that car's home - an address, not local state. */
-      expect(h).toContain('/?car=v2');
+      /**
+       * TAPPING A CAR OPENS THE CAR - it used to rewrite `?car=` and leave the
+       * customer on a differently-worded copy of the page they were already
+       * on, which is the last thing a photograph of your own car should do.
+       * Choosing which car Home is ABOUT is the rail's scroll now, and its
+       * address (`selectHref`) is followed when the rail settles. Two
+       * gestures, two real addresses, neither invented in the renderer.
+       */
+      expect(h).toContain('/vehicle?car=v2');
       /* The one being shown says so. */
       expect(h).toContain('aria-current="true"');
     });
@@ -250,12 +298,20 @@ describe('Home V1 - one composition', () => {
  * silently.
  */
 describe('the i20 attention state - one fact, one presentation', () => {
-  /** The hero as `homeStateCopy` builds it when a proposal is speaking. */
+  /**
+   * The hero as `homeStateCopy` builds it when a proposal is speaking - ONE
+   * sentence, and it is the proposal's REASON.
+   *
+   * It used to be the headline with the reason stacked under it, which put
+   * "Ceramic coating renewal due." above "The ceramic coating has 23 days of
+   * protection left - time to renew it." on every car with a waning coat: the
+   * same fact, once without the number and once with it. The reason contains
+   * the headline; the headline does not contain the reason.
+   */
   const attention = {
     state: {
       word: 'Care due',
-      line: 'Ceramic coating renewal due.',
-      note: 'The ceramic coating has 23 days of protection left - time to renew it.',
+      line: 'The ceramic coating has 23 days of protection left - time to renew it.',
     },
     nextAction: { label: 'Renew it', href: '/studio?arrange=1&cat=Ceramic' },
   } as const;
@@ -264,7 +320,8 @@ describe('the i20 attention state - one fact, one presentation', () => {
     const h = html(attention);
     /* The reason appears exactly once - on the hero. */
     expect((h.match(/23 days of protection left/g) ?? []).length).toBe(1);
-    expect(h).toContain('Ceramic coating renewal due.');
+    /* And the headline is not said above it any more. */
+    expect(h).not.toContain('Ceramic coating renewal due.');
     expect(h).toContain('Renew it');
   });
 
@@ -283,8 +340,7 @@ describe('the i20 attention state - one fact, one presentation', () => {
     const h = html({
       ...attention,
       protection: {
-        headline: 'Protected', layers: ['Ceramic coating', 'Warranty'],
-        said: 'Everything’s holding', tone: 'assent',
+        tone: 'assent',
         items: [{ id: 'p1', label: 'Ceramic coating', term: 'Through March 2027', tone: 'caution' }],
       },
       protections: [

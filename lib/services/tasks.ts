@@ -35,9 +35,9 @@ export const getDueTasks = async (today: string): Promise<FollowUpTask[]> => {
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 };
 
-export const getOpenTasks = async (): Promise<FollowUpTask[]> => {
-  const snap = await getDocs(query(collection(db, 'tasks'), where('done', '==', false)));
-  return snap.docs
-    .map(d => ({ id: d.id, ...d.data() } as FollowUpTask))
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-};
+/* `getOpenTasks` STOOD HERE - the same query as `getDueTasks` above without
+   the due-date filter, and nothing ever called it. Follow-ups are a working
+   feature: the desk writes them with `addTask`, works them off `getDueTasks`
+   and closes them with `completeTask`. A second reader of the same collection
+   that answers a slightly different question nobody asked is how two lists of
+   "the tasks" end up disagreeing on a shop floor. */

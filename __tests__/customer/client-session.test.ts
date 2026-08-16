@@ -142,7 +142,6 @@ describe('the first arrival happens once', () => {
  *   · joining the club - the one act that takes a standing payment
  *   · "Save" on your details, and every notification switch
  *   · the push toggle
- *   · the referral panel, which loaded no code and stayed empty for ever
  *
  * Five separate features, one cause, none of them reported by a test - each
  * was found only by pressing the button. This is the test that presses them.
@@ -173,7 +172,11 @@ describe('no customer-room control depends on the store user', () => {
        profile this sheet fetched, never through the store. */
     expect(src).toMatch(/const uid = await currentUid\(\)/);
     expect(src).toMatch(/updateUserProfile\(account\.uid/);
-    expect(src).toMatch(/getMyReferralCode\(account\)/);
+    /* `getMyReferralCode(account)` STOOD HERE. The referral programme is
+       removed, so the panel it belonged to is gone; the rule it demonstrated -
+       identity comes from the profile this sheet fetched, never from the store
+       - is still asserted by the two either side of it and by the sweep
+       above. */
     expect(src).toMatch(/disablePush\(account\.uid\)/);
   });
 });

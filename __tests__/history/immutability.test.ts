@@ -10,7 +10,7 @@
  */
 import { readFileSync } from 'fs';
 import { visitsOf, toVisit } from '@/lib/customer/project';
-import type { CarPicture } from '@/lib/customer/source';
+import type { CarPicture } from '@/lib/customer/picture';
 import type { Visit, Invoice } from '@/lib/types';
 
 const codeOf = (p: string) =>

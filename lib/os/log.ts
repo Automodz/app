@@ -1,11 +1,42 @@
 /**
- * The concierge log (audit #6) - what the studio has already told you.
+ * The concierge log - what has actually happened to the car.
  *
  * The app has no inbox and no message store, and this does not become one:
- * every line is a projection of an object that really exists - a booking that
- * was requested and confirmed, a job the floor moved through, a membership
- * the studio verified, a protection that was applied. If an event did not
- * happen, no line is written for it.
+ * every line is a projection of an object that really exists. If an event did
+ * not happen, no line is written for it.
+ *
+ * ── IT WAS A PROCESS TRACE, AND IT IS A RECORD NOW ───────────────────────
+ * The owner: "The recently section has long writing and records every steps
+ * and gets in two line, it should be more human language and only important
+ * information shall be tracked and displayed that actually helps customers."
+ *
+ * One ceramic coating used to produce SEVEN lines:
+ *
+ *     You asked for Ceramic coating on 18 July 2026.
+ *     The Kia Seltos arrived at the studio.
+ *     Work began on the Kia Seltos.
+ *     The Kia Seltos went through its final checks.
+ *     The Kia Seltos was ready for collection.
+ *     Ceramic coating was finished and filed to the Kia Seltos's story.
+ *     Ceramic coating applied - protected until August 2029.
+ *
+ * Six of those are the floor's own choreography, written in the studio's
+ * internal order, wrapping to two lines each on a phone. A customer scrolling
+ * past does not need to know that a car passed through final checks in July;
+ * they need to know what changed about their car and when.
+ *
+ * So the log answers one question - WHAT CHANGED - and each answer is short
+ * enough to be a line rather than a paragraph:
+ *
+ *     Ceramic coating went on          18 July 2026
+ *     Joined the Club on Gold           2 July 2026
+ *     Slot missed                      14 June 2026
+ *
+ * WHAT WAS DROPPED, AND WHY IT IS NOT LOST. The request, the four acts and
+ * the filing all belong to ONE visit, and a visit has a surface of its own
+ * with its photographs, its stages and its account - which every line here
+ * still opens. The steps were never deleted from the record; they stopped
+ * being repeated on the customer's home screen.
  *
  * The voice is the studio's: the car by name, reasons given, no urgency.
  */
@@ -15,7 +46,7 @@ import type { Booking, Job, Subscription } from '@/lib/types';
    shape; the stored model has ten kinds and one term engine. */
 import type { LiveProtection as Protection } from './protection';
 import { PROTECTION_TITLE as PROTECTION_WORD } from '@/lib/types';
-import { actFromJobStatus, visitPhase } from './visit';
+import { visitPhase } from './visit';
 
 export interface LogEntry {
   id: string;
@@ -26,69 +57,70 @@ export interface LogEntry {
   target?: { kind: 'visit' | 'chapter'; bookingId: string };
 }
 
-const fmtLong = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+/* `fmtLong` STOOD HERE. Every line that spelled a date INSIDE its own
+   sentence is gone - the log draws the date beside each entry, so writing it
+   twice was what made these wrap. */
 const dayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
-/** The studio's line for each act the floor actually recorded. */
-const ACT_LOG: Record<string, (car: string) => string> = {
-  received: car => `The ${car} arrived at the studio.`,
-  in_care: car => `Work began on the ${car}.`,
-  final_checks: car => `The ${car} went through its final checks.`,
-  ready: car => `The ${car} was ready for collection.`,
-};
 
 export function conciergeLog(args: {
   visits: Booking[];
   jobByBooking: Map<string, Job>;
   membership: Subscription | null;
   protections: Protection[];
-  vehicleName: string;
   now?: Date;
 }): LogEntry[] {
-  const { visits, jobByBooking, membership, protections, vehicleName, now = new Date() } = args;
+  /* `vehicleName` STOOD IN THIS SIGNATURE. Every line that named the car -
+     "Work began on the Kia Seltos." - was one of the floor's steps, and those
+     are gone. The room these lines appear in is already about one car, so
+     naming it in each line was the car saying its own name six times. */
+  const { visits, jobByBooking, membership, protections, now = new Date() } = args;
   const out: LogEntry[] = [];
 
   visits.forEach(b => {
     const phase = visitPhase(b.status);
-    const created = b.createdAt?.toDate?.() ?? new Date(`${b.scheduledDate}T09:00:00`);
-
-    out.push({
-      id: `${b.id}-requested`,
-      at: created,
-      line: `You asked for ${b.serviceName} on ${fmtLong(b.scheduledDate)}.`,
-      target: { kind: phase === 'archived' ? 'chapter' : 'visit', bookingId: b.id },
-    });
 
     /**
-     * THE CONFIRMATION IS NOT WRITTEN DOWN, SO IT IS NOT SAID.
+     * A VISIT IS ONE THING THAT HAPPENED, not seven.
      *
-     * There was a line here - "The studio confirmed {date} for the {car}." -
-     * dated from `b.updatedAt`. That is when the document was last WRITTEN, not
-     * when the studio confirmed anything, and the log presents its `at` to the
-     * customer as the day the thing happened. Nine of the eleven bookings in
-     * production have been edited since they were created, so for nine of them
-     * the date beside that sentence was simply the date of the last edit: Home
-     * read "The studio confirmed 23 July 2026 for the Kia Seltos." stamped
-     * 8 August 2026 - a confirmation appearing to arrive a fortnight after the
-     * visit it confirmed.
+     * The request, each act the floor moved through and the filing were all
+     * written here as their own lines - see the note at the top of the file.
+     * What a customer wants back from a finished visit is that it happened and
+     * what it was; the visit's own surface holds everything else and every
+     * line below still opens it.
      *
-     * MISSING FROM THE SCHEMA: `Booking.confirmedAt`, written once when a
-     * booking leaves `pending`, in the shape `cancelledAt` already has. Nothing
-     * records it, so there is no honest date for this event and no date is
-     * invented for it. The line returns when the field does.
-     *
-     * Every other entry in this log is anchored to a real event: the request to
-     * `createdAt`, each act of the floor to its own `statusHistory[].at`, the
-     * filing to `completedAt`, the cancellation to `cancelledAt`.
+     * A visit that left a PROTECTION on the car is not written here at all:
+     * the protection says the same thing and says what it left behind, which
+     * is the more useful half. Matched on the day the work was done, which is
+     * how both writers set `since` (`captureTerms` and `protectionsFromVisit`
+     * both use the day of the visit).
      */
+    if (phase === 'archived') {
+      const left = protections.some(p => p.since === b.scheduledDate);
+      const done = jobByBooking.get(b.id)?.completedAt?.toDate()
+        ?? new Date(`${b.scheduledDate}T18:00:00`);
+      if (!left) {
+        out.push({
+          id: `${b.id}-done`,
+          at: done,
+          line: b.serviceName,
+          target: { kind: 'chapter', bookingId: b.id },
+        });
+      }
+    }
 
+    /**
+     * AND SOMETHING THAT WENT WRONG IS ALWAYS WORTH A LINE.
+     *
+     * This is the one kind of entry a customer may need to act on, so it keeps
+     * its reason - a refusal without one is the studio declining and not
+     * saying why.
+     */
     if (phase === 'cancelled') {
       const line = b.noShow
-        ? `The ${b.serviceName} on ${fmtLong(b.scheduledDate)} was missed.`
+        ? 'Slot missed'
         : b.rejectionReason
-        ? `The studio couldn’t take ${b.serviceName} on ${fmtLong(b.scheduledDate)}${b.rejectionReason ? ` - ${b.rejectionReason}` : ''}`
-        : `${b.serviceName} on ${fmtLong(b.scheduledDate)} was cancelled.`;
+          ? `Visit not taken - ${b.rejectionReason}`
+          : 'Visit cancelled';
       /* `cancelledAt` ONLY. It is the true event and every cancelled booking
          in production carries one; falling through to `updatedAt` would date
          the cancellation from whenever the record was last touched. A
@@ -97,39 +129,29 @@ export function conciergeLog(args: {
       const at = b.cancelledAt?.toDate?.();
       if (at) out.push({ id: `${b.id}-cancelled`, at, line });
     }
-
-    // the floor's own record - one line per act it actually moved through
-    const job = jobByBooking.get(b.id);
-    (job?.statusHistory ?? []).forEach((h, i) => {
-      const act = actFromJobStatus(h.status);
-      const write = act ? ACT_LOG[act] : null;
-      if (!write) return;
-      out.push({
-        id: `${b.id}-act-${i}`,
-        at: h.at.toDate(),
-        line: write(vehicleName),
-        target: { kind: phase === 'archived' ? 'chapter' : 'visit', bookingId: b.id },
-      });
-    });
-
-    if (phase === 'archived') {
-      const done = job?.completedAt?.toDate() ?? new Date(`${b.scheduledDate}T18:00:00`);
-      out.push({
-        id: `${b.id}-filed`,
-        at: done,
-        line: `${b.serviceName} was finished and filed to the ${vehicleName}’s story.`,
-        target: { kind: 'chapter', bookingId: b.id },
-      });
-    }
   });
 
+  /**
+   * WHAT WENT ON THE CAR - the most useful line in the log, and now the
+   * shortest. It read "Ceramic coating applied - protected until August 2029."
+   * and wrapped; the term is stated in full under the ring, on the car's own
+   * ledger and on the warranty card, so repeating it here bought a second line
+   * of type for a fact already said three times (§4.4).
+   *
+   * The BRAND is what this line adds that none of those do at a glance, so it
+   * is the part that is kept.
+   */
   protections.filter(p => p.since).forEach(p => {
+    /* NAMED, NOT NARRATED. "Ceramic coating went on" still wrapped once the
+       brand was in front of it and the date beside it - and every other entry
+       in this record is the name of a thing that happened, with its date. So
+       is this one. */
+    const what = PROTECTION_WORD[p.kind].toLowerCase();
     out.push({
       id: `protection-${p.kind}`,
       at: new Date(`${p.since ?? ''}T12:00:00`),
-      line: p.term.kind === 'dated'
-        ? `${PROTECTION_WORD[p.kind]} applied - protected until ${new Date(`${p.term.expiresOn}T12:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`
-        : `${PROTECTION_WORD[p.kind]} applied to the ${vehicleName}.`,
+      line: p.provider ? `${p.provider} ${what}` : PROTECTION_WORD[p.kind],
+      target: p.visitId ? { kind: 'chapter', bookingId: p.visitId } : undefined,
     });
   });
 
@@ -137,9 +159,11 @@ export function conciergeLog(args: {
     out.push({
       id: `club-${membership.id}`,
       at: new Date(`${membership.startDate}T12:00:00`),
+      /* "The studio confirmed your Club membership on Platinum." was a
+         sentence about a confirmation; what happened is that they joined. */
       line: membership.status === 'pending'
-        ? `You asked to join the Club on ${membership.plan}.`
-        : `The studio confirmed your Club membership on ${membership.plan}.`,
+        ? `Asked to join the Club on ${membership.plan}`
+        : `Joined the Club on ${membership.plan}`,
     });
   }
 

@@ -19,7 +19,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join } from 'path';
 import { Timestamp } from 'firebase/firestore';
 import type { Service, User, Vehicle } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import {
   STEPS, stepFrom, stepIndex, nextStep, shouldWelcome, welcomeInterrupts,
 } from '@/lib/os/welcome';

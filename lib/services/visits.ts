@@ -125,17 +125,21 @@ export function visitFromPair(
 
 /* ── reading ────────────────────────────────────────────────────────────── */
 
-export const getVisit = async (id: string): Promise<Visit | null> => {
-  const snap = await getDoc(doc(db, 'visits', id));
-  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Visit) : null;
-};
+/* `getVisit` STOOD HERE - part of the CLIENT read path the customer rooms used
+   before they moved to the server. `lib/customer/source.ts` was its only
+   caller, and that file is gone with the client `Room` it fed; every room
+   renders from `lib/server/customerPicture` now. Removed rather than left
+   for a future import, because a Firestore CLIENT read reachable from a
+   customer surface is the one thing that migration existed to remove. */
 
-export const getVisitsForVehicle = async (vehicleId: string): Promise<Visit[]> => {
-  const snap = await getDocs(query(collection(db, 'visits'), where('vehicleId', '==', vehicleId)));
-  return snap.docs
-    .map(d => ({ id: d.id, ...d.data() } as Visit))
-    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
-};
+
+/* `getVisitsForVehicle` STOOD HERE - part of the CLIENT read path the customer rooms used
+   before they moved to the server. `lib/customer/source.ts` was its only
+   caller, and that file is gone with the client `Room` it fed; every room
+   renders from `lib/server/customerPicture` now. Removed rather than left
+   for a future import, because a Firestore CLIENT read reachable from a
+   customer surface is the one thing that migration existed to remove. */
+
 
 /* ── writing ────────────────────────────────────────────────────────────── */
 

@@ -9,7 +9,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, Job, Protection, Service, Subscription, User, Vehicle } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import {
   toHome, toGarage, toVehicle, toVehiclePhotograph, toHistory, toVisit,
   toStudio, toYou, toMembership, visitsOf, leadCar,
@@ -305,11 +305,25 @@ it('one visit renders its account with the money as one line', () => {
   expect(html).not.toContain('<table');
 });
 
-it('Studio renders the place with no price and no named person', () => {
+it('Studio renders the place with no price in its voice and no named person', () => {
   const html = renderToStaticMarkup(<StudioScreen model={toStudio(picture)} />);
   assertClean(html, 'studio');
   expect(html).toContain('Maninagar');
-  expect(html).not.toMatch(/₹/);
+  /* NARROWED, THE SAME WAY `toStudio`'s own §22.1 test already was, and for
+     the same reason. This asserted that NO `₹` reached the markup, which held
+     only while the room said nothing about what the studio charges - and it
+     held here by accident, because this fixture's catalogue is empty.
+
+     The room now states the collection fee, which is a real figure from the
+     pricing engine and the one fact that decides whether a customer plans a
+     morning around dropping the car off. It was previously visible only at
+     step four of the booking sheet.
+
+     What §22.1 protects is the studio's VOICE: its prose is about craft, and a
+     price inside it turns craft into a shelf label. So the prose is what is
+     checked - and the studio's own account of itself is still priceless. */
+  const voice = html.slice(html.indexOf('Every car is inspected'));
+  expect(voice.slice(0, voice.indexOf('Also from the studio'))).not.toMatch(/₹/);
   /* §10.5 - the primary action must not point at the Studio's own address. */
   expect(html).not.toContain('href="/studio"');
   /* RESTORED: this used to assert `wa.me`, which pinned a WORKAROUND - the

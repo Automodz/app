@@ -28,7 +28,7 @@ import { currentSession } from '@/lib/server/session';
 import { loadCustomerPicture } from '@/lib/server/customerPicture';
 import { toPalette } from '@/lib/customer/palette';
 import { PaletteFeed } from '@/navigation/Palette';
-import type { CustomerPicture } from '@/lib/customer/source';
+import type { CustomerPicture } from '@/lib/customer/picture';
 
 function Centred({ children }: { children: ReactNode }) {
   return (

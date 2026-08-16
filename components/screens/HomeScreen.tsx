@@ -60,6 +60,10 @@ import {
   Screen, Pane, Dial, Unit, Label, Rail, Pulse, Chevron, Action, Row, Value,
   Photograph, Greeting,
 } from '@/components/os';
+/* THE ONE ISLAND ON THIS SCREEN. "Which card is the rail resting on" is a
+   question only a browser can answer; everything else here still renders on
+   the server and ships nothing. See `CarRail`. */
+import { CarRail } from './CarRail';
 
 /* ── What Home needs to be true ──────────────────────────────────────────
    Unchanged from the model the projection has always produced. The design
@@ -76,9 +80,9 @@ export interface HomeVehicle {
 export interface HomeState {
   /** The present tense, in one or two words (§5.3 #2). */
   word: string;
+  /** THE one sentence about the car. See `homeStateCopy` for why it is one. */
   line?: string;
   timing?: string;
-  note?: string;
 }
 
 export interface HomeStudio {
@@ -148,9 +152,6 @@ export interface HomeModel {
   nextAction: { label: string; href: string };
   timeline: HomeTimelineEvent[];
   protection?: {
-    headline: string;
-    layers: readonly string[];
-    said: string;
     tone: Tone;
     items: readonly { id: string; label: string; term: string; tone: Tone }[];
   };
@@ -174,11 +175,20 @@ export interface HomeModel {
   suggestion?: { headline: string; reason: string; href: string };
   next?: { service: string; when: string; vehicleName: string; href: string };
   life?: { photo?: string; count: string; href: string };
-  record: readonly { id: string; line: string; when: string }[];
+  record: readonly { id: string; line: string; when: string; href?: string }[];
   membership?: { plan: string; said: string; href: string };
   garage?: {
     cars: readonly {
-      id: string; name: string; state: string; photo?: string; href: string; current: boolean;
+      id: string;
+      name: string;
+      plate: string;
+      state: string;
+      photo?: string;
+      /** The car's own room. Where a TAP goes. */
+      href: string;
+      /** `/?car=<id>` - what Home is about. Where a SCROLL goes. */
+      selectHref: string;
+      current: boolean;
     }[];
   };
   forSale: readonly {
@@ -245,7 +255,30 @@ export function HomeScreen({ model }: { model: HomeModel }) {
   const reached = live ? done + (live.acts.some(a => a.current) ? 1 : 0) : 0;
   const throughVisit = live && live.acts.length ? reached / live.acts.length : 0;
 
-  const depleting = protections.filter(p => typeof p.remaining === 'number');
+  /**
+   * AND THE NUMBER IN THE RING IS ONLY EVER A MEASUREMENT.
+   *
+   * `remaining` is a real fraction between two real dates when the protection
+   * records when it went on - and a BUCKET when it does not: `os/protection`
+   * falls back to 0.8 / 0.2 / 0.05 / 0 from the health state, which is "a
+   * CATEGORY wearing a number". The engine publishes `measurement` so that "no
+   * surface can imply that a bucketed 0.8 was measured", and this screen was
+   * printing exactly that: 80%, at 52px, in the middle of Home, as the one
+   * number a customer reads. `measurement` was in the model, unrendered, since
+   * the day it was added.
+   *
+   * `remainingOf`'s own note allows the bucket for the dial "because the
+   * customer can see the word beside it" - but the caption beside it is the
+   * protection's NAME, not its term, so there was no word doing that work.
+   *
+   * So a bucket may still fill the ring - a ring is a shape - but it may not be
+   * the reading. With nothing measured, the dial states the car's condition in
+   * words instead, which is what the branch below already does for a car with
+   * no depleting protection at all.
+   */
+  const depleting = protections.filter(
+    p => typeof p.remaining === 'number' && p.measurement === 'measured',
+  );
   const lead = depleting.length
     ? depleting.reduce((a, b) => ((a.remaining ?? 1) <= (b.remaining ?? 1) ? a : b))
     : undefined;
@@ -312,8 +345,21 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           pane below carries only the TIMING, so no fact on this screen ever
           appears in two wordings - the failure this composition was rebuilt
           to prevent. §21.7 - the state changes without the customer acting,
-          so it is announced politely. */}
-      {state.line ? (
+          so it is announced politely.
+
+          ── AND EVERY CAR GETS ONE, WHICHEVER ENGINE HAS IT ───────────────
+          `homeStateCopy`'s steady branch returns a WORD and no line - a car
+          that is simply cared for has nothing dramatic to say - so on those
+          cars this slot was empty and the one sentence about the car,
+          `os/truth`, was drawn far below, under the ring and under the cars
+          rail. Two cars in the same garage therefore had their sentence in two
+          different places: the Defender's under its name, the Kia's below its
+          own photograph.
+
+          One slot. `state.line` when the state has one, `truth` when it does
+          not, and never both - `toHome` already suppresses `truth` wherever
+          the hero is saying the same thing in larger type. */}
+      {state.line ?? truth ? (
         <p
           aria-live="polite"
           style={{
@@ -321,20 +367,16 @@ export function HomeScreen({ model }: { model: HomeModel }) {
             fontSize: 15, lineHeight: 1.6, color: color.ink2, maxWidth: MEASURE,
           }}
         >
-          {state.line}
+          {state.line ?? truth}
         </p>
       ) : null}
 
-      {state.note ? (
-        <p
-          style={{
-            marginTop: space.breath, marginBottom: 0,
-            fontSize: 13.5, lineHeight: 1.55, color: color.ink3, maxWidth: MEASURE,
-          }}
-        >
-          {state.note}
-        </p>
-      ) : null}
+      {/* `state.note` STOOD HERE - a second paragraph under the first.
+          `homeStateCopy` returns one sentence per state now: the note it used
+          to carry was either the same fact worded again (the proposal's
+          headline over its reason) or a clause that belongs INSIDE the
+          sentence (why a visit was refused). One line under the car, which is
+          what the owner asked for and what §4.4 already wanted. */}
 
       {/* ── THE DIAL ────────────────────────────────────────────────────
           1a and 1c are the same object holding a different number. Centred,
@@ -390,7 +432,11 @@ export function HomeScreen({ model }: { model: HomeModel }) {
             stroke="champagne"
             ticks
             size={262}
-            caption={lead ? lead.label : 'protected'}
+            /* THE CAPTION NAMES WHAT THE NUMBER BELONGS TO - so with no number
+               there is nothing for it to name. It said "protected" regardless,
+               which under the word "New" read as a claim about a car that has
+               never been here. §18.1: nothing is drawn for nothing. */
+            caption={lead ? lead.label : undefined}
             label={
               lead
                 ? `${lead.label}, ${Math.round((lead.remaining ?? 0) * 100)} percent of its term remaining`
@@ -404,13 +450,38 @@ export function HomeScreen({ model }: { model: HomeModel }) {
         )}
       </div>
 
+      {/* ── THE CARS, DIRECTLY UNDER THE RING ───────────────────────────
+          It was the last section on the screen, below the record and the
+          market - so the strip that decides which car the ENTIRE room is
+          about sat further from the room than the marketplace did, and a
+          customer with three cars had to scroll past everything about the
+          first one to reach the second.
+
+          Here, it reads as what it is: the ring and the heading above it are
+          about the card the rail is resting on, and the sections below follow
+          the same car. Scrolling the rail moves all three; tapping a card
+          opens that car's own room. See `CarRail`.
+
+          §18.1 - one car is not a choice, so a customer with one sees no rail
+          and loses nothing: the heading above the ring already names it. */}
+      {garage && garage.cars.length > 1 ? (
+        <section
+          aria-labelledby="home-garage"
+          style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
+        >
+          <h2 id="home-garage" style={{ margin: 0 }}><Rail>Your cars</Rail></h2>
+          <CarRail cars={garage.cars} />
+        </section>
+      ) : null}
+
       {/* ── WHAT IS HAPPENING, IN ONE LINE ──────────────────────────────
           The live pane, and the only surface in the product that carries the
           sweep. §17.1 - the pulse IS the notification; there is no badge and
           no count anywhere on this screen.
 
-          At rest this same slot carries `truth`: the one sentence the studio
-          has to say about the car when it is not doing anything to it. */}
+          `truth` USED TO FALL HERE at rest, which is what put one car's
+          sentence under its name and another's below the cars rail. It is said
+          under the title now, beside the state's own line - see above. */}
       {/* DRAWN ONLY WHEN IT HAS SOMETHING OF ITS OWN.
           Its title was "Follow the visit" - the exact words of the one action
           below, pointing at the same address. The timing is the fact only this
@@ -440,15 +511,6 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           </span>
           <Pulse />
         </Pane>
-      ) : truth ? (
-        <p
-          style={{
-            marginTop: SECTION, marginBottom: 0,
-            fontSize: 15, lineHeight: 1.6, color: color.ink2, maxWidth: MEASURE,
-          }}
-        >
-          {truth}
-        </p>
       ) : null}
 
       {/* ── THE PHASES ──────────────────────────────────────────────────
@@ -583,24 +645,29 @@ export function HomeScreen({ model }: { model: HomeModel }) {
           aria-labelledby="home-protection"
           style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
         >
+          {/* STATIC, BY THE OWNER'S DECISION. It was the worst layer's own
+              name - so the section's heading read "POLLUTION CERTIFICATE" on
+              one car and "CERAMIC COATING" on the next, which made a section
+              NAME look like a statement about the car and moved every time the
+              rail was scrolled. A heading says what the section is; the rows
+              under it say what each layer is doing. */}
           <h2 id="home-protection" style={{ margin: 0 }}>
-            <Rail>{protection?.headline ?? 'Protection'}</Rail>
+            <Rail>Protected</Rail>
           </h2>
 
-          {/* THE LAYERS ARE NO LONGER BEHIND A TAP.
-              Home used to disclose them inside a `<details>`, on the argument
-              that a glance should not be a reading exercise. The design's
-              resting screen is a dial and two rows, and that is the better
-              answer to the same worry: the DIAL is the glance, so the rows
-              underneath it are already supporting detail and cost nothing to
-              leave open. A disclosure control on two rows is more interface
-              than the rows it hides. */}
-          {protection ? (
-            <p style={{ margin: 0, fontSize: 13, color: color.ink3 }}>
-              {dotted(...protection.layers, protection.said)}
-            </p>
-          ) : null}
+          {/* THE SUMMARY LINE IS GONE, BY THE OWNER'S DECISION.
+              It read `dotted(...layers, said)` - "Pollution certificate ·
+              Insurance · Lapsed 30 July 2026" - directly above the rows that
+              state each of those layers WITH its own term. Every word of it
+              was said again three lines lower, and the one thing it added was
+              a lapsed date attached to a list it did not belong to. §3.5
+              removes anything that only restates what follows it.
 
+              THE LAYERS ARE NOT BEHIND A TAP EITHER. Home used to disclose
+              them inside a `<details>`, on the argument that a glance should
+              not be a reading exercise. The dial is the glance; the rows under
+              it are already the supporting detail and cost nothing to leave
+              open. */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: space.breath + 2 }}>
             {protections.map(p => (
               <Pane
@@ -798,93 +865,17 @@ export function HomeScreen({ model }: { model: HomeModel }) {
                   />
                 </span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <Row last={i === record.length - 1} value={<Value tone={color.ink3}>{e.when}</Value>}>
+                  <Row
+                    last={i === record.length - 1}
+                    href={e.href}
+                    value={<Value tone={color.ink3}>{e.when}</Value>}
+                  >
                     {e.line}
                   </Row>
                 </span>
               </div>
             ))}
           </Pane>
-        </section>
-      ) : null}
-
-      {/* ── THE COLLECTION ──────────────────────────────────────────────
-          A rail of the other cars, so switching which car Home is about never
-          requires leaving Home. The current one is lit; §12.3 - cars are
-          equals, and "current" is a position, not a rank. */}
-      {garage && garage.cars.length > 1 ? (
-        <section
-          aria-labelledby="home-garage"
-          style={{ marginTop: SECTION, display: 'flex', flexDirection: 'column', gap: space.line }}
-        >
-          <h2 id="home-garage" style={{ margin: 0 }}><Rail>Your cars</Rail></h2>
-          <div
-            className="no-scrollbar"
-            style={{
-              display: 'flex', gap: space.line, overflowX: 'auto',
-              /* The gutter is the page's, so the rail bleeds to both edges
-                 and the first card still lines up with everything above it. */
-              marginInline: -INSET, paddingInline: INSET, paddingBottom: space.breath,
-              scrollSnapType: 'x mandatory',
-              /* SNAP INSIDE THE GUTTER, NOT UNDER IT.
-                 The rail bleeds by `-INSET` and pads back by `INSET`, but a
-                 mandatory snap aligns the first card to the SCROLLPORT - the
-                 padding box - so on load it slid left underneath that padding
-                 and the first card sat 20px off the edge of the screen.
-                 Measured in the running page: card left `-20` without this,
-                 `0` with it. `scroll-padding` is what shrinks the snapport to
-                 the gutter, and it is the only thing that does. */
-              scrollPaddingInline: INSET,
-            }}
-          >
-            {garage.cars.map(c => (
-              /* The car being shown says so - §6.2's "always shows where the
-                 customer is", applied to which car Home is about. The mark is
-                 the amber state line and `aria-current`, NOT a warm pane:
-                 there is one warm surface on this screen and it is the action.
-                 §12.3 - cars are equals, and "current" is a position. */
-              /* THE CAR, NOT A CARD ABOUT THE CAR.
-                 This was a 200x104 coloured pane with the name written on it -
-                 in a product whose whole argument is that the car is the
-                 subject (§2.1), the customer's own garage was the one strip
-                 that showed no cars. The photograph is in the model and always
-                 was. Same 232 width and same 126 plate as the market strip
-                 below, because two rails of different-sized cards on one
-                 screen read as two designs.
-
-                 `Photograph` composes the absence, so a car with no picture
-                 yet is a quiet lit field at exactly this size rather than a
-                 shorter card that breaks the row. */
-              <Link
-                key={c.id}
-                href={c.href}
-                aria-current={c.current ? true : undefined}
-                className="am-tap"
-                style={{
-                  flex: '0 0 auto', width: 232, textDecoration: 'none',
-                  borderRadius: radius.sheet, overflow: 'hidden',
-                  border: `1px solid ${c.current ? 'rgba(224,164,92,0.28)' : 'rgba(255,255,255,0.08)'}`,
-                  scrollSnapAlign: 'start',
-                }}
-              >
-                <span style={{ position: 'relative', display: 'block', height: 126 }}>
-                  <Photograph src={c.photo} alt={c.name} sizes="232px" radius={0} />
-                </span>
-                <span
-                  className="am-glass"
-                  style={{
-                    display: 'flex', flexDirection: 'column', gap: space.breath,
-                    padding: `${space.gap}px ${space.gap + 2}px`, borderRadius: 0, border: 'none',
-                  }}
-                >
-                  <span style={{ fontSize: 15, color: color.ink }}>{c.name}</span>
-                  <Label lit={c.current} style={{ fontSize: 9.5, letterSpacing: '0.16em' }}>
-                    {c.state}
-                  </Label>
-                </span>
-              </Link>
-            ))}
-          </div>
         </section>
       ) : null}
 

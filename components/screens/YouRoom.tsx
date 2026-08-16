@@ -17,7 +17,7 @@ import { YouScreen } from './YouScreen';
 import type { YouModel } from './YouScreen';
 
 const PANELS: SettingsPanel[] = [
-  'profile', 'notifications', 'referral', 'delete',
+  'profile', 'notifications', 'delete',
   'addresses', 'payment', 'privacy',
 ];
 

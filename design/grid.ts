@@ -57,12 +57,30 @@ export const TARGET_MIN = 44;
  * is arithmetic rather than measurement. A screen that reads another element's
  * height at runtime has broken the contract even if it looks correct.
  *
- * Derivation of the navigation height:
- *   TARGET_MIN (44) + space.breath above + space.breath below = 60.
- *   The smallest height that satisfies §21.3 without the control touching the
- *   bar's edge.
+ * THE NAVIGATION HEIGHT IS INSTAGRAM'S, BY THE OWNER'S DECISION.
+ *
+ * It was `TARGET_MIN (44) + space.breath × 2 = 60` - derived as the smallest
+ * height that satisfies §21.3 without the control touching the bar's edge.
+ * The owner asked for the dock to carry the same metrics as the bar every
+ * customer already has muscle memory for, and that bar is the iOS tab bar
+ * Instagram uses: 49pt of content, above the device's own safe area, with
+ * 24pt marks in it.
+ *
+ * §21.3 SURVIVES INTACT, and that is why 49 works where a smaller number
+ * would not: each slot still declares `minHeight: TARGET_MIN`, and 44 fits
+ * inside 49 with room to spare. The rule was never that the BAR is 44 - it is
+ * that the touch area is.
+ *
+ * ── AND THE TOKEN NOW MATCHES WHAT IS DRAWN ──────────────────────────────
+ * It did not. The dock padded itself by `space.line` on each side of a 44px
+ * slot, which renders at 68 - so this token published 60, `contentFloor`
+ * reserved 60, and eight pixels of every scrolling room sat underneath the
+ * dock. §8.5's whole point is that the stack is arithmetic rather than
+ * measurement, and arithmetic against a wrong number is worse than measuring.
+ * `BottomNavigation` sets `height: stack.navHeight` outright now, so the two
+ * cannot drift again.
  */
-export const NAV_HEIGHT = TARGET_MIN + space.breath * 2; // 60
+export const NAV_HEIGHT = 49;
 
 /** Distance from the navigation to the bottom edge of the screen. */
 export const NAV_GAP = space.line; // 12

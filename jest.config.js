@@ -11,6 +11,9 @@ module.exports = {
        under `renderToStaticMarkup`, and the screens need the router to keep
        their expansions addressable. */
     '^next/navigation$': '<rootDir>/__mocks__/next-navigation.js',
+    /* See __mocks__/next-cache.js - `unstable_cache` drags in Next's server
+       runtime, which needs undici globals jsdom has not got. */
+    '^next/cache$': '<rootDir>/__mocks__/next-cache.js',
     /* Next's loader turns `import photo from './x.jpg'` into an object with the
        file's real dimensions; jest has no loader and parses the JPEG as JS.
        Mapped BEFORE the `@/` alias, or `@/public/...` would resolve to the

@@ -9,7 +9,7 @@
  */
 import { readFileSync } from 'fs';
 import { Timestamp } from 'firebase/firestore';
-import type { Promo, Service, Subscription } from '@/lib/types';
+import type { Service, Subscription } from '@/lib/types';
 import {
   resolveScope, scopesOf, addOnsOf, WHOLE_SCOPE,
   estimateExpiryOn, estimateHasExpired, ESTIMATE_VALID_DAYS,
@@ -218,7 +218,7 @@ const member = (plan: 'Silver' | 'Gold' | 'Platinum'): Subscription & { id: stri
 const quote = (over: {
   scopeId?: string; panelIds?: string[]; addOnIds?: string[];
   membership?: (Subscription & { id: string }) | null;
-  promos?: Promo[]; pickup?: boolean; drop?: boolean;
+  pickup?: boolean; drop?: boolean;
 } = {}) => {
   const r = resolveScope(ppf(), {
     scopeId: over.scopeId ?? 'full',
@@ -235,8 +235,6 @@ const quote = (over: {
       category: 'PPF', serviceId: 'svc-ppf', ownerId: 'u1',
       membership: over.membership ?? null,
       wantsWash: false,
-      promos: over.promos ?? [],
-      myRedemptions: new Map(),
       date: '2026-02-01',
     },
   });
@@ -268,24 +266,6 @@ describe('what it costs comes from priceVisit and nowhere else', () => {
     expect(g.total).toBe(150000 - Math.round(150000 * 0.15) + 50);
   });
 
-  it('promo and membership do not stack - the better one stands alone', () => {
-    const promo: Promo = {
-      id: 'p1', code: 'BIG', label: '₹5,000 off', type: 'flat', value: 5000,
-      scope: { kind: 'all' }, target: { kind: 'all' },
-      validFrom: '2026-01-01', validTo: '2026-12-31',
-      usedCount: 0, autoApply: true, active: true,
-    } as unknown as Promo;
-
-    const both = quote({ membership: member('Gold'), promos: [promo] });
-    /* Gold on ₹1,32,000 is ₹19,800, which beats ₹5,000, so the promo loses -
-       and crucially the two are not added together. */
-    expect(both.discountAmount).toBe(19800);
-    expect(both.discount?.source).toBe('membership');
-
-    const promoWins = quote({ scopeId: 'front', membership: null, promos: [promo] });
-    expect(promoWins.discountAmount).toBe(5000);
-    expect(promoWins.discount?.source).toBe('promo');
-  });
 
   it('each concierge leg is its own line - one fee, or two', () => {
     expect(quote({ pickup: true }).fees).toEqual([{ label: 'Pickup', amount: 50 }]);

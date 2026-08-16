@@ -456,11 +456,10 @@ export async function expireLapsedMemberships(now: Date = new Date()): Promise<n
   return done.length;
 }
 
-/** Every membership one customer has ever held, newest first. */
-export async function membershipsOf(uid: string): Promise<Subscription[]> {
-  const snap = await db().collection(SUBSCRIPTIONS).where('userId', '==', uid).get();
-  return rows(snap).sort(byNewest);
-}
+/* `membershipsOf` STOOD HERE - every membership a customer has ever held.
+   The picture carries `subscriptions` for exactly that, and the Club room
+   reads its record from there. */
 
-/** The one in force right now, or nothing. Reads the engine's own rule. */
-export const standingOf = standingMembership;
+
+/* `standingOf` STOOD HERE - an alias for `standingMembership`, which callers
+   import directly. One name for one thing (§22.2). */

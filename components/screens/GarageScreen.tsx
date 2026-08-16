@@ -71,7 +71,10 @@ export interface GarageVehicle {
    * §17.1 - the car is the inbox. Never a count, never a body, never a list.
    */
   news?: boolean;
+  /** The car's own room. Where a tap on the LIT car goes. */
   href: string;
+  /** `/garage?car=<id>` - lead with this car. Where a tap on any other goes. */
+  selectHref: string;
 }
 
 /** The vehicle as the form needs it - enough to correct, nothing more. */
@@ -128,11 +131,12 @@ export function GarageScreen({ model }: { model: GarageModel }) {
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
-  const openEdit = (id: string) => {
-    const next = new URLSearchParams(params.toString());
-    next.set('edit', id);
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-  };
+  /* `openEdit` STOOD HERE. The only thing that called it was the "Correct"
+     control inside the lead card, and the owner cut that: correcting a car
+     belongs in the car's own room, which already carries it. `?edit=<id>`
+     still OPENS the sheet - the Vehicle room links straight into it - so the
+     address and the form are untouched; the collection simply no longer has a
+     second control competing with the door to the car. */
 
   /* §12.4 - the composed absence. A garage with no car is an invitation, not
      an empty list, and it is the whole screen rather than a card on one. */
@@ -173,15 +177,35 @@ export function GarageScreen({ model }: { model: GarageModel }) {
       {/* ── THE LEAD ────────────────────────────────────────────────────
           §11.2 - the photograph at size. The whole frame is the link (§4.3):
           a chevron or a "View" control would put an interface between an owner
-          and their own car. */}
+          and their own car.
+
+          ONE CARD, TWO PARTS. The photograph and the strip under it - what
+          protects this car, how long it has been here, and the way to correct
+          it - used to be two separate surfaces with a 12px gap between them.
+          Below the strip came the OTHER cars, drawn as panes of exactly that
+          shape, so the lead car's own protection line read as a fifth vehicle
+          called "Ceramic coating, 15 days left". They are one bordered frame
+          now: the border and the corner belong to the wrapper, the two parts
+          inside are square-edged, and the glass pane's own top sheen is what
+          separates them.
+
+          The strip is a sibling of the link rather than inside it, because it
+          carries the "Correct" control and an interactive element inside an
+          anchor is not a control the browser or a screen reader can reach. */}
       <div style={{ marginTop: space.gap, display: 'flex', flexDirection: 'column', gap: space.line }}>
+        <div
+          style={{
+            borderRadius: radius.sheet,
+            overflow: 'hidden',
+            border: `1px solid ${lead.news ? 'rgba(224,164,92,0.25)' : 'rgba(255,255,255,0.08)'}`,
+          }}
+        >
         <Link
           href={lead.href}
           className="am-tap"
           style={{
             position: 'relative', display: 'block', height: 190,
-            borderRadius: radius.sheet, overflow: 'hidden', textDecoration: 'none',
-            border: `1px solid ${lead.news ? 'rgba(224,164,92,0.25)' : 'rgba(255,255,255,0.08)'}`,
+            overflow: 'hidden', textDecoration: 'none',
             /* §7.5 - the photograph moves between this frame and the car's own
                hero rather than crossfading. Declared per car so two frames can
                never claim the same name. */
@@ -261,41 +285,46 @@ export function GarageScreen({ model }: { model: GarageModel }) {
           </span>
         </Link>
 
-        {/* What protects it, and how long it has been here. On glass, below
-            the photograph, where colour is allowed because the ground is
-            known. §17.1 - the mark for unseen news is on the car itself. */}
+        {/* What protects it, and how long it has been here. On glass, INSIDE
+            the same frame as the photograph, where colour is allowed because
+            the ground is known. §17.1 - the mark for unseen news is on the car
+            itself. Square-edged and unbordered: the wrapper above owns both.
+
+            AND "CORRECT" IS GONE FROM IT, by the owner's decision. It was the
+            only control on the collection that edited a car, sitting inside
+            the card whose whole job is to be a door to that car - so the one
+            surface a customer taps to open their car carried a second target
+            that opens a form instead. Correcting a car belongs in the car's
+            own room, which is one tap away and already has it. */}
         <Pane
+          round={0}
           style={{
+            border: 'none',
             padding: `${space.line + 2}px ${space.gap + 2}px`,
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            gap: space.line,
+            display: 'flex', flexDirection: 'column', gap: 3,
           }}
         >
-          <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ fontSize: 13.5, color: color.ink }}>{lead.protection}</span>
-            <Label style={{ fontSize: 9.5, letterSpacing: '0.14em' }}>{lead.relationship}</Label>
-          </span>
-          <button
-            type="button"
-            onClick={() => openEdit(lead.id)}
-            className="am-tap am-label"
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
-              letterSpacing: '0.16em', minHeight: TARGET_MIN,
-            }}
-          >
-            Correct
-          </button>
+          <span style={{ fontSize: 13.5, color: color.ink }}>{lead.protection}</span>
+          <Label style={{ fontSize: 9.5, letterSpacing: '0.14em' }}>{lead.relationship}</Label>
         </Pane>
+        </div>
 
         {/* ── EVERY OTHER CAR ───────────────────────────────────────────
             §12.3 - equals. A pane each, the same pane, in the studio's order
             of attention and in no other order. */}
         {rest.map(v => (
+          /* ONE TAP LIGHTS IT, THE NEXT OPENS IT.
+             These rows used to link straight to the car, which meant the
+             collection had no way to lead with a different car and the big
+             photographed card was always the studio's choice. A tap here makes
+             this the lit car - the card above, with its photograph and what
+             protects it - and a tap on THAT opens the room. The owner asked
+             for exactly that, and it is also how a customer already reads the
+             screen: the lit card is the one being talked about. */
           <Pane
             key={v.id}
             as={Link}
-            {...{ href: v.href }}
+            {...{ href: v.selectHref }}
             style={{
               padding: `${space.gap}px ${space.gap + 2}px`,
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',

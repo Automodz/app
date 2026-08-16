@@ -24,3 +24,6 @@ export {
   Label, Statement, DISPLAY, Rail, Pulse, Chevron, Meter, Row, Value, Action, Stat,
 } from './parts';
 export { Greeting } from './Greeting';
+
+/* The doorway that marks itself seen - see the file for the defect it closes. */
+export { Notice, markSeen } from './Notice';

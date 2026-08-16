@@ -3,7 +3,7 @@ import {
   query, where, orderBy, limit, runTransaction, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { InventoryItem, InventoryTxn, ServiceRecipe, InventoryUnit, InventoryCategory } from '../types';
+import type { InventoryItem, InventoryTxn, InventoryUnit, InventoryCategory } from '../types';
 
 // ── Items ────────────────────────────────────────────────────────────────────
 
@@ -82,69 +82,16 @@ export const getInventoryTxns = async (itemId?: string, max = 100): Promise<Inve
 
 // ── Recipes (consumption per service) ────────────────────────────────────────
 
-export const saveServiceRecipe = (recipe: Omit<ServiceRecipe, 'updatedAt'>) =>
-  setDoc(doc(db, 'serviceRecipes', recipe.serviceId), { ...recipe, updatedAt: serverTimestamp() });
+/* ── SERVICE RECIPES STOOD HERE, AND THE STOCK THEY MOVED ────────────────
+   `saveServiceRecipe`, `getServiceRecipe`, `listServiceRecipes`,
+   `consumeForService`, `getRecipePrefill` and `consumeActuals`: a mapping from
+   each service to the consumables it uses, so finishing a job decremented
+   stock automatically.
 
-export const getServiceRecipe = async (serviceId: string): Promise<ServiceRecipe | null> => {
-  const snap = await getDoc(doc(db, 'serviceRecipes', serviceId));
-  return snap.exists() ? (snap.data() as ServiceRecipe) : null;
-};
+   The owner's decision is that inventory is the PRODUCT INVENTORY and nothing
+   else - what is on the shelf, what was bought, what was adjusted. A recipe is
+   a model of how work consumes stock, and modelling it means every quantity is
+   an estimate that silently drifts from what was actually used on a car whose
+   size nobody told it about. Stock moves through `recordPurchase` and
+   `adjustStock`, which are things a person did and can vouch for. */
 
-export const listServiceRecipes = async (): Promise<ServiceRecipe[]> => {
-  const snap = await getDocs(collection(db, 'serviceRecipes'));
-  return snap.docs.map(d => d.data() as ServiceRecipe);
-};
-
-/**
- * Auto-decrement stock for each completed service that has a recipe.
- * Tolerates missing recipes/items - never throws for a service without one.
- */
-export const consumeForService = async (
-  serviceIds: string[], refType: 'job' | 'booking', refId: string, byEmployeeId?: string,
-) => {
-  for (const serviceId of serviceIds) {
-    const recipe = await getServiceRecipe(serviceId);
-    if (!recipe) continue;
-    for (const item of recipe.items) {
-      try {
-        await applyStockDelta(item.itemId, -Math.abs(item.qty), {
-          type: 'consumption', refType, refId,
-          ...(byEmployeeId ? { byEmployeeId } : {}),
-        });
-      } catch (e) {
-        console.error(`consumption failed for item ${item.itemId}`, e);
-      }
-    }
-  }
-};
-
-/** Recipe lines for a set of services, merged - the prefill for the actuals sheet. */
-export const getRecipePrefill = async (serviceIds: string[]) => {
-  const merged = new Map<string, { itemId: string; itemName: string; qty: number; unit: string }>();
-  for (const id of serviceIds) {
-    const recipe = await getServiceRecipe(id);
-    for (const it of recipe?.items ?? []) {
-      const prev = merged.get(it.itemId);
-      merged.set(it.itemId, prev ? { ...prev, qty: prev.qty + it.qty } : { ...it });
-    }
-  }
-  return [...merged.values()];
-};
-
-/** Consumption with staff-adjusted ACTUAL quantities (vehicle size varies). */
-export const consumeActuals = async (
-  actuals: { itemId: string; qty: number }[],
-  refType: 'job' | 'booking', refId: string, byEmployeeId?: string,
-) => {
-  for (const a of actuals) {
-    if (a.qty <= 0) continue;
-    try {
-      await applyStockDelta(a.itemId, -Math.abs(a.qty), {
-        type: 'consumption', refType, refId,
-        ...(byEmployeeId ? { byEmployeeId } : {}),
-      });
-    } catch (e) {
-      console.error(`consumption failed for item ${a.itemId}`, e);
-    }
-  }
-};

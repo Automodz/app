@@ -59,11 +59,27 @@ export function Greeting({ name }: { name: string }) {
         display: 'flex',
         alignItems: 'center',
         flexWrap: 'wrap',
+        /* THE SPACE BETWEEN THE GREETING AND THE NAME.
+           It was a `{' '}` at the end of the first span, and a flex item's
+           trailing whitespace is trimmed - so every customer has been greeted
+           "Good afternoon,Meet" since the day this became a flex row. A gap is
+           the flex container's own way of saying it, and in `em` so it stays a
+           word space at every step of the fluid Display clamp. */
+        columnGap: '0.26em',
         paddingInlineEnd: TARGET_MIN + space.line,
-        fontFamily: typeScale.title.family,
-        fontSize: typeScale.title.size,
-        fontWeight: typeScale.title.weight,
-        lineHeight: 1.2,
+        /* THE DISPLAY STEP, LIKE EVERY OTHER ROOM'S FIRST LINE.
+           This was the Title step (22px) while the Studio, the Garage and the
+           Club all open on a Display - so the one room a customer opens daily
+           opened smaller than the rest of the product, and moving between them
+           read as moving between two applications. §9.5's "one Display per
+           screen" is unbroken: Home's h1 is the state's word, said for a
+           screen reader and drawn by the ring (see `HomeScreen`), and this is
+           the greeting rather than a second statement of it. */
+        fontFamily: typeScale.display.family,
+        fontSize: typeScale.display.size,
+        fontWeight: typeScale.display.weight,
+        letterSpacing: typeScale.display.letterSpacing,
+        lineHeight: 1.15,
         color: color.ink2,
       }}
     >
@@ -75,7 +91,7 @@ export function Greeting({ name }: { name: string }) {
           transition: 'opacity 240ms ease',
         }}
       >
-        {word ?? 'Good evening'},{' '}
+        {word ?? 'Good evening'},
       </span>
       <span style={{ color: color.ink }}>{name}</span>
     </p>

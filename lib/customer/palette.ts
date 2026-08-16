@@ -20,7 +20,7 @@
  */
 import { PROTECTION_TITLE } from '@/lib/types';
 import { hrefForDestination, resolveAction, type Destination } from '@/navigation/resolve';
-import type { CustomerPicture } from './source';
+import type { CustomerPicture } from './picture';
 import { readOwnership, completedOf, liveOf } from './ownership';
 import { longDate, protectionsOf } from './project';
 
@@ -177,8 +177,6 @@ export function toPalette(picture: CustomerPicture, now = new Date()): PaletteMo
       'edit name phone email contact details settings'),
     at({ to: 'profile.panel', panel: 'notifications' }, 'you-notify', 'Notifications', 'You',
       'notifications alerts push whatsapp reminders preferences settings'),
-    at({ to: 'profile.panel', panel: 'referral' }, 'you-referral', 'Your referral code', 'You',
-      'refer friend invite share code'),
     at({ to: 'privacy' }, 'privacy', 'Privacy', 'You', 'privacy policy data legal'),
     at({ to: 'terms' }, 'terms', 'Terms', 'You', 'terms conditions legal'),
     at({ to: 'profile.panel', panel: 'delete' }, 'you-delete', 'Delete your account', 'You',

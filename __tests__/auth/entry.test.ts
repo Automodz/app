@@ -158,10 +158,12 @@ describe('sign-in lands on a server render that can see the cookie', () => {
   it('a failed mint does not leave a half-signed-in client', () => {
     /* Signed in to Firebase but with no server session is the state that
        produced the bounce loop; it must not be a state anyone can sit in. */
-    /* Bounded on real code after the branch - `claimReferral` alone matches
-       its own import at the top of the file, which made this slice empty. */
+    /* Bounded on real code AFTER the branch. It used to end at
+       `void claimReferral()`, which went with the referral programme; the
+       greeting is the next thing the successful path does and it cannot be
+       removed without the sign-in losing its ending. */
     const branch = login.slice(login.indexOf("if (session !== 'ok')"),
-      login.indexOf('void claimReferral()'));
+      login.indexOf('setGreeting('));
     expect(branch).not.toBe('');
     expect(branch).toMatch(/signOut\(auth\)/);
     expect(branch).toMatch(/setUser\(null\)/);

@@ -18,12 +18,13 @@ const rows = (snap: { docs: { id: string; data: () => unknown }[] }): Declaratio
   snap.docs.map(d => ({ ...(d.data() as object), id: d.id }) as Declaration);
 
 /** Every paper sent for one car. Owner-scoped by the rules, keyed by the car. */
-export const getDeclarations = async (vehicleId: string): Promise<Declaration[]> => {
-  const snap = await getDocs(
-    query(collection(db, 'declarations'), where('vehicleId', '==', vehicleId)),
-  );
-  return rows(snap);
-};
+/* `getDeclarations` STOOD HERE - part of the CLIENT read path the customer rooms used
+   before they moved to the server. `lib/customer/source.ts` was its only
+   caller, and that file is gone with the client `Room` it fed; every room
+   renders from `lib/server/customerPicture` now. Removed rather than left
+   for a future import, because a Firestore CLIENT read reachable from a
+   customer surface is the one thing that migration existed to remove. */
+
 
 /**
  * The studio's queue - everything anybody has sent, newest first.

@@ -22,7 +22,7 @@ import {
 import {
   visitPhase, careAct, ACT_TITLE, ACT_LINE, PHASE_TITLE, PHASE_LINE, visitDateOf,
 } from '@/lib/os/visit';
-import type { CarPicture, CustomerPicture } from './source';
+import type { CarPicture, CustomerPicture } from './picture';
 import { readOwnership, clubOf, proposalApplies, liveOf, nextVisitOf, upcomingOf, soonestFirst, isUpcoming } from './ownership';
 import { DOT } from '@/design';
 import { cycleDaysLeft, type ClubModel } from '@/lib/os/club';
@@ -31,12 +31,17 @@ import {
   changeWindowOf, bookingTransition, scheduledEpochMs, approvalHasExpired,
   CHANGE_WINDOW_HOURS, STUDIO_UTC_OFFSET_MIN,
 } from '@/lib/os/lifecycle';
-import { spanDays, DAY_OPEN_MIN, WORK_DAY_MIN } from '@/lib/availability';
+import { spanDays, readyWords, DAY_OPEN_MIN, DAY_CLOSE_MIN, WORK_DAY_MIN } from '@/lib/availability';
+/* The marketing catalogue - the four disciplines' own names and one-liners, so
+   the room a customer books in and the page they arrived from say the same
+   thing about the same work. */
+import { SERVICES, SERVICE_ORDER, type ServiceCategory } from '@/lib/catalog';
 import { scopesOf, addOnsOf } from '@/lib/os/scope';
 import { shortAddress, fullAddress } from '@/lib/os/address';
 import { maskVpa } from '@/lib/os/upi';
 import { hasPublicHistoryConsent } from '@/lib/os/consent';
 import { PICKUP_LEG_FEE } from '@/lib/services/pricing';
+import { isBrandWarranted, warrantyCardOf } from '@/lib/os/warranty';
 import { homeStateCopy } from './homeState';
 import { projectTimeline } from '@/lib/os/timeline';
 import { projectMoments, sortMoments, groupByMonth, SHOT_CAPTION } from '@/lib/os/moment';
@@ -53,6 +58,8 @@ import type { PhotographSource } from '@/components/vehicle';
 import type { RegionId } from '@/components/vehicle';
 import type { HistoryModel, HistoryVisit } from '@/components/screens/HistoryScreen';
 import type { StudioModel } from '@/components/screens/StudioScreen';
+import type { WarrantyModel } from '@/components/screens/WarrantyScreen';
+import type { ChooserDiscipline } from '@/components/studio/ServiceChooser';
 import type { BookedModel, BookedRow } from '@/components/screens/BookedScreen';
 import type { ManageBookingModel } from '@/components/studio/ManageBooking';
 import type { ScopeQuoteModel } from '@/components/studio/ScopeAndQuote';
@@ -71,6 +78,14 @@ const MONTHS = [
 ];
 
 /** "12 July 2026". §16.4-adjacent: a date a customer would say out loud. */
+/** "1 Feb 2026" - the same date, for a line that has no room for the month. */
+function compactDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return String(iso);
+  return `${d} ${MONTHS[m - 1].slice(0, 3)} ${y}`;
+}
+
 export function longDate(iso: string | null | undefined): string {
   /* SIXTEEN CALLERS, AND ANY ONE OF THEM CAN BE HANDED NOTHING. A membership
      benefit with no date threw here and took the whole Club room to the error
@@ -172,28 +187,68 @@ export function protectionsOf(car: CarPicture, catalogue: Service[], now = new D
 }
 
 /**
- * The car's protections, stored if they exist and projected from completed work
- * if they do not. Never merged - `projectProtections` documents why.
+ * The car's protections: the stored ones, plus - FOR THE KINDS NOTHING IS
+ * STORED FOR - the ones its completed work implies.
+ *
+ * ── WHY THIS IS PER KIND AND NOT ALL-OR-NOTHING ──────────────────────────
+ * It was `if (car.protections.length > 0) return stored;`, on
+ * `projectProtections`'s rule that a caller must "prefer stored protections and
+ * fall back to this - never merge the two". That rule was written for the
+ * MIGRATION, which writes a car's protections together: once it has run, a car
+ * has stored rows for everything it has, and the reconstruction is correctly
+ * switched off whole.
+ *
+ * Nothing anticipated a single row arriving on its own - and one does. Having
+ * a pollution certificate verified writes exactly one Protection
+ * (`lib/server/pucService`), so for a car that has never been migrated:
+ *
+ *   before: protections = []            → ceramic reconstructed, ledger shows it
+ *   after:  protections = [puc]         → `length > 0`, reconstruction OFF,
+ *                                          and the ceramic silently vanishes
+ *
+ * A customer sending in their pollution certificate deleted their coating from
+ * the product. That is the defect behind "I don't understand where the car's
+ * details come from" - they come from two places, and one of them was being
+ * switched off by an unrelated act.
+ *
+ * This is NOT the merge that rule forbids. Nothing takes `since` from one
+ * document and `term` from another; every protection here is whole and from
+ * one source. A stored kind is used exactly as stored, and a kind with nothing
+ * stored falls back - which is the fallback the rule describes, applied at the
+ * granularity a promise actually has.
  */
 function computeProtections(car: CarPicture, catalogue: Service[], now = new Date()) {
-  if (car.protections.length > 0) {
-    /* §14.2 - a car has ONE answer per kind. Enforced in the engine rather than
-       by an id convention any writer can route around; production carries two
-       glass protections for one car because a seed chose its own id. */
-    return sortByUrgency(
-      oneProtectionPerKind(car.protections).map(p => liveProtection(p, now)),
-    );
-  }
+  /* §14.2 - a car has ONE answer per kind. Enforced in the engine rather than
+     by an id convention any writer can route around; production carries two
+     glass protections for one car because a seed chose its own id. */
+  const stored = oneProtectionPerKind(car.protections).map(p => liveProtection(p, now));
+  const held = new Set(stored.map(p => p.kind));
+
   const completed = car.bookings
     .filter(b => b.status === 'completed')
     .map(b => ({
       id: b.id,
       serviceName: b.serviceName,
+      /* THE BOOKING'S OWN SERVICE KEY, AND IT WAS BEING THROWN AWAY.
+         `resolveService` prefers the id and falls back to the normalised NAME
+         only for jobs whose catalogue has been retired - and this call site
+         never passed one, so every reconstructed promise in the product
+         resolved by display name alone. That is the exact failure
+         `lib/os/protection` documents at length: a job recorded "Glass
+         Coating", the catalogue holds "Glass coating", and one capital letter
+         cost a real customer a real two-year warranty. The field was in the
+         booking the whole time. */
+      serviceId: b.serviceId,
       serviceCategory: b.serviceCategory,
       scheduledDate: b.scheduledDate,
     }));
-  if (completed.length === 0) return [];
-  return projectProtections({ vehicleId: car.vehicle.id, completed, catalogue, now });
+
+  const reconstructed = completed.length === 0
+    ? []
+    : projectProtections({ vehicleId: car.vehicle.id, completed, catalogue, now })
+      .filter(p => !held.has(p.kind));
+
+  return sortByUrgency([...stored, ...reconstructed]);
 }
 
 /* `liveBooking` STOOD HERE - the second implementation of "the next visit",
@@ -556,15 +611,16 @@ export function toHome(
       const worst = protections[0];
       const holding = protections.every(p => p.health === 'healthy');
       return {
-        headline: holding ? 'Protected' : PROTECTION_TITLE[worst.kind],
-        layers: protections.map(p => PROTECTION_TITLE[p.kind]),
-        /* §14.4 - a date when it is far off, a countdown only when the number
-           is small enough to act on. "Everything's holding" is the honest
-           thing to say when nothing needs doing, and saying it in days would
-           invent an urgency that is not there. */
-        said: holding
-          ? 'Everything’s holding'
-          : termWords(worst.term, now),
+        /* `headline` STOOD HERE TOO - the worst layer's own name, so the
+           section heading on Home read "POLLUTION CERTIFICATE" on one car and
+           "CERAMIC COATING" on the next. A heading names the section; the rows
+           name the layers. The owner asked for it to stand still. */
+        /* `layers` and `said` STOOD HERE, and Home drew them as one line above
+           the rows - "Pollution certificate · Insurance · Lapsed 30 July 2026"
+           over three rows saying each of those things with its own term. The
+           owner cut the line; the fields go with it rather than staying as a
+           model nothing renders. `items` below is the rows, which is what the
+           section was always actually made of. */
         tone: TONE[worst.health],
         items: protections.map(p => ({
           id: p.id,
@@ -668,7 +724,21 @@ export function toHome(
     record: read.log.slice(0, 3).map(e => ({
       id: e.id,
       line: e.line,
-      when: longDate(e.at.toISOString().slice(0, 10)),
+      /* THE COMPACT DATE, because this row is a line and a date sharing one
+         width. "1 February 2026" beside "Kovalent ceramic coating" is 288px of
+         content in a 270px row, so the date wrapped under the entry and the
+         record was back to two lines per item - which is what the owner asked
+         to be rid of. `longDate` stays wherever the date is the fact rather
+         than the margin note. */
+      when: compactDate(e.at.toISOString().slice(0, 10)),
+      /* A LINE IS A DOOR. The record stated what happened and gave the
+         customer nowhere to go with it - the palette resolved the same targets
+         and Home dropped them. Every entry that came from a visit opens that
+         visit, which is where its photographs, its stages and its account are;
+         the ones that did not (the Club) simply are not links. */
+      href: e.target
+        ? hrefForDestination({ to: 'visit', visitId: e.target.bookingId })
+        : undefined,
     })),
 
     /* THE CLUB, FROM THE CLUB ENGINE. This read `status === 'active'` off the
@@ -686,16 +756,32 @@ export function toHome(
         }
       : undefined,
 
-    /* THE CARS ARE THE NAVIGATION. Each carries its own state - the same word
-       its own room would use - and tapping one makes Home that car's home. */
+    /**
+     * THE CARS ARE THE NAVIGATION, AND EACH CARD NOW HAS TWO DESTINATIONS.
+     *
+     * They used to have one: tapping a card rewrote `?car=` and made Home that
+     * car's home. That put the room's most useful gesture - open my car - one
+     * tap further away than it looks, because a card with a photograph of a car
+     * on it reads as a door to the car.
+     *
+     *   `selectHref`  what Home is about. Followed by SCROLLING the rail: the
+     *                 card the rail settles on becomes the subject, and the
+     *                 heading, the ring and everything below it follow.
+     *   `href`        the car's own room. Followed by TAPPING the card.
+     *
+     * Both are built here, by the resolver, because a renderer builds no
+     * addresses (ARCHITECTURE §1) - including the one a scroll handler uses.
+     */
     garage: picture.cars.length > 1
       ? {
           cars: picture.cars.map(c => ({
             id: c.vehicle.id,
             name: c.vehicle.name,
+            plate: c.vehicle.registrationNumber,
             state: stateWordFor(picture, c, now),
             photo: c.vehicle.photo ?? c.vehicle.photos?.[0],
-            href: `${hrefForDestination({ to: 'home' })}?car=${c.vehicle.id}`,
+            href: hrefForDestination({ to: 'vehicle', vehicleId: c.vehicle.id }),
+            selectHref: `${hrefForDestination({ to: 'home' })}?car=${c.vehicle.id}`,
             current: c.vehicle.id === car.vehicle.id,
           })),
         }
@@ -838,8 +924,32 @@ export const carOfContext = (ctx: HistoryContext): CarPicture | undefined =>
 
 /* ── GARAGE ──────────────────────────────────────────────────────────────── */
 
-export function toGarage(picture: CustomerPicture, now = new Date()): GarageModel {
-  const ordered = [...picture.cars].sort((a, b) => attention(b) - attention(a));
+export function toGarage(
+  picture: CustomerPicture,
+  now = new Date(),
+  /**
+   * THE CAR THE CUSTOMER CHOSE, when they chose one (`?car=`).
+   *
+   * The collection used to lead with whichever car needed attention most and
+   * offer no way to lead with another - so the big photographed card was the
+   * studio's choice and every other car was a row. The owner asked for the
+   * card to follow a tap: one tap lights a car, and a tap on the lit one opens
+   * it. That is a selection, and a selection is an ADDRESS here for the same
+   * reason it is on Home - linkable, restorable, and closed by the back
+   * button, where local state would lose all three (§6.4).
+   */
+  selectedId?: string,
+): GarageModel {
+  const byAttention = [...picture.cars].sort((a, b) => attention(b) - attention(a));
+
+  /* The chosen car leads; the studio's own order holds behind it. An unknown
+     id falls back rather than showing an empty collection. */
+  const chosen = selectedId
+    ? byAttention.find(c => c.vehicle.id === selectedId)
+    : undefined;
+  const ordered = chosen
+    ? [chosen, ...byAttention.filter(c => c !== chosen)]
+    : byAttention;
 
   return {
     vehicles: ordered.map(car => {
@@ -860,7 +970,12 @@ export function toGarage(picture: CustomerPicture, now = new Date()): GarageMode
         /* §17.1 - the car is the inbox, so the collection carries the mark and
            the car's own room carries the doorway. Nothing here is a message. */
         news: !!noticeOf(picture, car, now),
+        /* WHERE THE CAR OPENS. Followed by a tap on the car that is already
+           lit; a tap on any other lights it first (see `selectHref`). */
         href: hrefForDestination({ to: 'vehicle', vehicleId: car.vehicle.id }),
+        /* WHICH CAR THE COLLECTION LEADS WITH. Built by the resolver, like
+           every address in the product. */
+        selectHref: `${hrefForDestination({ to: 'garage' })}?car=${car.vehicle.id}`,
       };
     }),
     /* OPENS THE SHEET. Pointing at `/studio` alone landed the customer in the
@@ -1103,6 +1218,75 @@ const PUC_LINE: Record<PucState, string> = {
     + 'once it is sorted, and we will look straight away.',
 };
 
+/**
+ * WHERE A PROMISE ON THE CAR CAME FROM.
+ *
+ * The owner's complaint, verbatim: adding a car asks for four things - a name,
+ * a plate, an odometer and a year - and then the car's room states coatings,
+ * films and warranties that differ from car to car, with nothing anywhere
+ * saying where any of it came from. It reads as the product knowing something
+ * it will not explain.
+ *
+ * It was never invented. A protection is created in exactly two ways - a Visit
+ * sealing at the studio, which captures the terms as sold, and a declaration
+ * the studio verifies against the paper - and every protection carries which
+ * one it was. That provenance was in the document all along and on no screen.
+ *
+ * Read off the protection's own fields and nothing else:
+ *
+ *   `provider`       what was actually applied - "Kovalent Prolong"
+ *   `termsSource`    captured at a seal, or reconstructed from a booking
+ *   `declarationId`  the paper the customer sent, which the studio verified
+ *   `since`          the day it went on
+ *
+ * THE LINK IS OFFERED ONLY WHERE THE CHAPTER EXISTS. A reconstructed promise
+ * carries a BOOKING id in `visitId` - see `projectProtections` - and a booking
+ * has no chapter, so pointing at one would be a dead address (§10.5). It is
+ * checked against the car's own sealed visits rather than trusted.
+ */
+function provenanceOf(
+  p: {
+    provider?: string; since?: string; termsSource?: string;
+    declarationId?: string; visitId?: string; kind?: string;
+  },
+  car: CarPicture,
+): { source?: string; sourceHref?: string } {
+  /* THE COMPACT DATE, because this line is set in tracked mono capitals and
+     "1 February 2026" tips it onto a second row on a 390px phone - where the
+     underline of the link then wraps with it and the whisper reads as a
+     paragraph. `longDate` stays the product's date everywhere it is the fact
+     rather than the footnote. */
+  const on = p.since ? compactDate(p.since) : null;
+
+  /**
+   * A DECLARED PROMISE IS THE OWNER'S, NOT THE STUDIO'S.
+   *
+   * `termsSource: 'declared'` is a record the customer gave us - their
+   * insurance, their FASTag, the manufacturer's warranty on a new car. It fell
+   * through to the reconstruction wording and said "From your visit", which
+   * put an insurance policy on the studio's books. It is the same conflation
+   * the warranty tile made, said one line lower down.
+   */
+  const whence = p.declarationId
+    ? 'From the certificate you sent'
+    : p.termsSource === 'declared'
+      ? 'Your own record, kept here'
+      : p.termsSource === 'captured'
+        ? (on ? `Applied here ${on}` : 'Applied at the studio')
+        : (on ? `From your visit ${on}` : 'From your visits here');
+
+  const sealed = p.termsSource === 'captured'
+    && p.visitId
+    && (car.visits ?? []).some(v => v.id === p.visitId);
+
+  return {
+    source: [p.provider, whence].filter(Boolean).join(DOT),
+    sourceHref: sealed
+      ? hrefForDestination({ to: 'visit', visitId: p.visitId as string })
+      : undefined,
+  };
+}
+
 export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new Date()): VehicleModel {
   const catalogue = picture.catalogue;
   const protections = protectionsOf(car, catalogue, now);
@@ -1148,6 +1332,35 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     /* §14.6 - the file where one exists. Nothing writes `document` yet, so
        this is undefined throughout; the room draws no control for it. */
     documentHref: p.document ? p.document.url : undefined,
+    /* WHERE THE PROMISE CAME FROM - see `provenanceOf`. */
+    ...provenanceOf(p, car),
+    /**
+     * AND THE WAY TO THE WARRANTY CARD, where a brand stands behind it.
+     *
+     * Only for a film or a coat with a brand on the record: those are the two
+     * kinds a claim can be made on, and `warrantyCardOf` refuses the rest.
+     * The customer's insurance, their FASTag and their certificate get no
+     * such control, because AutoModz cannot be claimed against for any of
+     * them - which is the whole distinction the owner asked for.
+     */
+    action: warrantyCardOf(p)
+      ? {
+          /* The reference lives ON the card, not in the row that opens it: a
+             real protection id is a random string, so putting it here read as
+             "0CERAMIC · Warranty card" and the row's own label already says
+             which layer this is. */
+          label: 'Warranty card',
+          /* §3.3 - CHAMPAGNE, because a warranty is a thing already in force.
+             Amber is the studio asking for something, which is what the
+             certificate's "Declare it" is and what a card you already hold is
+             not. Two links in one pane saying two different kinds of thing
+             should not be the same colour. */
+          tone: 'held' as const,
+          href: hrefForDestination({
+            to: 'vehicle.warranty', vehicleId: car.vehicle.id, protectionId: p.id,
+          }),
+        }
+      : undefined,
   }));
 
   /**
@@ -1175,6 +1388,12 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
     tone: puc.protection && (puc.state === 'active' || puc.state === 'renewing')
       ? TONE[puc.protection.health]
       : TONE[PUC_TONE[puc.state]],
+    /* WHERE THIS ONE CAME FROM. The certificate is the one promise on the car
+       the CUSTOMER supplied, so its provenance is the plainest of all - and
+       saying it is what makes the rest of the ledger legible by contrast: the
+       coatings came from the studio, this came from you. Only once it stands:
+       a certificate nobody has sent has no origin to state (§19.1). */
+    source: puc.protection ? 'From the certificate you sent' : undefined,
     /* §10.5 - nothing is inert, and every state has exactly one way in. The
        word changes with the state; the destination never does. */
     action: { label: pucActionWords(puc), href: pucHref },
@@ -1226,9 +1445,19 @@ export function toVehicle(car: CarPicture, picture: CustomerPicture, now = new D
      ledger row saying "Lapsed 30 July 2026", on the same screen. Found by
      looking at the rendered room, not by any assertion that existed. The word
      on the tile is "Active to"; a promise that has ended is not one, and a car
-     with nothing live draws no tile rather than a false one (§18.1). */
+     with nothing live draws no tile rather than a false one (§18.1).
+
+     AND IT MUST BE A WARRANTY. The filter was "not the membership", so the
+     tile took the furthest date across INSURANCE, a FASTag, a pollution
+     certificate and a manufacturer's warranty - none of which AutoModz sells,
+     warrants, or can be claimed against. On the Kia it read "Active to
+     November 2026" off an insurance policy. The owner's rule is the fix and it
+     is exact: a warranty is what a BRAND stands behind on a film or a coat.
+     `os/warranty` owns that list; nothing here decides it. */
   const furthest = protections
-    .filter(p => p.kind !== 'membership' && p.term.kind === 'dated' && p.health !== 'lapsed')
+    .filter(p => isBrandWarranted(p.kind)
+      && p.term.kind === 'dated'
+      && p.health !== 'lapsed')
     .map(p => (p.term as Extract<Term, { kind: 'dated' }>).expiresOn)
     .sort()
     .pop();
@@ -1434,6 +1663,95 @@ export function toPuc(car: CarPicture, picture: CustomerPicture, now = new Date(
 /** A stored moment as an ISO day, for the one date formatter. */
 const isoDayOf = (t?: { toMillis?: () => number }): string =>
   (millis(t) ? new Date(millis(t)).toISOString().slice(0, 10) : '');
+
+/* ── THE WARRANTY CARD ───────────────────────────────────────────────────── */
+
+/**
+ * ONE BRAND'S WARRANTY ON ONE CAR, as a card a claim can be made from.
+ *
+ * The owner's ask, verbatim: "warranty is only from the brands with the
+ * ceramic or ppf, and for that part we want to create a specific card for them
+ * when they get ppf or ceramic that provides the tracking and a proof of the
+ * customers details as registration that brands requires for the warranty
+ * claims".
+ *
+ * So the card is built from what a claims desk actually asks for, and every
+ * line of it is a fact the product already holds:
+ *
+ *   the product    the brand, the extent and the term, as captured at seal
+ *   the car        its name and its registration, which a policy is keyed on
+ *   the owner      the name and number the brand registers the cover against
+ *   the installer  AutoModz, because a brand warrants a fitting by an approved
+ *                  fitter and the card has to say who that was
+ *
+ * NOTHING IS INVENTED. A protection with no brand on the record produces no
+ * card at all (`os/warranty`): a warranty document with a blank where the
+ * brand goes is worse than telling the customer the record is incomplete.
+ *
+ * Null when the id names nothing on this car, so the route can 404 rather than
+ * render somebody else's cover.
+ */
+export function toWarranty(
+  car: CarPicture,
+  picture: CustomerPicture,
+  protectionId: string,
+  now = new Date(),
+): WarrantyModel | null {
+  const held = protectionsOf(car, picture.catalogue, now)
+    .find(p => p.id === protectionId);
+  if (!held) return null;
+
+  const card = warrantyCardOf(held);
+  if (!card) return null;
+
+  const sealed = held.visitId && (car.visits ?? []).some(v => v.id === held.visitId);
+
+  return {
+    brand: card.brand,
+    title: PROTECTION_TITLE[card.kind],
+    covers: card.covers,
+    term: termWords(held.term, now),
+    lapsed: held.health === 'lapsed',
+    fitted: card.since ? `Fitted ${longDate(card.since)}` : undefined,
+    reference: card.reference,
+
+    car: [
+      { label: 'Car', value: car.vehicle.name },
+      /* §5.5 - the plate is identity, and it is the one field every brand's
+         claim form is keyed on. */
+      { label: 'Registration', value: car.vehicle.registrationNumber },
+      ...(car.vehicle.year ? [{ label: 'Year', value: String(car.vehicle.year) }] : []),
+    ],
+
+    /* §2.2 permits the CUSTOMER's own name on their own screen - it names
+       nobody at the studio. A brand registers cover against a person, so the
+       card would not do its job without it. Absent fields are dropped rather
+       than drawn empty (§18.1). */
+    owner: [
+      ...(picture.user.name ? [{ label: 'Owner', value: picture.user.name }] : []),
+      ...(picture.user.phone ? [{ label: 'Phone', value: picture.user.phone }] : []),
+      ...(picture.user.email ? [{ label: 'Email', value: picture.user.email }] : []),
+    ],
+
+    /* THE INSTALLER OF RECORD. A brand's warranty covers a fitting by an
+       approved fitter, so the card states who fitted it - the studio, never a
+       person (§2.2). */
+    installer: [
+      { label: 'Studio', value: COMPANY.name },
+      { label: 'Where', value: COMPANY.address },
+      { label: 'Phone', value: COMPANY.phone },
+    ],
+
+    visitHref: sealed
+      ? hrefForDestination({ to: 'visit', visitId: held.visitId as string })
+      : undefined,
+
+    note: `${card.brand} honours this cover and AutoModz fitted it. Show this `
+      + 'card with the reference above when you make a claim, and bring the car '
+      + 'to us first - we check the work before anything goes to the brand.',
+  };
+}
+
 
 /* ── HISTORY ─────────────────────────────────────────────────────────────── */
 
@@ -1679,27 +1997,232 @@ export function toCarriedEstimate(e: Estimate): CarriedEstimate {
   };
 }
 
+/* ── THE CATALOGUE, AS A DECISION ────────────────────────────────────────
+   The Studio's chooser narrows three times - discipline, brand, product - and
+   the shape of that narrowing is built HERE, from the same catalogue the
+   booking sheet reads, so the two can never offer different work.
+
+   Nothing below adds anything up. A floor is the SMALLEST price in a group,
+   which is a selection; §22.1's arithmetic - discounts, fees, tax, the real
+   figure for a real car - stays on the server, where `priceVisit` runs. */
+
+/** The counts a studio speaks. Beyond ten, the numeral is what a person says. */
+const COUNT_IN_WORDS = [
+  'No', 'One', 'Two', 'Three', 'Four', 'Five',
+  'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+];
+
+const counted = (n: number, one: string, many: string) =>
+  `${COUNT_IN_WORDS[n] ?? n} ${n === 1 ? one : many}`;
+
+/**
+ * THE STUDIO'S OWN QUESTION AT EACH STEP.
+ *
+ * "Which brand" and "Which one" are a form's words. The studio asks about the
+ * thing itself - whose FILM, which COATING - and a discipline the studio fits
+ * without a brand has no second question to ask at all.
+ */
+const DISCIPLINE_ASKS: Record<string, { brand?: string; product: string; noun: string }> = {
+  PPF: { brand: 'Whose film', product: 'Which film', noun: 'film' },
+  Ceramic: { brand: 'Whose coating', product: 'Which coating', noun: 'coating' },
+  Coating: { product: 'Which treatment', noun: 'treatment' },
+  Washing: { product: 'Which wash', noun: 'service' },
+};
+
+/** What a discipline is, in one line, when the catalogue names no category. */
+const DISCIPLINE_FALLBACK = { product: 'Which one', noun: 'service' };
+
+/** A warranty as a number of years, so two of them can be compared. */
+const coverYears = (w: string): number =>
+  (/lifetime/i.test(w)
+    ? Number.POSITIVE_INFINITY
+    : Number(/(\d+)/.exec(w)?.[1] ?? 0));
+
+/**
+ * WHAT A BRAND COMMITS YOU TO, in one line: how many grades it has, and the
+ * span of cover across them. The warranty IS the choice between two films, so
+ * a brand that carries none simply says how many.
+ *
+ * The span is spoken the way a person says a range - "5 to 12 years", not
+ * "5 years to 12 years" - and a lifetime film ends the range rather than
+ * being a number in it.
+ */
+function coverSpan(covers: readonly string[]): string | null {
+  if (covers.length === 0) return null;
+  const sorted = [...covers].sort((a, b) => coverYears(a) - coverYears(b));
+  const low = sorted[0];
+  const high = sorted[sorted.length - 1];
+  if (low === high) return low;
+  if (coverYears(high) === Number.POSITIVE_INFINITY) return `${low} to a lifetime`;
+  const years = /(\d+)/.exec(low)?.[1];
+  return years ? `${years} to ${high}` : `${low} to ${high}`;
+}
+
+function brandLine(products: readonly Service[], noun: string): string {
+  const covers = products.map(p => p.warranty).filter((w): w is string => Boolean(w));
+  return [
+    counted(products.length, noun, `${noun}s`),
+    coverSpan(covers),
+  ].filter(Boolean).join(DOT);
+}
+
+/**
+ * ONE DISCIPLINE, WITH ITS BRANDS AND THEIR GRADES.
+ *
+ * The order is the catalogue's own `order` field throughout - the owner's
+ * price list is written cheapest-first inside each brand, and a chooser that
+ * re-sorted it would be second-guessing the person who wrote it.
+ */
+function disciplinesOf(
+  active: readonly Service[],
+  href: Record<string, string>,
+): ChooserDiscipline[] {
+  const byOrder = (a: Service, b: Service) => (a.order ?? 0) - (b.order ?? 0);
+  const floorOf = (list: readonly Service[]) =>
+    list.reduce((low, s) => Math.min(low, s.price), Number.POSITIVE_INFINITY);
+
+  /* SERVICE_ORDER is the marketing page's order, so a customer who arrived
+     from the landing meets the same four in the same sequence. A category with
+     nothing active in it is absent rather than an empty card (§19.1), and
+     anything whose category is not one of the four still appears - a typo must
+     never make work silently unsellable. */
+  const known = SERVICE_ORDER.filter(cat => active.some(s => s.category === cat));
+  const strays = [...new Set(active.map(s => s.category))]
+    .filter(cat => !SERVICE_ORDER.includes(cat as ServiceCategory));
+
+  return [...known, ...strays].map(cat => {
+    const items = active.filter(s => s.category === cat).sort(byOrder);
+    const asks = DISCIPLINE_ASKS[cat] ?? DISCIPLINE_FALLBACK;
+    const named = SERVICES[cat as ServiceCategory];
+
+    /* THE BRANDS, IN THE ORDER THE PRICE LIST INTRODUCES THEM. A discipline
+       the studio does with its own hands has ONE group and no brand at all -
+       `branded` says so, and the sheet then goes straight to the services
+       rather than announcing a brand that is really just the discipline's name
+       said twice. Inventing a house brand to fill the step would be a step
+       that asks nothing. */
+    const names = [...new Set(items.map(s => s.brand).filter((b): b is string => Boolean(b)))];
+    const groups = names.length > 0
+      ? names.map(name => ({ name, items: items.filter(s => s.brand === name) }))
+      : [{ name: named?.name ?? String(cat), items }];
+
+    return {
+      id: String(cat),
+      name: named?.name ?? String(cat),
+      line: named?.detail ?? items[0]?.description ?? '',
+      from: floorPrice(floorOf(items)),
+      count: [
+        counted(items.length, asks.noun, `${asks.noun}s`),
+        names.length > 1 ? counted(names.length, 'brand', 'brands') : null,
+      ].filter(Boolean).join(DOT),
+      branded: names.length > 0,
+      askBrand: names.length > 1 ? asks.brand : undefined,
+      askProduct: asks.product,
+      brands: groups.map(g => ({
+        id: g.name,
+        name: g.name,
+        line: brandLine(g.items, asks.noun),
+        from: floorPrice(floorOf(g.items)),
+        products: g.items.map(s => ({
+          id: s.id,
+          name: s.name,
+          from: floorPrice(s.price),
+          description: s.description || undefined,
+          warranty: s.warranty || undefined,
+          /* THE ONE WORDING, from the engine that owns the reservation. This
+             screen used to divide by 480 while the floor's day is 600 - see
+             `__tests__/studio/floor-capacity`. */
+          away: s.duration > 0 ? readyWords(s.duration) : undefined,
+          popular: s.popular === true,
+          href: href[s.id],
+        })),
+      })),
+    };
+  });
+}
+
+/**
+ * The floor, in the studio's currency. A price is stored in rupees and read
+ * here in the Indian grouping - "from ₹45,000", never ₹45000 and never 45K.
+ */
+const floorPrice = (n: number) =>
+  (Number.isFinite(n) ? `from ${rupees(Math.round(n))}` : 'On quote');
+
+/**
+ * WHETHER THE DOORS ARE OPEN, RIGHT NOW.
+ *
+ * The room stated its hours and left the customer to do the arithmetic - in
+ * the studio's timezone, which is not necessarily theirs. `STUDIO_UTC_OFFSET_MIN`
+ * is the product's one definition of the studio's clock, and `DAY_OPEN_MIN` /
+ * `DAY_CLOSE_MIN` are the same two constants the scheduler refuses bookings
+ * against, so this sentence and the diary cannot disagree.
+ */
+function openness(now: Date): { open: boolean; line: string } {
+  const local = new Date(now.getTime() + STUDIO_UTC_OFFSET_MIN * 60_000);
+  const minutes = local.getUTCHours() * 60 + local.getUTCMinutes();
+  const open = minutes >= DAY_OPEN_MIN && minutes < DAY_CLOSE_MIN;
+  const at = (m: number) =>
+    spokenHour(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+  return open
+    ? { open: true, line: `Open now until ${at(DAY_CLOSE_MIN)}` }
+    : { open: false, line: `Closed now · opens ${at(DAY_OPEN_MIN)}` };
+}
+
 export function toStudio(
   picture: CustomerPicture,
   now = new Date(),
   estimate: Estimate | null = null,
+  /**
+   * THE SOONEST THE STUDIO CAN TAKE WORK.
+   *
+   * Passed in rather than computed, for the reason `toHome`'s is: it depends
+   * on every other customer's bookings, and a projection may not read a
+   * database (ARCHITECTURE §1). Absent when the studio cannot be reached - an
+   * invented opening is a customer told to come on a day the bays are full.
+   */
+  opening?: { date: string; time: string } | null,
 ): StudioModel {
   const here = picture.cars.find(c => liveOf(c));
+  const active = picture.catalogue.filter(s => s.active !== false);
+  const hours = openness(now);
+
+  /* Design 06 → 07 - one address per service, resolved here because a renderer
+     builds none (ARCHITECTURE §1). The car is the lead one, so a customer with
+     a single car never has to answer "which car" twice. */
+  const serviceHref = Object.fromEntries(
+    active.map(s => [s.id, hrefForDestination({
+      to: 'studio.scope', serviceId: s.id, vehicleId: leadCar(picture)?.vehicle.id,
+    })]),
+  );
 
   return {
     place: 'Maninagar · Ahmedabad',
     /* §4.5 - the absence of news is good news and should look like it. */
     presence: here ? 'Your car is here' : 'Your car is with you',
     visitHref: here ? hrefForDestination({ to: 'vehicle' }) : undefined,
+    /* WHETHER THE DOORS ARE OPEN, which the room could only answer before by
+       printing its hours and leaving the customer to work it out. */
+    openNow: hours.open,
+    openLine: hours.line,
     voice:
       'Every car is inspected in daylight before anything is put on it. '
       + 'Paint is corrected by hand, panel by panel, and nothing is coated until '
       + 'the surface underneath is right.',
     does: 'If a car is not ready, it stays.',
-    credentials: [],
-    hours: `Open ${COMPANY.hours.open} to ${COMPANY.hours.close}, every day.`,
-    address: COMPANY.address,
-    directionsHref: COMPANY.mapsUrl,
+    /* FOUR THINGS STOOD HERE AND ARE GONE BY THE OWNER'S DECISION: a
+       photograph of the floor, a credentials list read off the catalogue, a
+       strip of everything else the studio offers, and its hours and address.
+       The room is the work now and nothing else. `openLine` above survives
+       because it answers the only part of "hours" a customer reads. */
+
+    /* THE CATALOGUE AS A DECISION - discipline, then brand, then grade. */
+    disciplines: disciplinesOf(active, serviceHref),
+
+    nextOpening: opening
+      ? `Next opening · ${shortDay(opening.date)}${
+        spokenHour(opening.time) ? `, ${spokenHour(opening.time)}` : ''}`
+      : undefined,
+
     /* §6.3's primary action opens the booking flow in place. It used to be an
        outbound WhatsApp link, because there was no in-app booking surface -
        the most important control in the product handed the customer to another
@@ -1721,13 +2244,7 @@ export function toStudio(
        customer with a single car never has to answer "which car" twice. */
     estimate: estimate ? toCarriedEstimate(estimate) : null,
 
-    serviceHref: Object.fromEntries(
-      picture.catalogue
-        .filter(s => s.active !== false)
-        .map(s => [s.id, hrefForDestination({
-          to: 'studio.scope', serviceId: s.id, vehicleId: leadCar(picture)?.vehicle.id,
-        })]),
-    ),
+    serviceHref,
 
     booking: {
       services: plainValue(picture.catalogue) as Service[],
@@ -2356,11 +2873,8 @@ export function toYou(picture: CustomerPicture, now = new Date()): YouModel {
       action: { label: 'Notifications',
         href: hrefForDestination({ to: 'profile.panel', panel: 'notifications' }) },
     },
-    ownership: {
-      line: 'Bring someone with you.',
-      action: { label: 'Invite a friend',
-        href: hrefForDestination({ to: 'profile.panel', panel: 'referral' }) },
-    },
+    /* `ownership` STOOD HERE - "Bring someone with you", opening the referral
+       panel. The programme is removed, so the row had nowhere to lead. */
     privacy: cars.length > 0 ? {
       /* Design 17's consent, decided here rather than buried in a policy. The
          published policy is still one tap further on, inside the panel. */

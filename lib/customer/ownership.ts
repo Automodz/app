@@ -18,7 +18,7 @@
  */
 import type { Booking, Subscription } from '@/lib/types';
 import { PROTECTION_TITLE } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from './source';
+import type { CarPicture, CustomerPicture } from './picture';
 import { ownershipState, type Ownership, type OwnershipState } from '@/lib/os/ownership';
 import type { LiveProtection } from '@/lib/os/protection';
 import { clubModel, type ClubModel } from '@/lib/os/club';
@@ -264,7 +264,6 @@ export function readOwnership(
     jobByBooking,
     membership: (picture.subscription ?? null) as Subscription | null,
     protections,
-    vehicleName: car.vehicle.name,
     now,
   });
 

@@ -107,9 +107,6 @@ export default function AdminInventoryPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/admin/inventory/recipes" className="btn-ghost flex items-center gap-2 px-4 py-2.5 text-sm">
-            <BookOpen size={14} /> Recipes
-          </Link>
           <button onClick={openCreate} className="btn-ember flex items-center gap-2 px-4 py-2.5 text-sm">
             <Plus size={15} /> Add Item
           </button>
@@ -132,7 +129,7 @@ export default function AdminInventoryPage() {
         <div className="card text-center py-14">
           <Package size={26} className="mx-auto mb-3" style={{ color: 'var(--steel)' }} />
           <p className="font-body" style={{ color: 'var(--steel)' }}>
-            No inventory yet. Add consumables (PPF film, ceramic bottles, shampoo…) then map them to services in Recipes.
+            No inventory yet. Add the consumables you buy - PPF film, ceramic bottles, shampoo.
           </p>
         </div>
       ) : (

@@ -370,8 +370,13 @@ describe('the viewport assumptions were already right, and stay right', () => {
        last of the page sits under them. Checked because it is the usual
        suspect for this symptom and was, here, innocent - which is worth
        keeping true. */
+    /* `components/screens/Room.tsx` STOOD IN THIS LIST. It was the CLIENT
+       room - the four-state shell that answered establishing / signed out /
+       failed / ready - and `ServerRoom` replaced it when the rooms moved to
+       the server. Nothing has imported it since; it is deleted rather than
+       kept as a file the next reader has to work out the status of. */
     const surfaces = [
-      'components/os/Screen.tsx', 'components/screens/Room.tsx',
+      'components/os/Screen.tsx',
       'components/screens/ServerRoom.tsx', 'components/screens/LiveVisitScreen.tsx',
     ];
     for (const f of surfaces) {

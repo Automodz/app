@@ -209,11 +209,6 @@ describe('a cancelled visit gives back what it consumed', () => {
     expect(fn).toMatch(/&& !opts\.noShow/);
   });
 
-  it('a promo is only returned when it was actually redeemed', () => {
-    const fn = svc.slice(svc.indexOf('cancelBookingAuthoritative'));
-    expect(fn).toMatch(/redemptionSnap\.exists/);
-    expect(fn).toMatch(/t\.delete\(redemptionRef\)/);
-  });
 
   it('a customer cannot cancel work already under way', () => {
     /* The set used to be a local `CANCELLABLE` array here, a duplicate list in

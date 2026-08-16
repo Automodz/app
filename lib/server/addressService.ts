@@ -173,9 +173,10 @@ export async function deleteAddress(
   return { id: addressId, deleted: true };
 }
 
-/** One address, for its owner. Absent and not-yours are the same answer. */
-export async function readAddress(uid: string, addressId: string): Promise<SavedAddress | null> {
-  if (!adminDb) return null;
-  const snap = await collection(uid).doc(addressId).get();
-  return snap.exists ? ({ id: snap.id, ...(snap.data() as object) } as SavedAddress) : null;
-}
+/* `readAddress` STOOD HERE - one address by id, for its owner. Nothing asked
+   for one: `loadCustomerPicture` carries every saved address into the room
+   that needs them, and the booking writer resolves the chosen one from the
+   list it already holds. A second reader of the same collection is a second
+   answer to "which address", and the pickup address is the one field where two
+   answers means a van at the wrong door. */
+

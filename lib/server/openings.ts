@@ -14,6 +14,7 @@ import { studioDay } from '@/lib/os/lifecycle';
  * then refuses.
  */
 import { adminDb } from './firebaseAdmin';
+import { loadCatalogue } from './catalogue';
 import { loadOccupancy, occupancyRange, type Reader } from './occupancy';
 import { computeAvailability, candidateSlots, addDaysISO } from '@/lib/availability';
 
@@ -60,6 +61,12 @@ export async function nextOpenings(args: {
     const { rangeStart, rangeEnd } = occupancyRange(dates, args.durationMinutes);
     const { occupants, cfg } = await loadOccupancy(directReader, rangeStart, rangeEnd, {
       excludeBookingIds: args.excludeBookingId ? [args.excludeBookingId] : undefined,
+      /* THE PRICE LIST, ALREADY IN HAND. This is the read-only path - Home,
+         the Studio and Manage all ask it per page view - and without this it
+         re-read the whole `services` collection for durations alone, beside a
+         picture read that had just cached the same collection. The booking
+         writer passes nothing and still reads inside its transaction. */
+      catalogue: await loadCatalogue(),
     });
     const { fullSlots } = computeAvailability(
       dates, args.category, args.durationMinutes, occupants, cfg,

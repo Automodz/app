@@ -27,7 +27,7 @@
  */
 import { Timestamp } from 'firebase/firestore';
 import type { MembershipStatus, Service, Subscription, User, Vehicle } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { toYou, toHome, toMembership } from '@/lib/customer/project';
 
 const NOW = new Date('2026-07-30T12:00:00Z');

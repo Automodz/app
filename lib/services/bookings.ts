@@ -251,12 +251,8 @@ export const updateBookingStatusWithNotification = async (
       { merge: true },
     );
 
-    // Inventory auto-consumption - fire-and-forget, never blocks completion
-    try {
-      const { consumeForService } = await import('./inventory');
-      await consumeForService([booking.serviceId], 'booking', booking.id);
-    } catch (e) {
-      console.error('inventory consumption failed', e);
-    }
+    /* INVENTORY AUTO-CONSUMPTION STOOD HERE. Recipes are gone with it - see
+       `lib/services/inventory` for why stock is now only ever moved by
+       something a person did. */
   }
 };

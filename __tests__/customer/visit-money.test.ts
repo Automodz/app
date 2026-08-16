@@ -17,7 +17,7 @@
  * fallback, which is most visits. Never both, and never the same invoice twice.
  */
 import type { Invoice, Visit } from '@/lib/types';
-import type { CarPicture } from '@/lib/customer/source';
+import type { CarPicture } from '@/lib/customer/picture';
 import { toHistory, toVisit, moneyOfVisits, visitsOf } from '@/lib/customer/project';
 
 const stamp = (iso: string) => ({

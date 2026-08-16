@@ -9,7 +9,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import type { Service, User } from '@/lib/types';
-import type { CustomerPicture } from '@/lib/customer/source';
+import type { CustomerPicture } from '@/lib/customer/picture';
 import { toYou } from '@/lib/customer/project';
 
 /* The account room, as it actually renders. These used to grep `project.ts`
@@ -49,7 +49,7 @@ const route = codeOf('app/api/account/delete/route.ts');
 const settings = codeOf('components/you/AccountSettings.tsx');
 const project = codeOf('lib/customer/project.ts');
 
-describe('one profile, one preference source, one referral', () => {
+describe('one profile, one preference source', () => {
   const sources = [...walk('lib'), ...walk('components'), ...walk('app')]
     .filter(f => !f.includes('node_modules'));
 
@@ -80,10 +80,6 @@ describe('one profile, one preference source, one referral', () => {
     expect(codeOf('lib/server/retention.ts')).toMatch(/notificationPrefs/);
   });
 
-  it('only one module issues referral codes', () => {
-    const issuers = sources.filter(f => /export const getMyReferralCode/.test(codeOf(f)));
-    expect(issuers).toEqual(['lib/services/referrals.ts']);
-  });
 });
 
 describe('deleting an account', () => {
@@ -216,7 +212,10 @@ describe('no control is inert', () => {
 
   it('every entry but support is an address in this product', () => {
     const m = toYou(picture());
-    for (const e of [m.garage, m.notifications, m.ownership, m.privacy,
+    /* `m.ownership` STOOD IN THIS LIST - "Bring someone with you", the door
+       to the referral panel. The programme is removed, so the row is gone from
+       the model rather than left pointing nowhere. */
+    for (const e of [m.garage, m.notifications, m.privacy,
       m.details, m.terms, m.deletion]) {
       expect(e?.action.href.startsWith('/')).toBe(true);
     }

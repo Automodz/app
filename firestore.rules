@@ -181,7 +181,7 @@ service cloud.firestore {
     //    customer does not control. A browser deciding any of those is a
     //    browser deciding whether a bay is free.
     //    Cancelling was equally unsound here: a cancellation must return the
-    //    membership wash and the promo the booking spent, and those live on
+    //    membership wash the booking spent, and that lives on
     //    documents a customer may not touch, so a client-side cancel silently
     //    destroyed an entitlement the customer had paid for.
     //    Both go through the Booking Service: /api/booking/reschedule and
@@ -263,7 +263,7 @@ service cloud.firestore {
     //    is that a price a client can express is not a price. Rules can check
     //    that `total` is a number; they cannot check that it is the number
     //    `priceVisit` would produce from the catalogue, the customer's
-    //    membership and the one promo that applies. So no client writes here
+    //    membership that applies. So no client writes here
     //    at all - POST /api/estimate is the only door, and it never reads a
     //    figure off the request.
     //
@@ -496,12 +496,12 @@ service cloud.firestore {
       allow read: if request.auth != null &&
         (isStaff() || resource.data.customerId == request.auth.uid);
       // Employees may create jobs; any discount must be system-computed
-      // (membership/promo) - there is no manual discount path for staff.
+      // (the membership rate) - there is no manual discount path for staff.
       allow create: if request.auth != null &&
         (isAdmin() ||
          (isStaff() &&
           (!('discount' in request.resource.data) ||
-           request.resource.data.discount.source in ['membership', 'promo'])));
+           request.resource.data.discount.source == 'membership')));
       allow update: if request.auth != null &&
         (isAdmin() ||
          (isStaff() && resource.data.assignedIds.hasAny([myEmployeeId()]) &&
@@ -517,8 +517,7 @@ service cloud.firestore {
     match /inventoryTxns/{id}  { allow read: if request.auth != null && isStaff();
                                  allow create: if request.auth != null && isStaff();
                                  allow update, delete: if request.auth != null && isAdmin(); }
-    match /serviceRecipes/{id} { allow read: if request.auth != null && isStaff();
-                                 allow write: if request.auth != null && isAdmin(); }
+    // `serviceRecipes` stood here - removed with the recipe feature.
     // Invoice-number counter - bumped by staff when generating an invoice.
     match /counters/{id}       { allow read, write: if request.auth != null && isStaff(); }
 
@@ -531,26 +530,9 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && isAdmin();
     }
 
-    // ── Promos - authenticated read, admin write. Nothing else.
-    //    A promo is COUNTED only by the Booking Service, in the same commit as
-    //    the booking or job that spends it. The old rule allowed any signed-in
-    //    client to write `usedCount` as long as the new value was old+1 - an
-    //    increment primitive handed to the public, with no check that a
-    //    redemption had occurred. One loop exhausted every promo in the system,
-    //    and referral rewards are usageLimitTotal:1. Clients read promos so the
-    //    app can QUOTE one; they never count them.
-    match /promos/{id} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && isAdmin();
-    }
-    match /promoRedemptions/{id} {
-      // Customers may read their OWN redemptions - `getEligiblePromos` counts
-      // them to quote a per-customer-limited promo honestly. Writes are the
-      // Booking Service's alone; a self-written redemption is a forged one.
-      allow read: if request.auth != null &&
-        (isAdmin() || resource.data.userId == request.auth.uid);
-      allow write: if request.auth != null && isAdmin();
-    }
+    // `promos` and `promoRedemptions` STOOD HERE. Promo codes and the referral
+    //    programme that issued them are removed; a discount has one source now,
+    //    the membership rate, which lives on the subscription.
 
     // ── Booking intents - the idempotency ledger. Written and read only by the
     //    Booking Service (admin SDK, which bypasses these rules). No client has

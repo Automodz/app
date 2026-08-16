@@ -177,7 +177,9 @@ function Visit({ visit, newest, vehicle }: {
         <Text role="data" tone="ink3" as="span">
           {newest ? `${vehicle} \u00b7 ${when}` : when}
         </Text>
-        <Heading level="title" as={newest ? 'h1' : 'h2'}>{title}</Heading>
+        {/* Always an h2. The record's own heading is the h1 above (see
+            `Standing`), so a visit is an entry in it rather than a peer. */}
+        <Heading level="title" as="h2">{title}</Heading>
         <Text role="whisper" tone="ink2">{line}</Text>
       </span>
     </Link>
@@ -239,12 +241,23 @@ function Standing({ vehicle, count, since, settledTotal }: {
           is not where you came from. */}
       <Back style={{ marginBottom: space.line }} />
 
-      {/* NOT A HEADING. §9.5 gives the room exactly one Display and the album
-          has already spent it on the newest photograph - which is right, because
-          the photographs are the content and this is only context for them.
-          §8.6 - a fact is a line of text, so that is what this is. */}
+      {/* THE ROOM OPENS THE WAY EVERY OTHER ROOM OPENS.
+          This said "NOT A HEADING - the album has already spent its Display on
+          the newest photograph", and that was not true of anything on the
+          screen: the newest visit's title is set at the TITLE step, so the
+          album had no Display at all and its h1 was 22px while the Garage
+          beside it opened at 46. The owner reported it as headings of
+          different sizes between pages, which is exactly what that is.
+
+          So the record states its subject like a room: the car in the eyebrow,
+          the room's name in Display. The visits below are all h2 now, which is
+          also the honest outline - they are entries in this record, not a peer
+          of the record itself. */}
       <Text role="data" tone="ink3" as="span">{vehicle}</Text>
-      <Text role="body" tone="ink" style={{ marginTop: space.hair }}>
+      <Heading level="display" as="h1" style={{ marginTop: space.hair }}>
+        History
+      </Heading>
+      <Text role="body" tone="ink" style={{ marginTop: space.line }}>
         {count === 1 ? 'One visit' : `${count} visits`}
         {since ? `, cared for here since ${since}` : ''}.
       </Text>

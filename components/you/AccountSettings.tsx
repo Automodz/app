@@ -4,12 +4,11 @@
  *
  * Source: reference/customer-old/app/app/you/page.tsx
  *
- * ONE PROFILE, ONE PREFERENCE SOURCE, ONE REFERRAL, ONE DELETION. Each control
+ * ONE PROFILE, ONE PREFERENCE SOURCE, ONE DELETION. Each control
  * writes through the service that already owns it:
  *
  *   name / phone / preferences → `updateUserProfile` (the one profile writer)
  *   push on this device        → `services/push` (enable / disable / state)
- *   referral code and sharing  → `services/referrals`
  *   deleting the account       → `POST /api/account/delete`
  *
  * Nothing computes anything. `NotificationPrefs` has four booleans and they are
@@ -27,7 +26,7 @@ import type { User } from '@/lib/types';
 import { useAppStore } from '@/lib/store';
 import { updateUserProfile } from '@/lib/services/auth';
 import { enablePush, disablePush, pushEnabled, pushSupported } from '@/lib/services/push';
-import { getMyReferralCode, referralShareLink, referralWhatsAppLink } from '@/lib/services/referrals';
+import { useRouter } from 'next/navigation';
 import type { NotificationPrefs, SavedAddress } from '@/lib/types';
 import { BottomSheet, Heading, Text, Button, OfflineNote, useOnline } from '@/components/system';
 import {
@@ -57,7 +56,7 @@ const PREFS: { key: keyof NotificationPrefs; label: string; detail: string }[] =
 ];
 
 export type SettingsPanel =
-  | 'profile' | 'notifications' | 'referral' | 'delete'
+  | 'profile' | 'notifications' | 'delete'
   /* Design screen 19's own rows. */
   | 'addresses' | 'payment' | 'privacy';
 
@@ -85,6 +84,29 @@ export function AccountSettings({
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  /**
+   * EVERY WRITE HERE HAS TO INVALIDATE THE SERVER'S ANSWER.
+   *
+   * This panel is the only client island in the customer product that wrote
+   * five different things and refreshed none of them, and the cost was a
+   * customer-reported dead end: a saved pickup address never reached the
+   * booking sheet.
+   *
+   * The rooms render on the SERVER. `CustomerPicture` carries the addresses,
+   * the profile and the consent flags, and `toStudio` hands the addresses to
+   * the booking sheet. Writing through `/api/addresses` updates Firestore and
+   * this panel's own local list - and nothing else. Walk back to the studio
+   * and Next serves the route from the client router cache, rendered before
+   * the address existed, so the sheet still says "Where should we collect it
+   * from?" and `Arrange it` stays disabled for ever: `conciergeReady` needs an
+   * `addressId`, and there was no address to select.
+   *
+   * `router.refresh()` re-asks the server for every rendered route. It is what
+   * `BookingFlow.confirm` already does after writing a booking, for exactly
+   * this reason; this file simply never did it.
+   */
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   /* ── preferences ── */
@@ -97,9 +119,9 @@ export function AccountSettings({
   const [pushBusy, setPushBusy] = useState(false);
   const [pushErr, setPushErr] = useState<string | null>(null);
 
-  /* ── referral ── */
-  const [code, setCode] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  /* THE REFERRAL PANEL STOOD HERE - a code, a share link and a WhatsApp
+     invitation. The programme is removed, so there is no code to issue and
+     nothing for a share to redeem. */
 
   /* ── deletion ── */
   const [confirmText, setConfirmText] = useState('');
@@ -154,7 +176,6 @@ export function AccountSettings({
     setError(null);
     setSaved(false);
     setConfirmText('');
-    setCopied(false);
     setEditing(null);
   }, [panel]);
 
@@ -186,14 +207,6 @@ export function AccountSettings({
     setPush(!pushSupported() ? 'unsupported' : pushEnabled() ? 'on' : 'off');
   }, [panel]);
 
-  useEffect(() => {
-    /* Against the loaded account. Guarded on the store's user this never ran
-       on `/you` - the referral panel opened and stayed empty for ever, which
-       reads as the studio having no referral programme. */
-    if (panel !== 'referral' || !account || code) return;
-    void getMyReferralCode(account).then(setCode).catch(() => setCode(null));
-  }, [panel, account, code]);
-
   const saveProfile = async () => {
     if (!account) return;
     setSaving(true);
@@ -204,6 +217,9 @@ export function AccountSettings({
       setAccount({ ...account, ...next });
       if (user) setUser({ ...user, ...next });
       setSaved(true);
+      /* The name is drawn on Home's greeting, on You and on the warranty
+         card - all server-rendered. */
+      router.refresh();
     } catch {
       setError('That didn’t save. Try again in a moment.');
     } finally {
@@ -249,21 +265,6 @@ export function AccountSettings({
       setPushErr('That didn’t work. Try again in a moment.');
     } finally {
       setPushBusy(false);
-    }
-  };
-
-  const share = async () => {
-    if (!code) return;
-    const url = referralShareLink(code);
-    try {
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ title: 'AutoModz', url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-    } catch {
-      /* Sharing cancelled, or no clipboard. The link is on screen either way. */
     }
   };
 
@@ -320,6 +321,9 @@ export function AccountSettings({
       }
       setEditing(null);
       setAddresses(null);   // re-read, so the default the server chose is what shows
+      /* THE ONE THE CUSTOMER REPORTED. Without this the booking sheet never
+         learns the address exists and the visit cannot be arranged. */
+      router.refresh();
     } catch {
       setError('That didn’t save. Check your connection.');
     } finally {
@@ -340,6 +344,9 @@ export function AccountSettings({
         return;
       }
       setAddresses(null);
+      /* An address the sheet would still offer is an address a van would be
+         sent to after the customer removed it. */
+      router.refresh();
     } catch {
       setError('That didn’t remove. Check your connection.');
     } finally {
@@ -367,6 +374,8 @@ export function AccountSettings({
       }
       if (account) setAccount({ ...account, upiVpa: vpa.trim().toLowerCase() });
       setSaved(true);
+      /* Settling reads the masked address off the server's picture. */
+      router.refresh();
     } catch {
       setError('That didn’t save. Check your connection.');
     } finally {
@@ -386,6 +395,9 @@ export function AccountSettings({
     try {
       const { setPublicHistoryConsent } = await import('@/lib/services/vehicles');
       await setPublicHistoryConsent(account.uid, vehicleId, next);
+      /* Consent decides whether a car's record is shareable at all, and the
+         surfaces that offer sharing are server-rendered. */
+      router.refresh();
     } catch {
       setConsent(c => ({ ...c, [vehicleId]: !next }));
       setError('That didn’t save. Check your connection.');
@@ -397,7 +409,6 @@ export function AccountSettings({
   const label =
     panel === 'profile' ? 'Your details'
       : panel === 'notifications' ? 'Notifications'
-        : panel === 'referral' ? 'Invite a friend'
           : panel === 'addresses' ? 'Pickup addresses'
             : panel === 'payment' ? 'Payment method'
               : panel === 'privacy' ? 'Your car’s record'
@@ -479,41 +490,6 @@ export function AccountSettings({
           </>
         ) : null}
 
-        {/* ── REFERRAL ─────────────────────────────────────────────────── */}
-        {panel === 'referral' ? (
-          <>
-            <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
-              Share your code. When someone joins with it, you both get looked after.
-            </Text>
-            {code ? (
-              <>
-                <div style={{
-                  marginTop: space.gap, padding: INSET,
-                  borderRadius: radius.card, background: color.surface,
-                  border: `${HAIRLINE}px solid ${color.edge}`,
-                }}>
-                  <Text role="data" tone="ink">{code}</Text>
-                </div>
-                {copied ? (
-                  <Text role="whisper" tone="ink3" aria-live="polite" style={{ marginTop: space.breath }}>
-                    Link copied.
-                  </Text>
-                ) : null}
-                <div style={{ marginTop: space.rest, display: 'flex', gap: space.gap, flexWrap: 'wrap' }}>
-                  <Button tier="primary" onClick={share}>Share the link</Button>
-                  <Button tier="forward" href={referralWhatsAppLink(code, name)}>WhatsApp</Button>
-                </div>
-              </>
-            ) : (
-              <Text role="body" tone="ink2" style={{ marginTop: space.gap }}>
-                Preparing your code&hellip;
-              </Text>
-            )}
-            <div style={{ marginTop: space.rest }}>
-              <Button tier="quiet" onClick={onClose}>Done</Button>
-            </div>
-          </>
-        ) : null}
 
 
         {/* ── SAVED ADDRESSES ──────────────────────────────────────────

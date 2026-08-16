@@ -29,7 +29,6 @@ describe('a member is quoted the member rate', () => {
     const d = computeBestDiscount({
       price: 64000,
       membershipPlan: 'Gold',
-      eligiblePromos: [],
     });
     expect(d).toBeTruthy();
     expect(applyDiscount(64000, d)).toBeLessThan(64000);
@@ -72,7 +71,7 @@ describe('a member is quoted the member rate', () => {
 
   it('a non-member is quoted the plain price', () => {
     const d = computeBestDiscount({
-      price: 64000, membershipPlan: null, eligiblePromos: [],
+      price: 64000, membershipPlan: null,
     });
     expect(applyDiscount(64000, d)).toBe(64000);
   });

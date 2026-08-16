@@ -14,6 +14,7 @@
 import type { NextAction, ActionIntent } from '@/lib/os/action';
 import {
   STUDIO, GARAGE, MEMBERSHIP, HOME, HISTORY, PROFILE, VEHICLE, VEHICLE_PUC,
+  VEHICLE_WARRANTY,
   CARS, SELL, WELCOME, BOOKING, APPROVAL,
 } from './routes';
 
@@ -152,7 +153,7 @@ export type Destination =
   | { to: 'membership.join' }
   | { to: 'profile' }
   | { to: 'profile.panel';
-      panel: 'profile' | 'notifications' | 'referral' | 'delete'
+      panel: 'profile' | 'notifications' | 'delete'
         | 'addresses' | 'payment' | 'privacy' }
   | { to: 'vehicle'; vehicleId?: string }
   /**
@@ -163,6 +164,16 @@ export type Destination =
    * they walked in from rather than to whichever one the product would pick.
    */
   | { to: 'vehicle.puc'; vehicleId?: string }
+  /**
+   * THE BRAND'S WARRANTY ON ONE FILM OR COAT.
+   *
+   * Under the car for the same reason the certificate is: it is a fact ABOUT
+   * one car, so the address reads as what it is and `parentOf` returns the
+   * customer to the car they walked in from. The protection's id travels
+   * because a car can hold two warranted layers - a film and a coat - and each
+   * is its own registration with its own brand and its own reference.
+   */
+  | { to: 'vehicle.warranty'; vehicleId?: string; protectionId: string }
   | { to: 'visit'; visitId: string }
   | { to: 'booking'; bookingId: string }
   | { to: 'booking.manage'; bookingId: string }
@@ -209,6 +220,8 @@ export const hrefForDestination = (d: Destination): string => {
     case 'profile.panel':    return `${PROFILE}?panel=${d.panel}`;
     case 'vehicle':          return d.vehicleId ? `${VEHICLE}?car=${d.vehicleId}` : VEHICLE;
     case 'vehicle.puc':      return d.vehicleId ? `${VEHICLE_PUC}?car=${d.vehicleId}` : VEHICLE_PUC;
+    case 'vehicle.warranty': return `${VEHICLE_WARRANTY}?p=${encodeURIComponent(d.protectionId)}`
+      + (d.vehicleId ? `&car=${d.vehicleId}` : '');
     case 'visit':            return visit(d.visitId);
     case 'booking':          return booking(d.bookingId);
     case 'booking.manage':   return bookingManage(d.bookingId);
@@ -392,6 +405,7 @@ export const parentOf = (pathname: string): Parent | null => {
    * so the answer is still the car they were looking at.
    */
   if (path === VEHICLE_PUC) return { href: withCar(VEHICLE), name: 'The car' };
+  if (path === VEHICLE_WARRANTY) return { href: withCar(VEHICLE), name: 'The car' };
   if (path === VEHICLE) return { href: GARAGE, name: 'Your garage' };
 
   /* The marketplace is public, so its root goes to whatever `/` is for whoever

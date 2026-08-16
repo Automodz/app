@@ -2,12 +2,14 @@ import 'server-only';
 /**
  * THE CUSTOMER'S PICTURE, READ ON THE SERVER.
  *
- * The Admin SDK twin of `lib/customer/source.ts#loadPicture`. It returns the
- * SAME `CustomerPicture` shape, which is the whole point: every projection in
- * `lib/customer/project.ts` and every screen works unchanged, and nothing about
- * the presentation layer moved.
+ * THE ONLY READ. It produces the `CustomerPicture` shape that every projection
+ * in `lib/customer/project.ts` and every screen consumes, and it is now the
+ * only thing that produces it: the client twin it replaced - `loadPicture` and
+ * `useCustomerPicture` in `lib/customer/source.ts` - has been deleted along
+ * with the client `Room` that was its last caller. The shape itself lives in
+ * `lib/customer/picture.ts`, which imports nothing that fetches.
  *
- * Why this exists rather than the client hook:
+ * Why this exists rather than a client hook:
  *
  *   · the Firebase client SDK left the customer bundle entirely
  *   · a room's first paint is its content, not a loading bar
@@ -20,14 +22,27 @@ import 'server-only';
  */
 import { cache } from 'react';
 import { adminDb } from './firebaseAdmin';
+import { loadCatalogue } from './catalogue';
 import type {
   Approval, Booking, Declaration, Invoice, Job, Notification, Protection, SavedAddress,
-  Service, Subscription, User, Vehicle, Visit,
+  Subscription, User, Vehicle, Visit,
 } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 
 
 const millis = (t?: { toMillis?: () => number }) => t?.toMillis?.() ?? 0;
+
+/**
+ * Firestore refuses an `in` filter of more than thirty values, and a garage is
+ * not guaranteed to be smaller than that. An empty garage yields NO chunks, so
+ * the query is never sent with an empty array - which Firestore also refuses.
+ */
+const IN_LIMIT = 30;
+const chunked = (ids: string[]): string[][] => {
+  const out: string[][] = [];
+  for (let i = 0; i < ids.length; i += IN_LIMIT) out.push(ids.slice(i, i + IN_LIMIT));
+  return out;
+};
 
 /** Admin `Timestamp` is structurally the client's; the projections read both. */
 const rows = <T>(snap: { docs: { id: string; data: () => unknown }[] }): T[] =>
@@ -61,13 +76,19 @@ async function _loadCustomerPicture(session: {
   const { uid } = session;
 
   const [
-    profileSnap, vehicleSnap, subSnap, serviceSnap, invoiceSnap, notifSnap,
+    profileSnap, vehicleSnap, subSnap, catalogue, invoiceSnap, notifSnap,
     addressSnap, approvalSnap,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.collection(`users/${uid}/vehicles`).get(),
     db.collection('subscriptions').where('userId', '==', uid).get(),
-    db.collection('services').get(),
+    /* THE PRICE LIST IS NOBODY'S, SO IT IS READ ONCE FOR EVERYBODY.
+       It is the same eighteen documents for every customer and it changes when
+       the studio changes its prices - and it was being re-read in full on
+       every page view of every room, including the rooms that never render it.
+       `lib/server/catalogue` caches it across requests; nothing owned by a
+       customer may ever go behind that cache, and nothing does. */
+    loadCatalogue(),
     /* A CHAPTER'S PAPERS. Without this, `toVisit` hardcoded `documents: []`
        and no past visit could ever show its invoice or receipt. Read here so
        History stays one server read, and scoped to this customer - the rules
@@ -119,52 +140,92 @@ async function _loadCustomerPicture(session: {
 
   const vehicles = rows<Vehicle>(vehicleSnap);
 
-  /* A handful of cars, so a handful of parallel queries. Every one is scoped by
-     the session's uid or by a vehicle id read from under that uid. */
-  const cars: CarPicture[] = await Promise.all(vehicles.map(async vehicle => {
-    /**
-     * EVERY EDGE IS AN ID. THE PLATE JOINS NOTHING.
-     *
-     * Bookings and jobs were attached to a car by `vehicleRegNo`, and that
-     * query - not the stored data - produced the corruption in production: a
-     * booking labelled "Honda City" carrying the BMW's plate appeared in the
-     * BMW's room, while its own `vehicleId` named the i20 all along. Three
-     * bookings were mis-parented by a string comparison.
-     *
-     * A registration is a display snapshot. It is edited, mistyped, reissued
-     * and transferred between cars; it has never been an identity. §P1.6 - it
-     * may never establish ownership, and §P1.7 - a record with no `vehicleId`
-     * is a record whose vehicle is UNKNOWN. There is deliberately no fallback:
-     * finding "another vehicle with this plate" is precisely the bug.
-     *
-     * A job with no `vehicleId` therefore attaches to no car until the value
-     * is backfilled from its booking, which is the authoritative parent.
-     */
-    const [prot, decl, vis, bk, jb] = await Promise.all([
-      db.collection('protections').where('vehicleId', '==', vehicle.id).get(),
-      /* THE PAPERS THE OWNER HAS SENT. Keyed by the car exactly as the
-         protections are, so a declaration waiting on the studio reaches the
-         car's own room without a second read anywhere. One equality filter,
-         so no composite index. */
-      db.collection('declarations').where('vehicleId', '==', vehicle.id).get(),
-      db.collection('visits').where('vehicleId', '==', vehicle.id).get(),
-      db.collection('bookings')
-        .where('userId', '==', uid).where('vehicleId', '==', vehicle.id).get(),
-      db.collection('jobs')
-        .where('customerId', '==', uid).where('vehicleId', '==', vehicle.id).get(),
-    ]);
+  /**
+   * ── THE READ COST, AND WHY IT IS NO LONGER PER CAR ──────────────────────
+   *
+   * This fanned out FIVE queries per vehicle - protections, declarations,
+   * visits, bookings and jobs, each filtered by one `vehicleId`. With four
+   * cars that is twenty queries on top of the eight above, on EVERY page view
+   * of EVERY room, because `cache` dedupes within one request and nothing
+   * spans two. The project exhausted its daily Firestore read quota and every
+   * customer room began answering "We could not reach your garage."
+   *
+   * Two of the five never needed the car at all: `bookings` carries `userId`
+   * and `jobs` carries `customerId`, so ONE query each returns every car's,
+   * and the per-car filter was asking the database to do work the grouping
+   * below does for free.
+   *
+   * The other three are keyed only by `vehicleId`, so they are asked once with
+   * `in` over this customer's own ids. Firestore caps `in` at thirty values;
+   * `chunked` respects that, which means a garage of thirty-one cars costs six
+   * queries rather than a hundred and fifty-five.
+   *
+   * 8 + 5N becomes 8 + 5. Every query is still scoped by the verified session
+   * - by `uid` directly, or by ids read from under it - which is the ownership
+   * guarantee this file exists to make, and it is unchanged.
+   */
+  const ids = vehicles.map(v => v.id);
 
-    const byNewest = <T extends { createdAt?: { toMillis?: () => number } }>(a: T, b: T) =>
-      (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0);
+  const [protSnaps, declSnaps, visitSnaps, bookingSnap, jobSnap] = await Promise.all([
+    Promise.all(chunked(ids).map(part =>
+      db.collection('protections').where('vehicleId', 'in', part).get())),
+    /* THE PAPERS THE OWNER HAS SENT. Keyed by the car exactly as the
+       protections are, so a declaration waiting on the studio reaches the
+       car's own room without a second read anywhere. One `in` filter, so no
+       composite index. */
+    Promise.all(chunked(ids).map(part =>
+      db.collection('declarations').where('vehicleId', 'in', part).get())),
+    Promise.all(chunked(ids).map(part =>
+      db.collection('visits').where('vehicleId', 'in', part).get())),
+    db.collection('bookings').where('userId', '==', uid).get(),
+    db.collection('jobs').where('customerId', '==', uid).get(),
+  ]);
 
-    return {
-      vehicle,
-      protections: rows<Protection>(prot),
-      declarations: rows<Declaration>(decl),
-      visits: rows<Visit>(vis).sort(byNewest),
-      bookings: rows<Booking>(bk).sort(byNewest),
-      jobs: rows<Job>(jb).sort(byNewest),
-    };
+  /**
+   * EVERY EDGE IS AN ID. THE PLATE JOINS NOTHING.
+   *
+   * Bookings and jobs were attached to a car by `vehicleRegNo`, and that query
+   * - not the stored data - produced the corruption in production: a booking
+   * labelled "Honda City" carrying the BMW's plate appeared in the BMW's room,
+   * while its own `vehicleId` named the i20 all along. Three bookings were
+   * mis-parented by a string comparison.
+   *
+   * A registration is a display snapshot. It is edited, mistyped, reissued and
+   * transferred between cars; it has never been an identity. §P1.6 - it may
+   * never establish ownership, and §P1.7 - a record with no `vehicleId` is a
+   * record whose vehicle is UNKNOWN. There is deliberately no fallback:
+   * finding "another vehicle with this plate" is precisely the bug.
+   *
+   * A job with no `vehicleId` therefore attaches to no car until the value is
+   * backfilled from its booking, which is the authoritative parent.
+   */
+  const byVehicle = <T extends { vehicleId?: string }>(list: T[]): Map<string, T[]> => {
+    const grouped = new Map<string, T[]>();
+    for (const record of list) {
+      if (!record.vehicleId) continue;
+      const held = grouped.get(record.vehicleId);
+      if (held) held.push(record);
+      else grouped.set(record.vehicleId, [record]);
+    }
+    return grouped;
+  };
+
+  const protections = byVehicle(protSnaps.flatMap(rows<Protection>));
+  const declarations = byVehicle(declSnaps.flatMap(rows<Declaration>));
+  const visits = byVehicle(visitSnaps.flatMap(rows<Visit>));
+  const bookings = byVehicle(rows<Booking>(bookingSnap));
+  const jobs = byVehicle(rows<Job>(jobSnap));
+
+  const byNewest = <T extends { createdAt?: { toMillis?: () => number } }>(a: T, b: T) =>
+    (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0);
+
+  const cars: CarPicture[] = vehicles.map(vehicle => ({
+    vehicle,
+    protections: protections.get(vehicle.id) ?? [],
+    declarations: declarations.get(vehicle.id) ?? [],
+    visits: (visits.get(vehicle.id) ?? []).sort(byNewest),
+    bookings: (bookings.get(vehicle.id) ?? []).sort(byNewest),
+    jobs: (jobs.get(vehicle.id) ?? []).sort(byNewest),
   }));
 
   return {
@@ -175,7 +236,7 @@ async function _loadCustomerPicture(session: {
        older ones were being thrown away, so the history costs nothing. */
     subscription: subscriptions[0] ?? null,
     subscriptions,
-    catalogue: rows<Service>(serviceSnap),
+    catalogue,
     invoices: rows<Invoice>(invoiceSnap),
     /* Newest first - which one is "the latest news" depends on it. */
     notifications: rows<Notification>(notifSnap)

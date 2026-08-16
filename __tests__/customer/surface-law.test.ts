@@ -127,6 +127,39 @@ describe('there is one Display step and it is the design’s own', () => {
     }
   });
 
+  /**
+   * AND THE ROOMS THAT NEVER USED THE PRIMITIVE AT ALL.
+   *
+   * The law above only ever looked at `<Statement>`, so four rooms slipped
+   * underneath it by writing their own heading: You opened at 22 (the TITLE
+   * step), the Car at 34 (a number between the scale's top two steps and on
+   * neither), the marketplace at 30 (the clamp's lower bound, frozen, so that
+   * room never grew past a phone), and Home's greeting at the Title step while
+   * the Studio, the Garage and the Club all opened on a Display.
+   *
+   * The owner reported it as "the headings on the start of each page should be
+   * of the same size", which is what four undeclared sizes look like from the
+   * outside. The rule is on the ELEMENT now rather than on one component, so a
+   * room cannot get a private Display size by not using the primitive.
+   */
+  it('and no room gives its own h1 a size of its own', () => {
+    for (const file of CUSTOMER_FILES) {
+      const numbered = (codeOf(file).match(/<h1[^>]*>/g) ?? [])
+        .filter(tag => /fontSize:\s*\d/.test(tag))
+        .map(tag => tag.replace(/\s+/g, ' ').slice(0, 70));
+      expect({ file, numbered }).toEqual({ file, numbered: [] });
+    }
+  });
+
+  it('and the greeting opens Home at the same step the other rooms open at', () => {
+    /* It is a `<p>` rather than an `<h1>` - Home's h1 is the state's word,
+       drawn by the ring and said for a screen reader - so the rule above
+       cannot see it. This is the same law, aimed at the one line it misses. */
+    const g = codeOf('components/os/Greeting.tsx');
+    expect(g).toMatch(/fontSize: typeScale\.display\.size/);
+    expect(g).not.toMatch(/typeScale\.title\.size/);
+  });
+
   it('and the header takes those same two steps rather than a copy', () => {
     /* A header with its own private scale is how a third size appears. */
     const rh = codeOf('components/os/RoomHeader.tsx');
@@ -584,4 +617,67 @@ describe('nothing the customer reads is assembled from an absent fact', () => {
       expect({ f, bad }).toEqual({ f, bad: [] });
     }
   });
+});
+
+/* ── A WRITE THAT THE SERVER NEVER HEARS ABOUT ───────────────────────────── */
+
+describe('a client island that writes tells the server to answer again', () => {
+  /**
+   * THE CUSTOMER-REPORTED DEAD END: "currently not able to select the address
+   * and move forward once added".
+   *
+   * Every room renders on the SERVER, from one `CustomerPicture`. A client
+   * island that POSTs through an API route changes Firestore and its own local
+   * state - and nothing else. Walk back to a room and Next serves it from the
+   * client router cache, rendered before the write happened.
+   *
+   * For a saved pickup address that is not a stale label, it is a dead end:
+   * the booking sheet reads `addresses` off the server's picture, so it goes
+   * on showing "Where should we collect it from?", `addressId` stays null,
+   * `conciergeReady` stays false, and "Arrange it" can never be pressed. The
+   * customer has an address and cannot use it.
+   *
+   * `router.refresh()` is the answer and the product already knew it -
+   * `BookingFlow.confirm` calls it after writing a booking, with a comment
+   * saying why. `AccountSettings` wrote FIVE things and called it none.
+   *
+   * Scoped to the customer surfaces: `components/workspace` is the studio's
+   * own application and is not governed here.
+   */
+  const WRITES = /method:\s*'(POST|PUT|PATCH|DELETE)'/;
+
+  /**
+   * THE ONE WRITE NO ROOM READS.
+   *
+   * An enquiry on a listing goes to the STUDIO's desk, not into the customer's
+   * own picture - nothing on any of their rooms renders it, so there is
+   * nothing for a refresh to correct. Named here rather than pattern-matched,
+   * because "does anything render this" is a judgement and the next exemption
+   * should have to be argued for in the same way.
+   */
+  const WRITES_NOTHING_A_ROOM_RENDERS = ['components/market/AskAboutCar.tsx'];
+
+  const islands = CUSTOMER_FILES
+    .concat(['components/you/AccountSettings.tsx', 'components/garage/CarForm.tsx'])
+    .filter(f => /^components\//.test(f))
+    .filter(f => !WRITES_NOTHING_A_ROOM_RENDERS.includes(f))
+    .filter(f => WRITES.test(codeOf(f)));
+
+  it('there are islands that write, or this law is measuring nothing', () => {
+    expect(islands.length).toBeGreaterThan(3);
+  });
+
+  it.each([...new Set(islands)].map(f => [f] as const))(
+    '%s asks the server again after it writes', file => {
+      const src = codeOf(file);
+      /* A navigation is a fresh server render, so a file that LEAVES after
+         writing has already invalidated everything by arriving somewhere -
+         and a `<Link>` is a navigation exactly as `router.push` is. `Notice`
+         is the case: it marks a notification seen and follows the doorway in
+         the same gesture, so the room it lands in is rendered after the write
+         rather than before it. */
+      const navigates = /router\.push\(|router\.replace\(|<Link\b/.test(src);
+      expect({ file, refreshes: /router\.refresh\(\)/.test(src) || navigates })
+        .toEqual({ file, refreshes: true });
+    });
 });

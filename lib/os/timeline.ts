@@ -26,7 +26,7 @@ import type { Booking } from '@/lib/types';
 import { PROTECTION_TITLE } from '@/lib/types';
 import type { LiveProtection } from './protection';
 import type { ClubModel } from './club';
-import type { CarPicture } from '@/lib/customer/source';
+import type { CarPicture } from '@/lib/customer/picture';
 import { visitPhase } from './visit';
 import { completedOf, nextVisitOf, declinedOf } from '@/lib/customer/ownership';
 

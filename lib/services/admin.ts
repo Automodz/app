@@ -1,23 +1,9 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export const getAdminStats = async () => {
-  const [bookings, users] = await Promise.all([
-    getDocs(collection(db, 'bookings')),
-    getDocs(collection(db, 'users')),
-  ]);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const todayCount = bookings.docs.filter(d => {
-    const ts = d.data().createdAt?.toDate?.();
-    return ts && ts >= today;
-  }).length;
-  const revenue = bookings.docs
-    .filter(d => d.data().status === 'completed')
-    .reduce((s, d) => s + (d.data().totalAmount || 0), 0);
-  return {
-    totalBookings:   bookings.size,
-    todayBookings:   todayCount,
-    totalCustomers:  users.size,
-    revenue,
-  };
-};
+/* `getAdminStats` STOOD HERE. It read EVERY booking and EVERY user document
+   to count today's bookings - an unbounded pair of collection scans, growing
+   with the business, on a dashboard that computes its own figures from the
+   scoped queries it already makes (`app/admin/page.tsx`). Nothing called it,
+   and on a project that has just exhausted its daily read quota the last thing
+   worth keeping is a full-collection scan waiting for a caller. */

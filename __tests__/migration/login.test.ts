@@ -33,8 +33,6 @@ describe('every service call the old door made, the new one makes', () => {
     'getUserProfile',
     'ensureUserProfile',
     'linkEmployeeRole',
-    'stashReferralCode',
-    'claimReferral',
     'signOut',
     'setUser',
   ])('calls %s', fn => {
@@ -45,10 +43,6 @@ describe('every service call the old door made, the new one makes', () => {
     expect(src).toMatch(/if \(!profile\)[\s\S]{0,120}signOut\(auth\)/);
   });
 
-  it('claims a referral only for customers, and never blocks entry on it', () => {
-    expect(src).toMatch(/role !== 'admin' && profile\.role !== 'employee'/);
-    expect(src).toMatch(/void claimReferral\(\)\.catch/);
-  });
 
   it('hands the server a session cookie before redirecting', () => {
     /* The navigation is a DOCUMENT load now, not `router.replace`. A soft

@@ -150,22 +150,11 @@ export const getJob = async (id: string): Promise<Job | null> => {
 /** Live listener for ONE customer's job behind a booking - powers the
  *  Live Care tracker. The customerId equality keeps the query inside the
  *  customer-reads-their-own security rule. */
-export const subscribeJobForBooking = (
-  bookingId: string,
-  customerId: string,
-  cb: (job: Job | null) => void,
-) => {
-  const q = query(
-    collection(db, 'jobs'),
-    where('bookingId', '==', bookingId),
-    where('customerId', '==', customerId),
-  );
-  return onSnapshot(
-    q,
-    (snap) => cb(snap.empty ? null : ({ id: snap.docs[0].id, ...snap.docs[0].data() } as Job)),
-    () => cb(null),
-  );
-};
+/* `subscribeJobForBooking` STOOD HERE - a realtime listener on the job behind
+   a booking. Nothing subscribes to anything in this product any more: the
+   customer's rooms render on the server and re-ask after a write
+   (`router.refresh`), and the studio's surfaces read on load. A live listener
+   left open is a read meter running for as long as a tab is. */
 
 /** Live listener for the kiosk job board (today's jobs). */
 export const subscribeTodaysJobs = (
@@ -193,7 +182,8 @@ export const saveJobNotes = (jobId: string, notes: string) =>
 
 export const updateJobStatus = async (
   jobId: string, status: JobStatus, byEmployee: { id: string; name: string },
-  opts?: { skipAutoConsumption?: boolean },
+  /* `opts.skipAutoConsumption` STOOD HERE - the escape hatch for the recipe
+     consumption that no longer happens. */
 ) => {
   const update: Record<string, unknown> = {
     status,
@@ -234,10 +224,10 @@ export const updateJobStatus = async (
     try {
       const job = await getJob(jobId);
       if (job) {
-        if (!opts?.skipAutoConsumption) {
-          const { consumeForService } = await import('./inventory');
-          await consumeForService(job.serviceItems.map(i => i.serviceId), 'job', jobId, byEmployee.id);
-        }
+        /* AUTO-CONSUMPTION STOOD HERE - a recipe per service, decremented on
+           completion. Inventory is the product inventory now and nothing else;
+           stock moves by `recordPurchase` and `adjustStock`, which are acts a
+           person did rather than a model of one. See `lib/services/inventory`. */
         if (!job.customerId) {
           const { recordWalkinSpend } = await import('./walkinCustomers');
           await recordWalkinSpend(job.customerPhone, job.totalAmount);
@@ -280,15 +270,13 @@ export const addJobPayment = async (
   return record;
 };
 
-/** Legacy one-shot collect - full balance in a single payment. */
-export const markJobPayment = (
-  jobId: string, method: 'upi' | 'cash', transactionId?: string,
-) =>
-  updateDoc(doc(db, 'jobs', jobId), {
-    paymentMethod: method, paymentStatus: 'collected',
-    ...(transactionId ? { transactionId } : {}),
-    updatedAt: serverTimestamp(),
-  });
+/* `markJobPayment` STOOD HERE, and its own comment called it "legacy": a
+   one-shot `paymentStatus: 'collected'` written straight onto a job from a
+   browser. Money taken at the counter is recorded by `PaymentsSection`
+   (components/workspace/parts), which writes a Payment and reconciles the
+   job's balance against it; UPI goes through `/api/payment` and
+   `paymentService`. Both leave a record of WHO took WHAT. This left a status
+   and no record, and nothing called it. */
 
 /** Completed jobs with money still owed, oldest first (receivables). */
 export const getReceivables = async (): Promise<Job[]> => {
@@ -372,10 +360,10 @@ export const getJobsForDate = async (date: string): Promise<Job[]> => {
     .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 };
 
-export const getRecentJobs = async (max = 100): Promise<Job[]> => {
-  const snap = await getDocs(query(collection(db, 'jobs'), orderBy('createdAt', 'desc'), limit(max)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Job));
-};
+/* `getRecentJobs` STOOD HERE - an unscoped read of the newest hundred jobs
+   with no caller. Every surface that shows jobs asks a question of its own:
+   the board asks by date, receivables by balance, a customer's page by
+   customer. */
 
 export const getJobsForCustomer = async (customerId: string): Promise<Job[]> => {
   const snap = await getDocs(query(collection(db, 'jobs'), where('customerId', '==', customerId)));

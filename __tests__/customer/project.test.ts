@@ -6,8 +6,9 @@
  */
 import { Timestamp } from 'firebase/firestore';
 import type { Booking, Job, Protection, Service, Subscription, User, Vehicle } from '@/lib/types';
-import type { CarPicture, CustomerPicture } from '@/lib/customer/source';
+import type { CarPicture, CustomerPicture } from '@/lib/customer/picture';
 import { PICKUP_LEG_FEE } from '@/lib/services/pricing';
+import { DOT } from '@/design';
 import {
   termWords, longDate, stateOf, sinceWords, visitsOf,
   toHome, toGarage, toVehicle, toHistory, toStudio, toYou, toMembership, leadCar,
@@ -328,6 +329,113 @@ describe('toHistory / toVisit', () => {
   });
 });
 
+/**
+ * WHERE A CAR'S DETAILS COME FROM - the owner could not tell, and two of the
+ * three answers were broken.
+ *
+ * Adding a car asks for four things: a name, a plate, a year and an odometer.
+ * Everything else on the car - coatings, films, warranties, the certificate -
+ * arrives from the studio's own record, by exactly two routes:
+ *
+ *   STORED         a Visit sealing, or a declaration the studio verified
+ *   RECONSTRUCTED  a completed booking, read through the catalogue, during the
+ *                  migration window (`os/protection.projectProtections`)
+ *
+ * Each assertion below is a route that was silently losing a customer's
+ * protection.
+ */
+describe('a car’s protection comes from the record, and none of it is lost', () => {
+  const CATALOGUE = [{
+    id: 'svc-ceramic', name: 'Ceramic coating', category: 'Ceramic',
+    price: 64000, duration: 300, warranty: '5 Year', active: true,
+  }] as unknown as Service[];
+
+  it('resolves a completed booking by its SERVICE ID, not by its display name', () => {
+    /* `computeProtections` built the reconstruction input without `serviceId`,
+       so `resolveService` fell through to the normalised NAME every time - the
+       exact failure `lib/os/protection` documents: a job recorded "Glass
+       Coating", the catalogue held "Glass coating", and one capital letter
+       cost a real customer a real warranty. The booking carries the id. */
+    const p = picture({
+      cars: [car({
+        bookings: [booking({ serviceId: 'svc-ceramic', serviceName: 'CERAMIC  COATING' })],
+      })],
+      catalogue: CATALOGUE,
+    });
+    const ledger = toVehicle(p.cars[0], p, NOW).protections;
+    expect(ledger.map(l => l.label)).toContain('Ceramic coating');
+  });
+
+  it('a verified certificate does not erase the coating beside it', () => {
+    /**
+     * THE ONE THAT COST A CUSTOMER THEIR COATING.
+     *
+     * The reconstruction was switched off by `car.protections.length > 0` -
+     * all or nothing. Verifying a pollution certificate writes exactly ONE
+     * Protection, so on a car that has never been migrated the ceramic
+     * reconstructed from its completed booking vanished the moment the owner
+     * sent in their PUC. The fallback is per KIND now.
+     */
+    const puc: Protection = {
+      id: 'p-puc', vehicleId: 'v1', kind: 'puc', since: '2026-01-02',
+      term: { kind: 'dated', expiresOn: '2027-01-02' },
+      termsSource: 'captured',
+      createdAt: ts('2026-01-02T10:00:00Z'), updatedAt: ts('2026-01-02T10:00:00Z'),
+    };
+    const withBooking = car({ bookings: [booking({ serviceId: 'svc-ceramic' })] });
+    const p = picture({ cars: [withBooking], catalogue: CATALOGUE });
+    const before = toVehicle(p.cars[0], p, NOW).protections.map(l => l.label);
+
+    const andPuc = car({
+      bookings: [booking({ serviceId: 'svc-ceramic' })],
+      protections: [puc],
+    });
+    const q = picture({ cars: [andPuc], catalogue: CATALOGUE });
+    const after = toVehicle(q.cars[0], q, NOW).protections.map(l => l.label);
+
+    expect(before).toContain('Ceramic coating');
+    /* The coating survives the certificate arriving beside it. */
+    expect(after).toContain('Ceramic coating');
+  });
+
+  it('and a stored promise still wins outright for its own kind', () => {
+    /* The rule the per-kind fallback must not break: where the studio has
+       written a protection down, that document is the answer - never a
+       reconstruction of the same kind sitting next to it. */
+    const stored: Protection = {
+      id: 'p-ceramic', vehicleId: 'v1', kind: 'ceramic', since: '2026-07-18',
+      term: { kind: 'dated', expiresOn: '2030-07-18' },
+      termsSource: 'captured',
+      createdAt: ts('2026-07-18T10:00:00Z'), updatedAt: ts('2026-07-18T10:00:00Z'),
+    };
+    const p = picture({
+      cars: [car({ bookings: [booking({ serviceId: 'svc-ceramic' })], protections: [stored] })],
+      catalogue: CATALOGUE,
+    });
+    const ceramics = toVehicle(p.cars[0], p, NOW).protections
+      .filter(l => l.label === 'Ceramic coating');
+    expect(ceramics).toHaveLength(1);
+    /* The stored term, 2030 - not the one the catalogue would compute today. */
+    expect(ceramics[0].term).toMatch(/2030/);
+  });
+
+  it('every layer says where it came from, because the form never asked', () => {
+    const stored: Protection = {
+      id: 'p-ceramic', vehicleId: 'v1', kind: 'ceramic', provider: 'Kovalent Prolong',
+      since: '2026-07-18', term: { kind: 'dated', expiresOn: '2030-07-18' },
+      termsSource: 'captured',
+      createdAt: ts('2026-07-18T10:00:00Z'), updatedAt: ts('2026-07-18T10:00:00Z'),
+    };
+    const p = picture({ cars: [car({ protections: [stored] })] });
+    const layer = toVehicle(p.cars[0], p, NOW).protections
+      .find(l => l.label === 'Ceramic coating');
+    /* `DOT`, not a typed separator: the product's dot binds forward with a
+       non-breaking space, so a literal one here is a different string that
+       looks identical in a diff. */
+    expect(layer?.source).toBe(`Kovalent Prolong${DOT}Applied here 18 Jul 2026`);
+  });
+});
+
 describe('toStudio', () => {
   it('says the car is with the customer when it is', () => {
     expect(toStudio(picture()).presence).toBe('Your car is with you');
@@ -338,9 +446,16 @@ describe('toStudio', () => {
     expect(toStudio(p).presence).toBe('Your car is here');
     expect(toStudio(p).visitHref).toBe('/vehicle');
   });
-  it('never states a credential nobody supplied', () => {
-    expect(toStudio(picture()).credentials).toEqual([]);
-  });
+  /**
+   * "NEVER STATES A CREDENTIAL NOBODY SUPPLIED" STOOD HERE.
+   *
+   * The room no longer has a credentials section - the owner cut it, along
+   * with the photograph, the "also from the studio" strip and the hours card -
+   * and the model has no field for one. The rule it protected is now enforced
+   * by the type: there is nothing to state a credential INTO. The same is true
+   * of `hours` and `address`, which is why the prose check below no longer
+   * reads them.
+   */
   it('words no price into the studio’s own prose (§22.1)', () => {
     /* NARROWED, and the narrowing is the point. This asserted that the WHOLE
        model carried no `₹`, which was true only while the projection had
@@ -350,8 +465,7 @@ describe('toStudio', () => {
        room's prose is about craft, and a price in it turns craft into a shelf
        label. So the prose is what is checked. */
     const m = toStudio(picture());
-    const prose = [m.place, m.presence, m.voice, m.does, m.hours, m.address,
-      ...(m.credentials ?? [])].join(' ');
+    const prose = [m.place, m.presence, m.voice, m.does].join(' ');
     expect(prose).not.toMatch(/₹|\bprice\b/i);
   });
 

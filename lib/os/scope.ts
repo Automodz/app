@@ -112,7 +112,7 @@ export function addOnsOf(service: Service): ServiceAddOn[] {
  * WHAT A CHOICE COSTS AND HOW LONG IT TAKES - resolved once, from the
  * catalogue, into a snapshot.
  *
- * It does NOT apply the membership, the promo, the fees or the tax: those are
+ * It does NOT apply the membership, the fees or the tax: those are
  * `priceVisit`'s, and there is exactly one of it. This produces the WORK, and
  * hands it over as lines.
  */

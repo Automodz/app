@@ -22,7 +22,7 @@
  */
 import Link from 'next/link';
 import { Photograph } from '@/components/os/Photograph';
-import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE } from '@/design';
+import { color, space, INSET, MEASURE, radius, imageSizes, HAIRLINE, type as typeScale } from '@/design';
 /* Deep imports, NOT the `components/system` barrel. The barrel re-exports
    every primitive, a dozen of them `'use client'` with Radix and
    framer-motion behind them, and reaching through it from a server
@@ -58,7 +58,11 @@ export function MarketScreen({ model }: { model: MarketModel }) {
           visitor and Now to an owner, and one control is right for both. */}
       <Back style={{ marginBottom: space.line }} />
 
-      <h1 className="am-display" style={{ margin: 0, fontSize: 30 }}>Cars for sale</h1>
+      {/* The Display step, from the token. It was a hard-coded 30 - the
+          clamp's LOWER BOUND, frozen - so this room never grew past a phone. */}
+      <h1 className="am-display" style={{ margin: 0, fontSize: typeScale.display.size }}>
+        Cars for sale
+      </h1>
       <Text role="body" tone="ink2" style={{ marginTop: space.line }}>
         Every one of these has been through the studio. Come and look at it
         before you decide.

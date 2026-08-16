@@ -85,7 +85,6 @@ describe('ONE SOURCE OF TRUTH - addresses', () => {
       { to: 'membership.join' }, { to: 'profile' },
       { to: 'profile.panel', panel: 'profile' },
       { to: 'profile.panel', panel: 'notifications' },
-      { to: 'profile.panel', panel: 'referral' },
       { to: 'profile.panel', panel: 'delete' },
       { to: 'vehicle' }, { to: 'vehicle', vehicleId: 'v1' },
       { to: 'visit', visitId: 'b1' }, { to: 'privacy' }, { to: 'terms' },
@@ -228,11 +227,16 @@ describe('PERFORMANCE - nothing hydrates that need not', () => {
     }
   });
 
-  it('the per-car reads are parallel, not sequential', () => {
-    /* A garage is a handful of cars; a serial loop would be a handful of
-       round trips stacked end to end. */
+  it('there are no per-car reads left to make parallel', () => {
+    /**
+     * This asserted `Promise.all(vehicles.map(...))` - a parallel fan-out,
+     * which was the right fix for a SERIAL loop and the wrong shape entirely.
+     * Five queries per vehicle on every page view of every room exhausted the
+     * project's daily read quota; the cost is measured in
+     * `__tests__/server/customerPicture` now, and the shape is asserted here.
+     */
     const src = codeOf('lib/server/customerPicture.ts');
-    expect(src).toMatch(/await Promise\.all\(vehicles\.map/);
+    expect(src).not.toMatch(/vehicles\.map\(async/);
     expect(src).toMatch(/await Promise\.all\(\[/);
   });
 });

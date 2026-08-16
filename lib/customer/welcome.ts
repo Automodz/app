@@ -10,7 +10,7 @@
  * deep-linkable and the back button work: each step is a real history entry,
  * not a value in component state.
  */
-import type { CustomerPicture } from './source';
+import type { CustomerPicture } from './picture';
 import { STEPS, stepIndex, nextStep, type WelcomeStep } from '@/lib/os/welcome';
 import { hrefForDestination } from '@/navigation/resolve';
 import { COMPANY } from '@/lib/company';

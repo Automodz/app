@@ -2,7 +2,7 @@
 /**
  * Customer 360 - not a CRUD page. One continuous, chronological timeline of
  * everything this customer has ever done (bookings, walk-ins, invoices,
- * memberships), with the operational rail (garage, membership, promos, notes)
+ * memberships), with the operational rail (garage, membership, activity, notes)
  * always visible beside it. No tabs, nothing hidden.
  */
 import { useEffect, useState, useCallback } from 'react';
@@ -16,13 +16,15 @@ import {
 import { doc, getDoc, getDocs, updateDoc, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
-  getJobsForCustomer, getInvoicesForCustomer, listPromos, updatePromo,
+  getJobsForCustomer, getInvoicesForCustomer, listCustomerActivity,
   buildInvoiceWhatsAppLink, invoicePublicUrl,
 } from '@/lib/firebaseService';
 import { MEMBERSHIP_PLANS } from '@/lib/types';
 import { authedFetch } from '@/lib/clientSession';
 import { formatCurrency, formatDate, getStatusLabel, getStatusColor } from '@/lib/utils';
-import type { User, Vehicle, Booking, Subscription, Job, Invoice, Promo } from '@/lib/types';
+import type { User, Vehicle, Booking, Subscription, Job, Invoice } from '@/lib/types';
+import type { ActivityEvent } from '@/lib/services/activity';
+import { ActivityTimeline } from '@/components/workspace/parts';
 
 type TimelineItem = {
   id: string;
@@ -45,8 +47,13 @@ export default function CustomerDetailPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
+  /* THE TRAIL, WHICH WAS BEING WRITTEN AND NEVER READ. Every act on a job or
+     a booking calls `logActivity` with the customer's id on it, and the two
+     readers that had surfaces were job- and booking-scoped - so the one
+     question this page exists to answer, "what has happened with this
+     customer", was the one the log could not be asked. */
+  const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -57,7 +64,7 @@ export default function CustomerDetailPage() {
   const [creatingPlan, setCreatingPlan] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [userSnap, vehiclesSnap, bookingsSnap, subsSnap, customerJobs, customerInvoices, allPromos] =
+    const [userSnap, vehiclesSnap, bookingsSnap, subsSnap, customerJobs, customerInvoices] =
       await Promise.all([
         getDoc(doc(db, 'users', id)),
         getDocs(collection(db, 'users', id, 'vehicles')),
@@ -65,11 +72,11 @@ export default function CustomerDetailPage() {
         getDocs(query(collection(db, 'subscriptions'), where('userId', '==', id))),
         getJobsForCustomer(id),
         getInvoicesForCustomer(id),
-        listPromos(),
       ]);
     if (userSnap.exists()) {
       const u = { uid: userSnap.id, ...userSnap.data() } as User;
       setCustomer(u); setNotes(u.notes ?? '');
+      listCustomerActivity(id).then(setActivity).catch(() => setActivity([]));
     }
     setVehicles(vehiclesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Vehicle)));
     setBookings(bookingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Booking)));
@@ -77,7 +84,6 @@ export default function CustomerDetailPage() {
       .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0)));
     setJobs(customerJobs);
     setInvoices(customerInvoices);
-    setPromos(allPromos);
     setLoading(false);
   }, [id]);
   useEffect(() => { load(); }, [load]);
@@ -144,13 +150,6 @@ export default function CustomerDetailPage() {
     finally { setCreatingPlan(null); }
   };
 
-  const assignPromo = async (p: Promo) => {
-    const userIds = p.target.kind === 'customers' ? p.target.userIds : [];
-    if (userIds.includes(id)) { toast('Already assigned'); return; }
-    await updatePromo(p.id, { target: { kind: 'customers', userIds: [...userIds, id] } });
-    toast.success(`${p.code} assigned to ${customer?.name}`);
-    await load();
-  };
 
   if (loading) return <div className="p-8 flex justify-center"><div className="w-10 h-10 loader-ring" /></div>;
   if (!customer) return <div className="p-8 text-center font-body" style={{ color: 'var(--steel)' }}>Customer not found.</div>;
@@ -207,7 +206,6 @@ export default function CustomerDetailPage() {
   ].sort((a, b) => b.at - a.at);
 
   const activeSub = subs.find(s => s.status === 'active');
-  const assignablePromos = promos.filter(p => p.active);
 
   return (
     <div className="p-4 md:p-6 max-w-5xl">
@@ -295,7 +293,7 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
-        {/* ── Rail: garage, membership, promos, notes - always visible ── */}
+        {/* ── Rail: garage, membership, activity, notes - always visible ── */}
         <div className="space-y-4">
           <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
             <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Garage · {vehicles.length}</p>
@@ -317,6 +315,16 @@ export default function CustomerDetailPage() {
               </div>
             )}
           </div>
+
+          {activity.length > 0 ? (
+            <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
+              <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Activity</p>
+              {/* The same timeline the job and booking workspaces draw - one
+                  implementation, so a customer's trail cannot start reading
+                  differently from the trail on the job it came from. */}
+              <ActivityTimeline events={activity} />
+            </div>
+          ) : null}
 
           <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
             <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Membership</p>
@@ -350,33 +358,6 @@ export default function CustomerDetailPage() {
             )}
           </div>
 
-          <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
-            <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Promos</p>
-            {assignablePromos.length === 0 ? (
-              <p className="font-body text-xs" style={{ color: 'var(--steel)' }}>
-                No active promos - create one in <Link href="/admin/promos" style={{ color: 'var(--chrome)' }}>Promotions</Link>.
-              </p>
-            ) : (
-              <div className="space-y-1.5">
-                {assignablePromos.map(p => {
-                  const assigned = p.target.kind === 'customers' && p.target.userIds.includes(id);
-                  const forEveryone = p.target.kind === 'all';
-                  return (
-                    <button key={p.id} onClick={() => !assigned && !forEveryone && assignPromo(p)}
-                      disabled={assigned || forEveryone}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl transition-colors enabled:hover:bg-white/[.04] enabled:cursor-pointer"
-                      style={{ border: '1px solid var(--border)', opacity: forEveryone ? 0.6 : 1 }}>
-                      <span className="font-mono text-xs truncate" style={{ color: 'var(--chrome)' }}>{p.code}</span>
-                      <span className="text-[10px] font-mono uppercase tracking-wider shrink-0"
-                        style={{ color: assigned ? 'var(--success)' : forEveryone ? 'var(--faint)' : 'var(--pewter)' }}>
-                        {assigned ? 'Assigned' : forEveryone ? 'Everyone' : 'Assign →'}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
           <div className="rounded-2xl p-4" style={{ background: 'var(--fog)', border: '1px solid var(--border)' }}>
             <p className="text-[10px] font-mono uppercase tracking-wider mb-2.5" style={{ color: 'var(--faint)' }}>Notes</p>
